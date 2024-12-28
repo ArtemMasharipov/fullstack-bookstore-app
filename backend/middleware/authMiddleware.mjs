@@ -19,33 +19,12 @@ export const checkAuth = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, secretKey);
-    const userWithPermissions = await User.aggregate([
-      { $match: { _id: decoded.id } },
-      {
-        $lookup: {
-          from: 'roles',
-          localField: 'role',
-          foreignField: '_id',
-          as: 'role',
-        },
-      },
-      { $unwind: '$role' },
-      {
-        $project: {
-          _id: 1,
-          username: 1,
-          email: 1,
-          role: 1,
-          permissions: '$role.permissions',
-        },
-      },
-    ]);
-
-    if (!userWithPermissions.length) {
+    const userWithPermissions = await User.findById(decoded.id).populate('role');
+    if (!userWithPermissions) {
       return res.status(401).json({ message: 'Invalid token' });
     }
 
-    req.user = userWithPermissions[0];
+    req.user = userWithPermissions;
     next();
   } catch (error) {
     return res.status(401).json({ message: 'Invalid token' });
@@ -54,7 +33,7 @@ export const checkAuth = async (req, res, next) => {
 
 export const checkPermission = (requiredPermission) => {
   return (req, res, next) => {
-    const { permissions } = req.user;
+    const { permissions } = req.user.role;
     if (!permissions || !permissions.includes(requiredPermission)) {
       return res.status(403).json({ message: 'Permission denied' });
     }
