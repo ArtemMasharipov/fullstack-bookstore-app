@@ -12,7 +12,7 @@ const authorValidationSchema = checkSchema({
       errorMessage: 'Name is required.',
     },
   },
-  bio: {
+  biography: {
     trim: true,
     escape: true,
     isLength: {

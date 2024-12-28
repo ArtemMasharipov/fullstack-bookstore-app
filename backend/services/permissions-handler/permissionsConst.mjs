@@ -1,22 +1,24 @@
-export const ACTION_TYPES = {
+export const ACTION_TYPES = Object.freeze({
+  CREATE: 'create',
   READ: 'read',
-  WRITE: 'write',
   UPDATE: 'update',
   DELETE: 'delete',
-};
+});
 
-export const RESOURCE_TYPES = {
-  BOOK: 'book',
+export const RESOURCE_TYPES = Object.freeze({
   AUTHOR: 'author',
+  BOOK: 'book',
+  USER: 'user',
   ORDER: 'order',
-};
+});
 
-export function generatePermission(action, resource) {
-  return `${action}:${resource}`.toLowerCase();
-}
+export const generatePermission = (action, resource) =>
+  `${action}:${resource}`.toLowerCase();
 
-export const ALL_PERMISSIONS = Object.keys(ACTION_TYPES).flatMap((action) =>
-  Object.keys(RESOURCE_TYPES).map((resource) =>
-    generatePermission(action, resource),
+export const ALL_PERMISSIONS = Object.freeze(
+  Object.keys(ACTION_TYPES).flatMap((action) =>
+    Object.keys(RESOURCE_TYPES).map((resource) =>
+      generatePermission(action, resource),
+    ),
   ),
 );

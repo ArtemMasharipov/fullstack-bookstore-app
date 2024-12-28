@@ -1,17 +1,17 @@
 import {
+  generatePermission,
   ALL_PERMISSIONS,
   ACTION_TYPES,
   RESOURCE_TYPES,
-  generatePermission,
 } from './permissionsConst.mjs';
 
-export const ROLES = {
+export const ROLES = Object.freeze({
   ADMIN: 'admin',
   USER: 'user',
   GUEST: 'guest',
-};
+});
 
-const ROLE_PERMISSIONS = {
+const ROLE_PERMISSIONS = Object.freeze({
   [ROLES.ADMIN]: ALL_PERMISSIONS,
   [ROLES.USER]: [
     generatePermission(ACTION_TYPES.READ, RESOURCE_TYPES.BOOK),
@@ -19,8 +19,8 @@ const ROLE_PERMISSIONS = {
   ],
   [ROLES.GUEST]: [
     generatePermission(ACTION_TYPES.READ, RESOURCE_TYPES.BOOK),
-    generatePermission(ACTION_TYPES.WRITE, RESOURCE_TYPES.ORDER),
+    generatePermission(ACTION_TYPES.READ, RESOURCE_TYPES.ORDER),
   ],
-};
+});
 
 export const getRolePermissions = (role) => ROLE_PERMISSIONS[role] || [];

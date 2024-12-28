@@ -1,34 +1,32 @@
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-const secretKey = process.env.JWT_SECRET;
-const tokenExpiration = process.env.JWT_EXPIRATION || '60m';
+import config from '../config/default.mjs';
 
 export function prepareToken(data) {
   const { password, ...tokenData } = data;
-  return jwt.sign(tokenData, secretKey, {
-    expiresIn: tokenExpiration,
-    audience: process.env.JWT_AUDIENCE,
-    issuer: process.env.JWT_ISSUER,
+  return jwt.sign(tokenData, config.jwt.secret, {
+    expiresIn: config.jwt.expiration,
+    audience: config.jwt.audience,
+    issuer: config.jwt.issuer,
   });
 }
 
-export function parseBearer(bearer) {
-  if (!bearer.startsWith('Bearer ')) {
-    throw new Error('Invalid token format');
-  }
-
-  const token = bearer.slice(7);
-
+export function verifyToken(token) {
   try {
-    return jwt.verify(token, secretKey);
+    return jwt.verify(token, config.jwt.secret, {
+      audience: config.jwt.audience,
+      issuer: config.jwt.issuer,
+    });
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
       throw new Error('Token expired');
-    } else {
-      throw new Error('Invalid token');
     }
+    throw new Error('Invalid token');
   }
+}
+
+export function extractToken(authHeader) {
+  if (!authHeader?.startsWith('Bearer ')) {
+    throw new Error('Invalid token format');
+  }
+  return authHeader.split(' ')[1];
 }

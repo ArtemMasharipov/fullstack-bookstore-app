@@ -1,10 +1,10 @@
 import MongooseCRUDManager from '../MongooseCRUDManager.mjs';
 import Role from './roleModel.mjs';
+import UsersDBService from '../user/UsersDBService.mjs';
 import {
   ROLES,
   getRolePermissions,
 } from '../../../../services/permissions-handler/roleConfig.mjs';
-import UsersDBService from '../user/UsersDBService.mjs';
 
 class RolesDBService extends MongooseCRUDManager {
   constructor() {
@@ -18,8 +18,7 @@ class RolesDBService extends MongooseCRUDManager {
       await this.createAdminUser();
       console.log('Roles and admin user initialized successfully');
     } catch (error) {
-      console.error('Initialization failed:', error);
-      throw new Error(`Initialization failed: ${error.message}`);
+      throw new Error('Initialization failed: ' + error.message);
     }
   }
 
@@ -30,27 +29,20 @@ class RolesDBService extends MongooseCRUDManager {
       );
       return roles;
     } catch (error) {
-      throw new Error(`Role initialization failed: ${error.message}`);
+      throw new Error('Role initialization failed: ' + error.message);
     }
   }
 
   async initializeRole(roleName) {
     try {
       const permissions = getRolePermissions(roleName);
-      const role = await this.model.findOneAndUpdate(
-        { name: roleName },
-        {
-          name: roleName,
-          permissions,
-        },
-        { upsert: true, new: true },
-      );
-      if (!role) {
-        console.error(
-          `Role "${roleName}" not found. Returning empty permissions.`,
-        );
-      }
-      return role;
+      return await this.model
+        .findOneAndUpdate(
+          { name: roleName },
+          { name: roleName, permissions },
+          { upsert: true, new: true },
+        )
+        .exec();
     } catch (error) {
       throw new Error(
         `Failed to initialize role ${roleName}: ${error.message}`,
@@ -77,16 +69,14 @@ class RolesDBService extends MongooseCRUDManager {
 
     try {
       const adminRole = await this.model.findOne({ name: ROLES.ADMIN });
-      if (!adminRole) {
-        throw new Error('Admin role not found');
-      }
+      if (!adminRole) throw new Error('Admin role not found');
+
       await UsersDBService.createUser({
         username: DEFAULT_ADMIN_USERNAME,
         email: DEFAULT_ADMIN_EMAIL,
         password: DEFAULT_ADMIN_PASSWORD,
         roleName: ROLES.ADMIN,
       });
-      console.log('Admin user created successfully');
     } catch (error) {
       if (error.message.includes('User with this email already exists')) {
         console.log('Admin user already exists');

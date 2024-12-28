@@ -21,12 +21,6 @@ router.get(
   userController.getUserById,
 );
 
-router.get(
-  '/permissions',
-  checkAuth,
-  userController.getUserPermissions,
-);
-
 router.put(
   '/:id',
   checkAuth,
