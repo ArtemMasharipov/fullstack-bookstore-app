@@ -1,6 +1,6 @@
 import { AUTH, UI } from '../types'
 import * as authApi from '@/api/authApi'
-import * as usersApi from '@/api/usersApi'
+import jwtDecode from 'jwt-decode'
 
 export default {
     namespaced: true,
@@ -47,10 +47,9 @@ export default {
                 const { user, token } = await authApi.login(credentials)
                 commit(AUTH.SET_USER, user)
                 commit(AUTH.SET_TOKEN, token)
-                const permissions = await usersApi.fetchUserPermissions()
-                commit('setPermissions', permissions)
+                commit('setPermissions', user.permissions)
                 await dispatch('cart/syncCart', null, { root: true })
-                console.log('User logged in:', user) // Вывод объекта пользователя в консоль
+                console.log('User logged in:', user)
                 return user
             } catch (error) {
                 commit(UI.SET_ERROR, error.message)
@@ -66,11 +65,12 @@ export default {
                 const { user, token } = await authApi.register(userData)
                 commit(AUTH.SET_USER, user)
                 commit(AUTH.SET_TOKEN, token)
-                console.log('User registered:', user) // Вывод объекта пользователя в консоль
+                commit('setPermissions', user.permissions)
+                console.log('User registered:', user)
                 return user
             } catch (error) {
                 commit(UI.SET_ERROR, error.message)
-                console.error('Registration error:', error.response ? error.response.data : error.message) // Вывод ошибки в консоль
+                console.error('Registration error:', error.message)
                 throw error
             } finally {
                 commit(UI.SET_LOADING, false)
@@ -88,17 +88,19 @@ export default {
             }
         },
 
-        async fetchCurrentUser({ commit }) {
-            commit(UI.SET_LOADING, true)
-            try {
-                const user = await usersApi.fetchCurrentUser()
-                commit(AUTH.SET_USER, user)
-                const permissions = await usersApi.fetchUserPermissions()
-                commit('setPermissions', permissions)
-            } catch (error) {
-                commit(UI.SET_ERROR, error.message)
-            } finally {
-                commit(UI.SET_LOADING, false)
+        restoreUserFromToken({ commit }) {
+            const token = localStorage.getItem('token')
+            if (token) {
+                try {
+                    const decoded = jwtDecode(token)
+                    commit(AUTH.SET_USER, decoded)
+                    commit('setPermissions', decoded.permissions)
+                } catch (error) {
+                    console.error('Error decoding token:', error.message)
+                    commit(AUTH.SET_USER, null)
+                    commit('setPermissions', [])
+                    localStorage.removeItem('token')
+                }
             }
         },
     },

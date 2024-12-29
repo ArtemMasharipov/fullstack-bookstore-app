@@ -13,6 +13,7 @@
 </template>
 
 <script>
+import { mapGetters, mapActions } from 'vuex';
 import NavBar from '@/components/layout/NavBar.vue';
 import FooterLayout from '@/components/layout/FooterLayout.vue';
 
@@ -22,10 +23,17 @@ export default {
     NavBar,
     FooterLayout,
   },
+  computed: {
+    ...mapGetters('auth', ['isAuthenticated']),
+  },
   created() {
-    if (this.$store.getters['auth/isAuthenticated']) {
-      this.$store.dispatch('auth/fetchCurrentUser');
+    this.restoreUserFromToken();
+    if (this.isAuthenticated) {
+      this.fetchCurrentUser();
     }
+  },
+  methods: {
+    ...mapActions('auth', ['fetchCurrentUser', 'restoreUserFromToken']),
   },
 };
 </script>
