@@ -54,7 +54,7 @@ class AuthController {
       }
 
       const assignedRole = await RolesDBService.model.findOne({
-        name: ROLES.USER, // Используем роль по умолчанию
+        name: ROLES.USER,
       });
       if (!assignedRole) {
         console.error('Role "user" not found. Returning empty permissions.');

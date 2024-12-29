@@ -1,11 +1,11 @@
 import { AUTH, UI } from '../types'
 import * as authApi from '@/api/authApi'
-import jwtDecode from 'jwt-decode'
+import {jwtDecode} from 'jwt-decode'
 
 export default {
     namespaced: true,
     state: () => ({
-        user: null,
+        user: 'null',
         token: localStorage.getItem('token'),
         loading: false,
         error: null,

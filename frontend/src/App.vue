@@ -28,12 +28,9 @@ export default {
   },
   created() {
     this.restoreUserFromToken();
-    if (this.isAuthenticated) {
-      this.fetchCurrentUser();
-    }
   },
   methods: {
-    ...mapActions('auth', ['fetchCurrentUser', 'restoreUserFromToken']),
+    ...mapActions('auth', ['restoreUserFromToken']),
   },
 };
 </script>
