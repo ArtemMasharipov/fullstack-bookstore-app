@@ -2,7 +2,6 @@ import UsersDBService from '../models/user/UsersDBService.mjs';
 import RolesDBService from '../models/role/RolesDBService.mjs';
 import { prepareToken } from '../../../services/jwtHelpers.mjs';
 import { validationResult } from 'express-validator';
-import { ROLES } from '../../../services/permissions-handler/roleConfig.mjs';
 
 class AuthController {
   static async login(req, res) {
@@ -18,7 +17,11 @@ class AuthController {
         return res.status(401).json({ error: 'Invalid email or password' });
       }
 
-      const token = prepareToken({ id: user._id, roleId: user.role._id });
+      const token = prepareToken({
+        id: user._id,
+        roleId: user.role._id,
+        permissions: user.role.permissions,
+      });
 
       res.status(200).json({
         message: 'Login successful',
@@ -37,7 +40,6 @@ class AuthController {
   static async register(req, res) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.error('Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -53,12 +55,9 @@ class AuthController {
         return res.status(409).json({ error: 'User already exists' });
       }
 
-      const assignedRole = await RolesDBService.model.findOne({
-        name: ROLES.USER,
-      });
+      const assignedRole = await RolesDBService.findOne({ name: 'user' });
       if (!assignedRole) {
-        console.error('Role "user" not found. Returning empty permissions.');
-        return res.status(400).json({ error: 'Invalid role provided.' });
+        return res.status(400).json({ error: 'Default role not found' });
       }
 
       const newUser = await UsersDBService.createUser({
@@ -68,7 +67,11 @@ class AuthController {
         roleName: assignedRole.name,
       });
 
-      const token = prepareToken({ id: newUser._id, roleId: newUser.role });
+      const token = prepareToken({
+        id: newUser._id,
+        roleId: assignedRole._id,
+        permissions: assignedRole.permissions,
+      });
 
       res.status(201).json({
         message: 'User registered successfully',
