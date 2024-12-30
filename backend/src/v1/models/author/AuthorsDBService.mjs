@@ -1,29 +1,17 @@
+import MongooseCRUDManager from '../MongooseCRUDManager.mjs';
 import Author from './authorModel.mjs';
 
-class AuthorsDBService {
-  async createAuthor(data) {
-    const author = new Author(data);
-    return author.save();
-  }
-
-  async getAuthors() {
-    return Author.find();
-  }
-
-  async getAuthorById(id) {
-    return Author.findById(id);
+class AuthorsDBService extends MongooseCRUDManager {
+  constructor() {
+    super(Author);
   }
 
   async getAuthorWithBooks(id) {
-    return Author.findById(id).populate('books');
-  }
-
-  async updateAuthor(id, data) {
-    return Author.findByIdAndUpdate(id, data, { new: true });
-  }
-
-  async deleteAuthor(id) {
-    return Author.findByIdAndDelete(id);
+    try {
+      return await this.model.findById(id).populate('books').exec();
+    } catch (error) {
+      throw new Error('Error fetching author with books: ' + error.message);
+    }
   }
 }
 
