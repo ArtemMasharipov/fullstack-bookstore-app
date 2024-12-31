@@ -1,6 +1,5 @@
 import connectDB from '../db/connectDB.mjs';
 import RolesDBService from '../src/v1/models/role/RolesDBService.mjs';
-import Role from '../src/v1/models/role/roleModel.mjs';
 
 export const setupDatabase = async () => {
   try {

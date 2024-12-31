@@ -1,11 +1,15 @@
 :root {
   --primary-color: #42b983;
-  --secondary-color: #2c3e50;
-  --error-color: #dc3545;
-  --success-color: #28a745;
-  --warning-color: #ffc107;
+  --primary-color-dark: #3a9e77;
+  --primary-color-light: #8dedc9;
+  --danger-color: #dc3545;
+  --danger-color-dark: #c82333;
+  --danger-color-light: #f8d7da;
   --gray-light: #f8f9fa;
   --gray-medium: #6c757d;
+  --text-primary: #2c3e50;
+  --text-secondary: #6c757d;
+  --text-muted: #adb5bd;
   --white: #ffffff;
 }
 
@@ -14,6 +18,7 @@ html {
   margin: 0;
   padding: 0;
   height: 100%;
+  font-family: Arial, sans-serif;
 }
 
 #app {
@@ -74,8 +79,12 @@ nav a.router-link-active {
 }
 
 .btn-secondary {
-  background-color: var(--secondary-color);
+  background-color: var(--gray-medium);
   color: var(--white);
+}
+
+.btn-secondary:hover {
+  opacity: 0.9;
 }
 
 .form-group {

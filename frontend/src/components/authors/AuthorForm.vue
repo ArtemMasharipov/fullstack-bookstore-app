@@ -1,7 +1,7 @@
 <template>
-    <div class="author-form-container">
+    <base-modal size="medium" @close="$emit('close')">
         <form class="author-form" @submit.prevent="handleSubmit">
-            <h2>{{ form.id ? 'Edit Author' : 'Create Author' }}</h2>
+            <h2>{{ form._id ? 'Edit Author' : 'Create Author' }}</h2>
             <div class="form-group">
                 <label for="name">Name</label>
                 <input 
@@ -26,85 +26,62 @@
                 class="btn btn-primary"
                 :disabled="loading"
             >
-                {{ loading ? 'Saving...' : (form.id ? 'Update Author' : 'Create Author') }}
+                {{ loading ? 'Saving...' : (form._id ? 'Update Author' : 'Create Author') }}
             </button>
             <button type="button" class="btn btn-secondary" @click="$emit('close')">Cancel</button>
         </form>
-    </div>
+    </base-modal>
 </template>
 
 <script>
-import { mapActions, mapGetters } from 'vuex';
+import BaseModal from '../common/BaseModal.vue'
 
 export default {
     name: 'AuthorForm',
+    components: {
+        BaseModal
+    },
     
     props: {
         initialData: {
             type: Object,
-            default: () => ({}),
+            default: () => ({
+                _id: null,
+                name: '',
+                biography: ''
+            })
         },
-        loading: {
-            type: Boolean,
-            default: false,
-        },
+        loading: Boolean,
     },
     
     emits: ['submit', 'close'],
 
     data() {
         return {
-            form: {
-                name: '',
-                biography: '',
-                ...this.initialData,
-            },
-        };
+            form: { ...this.initialData }
+        }
     },
 
-    computed: {
-        ...mapGetters('authors', ['authorsLoading']),
+    watch: {
+        initialData: {
+            handler(newData) {
+                this.form = { ...newData }
+            },
+            deep: true
+        }
     },
 
     methods: {
-        ...mapActions('authors', ['createAuthor', 'updateAuthor']),
-
-        async handleSubmit() {
-            try {
-                if (this.form.id) {
-                    await this.updateAuthor(this.form);
-                } else {
-                    await this.createAuthor(this.form);
-                }
-                this.$emit('close');
-            } catch (error) {
-                console.error('Error saving author:', error);
-            }
-        },
-    },
-};
+        handleSubmit() {
+            this.$emit('submit', { ...this.form })
+        }
+    }
+}
 </script>
 
 <style scoped>
-.author-form-container {
-    background: rgba(0, 0, 0, 0.5);
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
 .author-form {
-    background: var(--white);
     padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    width: 100%;
-    max-width: 500px;
 }
 
 .form-group {
@@ -141,4 +118,5 @@ button {
     color: var(--white);
     margin-left: 10px;
 }
+
 </style>

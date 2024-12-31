@@ -5,12 +5,12 @@
         <book-form
             v-if="showForm"
             :initial-data="selectedBook"
-            :loading="loading"
+            :loading="booksLoading"
             @submit="handleFormSubmit"
             @close="closeForm"
         />
 
-        <div v-if="loading" class="loading-container">
+        <div v-if="booksLoading" class="loading-container">
             <loading-spinner />
         </div>
 
@@ -24,8 +24,8 @@
             />
         </div>
 
-        <div v-if="error" class="error-container">
-            <error-message :message="error" />
+        <div v-if="booksError" class="error-container">
+            <error-message :message="booksError.message || booksError" />
         </div>
     </div>
 </template>
@@ -51,8 +51,6 @@ export default {
         return {
             showForm: false,
             selectedBook: null,
-            loading: false,
-            error: null,
         };
     },
 
@@ -85,7 +83,6 @@ export default {
         },
 
         async handleFormSubmit(formData) {
-            this.loading = true;
             try {
                 if (formData.id) {
                     await this.updateBook(formData);
@@ -95,9 +92,7 @@ export default {
                 this.closeForm();
                 this.fetchBooks();
             } catch (error) {
-                this.error = error.message;
-            } finally {
-                this.loading = false;
+                console.error('Error submitting form:', error);
             }
         },
     },

@@ -1,5 +1,5 @@
 import { CART, UI } from '../types'
-import * as cartApi from '@/api/cartApi'
+import {cartApi} from '@/api/cartApi'
 
 export default {
     namespaced: true,

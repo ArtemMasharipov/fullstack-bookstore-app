@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const { Schema } = mongoose;
+const { Schema } = mongoose; 
 
 const bookSchema = new Schema(
   {
@@ -17,13 +17,7 @@ const bookSchema = new Schema(
       min: [1450, 'Year must be after the invention of the printing press'],
       max: [new Date().getFullYear(), 'Year cannot be in the future'],
     },
-    isbn: {
-      type: String,
-      required: [true, 'ISBN is required'],
-      unique: true,
-      trim: true,
-    },
-    imgBase64: {
+    image: {
       type: String,
       default: null,
     },
@@ -32,6 +26,12 @@ const bookSchema = new Schema(
       required: false,
       trim: true,
       maxlength: [50, 'Category must be at most 50 characters long'],
+    },
+    description: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [1000, 'Description must be at most 1000 characters long'],
     },
     author: {
       type: Schema.Types.ObjectId,

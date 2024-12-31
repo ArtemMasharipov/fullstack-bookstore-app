@@ -25,6 +25,7 @@ export default {
     border-top: 3px solid var(--primary-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
+    box-sizing: border-box;
 }
 
 @keyframes spin {

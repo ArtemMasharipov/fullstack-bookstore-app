@@ -8,7 +8,7 @@
             <div class="author-details">
                 <div class="author-info">
                     <h1>{{ author.name }}</h1>
-                    <p>{{ author.bio }}</p>
+                    <p>{{ author.biography }}</p>
                 </div>
 
                 <div v-if="hasPermission('update:author') || hasPermission('delete:author')" class="action-buttons">

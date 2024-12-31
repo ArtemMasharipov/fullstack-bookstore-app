@@ -1,29 +1,17 @@
 <template>
     <div class="book-form-container">
-        <form class="book-form" @submit.prevent="handleSubmit">
-            <h2>{{ form.id ? 'Edit Book' : 'Create Book' }}</h2>
+        <form class="book-form" enctype="multipart/form-data" @submit.prevent="handleSubmit">
+            <h2>{{ formTitle }}</h2>
+
             <div class="form-group">
                 <label for="title">Title</label>
-                <input 
-                    id="title"
-                    v-model="form.title"
-                    type="text"
-                    required
-                />
+                <input id="title" v-model="form.title" type="text" required />
             </div>
 
             <div class="form-group">
                 <label for="author">Author</label>
-                <select 
-                    id="author"
-                    v-model="form.authorId"
-                    required
-                >
-                    <option 
-                        v-for="author in authors" 
-                        :key="author.id" 
-                        :value="author.id"
-                    >
+                <select id="author" v-model="form.authorId" required>
+                    <option v-for="author in authors" :key="author._id" :value="author._id">
                         {{ author.name }}
                     </option>
                 </select>
@@ -32,125 +20,176 @@
 
             <div class="form-group">
                 <label for="year">Publication Year</label>
-                <input 
-                    id="year"
-                    v-model="form.publicationYear"
-                    type="number"
-                    required
-                />
+                <input id="year" v-model="form.publicationYear" type="number" required />
             </div>
 
             <div class="form-group">
                 <label for="category">Category</label>
-                <input 
-                    id="category"
-                    v-model="form.category"
-                    type="text"
-                />
+                <input id="category" v-model="form.category" type="text" />
             </div>
 
             <div class="form-group">
-                <label for="image">Book Cover</label>
-                <input 
-                    id="image"
-                    type="file"
-                    accept="image/*"
-                    @change="handleImageUpload"
-                />
-                <p v-if="imageError" class="error-message">{{ imageError }}</p>
+                <label for="description">Description</label>
+                <textarea id="description" v-model="form.description" rows="4"></textarea>
             </div>
 
-            <button 
-                type="submit" 
-                class="btn btn-primary"
-                :disabled="loading"
-            >
-                {{ loading ? 'Saving...' : (form.id ? 'Update Book' : 'Create Book') }}
-            </button>
-            <button type="button" class="btn btn-secondary" @click="$emit('close')">Cancel</button>
+            <div class="form-group">
+                <label>Book Cover</label>
+                <input ref="fileInput" type="file" accept="image/*" style="display: none" @change="handleImageUpload" />
+                <div class="file-upload-container">
+                    <button
+                        v-if="!isFileDialogOpen && !fileConfig.file"
+                        type="button"
+                        class="btn btn-upload"
+                        @click="triggerFileInput"
+                    >
+                        Upload Image
+                    </button>
+                    <div v-if="fileConfig.file" class="selected-file">
+                        <span>{{ fileConfig.file.name }}</span>
+                        <button type="button" class="btn btn-remove" @click="resetImage">×</button>
+                    </div>
+                </div>
+                <div v-if="fileConfig.preview" class="image-preview">
+                    <img :src="fileConfig.preview" alt="Book cover preview" />
+                </div>
+                <p v-if="fileConfig.error" class="error-message">{{ fileConfig.error }}</p>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" :disabled="isLoading">
+                    {{ isLoading ? 'Saving...' : form.id ? 'Update Book' : 'Create Book' }}
+                </button>
+                <button type="button" class="btn btn-secondary" @click="handleCancel">Cancel</button>
+            </div>
         </form>
     </div>
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex';
+import { mapGetters, mapActions } from 'vuex'
 
 export default {
     name: 'BookForm',
-    
     props: {
         initialData: {
             type: Object,
             default: () => ({}),
-        },
-        loading: {
-            type: Boolean,
-            default: false,
-        },
+        }
     },
-    
     emits: ['submit', 'close'],
-
     data() {
         return {
             form: {
                 title: '',
                 authorId: '',
-                publicationYear: null,
+                publicationYear: new Date().getFullYear(),
                 category: '',
-                imgBase64: null,
+                description: '',
                 ...this.initialData,
             },
-            imageError: null,
-        };
+            fileConfig: {
+                maxSize: 10 * 1024 * 1024, // 10MB
+                allowedTypes: ['image/jpeg', 'image/png', 'image/gif'],
+                file: null,
+                preview: null,
+                error: null
+            }
+        }
     },
-
     computed: {
         ...mapGetters('authors', ['authorsList']),
-        ...mapGetters('books', ['booksLoading']),
+        ...mapGetters('books', ['booksLoading']), // добавляем геттер состояния загрузки
         authors() {
-            return this.authorsList;
+            return this.authorsList
         },
+        formTitle() {
+            return this.form.id ? 'Edit Book' : 'Create Book'
+        },
+        isLoading() {
+            return this.booksLoading
+        }
     },
-
     created() {
-        this.fetchAuthors();
+        this.fetchAuthors()
     },
-
+    beforeUnmount() {
+        this.resetImage()
+    },
     methods: {
         ...mapActions('authors', ['fetchAuthors']),
         ...mapActions('books', ['createBook', 'updateBook']),
 
-        async handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                if (file.size > 10485760) { // 10MB
-                    this.imageError = 'File size should not exceed 10MB';
-                    return;
-                }
-                this.imageError = null;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.form.imgBase64 = e.target.result;
-                };
-                reader.readAsDataURL(file);
+        triggerFileInput() {
+            this.$refs.fileInput.click()
+        },
+
+        validateFile(file) {
+            if (!this.fileConfig.allowedTypes.includes(file.type)) {
+                throw new Error('Please upload an image file (JPEG, PNG, GIF)')
             }
+            if (file.size > this.fileConfig.maxSize) {
+                throw new Error('File size should not exceed 10MB')
+            }
+        },
+
+        handleImageUpload(event) {
+            const file = event.target.files[0]
+            if (!file) return
+
+            try {
+                this.validateFile(file)
+                this.fileConfig.file = file
+                this.fileConfig.preview = URL.createObjectURL(file)
+                this.fileConfig.error = null
+            } catch (error) {
+                this.fileConfig.error = error.message
+                this.resetImage()
+            }
+        },
+
+        resetImage() {
+            if (this.fileConfig.preview) {
+                URL.revokeObjectURL(this.fileConfig.preview)
+            }
+            this.fileConfig = {
+                ...this.fileConfig,
+                file: null,
+                preview: null,
+                error: null
+            }
+            this.$refs.fileInput.value = ''
+        },
+
+        handleCancel() {
+            this.resetImage()
+            this.$emit('close')
         },
 
         async handleSubmit() {
             try {
-                if (this.form.id) {
-                    await this.updateBook(this.form);
-                } else {
-                    await this.createBook(this.form);
+                const formData = new FormData()
+                Object.entries(this.form).forEach(([key, value]) => {
+                    if (value !== null && value !== undefined) {
+                        formData.append(key, value)
+                    }
+                })
+
+                if (this.fileConfig.file) {
+                    formData.append('image', this.fileConfig.file)
                 }
-                this.$emit('close');
+
+                const action = this.form.id ? this.updateBook : this.createBook
+                const payload = this.form.id ? { id: this.form.id, formData } : formData
+
+                await action(payload)
+                this.$emit('close')
             } catch (error) {
-                console.error('Error saving book:', error);
+                console.error('Error saving book:', error)
             }
         },
     },
-};
+}
 </script>
 
 <style scoped>
@@ -163,25 +202,30 @@ export default {
     height: 100%;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: 2rem;
 }
 
 .book-form {
     background: var(--white);
     padding: 2rem;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 500px;
+    margin-top: 2rem;
+    box-sizing: border-box;
 }
 
 .form-group {
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
+    font-weight: 500;
 }
 
 .form-group input,
@@ -193,26 +237,77 @@ export default {
     border-radius: 4px;
 }
 
-button {
+.file-upload-container {
+    margin-top: 0.5rem;
+}
+
+.selected-file {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+}
+
+.btn {
     padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.btn-upload {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-remove {
+    padding: 4px 8px;
+    background-color: #ff4444;
+    color: white;
+    font-size: 18px;
+    line-height: 1;
 }
 
 .btn-primary {
     background-color: var(--primary-color);
-    color: var(--white);
+    color: white;
 }
 
 .btn-secondary {
     background-color: var(--gray-medium);
-    color: var(--white);
+    color: white;
     margin-left: 10px;
 }
 
+.btn:hover {
+    opacity: 0.9;
+}
+
 .error-message {
-    color: red;
+    color: #ff4444;
     margin-top: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.image-preview {
+    margin-top: 1rem;
+    max-width: 200px;
+}
+
+.image-preview img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    border: 1px solid var(--gray-medium);
+}
+
+.form-actions {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: flex-end;
 }
 </style>
