@@ -1,23 +1,17 @@
 <template>
     <div class="author-card" @click="handleClick">
         <div v-if="author.avatar" class="author-image">
-            <img :src="author.avatar" :alt="author.name">
+            <img :src="author.avatar" :alt="author.name" />
         </div>
         <div class="author-info">
             <h3>{{ author.name }}</h3>
-            <p>{{ author.bio }}</p>
-            <div class="book-count">
-                Books: {{ author.books?.length || 0 }}
-            </div>
+            <p>{{ author.biography }}</p>
+            <div class="book-count">Books: {{ author.books?.length || 0 }}</div>
             <div v-if="hasPermission('update:author') || hasPermission('delete:author')" class="admin-actions">
-                <button 
-                    v-if="hasPermission('update:author')"
-                    class="btn-edit"
-                    @click.stop="$emit('edit', author)"
-                >
+                <button v-if="hasPermission('update:author')" class="btn-edit" @click.stop="$emit('edit', author)">
                     Edit
                 </button>
-                <button 
+                <button
                     v-if="hasPermission('delete:author')"
                     class="btn-delete"
                     @click.stop="$emit('delete', author.id)"
@@ -37,18 +31,18 @@ export default {
     props: {
         author: {
             type: Object,
-            required: true
-        }
+            required: true,
+        },
     },
     emits: ['click', 'edit', 'delete'],
     computed: {
-        ...mapGetters('auth', ['hasPermission'])
+        ...mapGetters('auth', ['hasPermission']),
     },
     methods: {
         handleClick() {
             this.$emit('click')
-        }
-    }
+        },
+    },
 }
 </script>
 
@@ -59,7 +53,7 @@ export default {
     overflow: hidden;
     transition: transform 0.3s ease;
     cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .author-card:hover {
@@ -98,7 +92,8 @@ export default {
     gap: 0.5rem;
 }
 
-.btn-edit, .btn-delete {
+.btn-edit,
+.btn-delete {
     padding: 0.5rem 1rem;
     border: none;
     border-radius: 4px;

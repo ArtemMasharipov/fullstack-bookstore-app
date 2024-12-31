@@ -1,5 +1,5 @@
 import baseApi from './baseApi'
-import jwtDecode from 'jwt-decode'
+import {jwtDecode} from 'jwt-decode'
 
 export const fetchUsers = async () => {
     const response = await baseApi.get('/users')
