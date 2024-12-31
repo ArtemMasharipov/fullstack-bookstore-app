@@ -1,19 +1,17 @@
 export const ACTION_TYPES = {
-  READ: 'read',
-  WRITE: 'write',
+  CREATE: 'create',
   UPDATE: 'update',
   DELETE: 'delete',
+  READ: 'read',
 };
 
 export const RESOURCE_TYPES = {
-  BOOK: 'book',
   AUTHOR: 'author',
-  ORDER: 'order',
+  BOOK: 'book',
+  USER: 'user',
 };
 
-export function generatePermission(action, resource) {
-  return `${action}:${resource}`.toLowerCase();
-}
+export const generatePermission = (action, resource) => `${action}:${resource}`;
 
 export const ALL_PERMISSIONS = Object.keys(ACTION_TYPES).flatMap((action) =>
   Object.keys(RESOURCE_TYPES).map((resource) =>
