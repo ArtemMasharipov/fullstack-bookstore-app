@@ -20,11 +20,10 @@ class UsersDBService extends MongooseCRUDManager {
         throw new Error('User with this email already exists');
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
       const user = new this.model({
         username,
         email,
-        password: hashedPassword,
+        password,
         role: role._id,
       });
       await user.save();
