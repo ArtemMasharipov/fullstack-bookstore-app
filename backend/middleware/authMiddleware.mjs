@@ -21,8 +21,9 @@ export const checkAuth = async (req, res, next) => {
 };
 
 export const checkPermission = (requiredPermission) => (req, res, next) => {
-  const permissions = req.user?.role?.permissions || [];
-  if (!permissions.includes(requiredPermission)) {
+  const permissions =
+    req.user?.role?.permissions.map((p) => p.toLowerCase()) || [];
+  if (!permissions.includes(requiredPermission.toLowerCase())) {
     return res.status(403).json({ message: 'Permission denied' });
   }
   next();

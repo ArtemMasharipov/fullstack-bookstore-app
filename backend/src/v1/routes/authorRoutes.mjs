@@ -14,8 +14,8 @@ router.get('/:id', authorsController.getAuthorWithBooks);
 router.post(
   '/',
   checkAuth,
-  // checkPermission(generatePermission(ACTION_TYPES.CREATE, RESOURCE_TYPES.AUTHOR)),
-  // authorValidationSchema,
+  checkPermission(generatePermission(ACTION_TYPES.CREATE, RESOURCE_TYPES.AUTHOR)),
+  authorValidationSchema,
   validateRequest,
   authorsController.createAuthor,
 );

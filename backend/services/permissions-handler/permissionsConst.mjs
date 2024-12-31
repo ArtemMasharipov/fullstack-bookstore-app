@@ -12,7 +12,8 @@ export const RESOURCE_TYPES = Object.freeze({
   ORDER: 'order',
 });
 
-export const generatePermission = (action, resource) => `${action}:${resource}`;
+export const generatePermission = (action, resource) =>
+  `${action}:${resource}`.toLowerCase();
 
 export const ALL_PERMISSIONS = Object.freeze(
   Object.keys(ACTION_TYPES).flatMap((action) =>
