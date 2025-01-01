@@ -1,5 +1,5 @@
 import { BOOKS, UI } from '../types'
-import * as booksApi from '@/api/booksApi'
+import { booksApi } from '@/api/booksApi'
 
 export default {
     namespaced: true,
@@ -36,7 +36,7 @@ export default {
         async fetchBooks({ commit }) {
             commit(UI.SET_LOADING, true)
             try {
-                const books = await booksApi.fetchBooks()
+                const books = await booksApi.fetchAll()
                 commit(BOOKS.SET_BOOKS, books)
             } catch (error) {
                 commit(UI.SET_ERROR, error)
@@ -48,7 +48,7 @@ export default {
         async fetchBookById({ commit }, id) {
             commit(UI.SET_LOADING, true)
             try {
-                const book = await booksApi.fetchBookDetails(id)
+                const book = await booksApi.fetchById(id)
                 commit(BOOKS.SET_CURRENT, book)
             } catch (error) {
                 commit(UI.SET_ERROR, error)
@@ -60,7 +60,7 @@ export default {
         async createBook({ commit, dispatch }, bookData) {
             commit(UI.SET_LOADING, true)
             try {
-                await booksApi.createBook(bookData)
+                await booksApi.create(bookData)
                 await dispatch('fetchBooks')
             } catch (error) {
                 commit(UI.SET_ERROR, error)
@@ -73,7 +73,20 @@ export default {
         async updateBook({ commit, dispatch }, bookData) {
             commit(UI.SET_LOADING, true)
             try {
-                await booksApi.updateBook(bookData)
+                await booksApi.update(bookData.id, bookData)
+                await dispatch('fetchBooks')
+            } catch (error) {
+                commit(UI.SET_ERROR, error)
+                throw error
+            } finally {
+                commit(UI.SET_LOADING, false)
+            }
+        },
+
+        async deleteBook({ commit, dispatch }, bookId) {
+            commit(UI.SET_LOADING, true)
+            try {
+                await booksApi.delete(bookId)
                 await dispatch('fetchBooks')
             } catch (error) {
                 commit(UI.SET_ERROR, error)

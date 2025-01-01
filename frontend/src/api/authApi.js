@@ -1,23 +1,17 @@
-import baseApi from './baseApi';
+import { apiRequest } from './baseApi'
 
-export const login = async (credentials) => {
-    const response = await baseApi.post('/auth/login', credentials);
-    const { token } = response.data;
-    if (token) {
-        localStorage.setItem('token', token);
-    }
-    return response.data;
-};
-
-export const register = async (userData) => {
-    const response = await baseApi.post('/auth/register', userData);
-    const { token } = response.data;
-    if (token) {
-        localStorage.setItem('token', token);
-    }
-    return response.data;
-};
-
-export const logout = () => {
-    localStorage.removeItem('token');
-};
+export const authApi = {
+    login: (credentials) =>
+        apiRequest('post', '/auth/login', credentials).then((response) => {
+            const { token } = response
+            if (token) localStorage.setItem('token', token)
+            return response
+        }),
+    register: (userData) =>
+        apiRequest('post', '/auth/register', userData).then((response) => {
+            const { token } = response
+            if (token) localStorage.setItem('token', token)
+            return response
+        }),
+    logout: () => localStorage.removeItem('token'),
+}

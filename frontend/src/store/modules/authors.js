@@ -1,5 +1,5 @@
 import { AUTHORS, UI } from '../types'
-import * as authorsApi from '@/api/authorsApi'
+import { authorsApi } from '@/api/authorsApi'
 
 export default {
     namespaced: true,
@@ -36,7 +36,7 @@ export default {
         async fetchAuthors({ commit }) {
             commit(UI.SET_LOADING, true)
             try {
-                const authors = await authorsApi.fetchAuthors()
+                const authors = await authorsApi.fetchAll()
                 commit(AUTHORS.SET_AUTHORS, authors)
             } catch (error) {
                 commit(UI.SET_ERROR, error)
@@ -48,7 +48,7 @@ export default {
         async fetchAuthorById({ commit }, id) {
             commit(UI.SET_LOADING, true)
             try {
-                const author = await authorsApi.fetchAuthorDetails(id)
+                const author = await authorsApi.fetchById(id)
                 commit(AUTHORS.SET_CURRENT, author)
             } catch (error) {
                 commit(UI.SET_ERROR, error)
@@ -60,7 +60,7 @@ export default {
         async createAuthor({ commit, dispatch }, authorData) {
             commit(UI.SET_LOADING, true)
             try {
-                await authorsApi.createAuthor(authorData)
+                await authorsApi.create(authorData)
                 await dispatch('fetchAuthors')
             } catch (error) {
                 commit(UI.SET_ERROR, error)
@@ -73,7 +73,20 @@ export default {
         async updateAuthor({ commit, dispatch }, authorData) {
             commit(UI.SET_LOADING, true)
             try {
-                await authorsApi.updateAuthor(authorData)
+                await authorsApi.update(authorData.id, authorData)
+                await dispatch('fetchAuthors')
+            } catch (error) {
+                commit(UI.SET_ERROR, error)
+                throw error
+            } finally {
+                commit(UI.SET_LOADING, false)
+            }
+        },
+
+        async deleteAuthor({ commit, dispatch }, authorId) {
+            commit(UI.SET_LOADING, true)
+            try {
+                await authorsApi.delete(authorId)
                 await dispatch('fetchAuthors')
             } catch (error) {
                 commit(UI.SET_ERROR, error)

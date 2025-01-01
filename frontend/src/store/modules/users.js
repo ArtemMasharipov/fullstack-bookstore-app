@@ -1,5 +1,5 @@
 import { USERS, UI } from '../types'
-import * as usersApi from '@/api/usersApi';
+import {usersApi} from '@/api/usersApi';
 
 export default {
     namespaced: true,
@@ -39,7 +39,7 @@ export default {
         async fetchUsers({ commit }) {
             commit(UI.SET_LOADING, true)
             try {
-                const users = await usersApi.fetchUsers()
+                const users = await usersApi.fetchAll()
                 commit(USERS.SET_LIST, users)
             } catch (error) {
                 commit(UI.SET_ERROR, error)
@@ -51,7 +51,7 @@ export default {
         async fetchUserById({ commit }, id) {
             commit(UI.SET_LOADING, true)
             try {
-                const user = await usersApi.fetchUserDetails(id)
+                const user = await usersApi.fetchById(id)
                 commit(USERS.SET_CURRENT, user)
             } catch (error) {
                 commit(UI.SET_ERROR, error)
@@ -63,7 +63,7 @@ export default {
         async createUser({ commit }, userData) {
             commit(UI.SET_LOADING, true)
             try {
-                const user = await usersApi.createUser(userData)
+                const user = await usersApi.create(userData)
                 commit(USERS.SET_CURRENT, user)
                 return user
             } catch (error) {
@@ -77,7 +77,7 @@ export default {
         async updateUser({ commit }, { id, userData }) {
             commit(UI.SET_LOADING, true)
             try {
-                const user = await usersApi.updateUser(id, userData)
+                const user = await usersApi.update(id, userData)
                 commit(USERS.SET_CURRENT, user)
                 return user
             } catch (error) {
@@ -91,7 +91,7 @@ export default {
         async deleteUser({ commit }, id) {
             commit(UI.SET_LOADING, true)
             try {
-                await usersApi.deleteUser(id)
+                await usersApi.delete(id)
                 commit(USERS.SET_CURRENT, null)
             } catch (error) {
                 commit(UI.SET_ERROR, error)
