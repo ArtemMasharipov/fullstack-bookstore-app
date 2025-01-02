@@ -17,12 +17,6 @@ const bookSchema = new Schema(
       min: [1450, 'Year must be after the invention of the printing press'],
       max: [new Date().getFullYear(), 'Year cannot be in the future'],
     },
-    isbn: {
-      type: String,
-      required: [true, 'ISBN is required'],
-      unique: true,
-      trim: true,
-    },
     imgBase64: {
       type: String,
       default: null,

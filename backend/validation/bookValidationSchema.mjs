@@ -16,6 +16,9 @@ const bookValidationSchema = checkSchema({
     notEmpty: {
       errorMessage: 'Author is required.',
     },
+    isMongoId: {
+      errorMessage: 'Invalid author ID format',
+    },
   },
   publicationYear: {
     isInt: {

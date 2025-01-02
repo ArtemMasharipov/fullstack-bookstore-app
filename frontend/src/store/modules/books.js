@@ -61,8 +61,10 @@ export default {
             commit(UI.SET_LOADING, true)
             try {
                 await booksApi.create(bookData)
+                console.log('Book created successfully')
                 await dispatch('fetchBooks')
             } catch (error) {
+                console.error('Vuex Store - Create Book Error:', error)
                 commit(UI.SET_ERROR, error)
                 throw error
             } finally {

@@ -1,66 +1,69 @@
 import BooksDBService from '../models/book/BooksDBService.mjs';
 import { validationResult } from 'express-validator';
 
+const handleErrors = (res, error, status = 500) => {
+  res.status(status).json({ error: error.message || error });
+};
+
+const validateRequest = (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(400).json({ errors: errors.array() });
+    return false;
+  }
+  return true;
+};
+
 export const getAllBooks = async (req, res) => {
   try {
     const books = await BooksDBService.getList();
     res.json(books);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    handleErrors(res, error);
   }
 };
 
 export const getBookById = async (req, res) => {
   try {
     const book = await BooksDBService.getById(req.params.id);
-    if (!book) {
-      return res.status(404).json({ error: 'Book not found' });
-    }
+    if (!book) return handleErrors(res, 'Book not found', 404);
     res.json(book);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    handleErrors(res, error);
   }
 };
 
 export const createBook = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
+  if (!validateRequest(req, res)) return;
 
   try {
-    const newBook = await BooksDBService.create(req.body);
+    const { authorId, ...rest } = req.body;
+    const bookData = { ...rest, author: authorId };
+    const newBook = await BooksDBService.create(bookData);
     res.status(201).json(newBook);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    handleErrors(res, error);
   }
 };
 
 export const updateBook = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
+  if (!validateRequest(req, res)) return;
 
   try {
     const updatedBook = await BooksDBService.update(req.params.id, req.body);
-    if (!updatedBook) {
-      return res.status(404).json({ error: 'Book not found' });
-    }
+    if (!updatedBook) return handleErrors(res, 'Book not found', 404);
     res.json(updatedBook);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    handleErrors(res, error);
   }
 };
 
 export const deleteBook = async (req, res) => {
   try {
     const deletedBook = await BooksDBService.deleteById(req.params.id);
-    if (!deletedBook) {
-      return res.status(404).json({ error: 'Book not found' });
-    }
+    if (!deletedBook) return handleErrors(res, 'Book not found', 404);
     res.status(204).end();
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    handleErrors(res, error);
   }
 };

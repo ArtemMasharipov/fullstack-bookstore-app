@@ -1,13 +1,14 @@
 export const handleAsyncAction = async (commit, action, mutations = {}) => {
-    const { setLoading = null, setError = null } = mutations
-    if (setLoading) commit(setLoading, true)
-
+    const { setLoading = 'SET_LOADING', setError = 'SET_ERROR' } = mutations;
+    commit(setLoading, true);
+    
     try {
-        return await action()
+        const result = await action();
+        return result;
     } catch (error) {
-        if (setError) commit(setError, error)
-        throw error
+        commit(setError, error.message);
+        throw error;
     } finally {
-        if (setLoading) commit(setLoading, false)
+        commit(setLoading, false);
     }
 }

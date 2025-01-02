@@ -21,8 +21,8 @@
                 >
                     <option 
                         v-for="author in authors" 
-                        :key="author.id" 
-                        :value="author.id"
+                        :key="author._id" 
+                        :value="author._id"
                     >
                         {{ author.name }}
                     </option>
