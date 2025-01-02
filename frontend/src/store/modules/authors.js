@@ -1,5 +1,6 @@
 import { AUTHORS, UI } from '../types'
 import { authorsApi } from '@/api/authorsApi'
+import { handleAsyncAction } from '@/utils/stateHelpers'
 
 export default {
     namespaced: true,
@@ -18,7 +19,7 @@ export default {
     },
 
     mutations: {
-        [AUTHORS.SET_AUTHORS](state, authors) {
+        [AUTHORS.SET_LIST](state, authors) {
             state.list = authors
         },
         [AUTHORS.SET_CURRENT](state, author) {
@@ -34,66 +35,51 @@ export default {
 
     actions: {
         async fetchAuthors({ commit }) {
-            commit(UI.SET_LOADING, true)
-            try {
-                const authors = await authorsApi.fetchAll()
-                commit(AUTHORS.SET_AUTHORS, authors)
-            } catch (error) {
-                commit(UI.SET_ERROR, error)
-            } finally {
-                commit(UI.SET_LOADING, false)
-            }
+            await handleAsyncAction(
+                commit,
+                async () => {
+                    const authors = await authorsApi.fetchAll()
+                    commit(AUTHORS.SET_LIST, authors)
+                },
+                { setLoading: UI.SET_LOADING, setError: UI.SET_ERROR }
+            )
         },
 
-        async fetchAuthorById({ commit }, id) {
-            commit(UI.SET_LOADING, true)
-            try {
-                const author = await authorsApi.fetchById(id)
-                commit(AUTHORS.SET_CURRENT, author)
-            } catch (error) {
-                commit(UI.SET_ERROR, error)
-            } finally {
-                commit(UI.SET_LOADING, false)
-            }
+        async createAuthor({ commit, state }, authorData) {
+            await handleAsyncAction(
+                commit,
+                async () => {
+                    const newAuthor = await authorsApi.create(authorData)
+                    commit(AUTHORS.SET_LIST, [...state.list, newAuthor])
+                },
+                { setLoading: UI.SET_LOADING, setError: UI.SET_ERROR }
+            )
         },
 
-        async createAuthor({ commit, dispatch }, authorData) {
-            commit(UI.SET_LOADING, true)
-            try {
-                await authorsApi.create(authorData)
-                await dispatch('fetchAuthors')
-            } catch (error) {
-                commit(UI.SET_ERROR, error)
-                throw error
-            } finally {
-                commit(UI.SET_LOADING, false)
-            }
+        async updateAuthor({ commit, state }, authorData) {
+            await handleAsyncAction(
+                commit,
+                async () => {
+                    const updatedAuthor = await authorsApi.update(authorData.id, authorData)
+                    const updatedList = state.list.map((author) =>
+                        author.id === authorData.id ? updatedAuthor : author
+                    )
+                    commit(AUTHORS.SET_LIST, updatedList)
+                },
+                { setLoading: UI.SET_LOADING, setError: UI.SET_ERROR }
+            )
         },
 
-        async updateAuthor({ commit, dispatch }, authorData) {
-            commit(UI.SET_LOADING, true)
-            try {
-                await authorsApi.update(authorData.id, authorData)
-                await dispatch('fetchAuthors')
-            } catch (error) {
-                commit(UI.SET_ERROR, error)
-                throw error
-            } finally {
-                commit(UI.SET_LOADING, false)
-            }
-        },
-
-        async deleteAuthor({ commit, dispatch }, authorId) {
-            commit(UI.SET_LOADING, true)
-            try {
-                await authorsApi.delete(authorId)
-                await dispatch('fetchAuthors')
-            } catch (error) {
-                commit(UI.SET_ERROR, error)
-                throw error
-            } finally {
-                commit(UI.SET_LOADING, false)
-            }
+        async deleteAuthor({ commit, state }, authorId) {
+            await handleAsyncAction(
+                commit,
+                async () => {
+                    await authorsApi.delete(authorId)
+                    const updatedList = state.list.filter((author) => author.id !== authorId)
+                    commit(AUTHORS.SET_LIST, updatedList)
+                },
+                { setLoading: UI.SET_LOADING, setError: UI.SET_ERROR }
+            )
         },
     },
 }

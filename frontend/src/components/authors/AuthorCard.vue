@@ -77,36 +77,23 @@ export default {
 
 .author-info h3 {
     margin: 0 0 0.5rem;
-    color: var(--secondary-color);
-}
-
-.book-count {
-    margin-top: 0.5rem;
-    font-size: 0.9rem;
-    color: var(--primary-color);
 }
 
 .admin-actions {
-    margin-top: 1rem;
     display: flex;
     gap: 0.5rem;
+    margin-top: 1rem;
 }
 
 .btn-edit,
 .btn-delete {
-    padding: 0.5rem 1rem;
+    background: none;
     border: none;
-    border-radius: 4px;
     cursor: pointer;
-}
-
-.btn-edit {
-    background-color: var(--primary-color);
-    color: var(--white);
+    color: var(--primary-color);
 }
 
 .btn-delete {
-    background-color: var(--error-color);
-    color: var(--white);
+    color: var(--danger-color);
 }
 </style>

@@ -47,8 +47,6 @@ export default {
         ErrorMessage,
     },
 
-    emits: ['author-click'],
-
     data() {
         return {
             showForm: false,
@@ -103,8 +101,16 @@ export default {
             }
         },
 
-        handleAuthorClick(authorId) {
-            this.$emit('author-click', authorId)
+        async deleteAuthor(authorId) {
+            this.loading = true;
+            try {
+                await this.deleteAuthor(authorId);
+                this.fetchAuthors();
+            } catch (error) {
+                this.error = error.message;
+            } finally {
+                this.loading = false;
+            }
         },
     },
 }
