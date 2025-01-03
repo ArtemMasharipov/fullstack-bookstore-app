@@ -20,7 +20,7 @@ export const AUTHORS = {
     SET_CURRENT: 'authors/SET_CURRENT',
     ADD_AUTHOR: 'authors/ADD_AUTHOR',
     UPDATE_AUTHOR: 'authors/UPDATE_AUTHOR',
-    DELETE_AUTHOR: 'authors/DELETE_AUTHOR' // Add missing delete mutation type
+    DELETE_AUTHOR: 'authors/DELETE_AUTHOR'
 }
 
 export const CART = {
