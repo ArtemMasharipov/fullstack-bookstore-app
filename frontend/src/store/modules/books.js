@@ -24,6 +24,18 @@ export default {
         [BOOKS.SET_CURRENT](state, book) {
             state.current = book
         },
+        [BOOKS.ADD_BOOK](state, book) {
+            state.list.push(book)
+        },
+        [BOOKS.UPDATE_BOOK](state, updatedBook) {
+            const index = state.list.findIndex(book => book.id === updatedBook.id)
+            if (index !== -1) {
+                state.list.splice(index, 1, updatedBook)
+            }
+        },
+        [BOOKS.DELETE_BOOK](state, bookId) {
+            state.list = state.list.filter(book => book.id !== bookId)
+        },
         [UI.SET_LOADING](state, loading) {
             state.loading = loading
         },
@@ -57,12 +69,12 @@ export default {
             }
         },
 
-        async createBook({ commit, dispatch }, bookData) {
+        async createBook({ commit }, bookData) {
             commit(UI.SET_LOADING, true)
             try {
-                await booksApi.create(bookData)
+                const newBook = await booksApi.create(bookData)
+                commit(BOOKS.ADD_BOOK, newBook)
                 console.log('Book created successfully')
-                await dispatch('fetchBooks')
             } catch (error) {
                 console.error('Vuex Store - Create Book Error:', error)
                 commit(UI.SET_ERROR, error)
@@ -72,25 +84,25 @@ export default {
             }
         },
 
-        async updateBook({ commit, dispatch }, bookData) {
-            commit(UI.SET_LOADING, true)
+        async updateBook({ commit, state }, bookData) {
+            const originalBook = state.list.find(book => book.id === bookData.id)
+            commit(BOOKS.UPDATE_BOOK, bookData)
             try {
                 await booksApi.update(bookData.id, bookData)
-                await dispatch('fetchBooks')
             } catch (error) {
+                commit(BOOKS.UPDATE_BOOK, originalBook)
                 commit(UI.SET_ERROR, error)
                 throw error
-            } finally {
-                commit(UI.SET_LOADING, false)
             }
         },
 
-        async deleteBook({ commit, dispatch }, bookId) {
-            commit(UI.SET_LOADING, true)
+        async deleteBook({ commit, state }, bookId) {
+            const originalList = [...state.list]
+            commit(BOOKS.DELETE_BOOK, bookId)
             try {
                 await booksApi.delete(bookId)
-                await dispatch('fetchBooks')
             } catch (error) {
+                commit(BOOKS.SET_LIST, originalList)
                 commit(UI.SET_ERROR, error)
                 throw error
             } finally {
