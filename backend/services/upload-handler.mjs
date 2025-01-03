@@ -21,7 +21,6 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    console.log('File received for upload:', file); // Логируем файл
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
@@ -30,8 +29,5 @@ const upload = multer({
     }
   },
 }).single('image');
-
-console.log('Middleware for upload initialized'); // Проверяем, инициализируется ли multer
-
 
 export default upload;

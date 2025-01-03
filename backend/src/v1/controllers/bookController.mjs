@@ -34,10 +34,6 @@ export const getBookById = async (req, res) => {
 };
 
 export const createBook = async (req, res) => {
-  console.log('Request headers:', req.headers); // Логируем заголовки запроса
-  console.log('Request body:', req.body); // Логируем тело запроса
-  console.log('Request file:', req.file); // Проверяем файл
-
   if (!validateRequest(req, res)) return;
 
   try {
@@ -47,7 +43,6 @@ export const createBook = async (req, res) => {
     const newBook = await BooksDBService.create(bookData);
     res.status(201).json(newBook);
   } catch (error) {
-    console.error('Error creating book:', error);
     handleErrors(res, error);
   }
 };
