@@ -18,7 +18,7 @@ export default {
     },
 
     mutations: {
-        [BOOKS.SET_BOOKS](state, books) {
+        [BOOKS.SET_LIST](state, books) {
             state.list = books
         },
         [BOOKS.SET_CURRENT](state, book) {
@@ -28,7 +28,7 @@ export default {
             state.loading = loading
         },
         [UI.SET_ERROR](state, error) {
-            state.error = error
+            state.error = error ? error.toString() : null
         },
     },
 
@@ -37,7 +37,7 @@ export default {
             commit(UI.SET_LOADING, true)
             try {
                 const books = await booksApi.fetchAll()
-                commit(BOOKS.SET_BOOKS, books)
+                commit(BOOKS.SET_LIST, books)
             } catch (error) {
                 commit(UI.SET_ERROR, error)
             } finally {
