@@ -16,10 +16,11 @@ export const BOOKS = {
 }
 
 export const AUTHORS = {
-    FETCH_ALL: 'authors/FETCH_ALL',
-    FETCH_ONE: 'authors/FETCH_ONE', 
     SET_LIST: 'authors/SET_LIST',
-    SET_CURRENT: 'authors/SET_CURRENT'
+    SET_CURRENT: 'authors/SET_CURRENT',
+    ADD_AUTHOR: 'authors/ADD_AUTHOR',
+    UPDATE_AUTHOR: 'authors/UPDATE_AUTHOR',
+    DELETE_AUTHOR: 'authors/DELETE_AUTHOR' // Add missing delete mutation type
 }
 
 export const CART = {

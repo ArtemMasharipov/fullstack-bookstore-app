@@ -27,6 +27,12 @@ const bookSchema = new Schema(
       trim: true,
       maxlength: [50, 'Category must be at most 50 characters long'],
     },
+    description: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [1000, 'Description must be at most 1000 characters long'],
+    },
     author: {
       type: Schema.Types.ObjectId,
       ref: 'Author',

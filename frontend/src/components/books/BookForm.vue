@@ -29,20 +29,41 @@
             </div>
 
             <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" v-model="form.description" rows="4"></textarea>
+            </div>
+
+            <div class="form-group">
                 <label for="image">Book Cover</label>
+
+                <!-- Кнопка для загрузки файла -->
+                <button 
+                    type="button" 
+                    class="btn btn-upload" 
+                    @click="$refs.fileInput.click()">
+                    Выберите файл
+                </button>
+
+                <!-- Имя выбранного файла -->
+                <span v-if="selectedFile">{{ selectedFile.name }}</span>
+
+                <!-- Скрытый input -->
                 <input 
                     id="image"
                     ref="fileInput"
                     type="file" 
                     accept="image/*"
+                    style="display: none;"
                     @change="handleImageUpload"
                 />
+
                 <div v-if="imagePreview" class="image-preview">
                     <img :src="imagePreview" alt="Book cover preview" />
                     <button type="button" class="remove-image" @click="resetImage">
                         <span>&times;</span>
                     </button>
                 </div>
+
                 <p v-if="imageError" class="error-message">{{ imageError }}</p>
                 <p v-if="imageLoading" class="loading-message">Loading preview...</p>
             </div>
@@ -55,8 +76,9 @@
     </div>
 </template>
 
+
 <script>
-import { mapGetters, mapActions } from 'vuex'
+import { mapGetters, mapActions } from 'vuex';
 
 export default {
     name: 'BookForm',
@@ -81,33 +103,34 @@ export default {
                 authorId: '',
                 publicationYear: null,
                 category: '',
+                description: '',
                 ...this.initialData,
             },
             selectedFile: null,
             imageError: null,
             imagePreview: null,
             imageLoading: false,
-            allowedTypes: ['image/jpeg', 'image/png', 'image/gif']
-        }
+            allowedTypes: ['image/jpeg', 'image/png', 'image/gif'],
+        };
     },
 
     computed: {
         ...mapGetters('authors', ['authorsList']),
         authors() {
-            return this.authorsList
+            return this.authorsList;
         },
         formTitle() {
-            return this.form.id ? 'Edit Book' : 'Create Book'
-        }
+            return this.form.id ? 'Edit Book' : 'Create Book';
+        },
     },
 
     created() {
-        this.fetchAuthors()
+        this.fetchAuthors();
     },
 
     beforeUnmount() {
         if (this.imagePreview) {
-            URL.revokeObjectURL(this.imagePreview)
+            URL.revokeObjectURL(this.imagePreview);
         }
     },
 
@@ -115,72 +138,75 @@ export default {
         ...mapActions('authors', ['fetchAuthors']),
         ...mapActions('books', ['createBook', 'updateBook']),
 
-        handleImageUpload(event) {
-            const file = event.target.files[0]
-            if (!file) return
+        handleImageUpload() {
+            const file = this.$refs.fileInput.files[0]; // Берём файл через $refs
+            if (!file) return;
 
+            // Проверка типа файла
             if (!this.allowedTypes.includes(file.type)) {
-                this.imageError = 'Please upload an image file (JPEG, PNG, GIF)'
-                this.resetImage()
-                return
+                this.imageError = 'Please upload an image file (JPEG, PNG, GIF)';
+                this.resetImage();
+                return;
             }
 
-            if (file.size > 10485760) { // 10MB
-                this.imageError = 'File size should not exceed 10MB'
-                this.resetImage()
-                return
+            // Проверка размера файла
+            if (file.size > 10485760) {
+                this.imageError = 'File size should not exceed 10MB';
+                this.resetImage();
+                return;
             }
 
-            this.imageError = null
-            this.imageLoading = true
-            this.selectedFile = file
-            this.createImagePreview(file)
+            this.imageError = null;
+            this.imageLoading = true;
+            this.selectedFile = file;
+            this.createImagePreview(file);
         },
 
         createImagePreview(file) {
             if (this.imagePreview) {
-                URL.revokeObjectURL(this.imagePreview)
+                URL.revokeObjectURL(this.imagePreview);
             }
-            this.imagePreview = URL.createObjectURL(file)
-            this.imageLoading = false
+            this.imagePreview = URL.createObjectURL(file);
+            this.imageLoading = false;
         },
 
         resetImage() {
             if (this.$refs.fileInput) {
-                this.$refs.fileInput.value = ''
+                this.$refs.fileInput.value = '';
             }
-            this.selectedFile = null
+            this.selectedFile = null;
             if (this.imagePreview) {
-                URL.revokeObjectURL(this.imagePreview)
-                this.imagePreview = null
+                URL.revokeObjectURL(this.imagePreview);
+                this.imagePreview = null;
             }
-            this.imageLoading = false
+            this.imageLoading = false;
         },
 
         async handleSubmit() {
             try {
-                const formData = new FormData()
-                formData.append('title', this.form.title)
-                formData.append('authorId', this.form.authorId)
-                formData.append('publicationYear', this.form.publicationYear)
-                formData.append('category', this.form.category)
+                const formData = new FormData();
+                formData.append('title', this.form.title);
+                formData.append('authorId', this.form.authorId);
+                formData.append('publicationYear', this.form.publicationYear);
+                formData.append('category', this.form.category);
+                formData.append('description', this.form.description);
 
                 if (this.selectedFile) {
-                    formData.append('image', this.selectedFile)
+                    formData.append('image', this.selectedFile);
                 }
 
                 if (this.form.id) {
-                    await this.updateBook({ id: this.form.id, formData })
+                    await this.updateBook({ id: this.form.id, formData });
                 } else {
-                    await this.createBook(formData)
+                    await this.createBook(formData);
                 }
-                this.$emit('close')
+                this.$emit('close');
             } catch (error) {
-                console.error('Error saving book:', error)
+                console.error('Error saving book:', error);
             }
         },
     },
-}
+};
 </script>
 
 <style scoped>

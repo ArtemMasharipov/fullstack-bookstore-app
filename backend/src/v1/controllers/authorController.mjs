@@ -1,5 +1,6 @@
 import AuthorsDBService from '../models/author/AuthorsDBService.mjs';
 import { validationResult } from 'express-validator';
+import mongoose from 'mongoose';
 
 export const getAllAuthors = async (req, res) => {
   try {
@@ -57,8 +58,14 @@ export const updateAuthor = async (req, res) => {
 };
 
 export const deleteAuthor = async (req, res) => {
+  const { id } = req.params;
+
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ error: 'Invalid author ID' });
+  }
+
   try {
-    const deletedAuthor = await AuthorsDBService.deleteById(req.params.id);
+    const deletedAuthor = await AuthorsDBService.deleteById(id);
     if (!deletedAuthor) {
       return res.status(404).json({ error: 'Author not found' });
     }
@@ -67,5 +74,3 @@ export const deleteAuthor = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
-

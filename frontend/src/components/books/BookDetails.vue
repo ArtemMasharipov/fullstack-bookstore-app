@@ -3,26 +3,33 @@
         <loading-spinner v-if="loading" />
 
         <template v-else-if="book">
-            <div class="breadcrumb"><router-link to="/books">Books</router-link> / {{ book.title }}</div>
+            <div class="breadcrumb">
+                <router-link to="/books">Books</router-link> / {{ book.title || 'Unknown Title' }}
+            </div>
 
             <div class="book-details">
                 <div class="book-cover">
-                    <img v-if="book.image" :src="book.image" :alt="book.title" />
+                    <img :src="book.image || placeholderImage" :alt="book.title || 'No image available'" />
                 </div>
 
                 <div class="book-info">
-                    <h1>{{ book.title }}</h1>
-                    <router-link :to="`/authors/${book.author.id}`" class="author-link">
-                        {{ book.author.name }}
+                    <h1>{{ book.title || 'No Title' }}</h1>
+                    <router-link v-if="book.author?.id" :to="`/authors/${book.author.id}`" class="author-link">
+                        {{ book.author?.name || 'Unknown Author' }}
                     </router-link>
 
                     <div class="book-metadata">
-                        <span>Published: {{ book.publicationYear }}</span>
+                        <span>Published: {{ book.publicationYear || 'N/A' }}</span>
                         <span v-if="book.category">Category: {{ book.category }}</span>
                     </div>
 
-                    <div v-if="hasPermission('update:book') || hasPermission('delete:book')" class="action-buttons">
-                        <button v-if="hasPermission('update:book')" class="btn btn-primary" @click="handleEdit">
+                    <p v-if="book.description" class="book-description">{{ book.description }}</p>
+
+                    <div class="action-buttons">
+                        <button v-if="book.available" class="btn btn-primary" @click="addToCart(book)">
+                            Add to Cart
+                        </button>
+                        <button v-if="hasPermission('update:book')" class="btn btn-secondary" @click="handleEdit">
                             Edit
                         </button>
                         <button v-if="hasPermission('delete:book')" class="btn btn-danger" @click="confirmDelete">
@@ -54,10 +61,10 @@
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex'
-import BookCard from '@/components/books/BookCard.vue'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import ErrorMessage from '@/components/common/ErrorMessage.vue'
+import { mapGetters, mapActions } from 'vuex';
+import BookCard from '@/components/books/BookCard.vue';
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
+import ErrorMessage from '@/components/common/ErrorMessage.vue';
 
 export default {
     name: 'BookDetails',
@@ -80,49 +87,50 @@ export default {
     data() {
         return {
             showDeleteModalPage: false,
-        }
+            placeholderImage: '/images/placeholder.png', // Путь к плейсхолдеру
+        };
     },
 
     computed: {
         ...mapGetters('books', ['currentBook', 'loading', 'error']),
         ...mapGetters('auth', ['hasPermission']),
         book() {
-            return this.currentBook
+            return this.currentBook;
         },
         relatedBooks() {
-            return this.book ? this.book.relatedBooks || [] : []
+            return this.book ? this.book.relatedBooks || [] : [];
         },
     },
 
     created() {
-        this.fetchBook(this.bookId)
+        this.fetchBook(this.bookId);
     },
 
     methods: {
         ...mapActions('books', ['fetchBook', 'deleteBook', 'addToCart']),
 
         handleEdit() {
-            this.$emit('edit', this.book)
+            this.$emit('edit', this.book);
         },
 
         confirmDelete() {
-            this.showDeleteModalPage = true
+            this.showDeleteModalPage = true;
         },
 
         async handleDelete() {
             try {
-                await this.deleteBook(this.book.id)
-                this.$router.push('/books')
+                await this.deleteBook(this.book.id);
+                this.$router.push('/books');
             } catch (error) {
-                console.error('Failed to delete book:', error)
+                console.error('Failed to delete book:', error);
             }
         },
 
         addToCart(book) {
-            this.addToCart(book)
+            this.addToCart(book);
         },
     },
-}
+};
 </script>
 
 <style scoped>
@@ -133,76 +141,100 @@ export default {
 }
 
 .breadcrumb {
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+}
 
-    a {
-        color: var(--primary-color);
-        text-decoration: none;
+.breadcrumb a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
 
-        &:hover {
-            text-decoration: underline;
-        }
-    }
+.breadcrumb a:hover {
+    text-decoration: underline;
 }
 
 .book-details {
-    display: grid;
-    grid-template-columns: 300px 1fr;
+    display: flex;
+    flex-wrap: wrap;
     gap: 2rem;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
 }
 
 .book-cover {
-    img {
-        width: 100%;
-        height: auto;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
+    flex: 1 1 300px;
+    max-width: 300px;
+    text-align: center;
+}
+
+.book-cover img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .book-info {
-    h1 {
-        margin: 0 0 1rem;
-        color: var(--secondary-color);
-    }
+    flex: 2 1 600px;
+}
+
+.book-info h1 {
+    margin: 0 0 1rem;
+    font-size: 1.5rem;
+    color: var(--secondary-color);
 }
 
 .author-link {
     color: var(--primary-color);
     text-decoration: none;
     font-size: 1.2rem;
+}
 
-    &:hover {
-        text-decoration: underline;
-    }
+.author-link:hover {
+    text-decoration: underline;
 }
 
 .book-metadata {
     margin: 1rem 0;
-    display: flex;
-    gap: 1rem;
+    font-size: 1rem;
     color: var(--gray-medium);
 }
 
+.book-description {
+    margin: 1rem 0;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
 .action-buttons {
-    margin-top: 2rem;
     display: flex;
     gap: 1rem;
+    margin-top: 1rem;
 }
 
 .related-books {
-    margin-top: 3rem;
+    margin-top: 2rem;
+}
 
-    h2 {
-        margin-bottom: 1.5rem;
-        color: var(--secondary-color);
-    }
+.related-books h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .books-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 2rem;
+    gap: 1rem;
+}
+
+@media screen and (max-width: 768px) {
+    .book-details {
+        flex-direction: column;
+    }
+
+    .book-cover,
+    .book-info {
+        flex: 1 1 auto;
+    }
 }
 </style>

@@ -28,14 +28,37 @@ baseApi.interceptors.request.use((config) => {
 baseApi.interceptors.response.use(
     (response) => response,
     (error) => {
-        const errorMessage = error.response?.data?.message || 'Unknown error occurred'
-        console.error(`[API Error]: ${errorMessage}`)
+        let errorMessage = 'Unknown error occurred'
+
+        if (error.response) {
+            errorMessage =
+                error.response.data?.message || error.response.data?.error || `Server error: ${error.response.status}`
+        } else if (error.request) {
+            errorMessage = 'No response from server'
+        } else {
+            errorMessage = error.message
+        }
+
+        console.error('[API Error]:', {
+            message: errorMessage,
+            status: error.response?.status,
+            url: error.config?.url,
+            method: error.config?.method,
+        })
+
         return Promise.reject(new Error(errorMessage))
     }
 )
 
 export const apiRequest = async (method, url, data = null, headers = {}) => {
-    return baseApi({ method, url, data, headers }).then((res) => res.data)
+    const response = await baseApi({
+        method,
+        url,
+        data,
+        headers,
+        validateStatus: (status) => status < 500,
+    })
+    return response.data
 }
 
 export default baseApi
