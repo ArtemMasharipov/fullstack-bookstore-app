@@ -40,10 +40,21 @@ const bookValidationSchema = checkSchema({
       errorMessage: 'Category is required.',
     },
   },
-  imgBase64: {
+  image: {
     optional: true,
-    isBase64: {
-      errorMessage: 'Image must be a valid base64 string.',
+    custom: {
+      options: (value, { req }) => {
+        if (req.file) {
+          const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+          if (!allowedTypes.includes(req.file.mimetype)) {
+            throw new Error('Invalid file type. Only JPEG, PNG, and GIF are allowed.');
+          }
+          if (req.file.size > 10 * 1024 * 1024) { // 10MB
+            throw new Error('File size must be less than 10MB.');
+          }
+        }
+        return true;
+      },
     },
   },
 });

@@ -1,29 +1,17 @@
 <template>
     <div class="book-form-container">
-        <form class="book-form" @submit.prevent="handleSubmit">
+        <form class="book-form" enctype="multipart/form-data" @submit.prevent="handleSubmit">
             <h2>{{ form.id ? 'Edit Book' : 'Create Book' }}</h2>
+
             <div class="form-group">
                 <label for="title">Title</label>
-                <input 
-                    id="title"
-                    v-model="form.title"
-                    type="text"
-                    required
-                />
+                <input id="title" v-model="form.title" type="text" required />
             </div>
 
             <div class="form-group">
                 <label for="author">Author</label>
-                <select 
-                    id="author"
-                    v-model="form.authorId"
-                    required
-                >
-                    <option 
-                        v-for="author in authors" 
-                        :key="author._id" 
-                        :value="author._id"
-                    >
+                <select id="author" v-model="form.authorId" required>
+                    <option v-for="author in authors" :key="author._id" :value="author._id">
                         {{ author.name }}
                     </option>
                 </select>
@@ -32,40 +20,22 @@
 
             <div class="form-group">
                 <label for="year">Publication Year</label>
-                <input 
-                    id="year"
-                    v-model="form.publicationYear"
-                    type="number"
-                    required
-                />
+                <input id="year" v-model="form.publicationYear" type="number" required />
             </div>
 
             <div class="form-group">
                 <label for="category">Category</label>
-                <input 
-                    id="category"
-                    v-model="form.category"
-                    type="text"
-                />
+                <input id="category" v-model="form.category" type="text" />
             </div>
 
             <div class="form-group">
                 <label for="image">Book Cover</label>
-                <input 
-                    id="image"
-                    type="file"
-                    accept="image/*"
-                    @change="handleImageUpload"
-                />
+                <input id="image" type="file" accept="image/*" @change="handleImageUpload" />
                 <p v-if="imageError" class="error-message">{{ imageError }}</p>
             </div>
 
-            <button 
-                type="submit" 
-                class="btn btn-primary"
-                :disabled="loading"
-            >
-                {{ loading ? 'Saving...' : (form.id ? 'Update Book' : 'Create Book') }}
+            <button type="submit" class="btn btn-primary" :disabled="loading">
+                {{ loading ? 'Saving...' : form.id ? 'Update Book' : 'Create Book' }}
             </button>
             <button type="button" class="btn btn-secondary" @click="$emit('close')">Cancel</button>
         </form>
@@ -73,11 +43,11 @@
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex';
+import { mapGetters, mapActions } from 'vuex'
 
 export default {
     name: 'BookForm',
-    
+
     props: {
         initialData: {
             type: Object,
@@ -88,7 +58,7 @@ export default {
             default: false,
         },
     },
-    
+
     emits: ['submit', 'close'],
 
     data() {
@@ -98,59 +68,66 @@ export default {
                 authorId: '',
                 publicationYear: null,
                 category: '',
-                imgBase64: null,
                 ...this.initialData,
             },
+            selectedFile: null,
             imageError: null,
-        };
+        }
     },
 
     computed: {
         ...mapGetters('authors', ['authorsList']),
-        ...mapGetters('books', ['booksLoading']),
         authors() {
-            return this.authorsList;
+            return this.authorsList
         },
     },
 
     created() {
-        this.fetchAuthors();
+        this.fetchAuthors()
     },
 
     methods: {
         ...mapActions('authors', ['fetchAuthors']),
         ...mapActions('books', ['createBook', 'updateBook']),
 
-        async handleImageUpload(event) {
-            const file = event.target.files[0];
+        handleImageUpload(event) {
+            const file = event.target.files[0]
             if (file) {
-                if (file.size > 10485760) { // 10MB
-                    this.imageError = 'File size should not exceed 10MB';
-                    return;
+                if (file.size > 10485760) {
+                    // 10MB
+                    this.imageError = 'File size should not exceed 10MB'
+                    this.selectedFile = null
+                    return
                 }
-                this.imageError = null;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.form.imgBase64 = e.target.result;
-                };
-                reader.readAsDataURL(file);
+                this.imageError = null
+                this.selectedFile = file
             }
         },
 
         async handleSubmit() {
             try {
-                if (this.form.id) {
-                    await this.updateBook(this.form);
-                } else {
-                    await this.createBook(this.form);
+                const formData = new FormData()
+                formData.append('title', this.form.title)
+                formData.append('authorId', this.form.authorId)
+                formData.append('publicationYear', this.form.publicationYear)
+                formData.append('category', this.form.category)
+
+                if (this.selectedFile) {
+                    formData.append('image', this.selectedFile)
                 }
-                this.$emit('close');
+
+                if (this.form.id) {
+                    await this.updateBook({ id: this.form.id, formData })
+                } else {
+                    await this.createBook(formData)
+                }
+                this.$emit('close')
             } catch (error) {
-                console.error('Error saving book:', error);
+                console.error('Error saving book:', error)
             }
         },
     },
-};
+}
 </script>
 
 <style scoped>
@@ -170,7 +147,7 @@ export default {
     background: var(--white);
     padding: 2rem;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 500px;
 }

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const { Schema } = mongoose;
+const { Schema } = mongoose; 
 
 const bookSchema = new Schema(
   {
@@ -17,7 +17,7 @@ const bookSchema = new Schema(
       min: [1450, 'Year must be after the invention of the printing press'],
       max: [new Date().getFullYear(), 'Year cannot be in the future'],
     },
-    imgBase64: {
+    image: {
       type: String,
       default: null,
     },

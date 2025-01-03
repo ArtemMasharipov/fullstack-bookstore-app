@@ -7,7 +7,7 @@
 
             <div class="book-details">
                 <div class="book-cover">
-                    <img v-if="book.imgBase64" :src="book.imgBase64" :alt="book.title" />
+                    <img v-if="book.image" :src="book.image" :alt="book.title" />
                 </div>
 
                 <div class="book-info">

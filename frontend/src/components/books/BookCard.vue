@@ -1,7 +1,7 @@
 <template>
     <div class="book-card" @click="$emit('click')">
-        <div v-if="book.imgBase64" class="book-image">
-            <img :src="book.imgBase64" :alt="book.title" />
+        <div v-if="book.image" class="book-image">
+            <img :src="book.image" :alt="book.title" />
         </div>
         <div class="book-info">
             <h3>{{ book.title }}</h3>
@@ -22,7 +22,7 @@ export default {
         },
     },
     emits: ['click'], // Declare the "click" event
-};
+}
 </script>
 
 <style scoped>
@@ -57,7 +57,7 @@ export default {
 .book-info h3 {
     margin: 0;
     font-size: 1.2rem;
-    color: var(--secondary-color);
+    color: var (--secondary-color);
 }
 
 .year {

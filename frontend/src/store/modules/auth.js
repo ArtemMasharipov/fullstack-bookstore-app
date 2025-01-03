@@ -1,5 +1,6 @@
 import { AUTH, UI } from '../types'
 import { authApi } from '@/api/authApi'
+import { handleAsyncAction } from '@/utils/stateHelpers'
 import {jwtDecode} from 'jwt-decode'
 
 export default {
@@ -15,8 +16,6 @@ export default {
     getters: {
         currentUser: (state) => state.user,
         authToken: (state) => state.token,
-        authLoading: (state) => state.loading,
-        authError: (state) => state.error,
         isAuthenticated: (state) => !!state.token,
         hasPermission: (state) => (permission) => state.permissions.includes(permission),
     },
@@ -42,50 +41,48 @@ export default {
 
     actions: {
         async login({ commit, dispatch }, credentials) {
-            commit(UI.SET_LOADING, true)
-            try {
-                const { user, token } = await authApi.login(credentials)
-                commit(AUTH.SET_USER, user)
-                commit(AUTH.SET_TOKEN, token)
-                commit('setPermissions', user.permissions)
-                await dispatch('cart/syncCart', null, { root: true })
-                console.log('User logged in:', user)
-                return user
-            } catch (error) {
-                commit(UI.SET_ERROR, error.message)
-                throw error
-            } finally {
-                commit(UI.SET_LOADING, false)
-            }
+            await handleAsyncAction(
+                commit,
+                async () => {
+                    const { user, token } = await authApi.login(credentials)
+                    commit(AUTH.SET_USER, user)
+                    commit(AUTH.SET_TOKEN, token)
+                    commit('setPermissions', user.permissions)
+                    await dispatch('cart/syncCart', null, { root: true }) // Синхронизация корзины
+                },
+                { setLoading: UI.SET_LOADING, setError: UI.SET_ERROR }
+            )
         },
 
         async register({ commit }, userData) {
-            commit(UI.SET_LOADING, true)
-            try {
-                const { user, token } = await authApi.register(userData)
-                commit(AUTH.SET_USER, user)
-                commit(AUTH.SET_TOKEN, token)
-                commit('setPermissions', user.permissions)
-                console.log('User registered:', user)
-                return user
-            } catch (error) {
-                commit(UI.SET_ERROR, error.message)
-                console.error('Registration error:', error.message)
-                throw error
-            } finally {
-                commit(UI.SET_LOADING, false)
-            }
+            await handleAsyncAction(
+                commit,
+                async () => {
+                    const { user, token } = await authApi.register(userData)
+                    commit(AUTH.SET_USER, user)
+                    commit(AUTH.SET_TOKEN, token)
+                    commit('setPermissions', user.permissions)
+                },
+                { setLoading: UI.SET_LOADING, setError: UI.SET_ERROR }
+            )
         },
 
         async logout({ commit }) {
-            try {
-                await authApi.logout()
-            } finally {
-                commit(AUTH.SET_USER, null)
-                commit(AUTH.SET_TOKEN, null)
-                commit('setPermissions', [])
-                localStorage.removeItem('token')
-            }
+            await handleAsyncAction(
+                commit,
+                async () => {
+                    await authApi.logout()
+                },
+                {
+                    setLoading: UI.SET_LOADING,
+                    onFinally: () => {
+                        commit(AUTH.SET_USER, null)
+                        commit(AUTH.SET_TOKEN, null)
+                        commit('setPermissions', [])
+                        localStorage.removeItem('token')
+                    },
+                }
+            )
         },
 
         restoreUserFromToken({ commit }) {

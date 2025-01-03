@@ -34,14 +34,20 @@ export const getBookById = async (req, res) => {
 };
 
 export const createBook = async (req, res) => {
+  console.log('Request headers:', req.headers); // Логируем заголовки запроса
+  console.log('Request body:', req.body); // Логируем тело запроса
+  console.log('Request file:', req.file); // Проверяем файл
+
   if (!validateRequest(req, res)) return;
 
   try {
     const { authorId, ...rest } = req.body;
-    const bookData = { ...rest, author: authorId };
+    const imageUrl = req.file ? req.file.path : null;
+    const bookData = { ...rest, author: authorId, image: imageUrl };
     const newBook = await BooksDBService.create(bookData);
     res.status(201).json(newBook);
   } catch (error) {
+    console.error('Error creating book:', error);
     handleErrors(res, error);
   }
 };
@@ -50,7 +56,14 @@ export const updateBook = async (req, res) => {
   if (!validateRequest(req, res)) return;
 
   try {
-    const updatedBook = await BooksDBService.update(req.params.id, req.body);
+    let updatedData = req.body;
+
+    if (req.file) {
+      const imageUrl = req.file.path;
+      updatedData = { ...updatedData, image: imageUrl };
+    }
+
+    const updatedBook = await BooksDBService.update(req.params.id, updatedData);
     if (!updatedBook) return handleErrors(res, 'Book not found', 404);
     res.json(updatedBook);
   } catch (error) {
