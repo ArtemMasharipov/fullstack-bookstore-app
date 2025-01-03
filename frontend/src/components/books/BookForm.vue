@@ -1,7 +1,7 @@
 <template>
     <div class="book-form-container">
         <form class="book-form" enctype="multipart/form-data" @submit.prevent="handleSubmit">
-            <h2>{{ form.id ? 'Edit Book' : 'Create Book' }}</h2>
+            <h2>{{ formTitle }}</h2>
 
             <div class="form-group">
                 <label for="title">Title</label>
@@ -30,8 +30,21 @@
 
             <div class="form-group">
                 <label for="image">Book Cover</label>
-                <input id="image" type="file" accept="image/*" @change="handleImageUpload" />
+                <input 
+                    id="image"
+                    ref="fileInput"
+                    type="file" 
+                    accept="image/*"
+                    @change="handleImageUpload"
+                />
+                <div v-if="imagePreview" class="image-preview">
+                    <img :src="imagePreview" alt="Book cover preview" />
+                    <button type="button" class="remove-image" @click="resetImage">
+                        <span>&times;</span>
+                    </button>
+                </div>
                 <p v-if="imageError" class="error-message">{{ imageError }}</p>
+                <p v-if="imageLoading" class="loading-message">Loading preview...</p>
             </div>
 
             <button type="submit" class="btn btn-primary" :disabled="loading">
@@ -72,6 +85,9 @@ export default {
             },
             selectedFile: null,
             imageError: null,
+            imagePreview: null,
+            imageLoading: false,
+            allowedTypes: ['image/jpeg', 'image/png', 'image/gif']
         }
     },
 
@@ -80,10 +96,19 @@ export default {
         authors() {
             return this.authorsList
         },
+        formTitle() {
+            return this.form.id ? 'Edit Book' : 'Create Book'
+        }
     },
 
     created() {
         this.fetchAuthors()
+    },
+
+    beforeUnmount() {
+        if (this.imagePreview) {
+            URL.revokeObjectURL(this.imagePreview)
+        }
     },
 
     methods: {
@@ -92,16 +117,44 @@ export default {
 
         handleImageUpload(event) {
             const file = event.target.files[0]
-            if (file) {
-                if (file.size > 10485760) {
-                    // 10MB
-                    this.imageError = 'File size should not exceed 10MB'
-                    this.selectedFile = null
-                    return
-                }
-                this.imageError = null
-                this.selectedFile = file
+            if (!file) return
+
+            if (!this.allowedTypes.includes(file.type)) {
+                this.imageError = 'Please upload an image file (JPEG, PNG, GIF)'
+                this.resetImage()
+                return
             }
+
+            if (file.size > 10485760) { // 10MB
+                this.imageError = 'File size should not exceed 10MB'
+                this.resetImage()
+                return
+            }
+
+            this.imageError = null
+            this.imageLoading = true
+            this.selectedFile = file
+            this.createImagePreview(file)
+        },
+
+        createImagePreview(file) {
+            if (this.imagePreview) {
+                URL.revokeObjectURL(this.imagePreview)
+            }
+            this.imagePreview = URL.createObjectURL(file)
+            this.imageLoading = false
+        },
+
+        resetImage() {
+            if (this.$refs.fileInput) {
+                this.$refs.fileInput.value = ''
+            }
+            this.selectedFile = null
+            if (this.imagePreview) {
+                URL.revokeObjectURL(this.imagePreview)
+                this.imagePreview = null
+            }
+            this.imageLoading = false
         },
 
         async handleSubmit() {
@@ -191,5 +244,46 @@ button {
 .error-message {
     color: red;
     margin-top: 0.5rem;
+}
+
+.image-preview {
+    position: relative;
+    margin-top: 1rem;
+    max-width: 200px;
+}
+
+.image-preview img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    border: 1px solid var(--gray-medium);
+}
+
+.remove-image {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: var(--error-color, red);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: 16px;
+}
+
+.remove-image:hover {
+    background: darkred;
+}
+
+.loading-message {
+    color: var(--gray-dark);
+    margin-top: 0.5rem;
+    font-style: italic;
 }
 </style>
