@@ -34,43 +34,40 @@
             </div>
 
             <div class="form-group">
-                <label for="image">Book Cover</label>
-                <button 
-                    v-if="!fileSelected"
-                    type="button" 
-                    class="btn btn-upload" 
-                    @click="selectFile">
-                    Выберите файл
-                </button>
-                <span v-if="selectedFile">{{ selectedFile.name }}</span>
-                <input 
-                    id="image"
-                    ref="fileInput"
-                    type="file" 
-                    accept="image/*"
-                    style="display: none;"
-                    @change="handleImageUpload"
-                />
+                <label>Book Cover</label>
+                <input ref="fileInput" type="file" accept="image/*" style="display: none" @change="handleImageUpload" />
+                <div class="file-upload-container">
+                    <button
+                        v-if="!isFileDialogOpen && !selectedFile"
+                        type="button"
+                        class="btn btn-upload"
+                        @click="triggerFileInput"
+                    >
+                        Выберите файл
+                    </button>
+                    <div v-if="selectedFile" class="selected-file">
+                        <span>{{ selectedFile.name }}</span>
+                        <button type="button" class="btn btn-remove" @click="resetImage">×</button>
+                    </div>
+                </div>
                 <div v-if="imagePreview" class="image-preview">
                     <img :src="imagePreview" alt="Book cover preview" />
-                    <button type="button" class="remove-image" @click="resetImage">
-                        <span>&times;</span>
-                    </button>
                 </div>
                 <p v-if="imageError" class="error-message">{{ imageError }}</p>
-                <p v-if="imageLoading" class="loading-message">Loading preview...</p>
             </div>
 
-            <button type="submit" class="btn btn-primary" :disabled="loading">
-                {{ loading ? 'Saving...' : form.id ? 'Update Book' : 'Create Book' }}
-            </button>
-            <button type="button" class="btn btn-secondary" @click="handleCancel">Cancel</button>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" :disabled="loading">
+                    {{ loading ? 'Saving...' : form.id ? 'Update Book' : 'Create Book' }}
+                </button>
+                <button type="button" class="btn btn-secondary" @click="handleCancel">Cancel</button>
+            </div>
         </form>
     </div>
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex';
+import { mapGetters, mapActions } from 'vuex'
 
 export default {
     name: 'BookForm',
@@ -98,104 +95,96 @@ export default {
             selectedFile: null,
             imageError: null,
             imagePreview: null,
-            imageLoading: false,
             allowedTypes: ['image/jpeg', 'image/png', 'image/gif'],
-            fileSelected: false,
-        };
+        }
     },
     computed: {
         ...mapGetters('authors', ['authorsList']),
         authors() {
-            return this.authorsList;
+            return this.authorsList
         },
         formTitle() {
-            return this.form.id ? 'Edit Book' : 'Create Book';
+            return this.form.id ? 'Edit Book' : 'Create Book'
         },
     },
     created() {
-        this.fetchAuthors();
+        this.fetchAuthors()
     },
     beforeUnmount() {
         if (this.imagePreview) {
-            URL.revokeObjectURL(this.imagePreview);
+            URL.revokeObjectURL(this.imagePreview)
         }
     },
     methods: {
         ...mapActions('authors', ['fetchAuthors']),
         ...mapActions('books', ['createBook', 'updateBook']),
-        selectFile() {
-            this.fileSelected = true;
-            this.$refs.fileInput.click();
+
+        triggerFileInput() {
+            this.$refs.fileInput.click()
         },
-        handleImageUpload() {
-            const file = this.$refs.fileInput.files[0];
-            if (!file) return;
+
+        handleImageUpload(event) {
+            const file = event.target.files[0]
+            if (!file) return
 
             if (!this.allowedTypes.includes(file.type)) {
-                this.imageError = 'Please upload an image file (JPEG, PNG, GIF)';
-                this.resetImage();
-                return;
+                this.imageError = 'Please upload an image file (JPEG, PNG, GIF)'
+                this.resetImage()
+                return
             }
 
             if (file.size > 10485760) {
-                this.imageError = 'File size should not exceed 10MB';
-                this.resetImage();
-                return;
+                this.imageError = 'File size should not exceed 10MB'
+                this.resetImage()
+                return
             }
 
-            this.imageError = null;
-            this.imageLoading = true;
-            this.selectedFile = file;
-            this.createImagePreview(file);
+            this.imageError = null
+            this.selectedFile = file
+            this.imagePreview = URL.createObjectURL(file)
         },
-        createImagePreview(file) {
-            if (this.imagePreview) {
-                URL.revokeObjectURL(this.imagePreview);
-            }
-            this.imagePreview = URL.createObjectURL(file);
-            this.imageLoading = false;
-        },
+
         resetImage() {
             if (this.$refs.fileInput) {
-                this.$refs.fileInput.value = '';
+                this.$refs.fileInput.value = ''
             }
-            this.selectedFile = null;
+            this.selectedFile = null
             if (this.imagePreview) {
-                URL.revokeObjectURL(this.imagePreview);
-                this.imagePreview = null;
+                URL.revokeObjectURL(this.imagePreview)
+                this.imagePreview = null
             }
-            this.imageLoading = false;
-            this.fileSelected = false;
         },
+
         handleCancel() {
-            this.resetImage();
-            this.$emit('close');
+            this.resetImage()
+            this.$emit('close')
         },
+
         async handleSubmit() {
             try {
-                const formData = new FormData();
-                formData.append('title', this.form.title);
-                formData.append('authorId', this.form.authorId);
-                formData.append('publicationYear', this.form.publicationYear);
-                formData.append('category', this.form.category);
-                formData.append('description', this.form.description);
+                const formData = new FormData()
+                formData.append('title', this.form.title)
+                formData.append('authorId', this.form.authorId)
+                formData.append('publicationYear', this.form.publicationYear)
+                formData.append('category', this.form.category)
+                formData.append('description', this.form.description)
 
                 if (this.selectedFile) {
-                    formData.append('image', this.selectedFile);
+                    formData.append('image', this.selectedFile)
                 }
 
                 if (this.form.id) {
-                    await this.updateBook({ id: this.form.id, formData });
+                    await this.updateBook({ id: this.form.id, formData })
                 } else {
-                    await this.createBook(formData);
+                    await this.createBook(formData)
                 }
-                this.$emit('close');
+                this.$emit('close')
             } catch (error) {
-                console.error('Error saving book:', error);
+                console.error('Error saving book:', error)
             }
         },
     },
-};
+}
 </script>
 
 <style scoped>
@@ -225,12 +214,13 @@ export default {
 }
 
 .form-group {
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
+    font-weight: 500;
 }
 
 .form-group input,
@@ -242,31 +232,63 @@ export default {
     border-radius: 4px;
 }
 
-button {
+.file-upload-container {
+    margin-top: 0.5rem;
+}
+
+.selected-file {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+}
+
+.btn {
     padding: 10px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.btn-upload {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-remove {
+    padding: 4px 8px;
+    background-color: #ff4444;
+    color: white;
+    font-size: 18px;
+    line-height: 1;
 }
 
 .btn-primary {
     background-color: var(--primary-color);
-    color: var(--white);
+    color: white;
 }
 
 .btn-secondary {
     background-color: var(--gray-medium);
-    color: var(--white);
+    color: white;
     margin-left: 10px;
 }
 
+.btn:hover {
+    opacity: 0.9;
+}
+
 .error-message {
-    color: red;
+    color: #ff4444;
     margin-top: 0.5rem;
+    font-size: 0.875rem;
 }
 
 .image-preview {
-    position: relative;
     margin-top: 1rem;
     max-width: 200px;
 }
@@ -278,31 +300,9 @@ button {
     border: 1px solid var(--gray-medium);
 }
 
-.remove-image {
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    background: var(--error-color, red);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
+.form-actions {
+    margin-top: 2rem;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    font-size: 16px;
-}
-
-.remove-image:hover {
-    background: darkred;
-}
-
-.loading-message {
-    color: var(--gray-dark);
-    margin-top: 0.5rem;
-    font-style: italic;
+    justify-content: flex-end;
 }
 </style>
