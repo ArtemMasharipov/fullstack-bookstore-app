@@ -35,8 +35,6 @@
 
             <div class="form-group">
                 <label for="image">Book Cover</label>
-
-                <!-- Кнопка для загрузки файла -->
                 <button 
                     v-if="!fileSelected"
                     type="button" 
@@ -44,11 +42,7 @@
                     @click="selectFile">
                     Выберите файл
                 </button>
-
-                <!-- Имя выбранного файла -->
                 <span v-if="selectedFile">{{ selectedFile.name }}</span>
-
-                <!-- Скрытый input -->
                 <input 
                     id="image"
                     ref="fileInput"
@@ -57,14 +51,12 @@
                     style="display: none;"
                     @change="handleImageUpload"
                 />
-
                 <div v-if="imagePreview" class="image-preview">
                     <img :src="imagePreview" alt="Book cover preview" />
                     <button type="button" class="remove-image" @click="resetImage">
                         <span>&times;</span>
                     </button>
                 </div>
-
                 <p v-if="imageError" class="error-message">{{ imageError }}</p>
                 <p v-if="imageLoading" class="loading-message">Loading preview...</p>
             </div>
@@ -77,13 +69,11 @@
     </div>
 </template>
 
-
 <script>
 import { mapGetters, mapActions } from 'vuex';
 
 export default {
     name: 'BookForm',
-
     props: {
         initialData: {
             type: Object,
@@ -94,9 +84,7 @@ export default {
             default: false,
         },
     },
-
     emits: ['submit', 'close'],
-
     data() {
         return {
             form: {
@@ -115,7 +103,6 @@ export default {
             fileSelected: false,
         };
     },
-
     computed: {
         ...mapGetters('authors', ['authorsList']),
         authors() {
@@ -125,38 +112,31 @@ export default {
             return this.form.id ? 'Edit Book' : 'Create Book';
         },
     },
-
     created() {
         this.fetchAuthors();
     },
-
     beforeUnmount() {
         if (this.imagePreview) {
             URL.revokeObjectURL(this.imagePreview);
         }
     },
-
     methods: {
         ...mapActions('authors', ['fetchAuthors']),
         ...mapActions('books', ['createBook', 'updateBook']),
-
         selectFile() {
             this.fileSelected = true;
             this.$refs.fileInput.click();
         },
-
         handleImageUpload() {
-            const file = this.$refs.fileInput.files[0]; // Берём файл через $refs
+            const file = this.$refs.fileInput.files[0];
             if (!file) return;
 
-            // Проверка типа файла
             if (!this.allowedTypes.includes(file.type)) {
                 this.imageError = 'Please upload an image file (JPEG, PNG, GIF)';
                 this.resetImage();
                 return;
             }
 
-            // Проверка размера файла
             if (file.size > 10485760) {
                 this.imageError = 'File size should not exceed 10MB';
                 this.resetImage();
@@ -168,7 +148,6 @@ export default {
             this.selectedFile = file;
             this.createImagePreview(file);
         },
-
         createImagePreview(file) {
             if (this.imagePreview) {
                 URL.revokeObjectURL(this.imagePreview);
@@ -176,7 +155,6 @@ export default {
             this.imagePreview = URL.createObjectURL(file);
             this.imageLoading = false;
         },
-
         resetImage() {
             if (this.$refs.fileInput) {
                 this.$refs.fileInput.value = '';
@@ -189,12 +167,10 @@ export default {
             this.imageLoading = false;
             this.fileSelected = false;
         },
-
         handleCancel() {
             this.resetImage();
             this.$emit('close');
         },
-
         async handleSubmit() {
             try {
                 const formData = new FormData();
@@ -232,9 +208,9 @@ export default {
     height: 100%;
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* Меняем align-items */
-    overflow-y: auto; /* Добавляем прокрутку */
-    padding: 2rem; /* Устанавливаем отступы для контейнера */
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: 2rem;
 }
 
 .book-form {
@@ -244,7 +220,7 @@ export default {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 500px;
-    margin-top: 2rem; /* Добавляем отступ сверху */
+    margin-top: 2rem;
     box-sizing: border-box;
 }
 
