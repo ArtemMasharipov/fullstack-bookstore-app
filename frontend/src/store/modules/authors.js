@@ -29,13 +29,13 @@ export default {
             state.list.push(author)
         },
         [AUTHORS.UPDATE_AUTHOR](state, updatedAuthor) {
-            const index = state.list.findIndex(author => author.id === updatedAuthor.id)
+            const index = state.list.findIndex((author) => author.id === updatedAuthor.id)
             if (index !== -1) {
                 state.list.splice(index, 1, updatedAuthor)
             }
         },
         [AUTHORS.DELETE_AUTHOR](state, authorId) {
-            state.list = state.list.filter(author => author.id !== authorId)
+            state.list = state.list.filter((author) => author.id !== authorId)
         },
         [UI.SET_LOADING](state, loading) {
             state.loading = loading
@@ -70,27 +70,32 @@ export default {
             }
         },
 
-        async updateAuthor({ commit, state }, authorData) {
-            const originalAuthor = state.list.find(author => author.id === authorData.id)
-            commit(AUTHORS.UPDATE_AUTHOR, authorData)
+        async updateAuthor({ commit }, authorData) {
+            commit(UI.SET_LOADING, true)
             try {
-                await authorsApi.update(authorData.id, authorData)
+                const updatedAuthor = await authorsApi.update(authorData.id, authorData)
+                commit(AUTHORS.UPDATE_AUTHOR, updatedAuthor)
             } catch (error) {
-                commit(AUTHORS.UPDATE_AUTHOR, originalAuthor)
                 commit(UI.SET_ERROR, error)
                 throw error
+            } finally {
+                commit(UI.SET_LOADING, false)
             }
         },
-
-        async deleteAuthor({ commit, state }, authorId) {
-            const originalList = [...state.list]
-            commit(AUTHORS.DELETE_AUTHOR, authorId)
+        async deleteAuthor({ commit }, authorId) {
+            commit(UI.SET_LOADING, true)
             try {
+                // Отправляем запрос на удаление
                 await authorsApi.delete(authorId)
+
+                // После успешного ответа удаляем автора из локального состояния
+                commit(AUTHORS.DELETE_AUTHOR, authorId)
             } catch (error) {
-                commit(AUTHORS.SET_LIST, originalList)
+                // В случае ошибки устанавливаем сообщение об ошибке
                 commit(UI.SET_ERROR, error)
                 throw error
+            } finally {
+                commit(UI.SET_LOADING, false)
             }
         },
     },
