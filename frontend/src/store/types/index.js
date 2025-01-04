@@ -7,12 +7,13 @@ export const AUTH = {
 }
 
 export const BOOKS = {
-    FETCH_ALL: 'books/FETCH_ALL',
-    FETCH_ONE: 'books/FETCH_ONE',
-    SET_LIST: 'books/SET_LIST',
-    SET_CURRENT: 'books/SET_CURRENT',
+    SET_LIST: 'SET_LIST',
+    SET_CURRENT: 'SET_CURRENT',
+    ADD_BOOK: 'ADD_BOOK',
+    UPDATE_BOOK: 'UPDATE_BOOK',
+    DELETE_BOOK: 'DELETE_BOOK',
     UPDATE_FILTERS: 'books/UPDATE_FILTERS',
-    UPDATE_PAGINATION: 'books/UPDATE_PAGINATION'
+    UPDATE_PAGINATION: 'books/UPDATE_PAGINATION',
 }
 
 export const AUTHORS = {
