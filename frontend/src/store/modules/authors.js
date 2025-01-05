@@ -29,7 +29,7 @@ export default {
             state.list.push(author)
         },
         [AUTHORS.UPDATE_AUTHOR](state, updatedAuthor) {
-            const index = state.list.findIndex((author) => author.id === updatedAuthor.id)
+            const index = state.list.findIndex((author) => author._id === updatedAuthor._id)
             if (index !== -1) {
                 state.list.splice(index, 1, updatedAuthor)
             }
@@ -73,7 +73,7 @@ export default {
         async updateAuthor({ commit }, authorData) {
             commit(UI.SET_LOADING, true)
             try {
-                const updatedAuthor = await authorsApi.update(authorData.id, authorData)
+                const updatedAuthor = await authorsApi.update(authorData._id, authorData)
                 commit(AUTHORS.UPDATE_AUTHOR, updatedAuthor)
             } catch (error) {
                 commit(UI.SET_ERROR, error)

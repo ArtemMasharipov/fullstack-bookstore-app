@@ -4,6 +4,9 @@ const API_BASE_URL = 'http://localhost:3000/api/v1'
 
 const baseApi = axios.create({
     baseURL: API_BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
 })
 
 baseApi.interceptors.request.use((config) => {
@@ -13,13 +16,12 @@ baseApi.interceptors.request.use((config) => {
     }
 
     if (!config.headers['Content-Type']) {
-        if (config.data instanceof FormData) {
-            config.headers['Content-Type'] = 'multipart/form-data'
-        } else if (typeof config.data === 'object') {
-            config.headers['Content-Type'] = 'application/json'
-        } else {
-            config.headers['Content-Type'] = 'text/plain'
-        }
+        config.headers['Content-Type'] =
+            config.data instanceof FormData
+                ? 'multipart/form-data'
+                : typeof config.data === 'object'
+                ? 'application/json'
+                : 'text/plain'
     }
 
     return config
@@ -28,16 +30,10 @@ baseApi.interceptors.request.use((config) => {
 baseApi.interceptors.response.use(
     (response) => response,
     (error) => {
-        let errorMessage = 'Unknown error occurred'
-
-        if (error.response) {
-            errorMessage =
-                error.response.data?.message || error.response.data?.error || `Server error: ${error.response.status}`
-        } else if (error.request) {
-            errorMessage = 'No response from server'
-        } else {
-            errorMessage = error.message
-        }
+        const errorMessage =
+            error.response?.data?.message || error.response?.data?.error || error.request
+                ? 'No response from server'
+                : error.message || `Server error: ${error.response?.status}`
 
         console.error('[API Error]:', {
             message: errorMessage,
@@ -52,25 +48,17 @@ baseApi.interceptors.response.use(
 
 export const apiRequest = async (method, url, data = null, headers = {}) => {
     try {
-        const config = {
+        const response = await baseApi({
             method,
             url,
-            headers: {
-                'Content-Type': 'application/json',
-                ...headers
-            }
-        };
-        
-        if (data && method !== 'GET') {
-            config.data = JSON.stringify(data);
-        }
-
-        const response = await baseApi(config);
-        return response.data;
+            ...(data && method !== 'GET' && { data }),
+            headers,
+        })
+        return response.data
     } catch (error) {
-        console.error(`API ${method} ${url} error:`, error);
-        throw error.response?.data || { message: error.message };
+        console.error(`API ${method} ${url} error:`, error)
+        throw error.response?.data || { message: error.message }
     }
-};
+}
 
 export default baseApi

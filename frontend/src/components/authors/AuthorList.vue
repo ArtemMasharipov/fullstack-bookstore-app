@@ -135,9 +135,9 @@ export default {
             this.error = null
             
             try {
-                console.log('Attempting to delete author:', authorId) // Debug
+                console.log('Attempting to delete author:', authorId)
                 await this.deleteAuthor(authorId)
-                await this.fetchAuthors() // Refresh list after deletion
+                await this.fetchAuthors()
             } catch (error) {
                 console.error('Delete error:', error)
                 this.error = error.message || 'Failed to delete author'

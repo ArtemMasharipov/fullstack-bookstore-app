@@ -40,12 +40,11 @@ export default {
             this.$emit('click')
         },
         handleDelete() {
-            const authorId = this.author._id
+            const authorId = this.author._id // Changed from author.id
             if (!authorId) {
                 console.error('No author ID available:', this.author)
                 return
             }
-            console.log('Deleting author:', authorId) // Debug
             this.$emit('delete', authorId)
         }
     },
