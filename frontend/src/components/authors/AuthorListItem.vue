@@ -6,7 +6,11 @@
             <div class="book-count">Books: {{ author.books?.length || 0 }}</div>
         </div>
         <div v-if="hasPermission('update:author') || hasPermission('delete:author')" class="admin-actions">
-            <button v-if="hasPermission('update:author')" class="btn-edit" @click.stop="$emit('edit', author)">
+            <button 
+                v-if="hasPermission('update:author')" 
+                class="btn-edit" 
+                @click.stop="$emit('edit', author)"
+            >
                 Edit
             </button>
             <button
@@ -25,29 +29,34 @@ import { mapGetters } from 'vuex'
 
 export default {
     name: 'AuthorListItem',
+    
     props: {
         author: {
             type: Object,
             required: true,
         },
     },
+    
     emits: ['click', 'edit', 'delete'],
+    
     computed: {
         ...mapGetters('auth', ['hasPermission']),
     },
+    
     methods: {
         handleClick() {
             this.$emit('click')
         },
+        
         handleDelete() {
-            const authorId = this.author._id // Changed from author.id
+            const authorId = this.author._id
             if (!authorId) {
                 console.error('No author ID available:', this.author)
                 return
             }
             this.$emit('delete', authorId)
         }
-    },
+    }
 }
 </script>
 
@@ -60,6 +69,7 @@ export default {
     border-bottom: 1px solid var(--gray-light);
     cursor: pointer;
     transition: background-color 0.3s ease;
+    z-index: 0;
 }
 
 .author-list-item:hover {

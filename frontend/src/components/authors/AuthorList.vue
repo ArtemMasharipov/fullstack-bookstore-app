@@ -1,5 +1,5 @@
 <template>
-    <div class="author-list-container">
+    <div class="author-list-container" :class="{ 'modal-open': showForm }">
         <div class="author-list-header">
             <h2 class="author-list-title">Authors</h2>
             <button class="create-button" @click="openCreateForm">
@@ -95,7 +95,7 @@ export default {
         
         openEditForm(author) {
             this.selectedAuthor = { 
-                id: author._id,
+                _id: author._id,
                 ...author 
             }
             this.showForm = true
@@ -111,7 +111,7 @@ export default {
             this.error = null
             
             try {
-                if (formData.id) {
+                if (formData._id) {
                     await this.updateAuthor(formData)
                 } else {
                     await this.createAuthor(formData)
@@ -135,7 +135,6 @@ export default {
             this.error = null
             
             try {
-                console.log('Attempting to delete author:', authorId)
                 await this.deleteAuthor(authorId)
                 await this.fetchAuthors()
             } catch (error) {
@@ -161,6 +160,19 @@ export default {
     background: var(--white, #ffffff);
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 1;
+}
+
+.author-list-container.modal-open::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1;
 }
 
 .author-list-header {
@@ -213,6 +225,7 @@ export default {
     border: 1px solid var(--border-color, #eaeaea);
     border-radius: 4px;
     transition: all 0.2s ease;
+    z-index: 0;
 }
 
 .author-item:hover {
@@ -229,6 +242,12 @@ export default {
 
 .author-form {
     margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 2;
+    background: var(--white, #ffffff);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .error-message {
