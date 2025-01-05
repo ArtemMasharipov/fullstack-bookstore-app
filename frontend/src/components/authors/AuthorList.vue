@@ -175,6 +175,7 @@ export default {
     z-index: 1;
 }
 
+/* Стили для заголовка списка авторов */
 .author-list-header {
     display: flex;
     justify-content: space-between;
@@ -206,7 +207,7 @@ export default {
 }
 
 .create-button:hover {
-    background-color: var(--primary-dark, #388E3C);
+    background-color: var(--primary-dark, #155819);
 }
 
 .button-icon {
@@ -214,6 +215,7 @@ export default {
     font-weight: bold;
 }
 
+/* Список авторов */
 .authors-list {
     display: flex;
     flex-direction: column;
@@ -229,15 +231,13 @@ export default {
 }
 
 .author-item:hover {
-    transform: translateX(4px);
     border-color: var(--primary-color, #4CAF50);
 }
 
 .loading-container {
     display: flex;
     justify-content: center;
-    align-items: center;
-    min-height: 200px;
+    padding: 2rem;
 }
 
 .author-form {
@@ -274,4 +274,5 @@ export default {
         justify-content: center;
     }
 }
+
 </style>

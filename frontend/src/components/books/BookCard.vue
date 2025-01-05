@@ -15,13 +15,17 @@
             <p class="availability" :class="{ available: book.available }">
                 {{ book.available ? '✔ In Stock' : '✖ Out of Stock' }}
             </p>
-            <button
-                v-if="book.available"
-                class="add-to-cart"
-                @click.stop="$emit('add-to-cart', book.id)"
-            >
-                Add to Cart
-            </button>
+            <div class="card-actions">
+                <button
+                    v-if="book.available"
+                    class="btn add-to-cart"
+                    @click.stop="$emit('add-to-cart', book.id)"
+                >
+                    Add to Cart
+                </button>
+                <button class="btn btn-edit" @click.stop="$emit('edit', book)">Edit</button>
+                <button class="btn btn-delete" @click.stop="$emit('delete', book.id)">Delete</button>
+            </div>
         </div>
     </div>
 </template>
@@ -39,7 +43,7 @@ export default {
             default: '/images/placeholder.png', // Укажите путь к placeholder-изображению
         },
     },
-    emits: ['click', 'add-to-cart'],
+    emits: ['click', 'add-to-cart', 'edit', 'delete'],
 };
 </script>
 
@@ -140,6 +144,35 @@ export default {
 
 .add-to-cart:hover {
     background-color: var(--primary-dark);
+}
+
+.card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    justify-content: center;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.btn-edit {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.btn-delete {
+    background-color: #ff4444;
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.9;
 }
 
 @media screen and (max-width: 768px) {

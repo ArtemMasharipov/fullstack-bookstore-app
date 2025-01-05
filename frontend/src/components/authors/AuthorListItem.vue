@@ -1,11 +1,11 @@
 <template>
     <div 
         class="author-list-item" 
-        @click="handleClick" 
         role="button" 
         tabindex="0" 
+        aria-label="View author details" 
+        @click="handleClick"
         @keydown.enter="handleClick"
-        aria-label="View author details"
     >
         <div class="author-info">
             <h3 class="author-name">{{ author.name }}</h3>
@@ -20,16 +20,16 @@
             <button 
                 v-if="hasPermission('update:author')" 
                 class="btn btn-edit" 
-                @click.stop="$emit('edit', author)"
                 aria-label="Edit author"
+                @click.stop="$emit('edit', author)"
             >
                 Edit
             </button>
             <button
                 v-if="hasPermission('delete:author')"
                 class="btn btn-delete" 
-                @click.stop="handleDelete"
                 aria-label="Delete author"
+                @click.stop="handleDelete"
             >
                 Delete
             </button>
@@ -83,7 +83,6 @@ export default {
     cursor: pointer;
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
     border-radius: 0.5rem;
-    z-index: 0;
     outline: none;
 }
 
@@ -135,63 +134,38 @@ export default {
     border-radius: 0.375rem;
     cursor: pointer;
     transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+    gap: 0.5rem;
 }
 
 .btn-edit {
-    background-color: var(--primary-color);
-    color: #fff;
+    color: var(--primary-color);
     border-color: var(--primary-color);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
 }
 
 .btn-edit::before {
-    content: '\270E'; /* Pencil icon */
+    content: '\270E';
     font-size: 1rem;
 }
 
 .btn-edit:hover {
-    background-color: var(--primary-color-dark);
+    background-color: var(--primary-color-light);
     border-color: var(--primary-color-dark);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 8px rgba(4, 101, 13, 0.2);
 }
 
 .btn-delete {
-    background-color: var(--danger-color);
-    color: #fff;
+    color: rgb(216, 45, 45);
     border-color: var(--danger-color);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
 }
 
 .btn-delete::before {
-    content: '\1F5D1'; /* Trash bin icon */
+    content: '\1F5D1';
     font-size: 1rem;
 }
 
 .btn-delete:hover {
-    background-color: var(--danger-color-dark);
+    background-color: var(--danger-color-light);
     border-color: var(--danger-color-dark);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.btn-delete {
-    background-color: #FF6B6B;
-    color: white;
-    border: 1px solid #FF4D4D;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
-}
-
-.btn-delete:hover {
-    background-color: #FF4D4D;
-    border-color: #FF2D2D;
     box-shadow: 0 2px 8px rgba(255, 77, 77, 0.5);
 }
-
 </style>
