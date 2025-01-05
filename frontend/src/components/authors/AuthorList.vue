@@ -24,12 +24,12 @@
         <div v-else class="authors-list">
             <author-list-item
                 v-for="author in authors"
-                :key="author.id"
+                :key="author._id"
                 :author="author"
                 class="author-item"
                 @edit="openEditForm(author)"
-                @delete="deleteAuthor(author.id)"
-                @click="handleAuthorClick(author.id)"
+                @delete="handleDelete"
+                @click="handleAuthorClick(author._id)"
             />
         </div>
 
@@ -94,9 +94,8 @@ export default {
         },
         
         openEditForm(author) {
-            // Explicitly include id in the spread
             this.selectedAuthor = { 
-                id: author.id || author._id, 
+                id: author._id,
                 ...author 
             }
             this.showForm = true
@@ -126,6 +125,27 @@ export default {
             }
         },
         
+        async handleDelete(authorId) {
+            if (!authorId) {
+                console.error('No author ID provided')
+                return
+            }
+            
+            this.loading = true
+            this.error = null
+            
+            try {
+                console.log('Attempting to delete author:', authorId) // Debug
+                await this.deleteAuthor(authorId)
+                await this.fetchAuthors() // Refresh list after deletion
+            } catch (error) {
+                console.error('Delete error:', error)
+                this.error = error.message || 'Failed to delete author'
+            } finally {
+                this.loading = false
+            }
+        },
+
         handleAuthorClick(authorId) {
             this.$emit('author-click', authorId)
         },

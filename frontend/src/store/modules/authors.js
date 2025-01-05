@@ -35,7 +35,7 @@ export default {
             }
         },
         [AUTHORS.DELETE_AUTHOR](state, authorId) {
-            state.list = state.list.filter((author) => author.id !== authorId)
+            state.list = state.list.filter((author) => author._id !== authorId)
         },
         [UI.SET_LOADING](state, loading) {
             state.loading = loading
@@ -83,19 +83,17 @@ export default {
             }
         },
         async deleteAuthor({ commit }, authorId) {
-            commit(UI.SET_LOADING, true)
-            try {
-                // Отправляем запрос на удаление
-                await authorsApi.delete(authorId)
+            if (!authorId) {
+                throw new Error('Author ID is required');
+            }
 
-                // После успешного ответа удаляем автора из локального состояния
-                commit(AUTHORS.DELETE_AUTHOR, authorId)
+            try {
+                await authorsApi.delete(authorId);
+                commit(AUTHORS.DELETE_AUTHOR, authorId);
+                return true;
             } catch (error) {
-                // В случае ошибки устанавливаем сообщение об ошибке
-                commit(UI.SET_ERROR, error)
-                throw error
-            } finally {
-                commit(UI.SET_LOADING, false)
+                commit(UI.SET_ERROR, error.message);
+                throw error;
             }
         },
     },

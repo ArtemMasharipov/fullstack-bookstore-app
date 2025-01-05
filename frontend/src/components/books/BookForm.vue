@@ -43,7 +43,7 @@
                         class="btn btn-upload"
                         @click="triggerFileInput"
                     >
-                        Выберите файл
+                        Upload Image
                     </button>
                     <div v-if="selectedFile" class="selected-file">
                         <span>{{ selectedFile.name }}</span>

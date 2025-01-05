@@ -12,7 +12,7 @@
             <button
                 v-if="hasPermission('delete:author')"
                 class="btn-delete"
-                @click.stop="$emit('delete', author.id)"
+                @click.stop="handleDelete"
             >
                 Delete
             </button>
@@ -39,6 +39,15 @@ export default {
         handleClick() {
             this.$emit('click')
         },
+        handleDelete() {
+            const authorId = this.author._id
+            if (!authorId) {
+                console.error('No author ID available:', this.author)
+                return
+            }
+            console.log('Deleting author:', authorId) // Debug
+            this.$emit('delete', authorId)
+        }
     },
 }
 </script>

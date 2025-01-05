@@ -1,5 +1,4 @@
 import UsersDBService from '../models/user/UsersDBService.mjs';
-import RolesDBService from '../models/role/RolesDBService.mjs';
 import { validationResult } from 'express-validator';
 
 export const getAllUsers = async (req, res) => {

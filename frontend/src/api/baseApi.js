@@ -51,14 +51,26 @@ baseApi.interceptors.response.use(
 )
 
 export const apiRequest = async (method, url, data = null, headers = {}) => {
-    const response = await baseApi({
-        method,
-        url,
-        data,
-        headers,
-        validateStatus: (status) => status < 500,
-    })
-    return response.data
-}
+    try {
+        const config = {
+            method,
+            url,
+            headers: {
+                'Content-Type': 'application/json',
+                ...headers
+            }
+        };
+        
+        if (data && method !== 'GET') {
+            config.data = JSON.stringify(data);
+        }
+
+        const response = await baseApi(config);
+        return response.data;
+    } catch (error) {
+        console.error(`API ${method} ${url} error:`, error);
+        throw error.response?.data || { message: error.message };
+    }
+};
 
 export default baseApi
