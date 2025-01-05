@@ -90,7 +90,8 @@ export default {
     background: rgba(0, 0, 0, 0.5);
     position: fixed;
     top: 0;
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%);
     width: 100%;
     height: 100%;
     display: flex;
