@@ -11,29 +11,38 @@ const baseApi = axios.create({
 
 baseApi.interceptors.request.use((config) => {
     const token = localStorage.getItem('token')
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`
+    if (!token) {
+        console.warn('No authorization token found')
+        throw new Error('Authorization required')
     }
+    
+    config.headers.Authorization = `Bearer ${token}`
 
     if (!config.headers['Content-Type']) {
         config.headers['Content-Type'] =
             config.data instanceof FormData
                 ? 'multipart/form-data'
-                : typeof config.data === 'object'
-                ? 'application/json'
-                : 'text/plain'
+                : 'application/json'
     }
 
     return config
+}, (error) => {
+    return Promise.reject(error)
 })
 
 baseApi.interceptors.response.use(
     (response) => response,
     (error) => {
+        if (error.response?.status === 401) {
+            localStorage.removeItem('token')
+            window.location.href = '/login'
+            return Promise.reject(new Error('Please login to continue'))
+        }
+
         const errorMessage =
-            error.response?.data?.message || error.response?.data?.error || error.request
-                ? 'No response from server'
-                : error.message || `Server error: ${error.response?.status}`
+            error.response?.data?.message || 
+            error.response?.data?.error || 
+            'Server error occurred'
 
         console.error('[API Error]:', {
             message: errorMessage,

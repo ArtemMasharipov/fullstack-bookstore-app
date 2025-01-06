@@ -89,59 +89,65 @@ export default {
         ]),
         
         openCreateForm() {
-            this.selectedAuthor = {}
-            this.showForm = true
+            this.error = null;
+            this.selectedAuthor = {
+                _id: null,
+                name: '',
+                biography: ''
+            };
+            this.showForm = true;
         },
         
         openEditForm(author) {
-            this.selectedAuthor = { 
-                _id: author._id,
-                ...author 
-            }
-            this.showForm = true
+            this.error = null;
+            this.selectedAuthor = author ? { ...author } : null;
+            this.showForm = true;
         },
         
         closeForm() {
-            this.showForm = false
-            this.selectedAuthor = null
+            this.showForm = false;
+            this.selectedAuthor = null;
+            this.error = null;
         },
         
         async handleFormSubmit(formData) {
-            this.loading = true
-            this.error = null
+            this.loading = true;
+            this.error = null;
             
             try {
                 if (formData._id) {
-                    await this.updateAuthor(formData)
+                    await this.updateAuthor({ ...formData });
                 } else {
-                    await this.createAuthor(formData)
+                    await this.createAuthor({ ...formData });
                 }
-                this.closeForm()
-                await this.fetchAuthors()
+                await this.fetchAuthors(); // Обновляем список после успешной операции
+                this.closeForm();
             } catch (error) {
-                this.error = error.message
+                this.error = error.message;
+                console.error('Form submission error:', error);
             } finally {
-                this.loading = false
+                this.loading = false;
             }
         },
         
         async handleDelete(authorId) {
             if (!authorId) {
-                console.error('No author ID provided')
-                return
+                this.error = 'No author ID provided';
+                return;
             }
             
-            this.loading = true
-            this.error = null
+                     
+            this.loading = true;
+            this.error = null;
             
             try {
-                await this.deleteAuthor(authorId)
-                await this.fetchAuthors()
+                await this.deleteAuthor(authorId);
+                await this.fetchAuthors(); // Обновляем список после удаления
             } catch (error) {
-                console.error('Delete error:', error)
-                this.error = error.message || 'Failed to delete author'
+                this.error = error.message || 'Failed to delete author';
+                console.error('Delete error:', error);
             } finally {
-                this.loading = false
+                this.loading = false;
             }
         },
 

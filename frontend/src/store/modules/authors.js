@@ -58,28 +58,46 @@ export default {
         },
 
         async createAuthor({ commit }, authorData) {
-            commit(UI.SET_LOADING, true)
+            commit(UI.SET_LOADING, true);
+            commit(UI.SET_ERROR, null);
+            
             try {
-                const newAuthor = await authorsApi.create(authorData)
-                commit(AUTHORS.ADD_AUTHOR, newAuthor)
+                if (!localStorage.getItem('token')) {
+                    throw new Error('Authorization required');
+                }
+                
+                const newAuthor = await authorsApi.create(authorData);
+                commit(AUTHORS.ADD_AUTHOR, newAuthor);
+                return newAuthor;
             } catch (error) {
-                commit(UI.SET_ERROR, error)
-                throw error
+                const errorMessage = error.message === 'Authorization required' 
+                    ? 'Please login to create an author' 
+                    : 'Failed to create author';
+                commit(UI.SET_ERROR, errorMessage);
+                throw new Error(errorMessage);
             } finally {
-                commit(UI.SET_LOADING, false)
+                commit(UI.SET_LOADING, false);
             }
         },
 
         async updateAuthor({ commit }, authorData) {
-            commit(UI.SET_LOADING, true)
+            if (!authorData._id) {
+                throw new Error('Author ID is required for update');
+            }
+
+            commit(UI.SET_LOADING, true);
+            commit(UI.SET_ERROR, null);
+            
             try {
-                const updatedAuthor = await authorsApi.update(authorData._id, authorData)
-                commit(AUTHORS.UPDATE_AUTHOR, updatedAuthor)
+                const updatedAuthor = await authorsApi.update(authorData._id, authorData);
+                commit(AUTHORS.UPDATE_AUTHOR, updatedAuthor);
+                return updatedAuthor;
             } catch (error) {
-                commit(UI.SET_ERROR, error)
-                throw error
+                const errorMessage = 'Failed to update author';
+                commit(UI.SET_ERROR, errorMessage);
+                throw new Error(errorMessage);
             } finally {
-                commit(UI.SET_LOADING, false)
+                commit(UI.SET_LOADING, false);
             }
         },
         async deleteAuthor({ commit }, authorId) {
@@ -87,13 +105,19 @@ export default {
                 throw new Error('Author ID is required');
             }
 
+            commit(UI.SET_LOADING, true);
+            commit(UI.SET_ERROR, null);
+
             try {
                 await authorsApi.delete(authorId);
                 commit(AUTHORS.DELETE_AUTHOR, authorId);
                 return true;
             } catch (error) {
-                commit(UI.SET_ERROR, error.message);
-                throw error;
+                const errorMessage = 'Failed to delete author';
+                commit(UI.SET_ERROR, errorMessage);
+                throw new Error(errorMessage);
+            } finally {
+                commit(UI.SET_LOADING, false);
             }
         },
     },
