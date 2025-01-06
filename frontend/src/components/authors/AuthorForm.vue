@@ -1,5 +1,5 @@
 <template>
-    <div class="author-form-container">
+    <base-modal size="medium" @close="$emit('close')">
         <form class="author-form" @submit.prevent="handleSubmit">
             <h2>{{ form._id ? 'Edit Author' : 'Create Author' }}</h2>
             <div class="form-group">
@@ -30,12 +30,17 @@
             </button>
             <button type="button" class="btn btn-secondary" @click="$emit('close')">Cancel</button>
         </form>
-    </div>
+    </base-modal>
 </template>
 
 <script>
+import BaseModal from '../common/BaseModal.vue'
+
 export default {
     name: 'AuthorForm',
+    components: {
+        BaseModal
+    },
     
     props: {
         initialData: {
@@ -75,26 +80,8 @@ export default {
 </script>
 
 <style scoped>
-.author-form-container {
-    background: rgba(0, 0, 0, 0.5);
-    position: fixed;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
 .author-form {
-    background: var(--white);
     padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    width: 100%;
-    max-width: 500px;
 }
 
 .form-group {
@@ -131,4 +118,5 @@ button {
     color: var(--white);
     margin-left: 10px;
 }
+
 </style>

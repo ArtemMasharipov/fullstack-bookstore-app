@@ -1,5 +1,5 @@
 <template>
-    <div class="author-list-container" :class="{ 'modal-open': showForm }">
+    <div class="author-list-container">
         <div class="author-list-header">
             <h2 class="author-list-title">Authors</h2>
             <button class="create-button" @click="openCreateForm">
@@ -39,15 +39,16 @@
             class="error-message"
         />
 
-        <confirm-modal
-            v-if="showDeleteConfirm"
-            title="Delete Author"
-            message="Are you sure you want to delete this author? This action cannot be undone."
-            confirm-text="Delete"
-            cancel-text="Cancel"
-            @confirm="confirmDelete"
-            @cancel="cancelDelete"
-        />
+        <base-modal v-if="showDeleteConfirm" size="small" @close="cancelDelete">
+            <confirm-modal
+                title="Delete Author"
+                message="Are you sure you want to delete this author? This action cannot be undone."
+                confirm-text="Delete"
+                cancel-text="Cancel"
+                @confirm="confirmDelete"
+                @cancel="cancelDelete"
+            />
+        </base-modal>
     </div>
 </template>
 
@@ -58,6 +59,7 @@ import AuthorForm from './AuthorForm.vue'
 import LoadingSpinner from '../common/LoadingSpinner.vue'
 import ErrorMessage from '../common/ErrorMessage.vue'
 import ConfirmModal from '../common/ConfirmModal.vue'
+import BaseModal from '../common/BaseModal.vue'
 
 export default {
     name: 'AuthorList',
@@ -68,6 +70,7 @@ export default {
         LoadingSpinner,
         ErrorMessage,
         ConfirmModal,
+        BaseModal,
     },
     
     emits: ['author-click'],
@@ -164,19 +167,6 @@ export default {
     background: var(--white, #ffffff);
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    position: relative;
-    z-index: 1;
-}
-
-.author-list-container.modal-open::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1;
 }
 
 /* Стили для заголовка списка авторов */
