@@ -44,34 +44,23 @@ export default {
                 _id: null,
                 name: '',
                 biography: ''
-            }),
+            })
         },
-        loading: {
-            type: Boolean,
-            default: false,
-        },
+        loading: Boolean,
     },
     
     emits: ['submit', 'close'],
 
     data() {
         return {
-            form: {
-                _id: this.initialData?._id || null,
-                name: this.initialData?.name || '',
-                biography: this.initialData?.biography || '',
-            },
-        };
+            form: { ...this.initialData }
+        }
     },
 
     watch: {
         initialData: {
             handler(newData) {
-                this.form = {
-                    _id: newData?._id || null,
-                    name: newData?.name || '',
-                    biography: newData?.biography || '',
-                }
+                this.form = { ...newData }
             },
             deep: true
         }
@@ -80,9 +69,9 @@ export default {
     methods: {
         handleSubmit() {
             this.$emit('submit', { ...this.form })
-        },
-    },
-};
+        }
+    }
+}
 </script>
 
 <style scoped>

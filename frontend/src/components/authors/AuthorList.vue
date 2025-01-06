@@ -38,6 +38,16 @@
             :message="error" 
             class="error-message"
         />
+
+        <confirm-modal
+            v-if="showDeleteConfirm"
+            title="Delete Author"
+            message="Are you sure you want to delete this author? This action cannot be undone."
+            confirm-text="Delete"
+            cancel-text="Cancel"
+            @confirm="confirmDelete"
+            @cancel="cancelDelete"
+        />
     </div>
 </template>
 
@@ -47,6 +57,7 @@ import AuthorListItem from './AuthorListItem.vue'
 import AuthorForm from './AuthorForm.vue'
 import LoadingSpinner from '../common/LoadingSpinner.vue'
 import ErrorMessage from '../common/ErrorMessage.vue'
+import ConfirmModal from '../common/ConfirmModal.vue'
 
 export default {
     name: 'AuthorList',
@@ -56,6 +67,7 @@ export default {
         AuthorForm,
         LoadingSpinner,
         ErrorMessage,
+        ConfirmModal,
     },
     
     emits: ['author-click'],
@@ -66,6 +78,8 @@ export default {
             selectedAuthor: null,
             loading: false,
             error: null,
+            showDeleteConfirm: false,
+            authorToDelete: null,
         }
     },
     
@@ -81,74 +95,58 @@ export default {
     },
     
     methods: {
-        ...mapActions('authors', [
-            'fetchAuthors',
-            'createAuthor',
-            'updateAuthor',
-            'deleteAuthor'
-        ]),
+        ...mapActions('authors', ['fetchAuthors', 'createAuthor', 'updateAuthor', 'deleteAuthor']),
+        
+        async handleAction(action, ...args) {
+            this.error = null
+            this.loading = true
+            try {
+                await action(...args)
+                await this.fetchAuthors()
+                this.closeForm()
+            } catch (error) {
+                this.error = error.message
+                console.error(`Action failed:`, error)
+            } finally {
+                this.loading = false
+            }
+        },
         
         openCreateForm() {
-            this.error = null;
-            this.selectedAuthor = {
-                _id: null,
-                name: '',
-                biography: ''
-            };
-            this.showForm = true;
+            this.selectedAuthor = { _id: null, name: '', biography: '' }
+            this.showForm = true
         },
         
         openEditForm(author) {
-            this.error = null;
-            this.selectedAuthor = author ? { ...author } : null;
-            this.showForm = true;
+            this.selectedAuthor = { ...author }
+            this.showForm = true
         },
         
         closeForm() {
-            this.showForm = false;
-            this.selectedAuthor = null;
-            this.error = null;
+            this.showForm = false
+            this.selectedAuthor = null
+            this.error = null
         },
         
-        async handleFormSubmit(formData) {
-            this.loading = true;
-            this.error = null;
-            
-            try {
-                if (formData._id) {
-                    await this.updateAuthor({ ...formData });
-                } else {
-                    await this.createAuthor({ ...formData });
-                }
-                await this.fetchAuthors(); // Обновляем список после успешной операции
-                this.closeForm();
-            } catch (error) {
-                this.error = error.message;
-                console.error('Form submission error:', error);
-            } finally {
-                this.loading = false;
-            }
+        handleFormSubmit(formData) {
+            const action = formData._id ? this.updateAuthor : this.createAuthor
+            this.handleAction(action, formData)
         },
         
-        async handleDelete(authorId) {
-            if (!authorId) {
-                this.error = 'No author ID provided';
-                return;
-            }
-            
-                     
-            this.loading = true;
-            this.error = null;
-            
-            try {
-                await this.deleteAuthor(authorId);
-                await this.fetchAuthors(); // Обновляем список после удаления
-            } catch (error) {
-                this.error = error.message || 'Failed to delete author';
-                console.error('Delete error:', error);
-            } finally {
-                this.loading = false;
-            }
+        handleDelete(authorId) {
+            this.authorToDelete = authorId;
+            this.showDeleteConfirm = true;
+        },
+        
+        async confirmDelete() {
+            await this.handleAction(this.deleteAuthor, this.authorToDelete);
+            this.showDeleteConfirm = false;
+            this.authorToDelete = null;
+        },
+        
+        cancelDelete() {
+            this.showDeleteConfirm = false;
+            this.authorToDelete = null;
         },
 
         handleAuthorClick(authorId) {
