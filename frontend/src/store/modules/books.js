@@ -46,7 +46,9 @@ export default {
 
         createBook({ commit }, formData) {
             return handleAsyncAction(commit, () => booksApi.create(formData), {
-                onSuccess: book => commit(BOOKS.ADD_BOOK, book)
+                onSuccess: book => commit(BOOKS.ADD_BOOK, book),
+                loadingMutation: UI.SET_LOADING,
+                errorMutation: UI.SET_ERROR
             })
         },
 
@@ -54,7 +56,9 @@ export default {
             const original = state.list.find(book => book.id === id)
             return handleAsyncAction(commit, () => booksApi.update(id, formData), {
                 onSuccess: book => commit(BOOKS.UPDATE_BOOK, book),
-                onError: () => commit(BOOKS.UPDATE_BOOK, original)
+                onError: () => commit(BOOKS.UPDATE_BOOK, original),
+                loadingMutation: UI.SET_LOADING,
+                errorMutation: UI.SET_ERROR
             })
         },
 

@@ -1,9 +1,11 @@
+import { UI } from '@/store/types'
+
 export const handleAsyncAction = async (commit, action, options = {}) => {
     const { 
         onSuccess, 
         onError,
-        loadingMutation = 'SET_LOADING',
-        errorMutation = 'SET_ERROR',
+        loadingMutation = UI.SET_LOADING,   // Используем UI.SET_LOADING вместо 'SET_LOADING'
+        errorMutation = UI.SET_ERROR,       // Используем UI.SET_ERROR вместо 'SET_ERROR'
         skipLoading = false
     } = options
 
