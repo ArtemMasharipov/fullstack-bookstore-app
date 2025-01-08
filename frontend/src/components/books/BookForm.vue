@@ -38,22 +38,22 @@
                 <input ref="fileInput" type="file" accept="image/*" style="display: none" @change="handleImageUpload" />
                 <div class="file-upload-container">
                     <button
-                        v-if="!isFileDialogOpen && !selectedFile"
+                        v-if="!isFileDialogOpen && !fileConfig.file"
                         type="button"
                         class="btn btn-upload"
                         @click="triggerFileInput"
                     >
                         Upload Image
                     </button>
-                    <div v-if="selectedFile" class="selected-file">
-                        <span>{{ selectedFile.name }}</span>
+                    <div v-if="fileConfig.file" class="selected-file">
+                        <span>{{ fileConfig.file.name }}</span>
                         <button type="button" class="btn btn-remove" @click="resetImage">×</button>
                     </div>
                 </div>
-                <div v-if="imagePreview" class="image-preview">
-                    <img :src="imagePreview" alt="Book cover preview" />
+                <div v-if="fileConfig.preview" class="image-preview">
+                    <img :src="fileConfig.preview" alt="Book cover preview" />
                 </div>
-                <p v-if="imageError" class="error-message">{{ imageError }}</p>
+                <p v-if="fileConfig.error" class="error-message">{{ fileConfig.error }}</p>
             </div>
 
             <div class="form-actions">
@@ -87,15 +87,18 @@ export default {
             form: {
                 title: '',
                 authorId: '',
-                publicationYear: null,
+                publicationYear: new Date().getFullYear(),
                 category: '',
                 description: '',
                 ...this.initialData,
             },
-            selectedFile: null,
-            imageError: null,
-            imagePreview: null,
-            allowedTypes: ['image/jpeg', 'image/png', 'image/gif'],
+            fileConfig: {
+                maxSize: 10 * 1024 * 1024, // 10MB
+                allowedTypes: ['image/jpeg', 'image/png', 'image/gif'],
+                file: null,
+                preview: null,
+                error: null
+            }
         }
     },
     computed: {
@@ -111,9 +114,7 @@ export default {
         this.fetchAuthors()
     },
     beforeUnmount() {
-        if (this.imagePreview) {
-            URL.revokeObjectURL(this.imagePreview)
-        }
+        this.resetImage()
     },
     methods: {
         ...mapActions('authors', ['fetchAuthors']),
@@ -123,36 +124,41 @@ export default {
             this.$refs.fileInput.click()
         },
 
+        validateFile(file) {
+            if (!this.fileConfig.allowedTypes.includes(file.type)) {
+                throw new Error('Please upload an image file (JPEG, PNG, GIF)')
+            }
+            if (file.size > this.fileConfig.maxSize) {
+                throw new Error('File size should not exceed 10MB')
+            }
+        },
+
         handleImageUpload(event) {
             const file = event.target.files[0]
             if (!file) return
 
-            if (!this.allowedTypes.includes(file.type)) {
-                this.imageError = 'Please upload an image file (JPEG, PNG, GIF)'
+            try {
+                this.validateFile(file)
+                this.fileConfig.file = file
+                this.fileConfig.preview = URL.createObjectURL(file)
+                this.fileConfig.error = null
+            } catch (error) {
+                this.fileConfig.error = error.message
                 this.resetImage()
-                return
             }
-
-            if (file.size > 10485760) {
-                this.imageError = 'File size should not exceed 10MB'
-                this.resetImage()
-                return
-            }
-
-            this.imageError = null
-            this.selectedFile = file
-            this.imagePreview = URL.createObjectURL(file)
         },
 
         resetImage() {
-            if (this.$refs.fileInput) {
-                this.$refs.fileInput.value = ''
+            if (this.fileConfig.preview) {
+                URL.revokeObjectURL(this.fileConfig.preview)
             }
-            this.selectedFile = null
-            if (this.imagePreview) {
-                URL.revokeObjectURL(this.imagePreview)
-                this.imagePreview = null
+            this.fileConfig = {
+                ...this.fileConfig,
+                file: null,
+                preview: null,
+                error: null
             }
+            this.$refs.fileInput.value = ''
         },
 
         handleCancel() {
@@ -163,21 +169,20 @@ export default {
         async handleSubmit() {
             try {
                 const formData = new FormData()
-                formData.append('title', this.form.title)
-                formData.append('authorId', this.form.authorId)
-                formData.append('publicationYear', this.form.publicationYear)
-                formData.append('category', this.form.category)
-                formData.append('description', this.form.description)
+                Object.entries(this.form).forEach(([key, value]) => {
+                    if (value !== null && value !== undefined) {
+                        formData.append(key, value)
+                    }
+                })
 
-                if (this.selectedFile) {
-                    formData.append('image', this.selectedFile)
+                if (this.fileConfig.file) {
+                    formData.append('image', this.fileConfig.file)
                 }
 
-                if (this.form.id) {
-                    await this.updateBook({ id: this.form.id, formData })
-                } else {
-                    await this.createBook(formData)
-                }
+                const action = this.form.id ? this.updateBook : this.createBook
+                const payload = this.form.id ? { id: this.form.id, formData } : formData
+
+                await action(payload)
                 this.$emit('close')
             } catch (error) {
                 console.error('Error saving book:', error)

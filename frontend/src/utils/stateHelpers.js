@@ -1,17 +1,24 @@
 export const handleAsyncAction = async (commit, action, options = {}) => {
-    const { setLoading = 'SET_LOADING', setError = 'SET_ERROR', onSuccess, onError, onFinally } = options
+    const { 
+        onSuccess, 
+        onError,
+        loadingMutation = 'SET_LOADING',
+        errorMutation = 'SET_ERROR',
+        skipLoading = false
+    } = options
 
-    commit(setLoading, true)
+    !skipLoading && commit(loadingMutation, true)
+    
     try {
         const result = await action()
-        if (onSuccess) await onSuccess(result)
+        onSuccess?.(result)
         return result
     } catch (error) {
-        commit(setError, error.message)
-        if (onError) await onError(error)
+        const errorMessage = error?.response?.data?.message || error.message
+        commit(errorMutation, errorMessage)
+        onError?.(error)
         throw error
     } finally {
-        commit(setLoading, false)
-        if (onFinally) await onFinally()
+        !skipLoading && commit(loadingMutation, false)
     }
 }
