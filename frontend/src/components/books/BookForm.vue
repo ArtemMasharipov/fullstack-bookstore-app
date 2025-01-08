@@ -57,8 +57,8 @@
             </div>
 
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary" :disabled="loading">
-                    {{ loading ? 'Saving...' : form.id ? 'Update Book' : 'Create Book' }}
+                <button type="submit" class="btn btn-primary" :disabled="isLoading">
+                    {{ isLoading ? 'Saving...' : form.id ? 'Update Book' : 'Create Book' }}
                 </button>
                 <button type="button" class="btn btn-secondary" @click="handleCancel">Cancel</button>
             </div>
@@ -75,11 +75,7 @@ export default {
         initialData: {
             type: Object,
             default: () => ({}),
-        },
-        loading: {
-            type: Boolean,
-            default: false,
-        },
+        }
     },
     emits: ['submit', 'close'],
     data() {
@@ -103,12 +99,16 @@ export default {
     },
     computed: {
         ...mapGetters('authors', ['authorsList']),
+        ...mapGetters('books', ['booksLoading']), // добавляем геттер состояния загрузки
         authors() {
             return this.authorsList
         },
         formTitle() {
             return this.form.id ? 'Edit Book' : 'Create Book'
         },
+        isLoading() {
+            return this.booksLoading
+        }
     },
     created() {
         this.fetchAuthors()
