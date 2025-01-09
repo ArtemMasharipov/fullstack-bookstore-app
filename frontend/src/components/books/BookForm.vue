@@ -57,11 +57,11 @@
             </div>
 
             <div class="form-actions">
-                <button type="button" class="btn btn-secondary" @click="$emit('close')">
+                <button type="button" class="btn btn-secondary" :disabled="isSubmitting" @click="$emit('close')">
                     Cancel
                 </button>
-                <button type="submit" class="btn btn-primary" :disabled="loading">
-                    {{ isEdit ? 'Update' : 'Create' }}
+                <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
+                    {{ getSubmitButtonText }}
                 </button>
             </div>
         </form>
@@ -101,7 +101,8 @@ export default {
                 preview: null,
                 error: null
             },
-            isFileDialogOpen: false // Add this property
+            isFileDialogOpen: false, // Add this property
+            isSubmitting: false
         }
     },
     computed: {
@@ -118,6 +119,12 @@ export default {
         },
         isEdit() {
             return !!this.initialData._id
+        },
+        getSubmitButtonText() {
+            if (this.isSubmitting) {
+                return this.isEdit ? 'Updating...' : 'Creating...'
+            }
+            return this.isEdit ? 'Update' : 'Create'
         }
     },
     watch: {
@@ -188,6 +195,7 @@ export default {
 
         async handleSubmit() {
             try {
+                this.isSubmitting = true
                 const formData = new FormData()
                 
                 // Don't include _id in formData for updates
@@ -219,6 +227,8 @@ export default {
                 this.$emit('close');
             } catch (error) {
                 console.error('Error saving book:', error)
+            } finally {
+                this.isSubmitting = false
             }
         }
     }
@@ -318,6 +328,11 @@ export default {
 
 .btn:hover {
     opacity: 0.9;
+}
+
+.btn[disabled] {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 .error-message {
