@@ -55,7 +55,6 @@ export default {
         },
 
         async updateBook({ commit, state }, { id, formData }) {
-            console.log('Updating book with ID:', id);
             const original = state.list.find(book => book._id === id);
             
             if (!original) {
@@ -65,7 +64,6 @@ export default {
             try {
                 commit(UI.SET_LOADING, true);
                 commit(UI.SET_ERROR, null);
-                
                 const updatedBook = await booksApi.update(id, formData);
                 commit(BOOKS.UPDATE_BOOK, updatedBook);
                 return updatedBook;

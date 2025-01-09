@@ -141,38 +141,22 @@ export default {
             immediate: true,
             handler(newVal) {
                 if (newVal) {
-                    console.log('Initial data:', newVal); // Debug log
-                    
-                    // Правильно обрабатываем authorId из разных возможных источников
                     const authorId = newVal.author?._id || newVal.authorId || newVal.author;
-                    
                     this.form = {
                         ...this.form,
                         ...newVal,
                         authorId: authorId
                     };
-
-                    console.log('Form after update:', this.form); // Debug log
                     
                     if (newVal.image) {
                         this.currentImage = newVal.image;
                     }
                 }
-            },
-            deep: true
+            }
         }
     },
     created() {
-        this.fetchAuthors().then(() => {
-            // После загрузки авторов обновляем форму, если есть начальные данные
-            if (this.initialData && Object.keys(this.initialData).length > 0) {
-                this.form = {
-                    ...this.form,
-                    ...this.initialData,
-                    authorId: this.initialData.author?._id || this.initialData.authorId || this.initialData.author
-                };
-            }
-        });
+        this.fetchAuthors();
     },
     beforeUnmount() {
         this.resetImage()
@@ -236,35 +220,30 @@ export default {
 
         async handleSubmit() {
             try {
-                this.isSubmitting = true
-                const formData = new FormData()
+                this.isSubmitting = true;
+                const formData = new FormData();
                 
-                // Don't include _id in formData for updates
-                const dataToSend = { ...this.form }
+                const dataToSend = { ...this.form };
                 if (this.isEdit) {
-                    delete dataToSend._id // Remove _id from form data
+                    delete dataToSend._id;
                 }
 
-                // Add current image to form if exists and no new file selected
                 if (this.currentImage && !this.fileConfig.file) {
                     dataToSend.image = this.currentImage;
                 }
 
                 Object.entries(dataToSend).forEach(([key, value]) => {
                     if (value !== null && value !== undefined) {
-                        formData.append(key, value)
+                        formData.append(key, value);
                     }
-                })
+                });
 
                 if (this.fileConfig.file) {
-                    formData.append('image', this.fileConfig.file)
+                    formData.append('image', this.fileConfig.file);
                 }
 
                 if (this.isEdit) {
-                    await this.updateBook({ 
-                        id: this.form._id,
-                        formData 
-                    });
+                    await this.updateBook({ id: this.form._id, formData });
                 } else {
                     await this.createBook(formData);
                 }
@@ -272,9 +251,9 @@ export default {
                 this.$emit('submit');
                 this.$emit('close');
             } catch (error) {
-                console.error('Error saving book:', error)
+                this.$emit('error', error.message || 'Failed to save book');
             } finally {
-                this.isSubmitting = false
+                this.isSubmitting = false;
             }
         }
     }
