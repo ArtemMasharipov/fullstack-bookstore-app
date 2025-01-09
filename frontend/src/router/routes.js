@@ -82,6 +82,16 @@ const routes = [
         path: '/cart',
         name: 'Cart',
         component: () => import('@/views/CartView.vue')
+    },
+    {
+        path: '/contact',
+        name: 'Contact',
+        component: () => import('@/views/ContactView.vue')
+    },
+    {
+        path: '/privacy',
+        name: 'Privacy',
+        component: () => import('@/views/PrivacyView.vue')
     }
 ]
 

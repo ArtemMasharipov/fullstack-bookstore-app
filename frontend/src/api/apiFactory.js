@@ -9,14 +9,23 @@ const createFormDataConfig = (data) => ({
 })
 
 export const createApiClient = (resource, customMethods = {}) => {
+    const validateId = (id) => {
+        if (!id) throw new Error(`Invalid ${resource} ID`);
+        return id;
+    };
+
     const defaultMethods = {
         fetchAll: () => apiRequest('get', `/${resource}`),
-        fetchById: id => apiRequest('get', `/${resource}/${id}`),
+        fetchById: id => apiRequest('get', `/${resource}/${validateId(id)}`),
         create: data => apiRequest('post', `/${resource}`, data, 
             data instanceof FormData && createFormDataConfig(data)),
-        update: (id, data) => apiRequest('put', `/${resource}/${id}`, data,
-            data instanceof FormData && createFormDataConfig(data)),
-        delete: id => apiRequest('delete', `/${resource}/${id}`)
+        update: (id, data) => apiRequest(
+            'put', 
+            `/${resource}/${validateId(id)}`, 
+            data,
+            data instanceof FormData ? createFormDataConfig(data) : null
+        ),
+        delete: id => apiRequest('delete', `/${resource}/${validateId(id)}`)
     }
 
     return { ...defaultMethods, ...customMethods }

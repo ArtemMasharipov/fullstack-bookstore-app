@@ -15,24 +15,51 @@
             <p class="availability" :class="{ available: book.available }">
                 {{ book.available ? '✔ In Stock' : '✖ Out of Stock' }}
             </p>
-            <div class="card-actions">
-                <button
-                    v-if="book.available"
-                    class="btn add-to-cart"
-                    @click.stop="$emit('add-to-cart', book.id)"
+            <div class="actions-container">
+                <div class="admin-actions">
+                    <button 
+                        class="btn btn-edit" 
+                        aria-label="Edit book"
+                        @click.stop="$emit('edit', book)"
+                    >
+                        Edit
+                    </button>
+                    <button 
+                        class="btn btn-delete" 
+                        aria-label="Delete book"
+                        @click.stop="$emit('delete', book)"
+                    >
+                        Delete
+                    </button>
+                </div>
+                <button 
+                    v-if="book.available" 
+                    class="btn btn-cart" 
+                    @click.stop="$emit('add-to-cart', book)"
                 >
                     Add to Cart
                 </button>
-                <button class="btn btn-edit" @click.stop="$emit('edit', book)">Edit</button>
-                <button class="btn btn-delete" @click.stop="$emit('delete', book.id)">Delete</button>
             </div>
         </div>
+        <confirm-modal
+            v-if="showDeleteConfirm"
+            title="Delete Book"
+            :message="`Are you sure you want to delete '${book.title}'?`"
+            confirm-text="Delete"
+            @confirm="confirmDelete"
+            @cancel="showDeleteConfirm = false"
+        />
     </div>
 </template>
 
 <script>
+import ConfirmModal from '../common/ConfirmModal.vue'
+
 export default {
     name: 'BookCard',
+    components: {
+        ConfirmModal
+    },
     props: {
         book: {
             type: Object,
@@ -43,7 +70,18 @@ export default {
             default: '/images/placeholder.png', // Укажите путь к placeholder-изображению
         },
     },
-    emits: ['click', 'add-to-cart', 'edit', 'delete'],
+    emits: ['add-to-cart', 'edit', 'delete', 'click'],
+    data() {
+        return {
+            showDeleteConfirm: false
+        }
+    },
+    methods: {
+        confirmDelete() {
+            this.$emit('delete', this.book._id);
+            this.showDeleteConfirm = false;
+        }
+    }
 };
 </script>
 
@@ -54,15 +92,16 @@ export default {
     overflow: hidden;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     cursor: pointer;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
+    height: 100%;
+    border: 1px solid var(--border-color, #eee);
     max-width: 100%; /* Адаптивная ширина */
     height: auto; /* Высота по содержимому */
-    border: 1px solid var(--gray-light);
     margin: 1rem;
+    position: relative;
+    z-index: 1; /* Ниже чем у формы */
 }
 
 .book-card:hover {
@@ -98,17 +137,20 @@ export default {
 }
 
 .book-info {
-    padding: 1rem;
+    padding: 1.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
     width: 100%;
     box-sizing: border-box;
     font-family: 'Arial', sans-serif;
 }
 
 .book-title {
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: var(--secondary-color);
-    margin: 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
 }
 
 .author-name,
@@ -146,33 +188,161 @@ export default {
     background-color: var(--primary-dark);
 }
 
-.card-actions {
+.actions-container {
+    margin-top: auto;
+    padding: 1rem;
+    border-top: 1px solid var(--gray-light);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.admin-actions {
     display: flex;
     gap: 0.5rem;
-    margin-top: 1rem;
     justify-content: center;
+    width: 100%;
 }
 
 .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
     cursor: pointer;
-    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    gap: 0.5rem;
 }
 
 .btn-edit {
-    background-color: var(--secondary-color);
-    color: white;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background: transparent;
+}
+
+.btn-edit::before {
+    content: '\270E';
+    font-size: 1rem;
+}
+
+.btn-edit:hover {
+    background-color: var(--primary-color-light);
+    border-color: var(--primary-color-dark);
+    box-shadow: 0 2px 8px rgba(4, 101, 13, 0.2);
 }
 
 .btn-delete {
-    background-color: #ff4444;
+    color: rgb(216, 45, 45);
+    border-color: var(--danger-color);
+    background: transparent;
+}
+
+.btn-delete::before {
+    content: '\1F5D1';
+    font-size: 1rem;
+}
+
+.btn-delete:hover {
+    background-color: var(--danger-color-light);
+    border-color: var(--danger-color-dark);
+    box-shadow: 0 2px 8px rgba(255, 77, 77, 0.5);
+}
+
+.btn-cart {
     color: white;
+    background-color: var(--primary-color);
+    padding: 0.5rem 2rem;
+}
+
+.btn-cart::before {
+    content: '\1F6D2';
+    font-size: 1rem;
+    margin-right: 0.5rem;
+}
+
+.btn-cart:hover {
+    background-color: var(--primary-dark);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.icon {
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-edit {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background: transparent;
+}
+
+.btn-edit::before {
+    content: '\270E';
+    font-size: 1rem;
+}
+
+.btn-edit:hover {
+    background-color: var(--primary-color-light);
+    border-color: var(--primary-color-dark);
+    box-shadow: 0 2px 8px rgba(4, 101, 13, 0.2);
+}
+
+.btn-delete {
+    color: rgb(216, 45, 45);
+    border-color: var(--danger-color);
+    background: transparent;
+}
+
+.btn-delete::before {
+    content: '\1F5D1';
+    font-size: 1rem;
+}
+
+.btn-delete:hover {
+    background-color: var(--danger-color-light);
+    border-color: var(--danger-color-dark);
+    box-shadow: 0 2px 8px rgba(255, 77, 77, 0.5);
 }
 
 .btn:hover {
-    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn i {
+    font-size: 1rem;
 }
 
 @media screen and (max-width: 768px) {

@@ -23,10 +23,12 @@ export default {
         [BOOKS.SET_CURRENT]: (state, book) => state.current = book,
         [BOOKS.ADD_BOOK]: (state, book) => state.list.push(book),
         [BOOKS.UPDATE_BOOK]: (state, updated) => {
-            const index = state.list.findIndex(book => book.id === updated.id)
-            if (index !== -1) state.list.splice(index, 1, updated)
+            const index = state.list.findIndex(book => book._id === updated._id);
+            if (index !== -1) state.list.splice(index, 1, updated);
         },
-        [BOOKS.DELETE_BOOK]: (state, id) => state.list = state.list.filter(book => book.id !== id),
+        [BOOKS.DELETE_BOOK]: (state, id) => {
+            state.list = state.list.filter(book => book._id !== id);
+        },
         [UI.SET_LOADING]: (state, loading) => state.loading = loading,
         [UI.SET_ERROR]: (state, error) => state.error = error
     },
@@ -52,22 +54,33 @@ export default {
             })
         },
 
-        updateBook({ commit, state }, { id, formData }) {
-            const original = state.list.find(book => book.id === id)
-            return handleAsyncAction(commit, () => booksApi.update(id, formData), {
-                onSuccess: book => commit(BOOKS.UPDATE_BOOK, book),
-                onError: () => commit(BOOKS.UPDATE_BOOK, original),
-                loadingMutation: UI.SET_LOADING,
-                errorMutation: UI.SET_ERROR
-            })
+        async updateBook({ commit }, { id, formData }) {
+            commit(UI.SET_LOADING, true);
+            try {
+                const updatedBook = await booksApi.update(id, formData);
+                commit(BOOKS.UPDATE_BOOK, updatedBook);
+                return updatedBook;
+            } catch (error) {
+                commit(UI.SET_ERROR, error?.message || 'Failed to update book');
+                throw error;
+            } finally {
+                commit(UI.SET_LOADING, false);
+            }
         },
 
-        deleteBook({ commit, state }, id) {
-            const originalList = [...state.list]
-            commit(BOOKS.DELETE_BOOK, id)
-            return handleAsyncAction(commit, () => booksApi.delete(id), {
-                onError: () => commit(BOOKS.SET_LIST, originalList)
-            })
+        async deleteBook({ commit }, id) {
+            if (!id) throw new Error('Book ID is required');
+            
+            commit(UI.SET_LOADING, true);
+            try {
+                await booksApi.delete(id);
+                commit(BOOKS.DELETE_BOOK, id);
+            } catch (error) {
+                commit(UI.SET_ERROR, error?.message || 'Failed to delete book');
+                throw error;
+            } finally {
+                commit(UI.SET_LOADING, false);
+            }
         }
     }
 }
