@@ -29,6 +29,15 @@
             v-if="errorMessage || booksError" 
             :message="errorMessage || booksError?.message || booksError" 
         />
+
+        <confirm-modal
+            v-if="bookToDelete"
+            title="Delete Book"
+            :message="`Are you sure you want to delete '${bookToDelete.title}'?`"
+            confirm-text="Delete"
+            @confirm="confirmDelete"
+            @cancel="bookToDelete = null"
+        />
     </div>
 </template>
 
@@ -38,6 +47,7 @@ import BookCard from './BookCard.vue'
 import BookForm from './BookForm.vue'
 import LoadingSpinner from '../common/LoadingSpinner.vue'
 import ErrorMessage from '../common/ErrorMessage.vue'
+import ConfirmModal from '../common/ConfirmModal.vue'
 
 export default {
     name: 'BookList',
@@ -47,13 +57,15 @@ export default {
         BookForm,
         LoadingSpinner,
         ErrorMessage,
+        ConfirmModal,
     },
 
     data() {
         return {
             showForm: false,
             selectedBook: null,
-            errorMessage: null
+            errorMessage: null,
+            bookToDelete: null
         };
     },
 
@@ -100,15 +112,19 @@ export default {
         },
 
         async handleDelete(bookId) {
-            this.errorMessage = null;
+            const book = this.books.find(b => b._id === bookId);
+            if (!book) {
+                this.errorMessage = 'Cannot delete: Book not found';
+                return;
+            }
+            this.bookToDelete = book;
+        },
 
+        async confirmDelete() {
             try {
-                if (!bookId || !this.books.find(book => book._id === bookId)) {
-                    throw new Error('Cannot delete: Book not found');
-                }
-
-                await this.deleteBook(bookId);
+                await this.deleteBook(this.bookToDelete._id);
                 await this.fetchBooks();
+                this.bookToDelete = null;
             } catch (error) {
                 this.errorMessage = error.message;
             }

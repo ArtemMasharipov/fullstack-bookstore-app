@@ -40,12 +40,25 @@
                 </button>
             </div>
         </div>
+        <confirm-modal
+            v-if="showDeleteConfirm"
+            title="Delete Book"
+            :message="`Are you sure you want to delete '${book.title}'?`"
+            confirm-text="Delete"
+            @confirm="confirmDelete"
+            @cancel="showDeleteConfirm = false"
+        />
     </div>
 </template>
 
 <script>
+import ConfirmModal from '../common/ConfirmModal.vue'
+
 export default {
     name: 'BookCard',
+    components: {
+        ConfirmModal
+    },
     props: {
         book: {
             type: Object,
@@ -57,6 +70,11 @@ export default {
         },
     },
     emits: ['click', 'add-to-cart', 'edit', 'delete', 'error'],
+    data() {
+        return {
+            showDeleteConfirm: false
+        }
+    },
     methods: {
         handleDelete() {
             const bookId = this.book._id;
@@ -66,9 +84,12 @@ export default {
                 return;
             }
             
-            if (confirm(`Delete "${this.book.title}"?`)) {
-                this.$emit('delete', bookId);
-            }
+            this.$emit('delete', bookId);
+        },
+
+        confirmDelete() {
+            this.$emit('delete', this.book._id);
+            this.showDeleteConfirm = false;
         }
     }
 };
