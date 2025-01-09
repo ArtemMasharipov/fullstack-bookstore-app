@@ -18,13 +18,26 @@
             <div class="card-actions">
                 <button
                     v-if="book.available"
-                    class="btn add-to-cart"
+                    class="btn btn-primary"
                     @click.stop="$emit('add-to-cart', book.id)"
                 >
                     Add to Cart
                 </button>
-                <button class="btn btn-edit" @click.stop="$emit('edit', book)">Edit</button>
-                <button class="btn btn-delete" @click.stop="$emit('delete', book.id)">Delete</button>
+                <button 
+                    class="btn btn-edit" 
+                    title="Edit book"
+                    @click.stop="$emit('edit', book)"
+                >
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button 
+                    class="btn btn-delete" 
+                    title="Delete book"
+                    type="button"
+                    @click.stop.prevent="handleDelete"
+                >
+                    <i class="fas fa-trash"></i> Delete
+                </button>
             </div>
         </div>
     </div>
@@ -43,7 +56,24 @@ export default {
             default: '/images/placeholder.png', // Укажите путь к placeholder-изображению
         },
     },
-    emits: ['click', 'add-to-cart', 'edit', 'delete'],
+    emits: ['click', 'add-to-cart', 'edit', 'delete', 'error'],
+    methods: {
+        handleDelete() {
+            const bookId = this.book._id;
+            console.log('Attempting to delete book with ID:', bookId);
+
+            if (!bookId) {
+                console.error('No book ID found:', this.book);
+                this.$emit('error', 'Cannot delete book: Invalid book data');
+                return;
+            }
+            
+            if (window.confirm(`Are you sure you want to delete "${this.book.title}"?`)) {
+                console.log('Confirmed delete for book ID:', bookId);
+                this.$emit('delete', String(bookId));
+            }
+        }
+    }
 };
 </script>
 
@@ -162,12 +192,12 @@ export default {
 }
 
 .btn-edit {
-    background-color: var(--secondary-color);
+    background-color: #4caf50;
     color: white;
 }
 
 .btn-delete {
-    background-color: #ff4444;
+    background-color: #f44336;
     color: white;
 }
 

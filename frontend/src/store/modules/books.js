@@ -26,7 +26,9 @@ export default {
             const index = state.list.findIndex(book => book.id === updated.id)
             if (index !== -1) state.list.splice(index, 1, updated)
         },
-        [BOOKS.DELETE_BOOK]: (state, id) => state.list = state.list.filter(book => book.id !== id),
+        [BOOKS.DELETE_BOOK]: (state, id) => {
+            state.list = state.list.filter(book => book._id !== id);
+        },
         [UI.SET_LOADING]: (state, loading) => state.loading = loading,
         [UI.SET_ERROR]: (state, error) => state.error = error
     },
@@ -52,22 +54,59 @@ export default {
             })
         },
 
-        updateBook({ commit, state }, { id, formData }) {
-            const original = state.list.find(book => book.id === id)
-            return handleAsyncAction(commit, () => booksApi.update(id, formData), {
-                onSuccess: book => commit(BOOKS.UPDATE_BOOK, book),
-                onError: () => commit(BOOKS.UPDATE_BOOK, original),
-                loadingMutation: UI.SET_LOADING,
-                errorMutation: UI.SET_ERROR
-            })
+        async updateBook({ commit, state }, { id, formData }) {
+            const original = state.list.find(book => book.id === id);
+            
+            try {
+                commit(UI.SET_LOADING, true);
+                commit(UI.SET_ERROR, null);
+                
+                // Optimistic update
+                const optimisticBook = { ...original, ...formData };
+                commit(BOOKS.UPDATE_BOOK, optimisticBook);
+                
+                const updatedBook = await booksApi.update(id, formData);
+                commit(BOOKS.UPDATE_BOOK, updatedBook);
+                
+                return updatedBook;
+            } catch (error) {
+                // Rollback on error
+                if (original) {
+                    commit(BOOKS.UPDATE_BOOK, original);
+                }
+                commit(UI.SET_ERROR, error);
+                throw error;
+            } finally {
+                commit(UI.SET_LOADING, false);
+            }
         },
 
-        deleteBook({ commit, state }, id) {
-            const originalList = [...state.list]
-            commit(BOOKS.DELETE_BOOK, id)
-            return handleAsyncAction(commit, () => booksApi.delete(id), {
-                onError: () => commit(BOOKS.SET_LIST, originalList)
-            })
+        async deleteBook({ commit, state }, id) {
+            console.log('Store deleteBook called with ID:', id);
+
+            if (!id) {
+                throw new Error('Book ID is required');
+            }
+
+            const bookToDelete = state.list.find(book => book._id === id);
+            console.log('Found book to delete:', bookToDelete);
+
+            if (!bookToDelete) {
+                throw new Error('Book not found');
+            }
+
+            const originalList = [...state.list];
+
+            try {
+                commit(UI.SET_LOADING, true);
+                await booksApi.delete(id);
+                commit(BOOKS.DELETE_BOOK, id);
+            } catch (error) {
+                commit(BOOKS.SET_LIST, originalList);
+                throw error;
+            } finally {
+                commit(UI.SET_LOADING, false);
+            }
         }
     }
 }

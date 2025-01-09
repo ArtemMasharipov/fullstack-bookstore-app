@@ -17,15 +17,20 @@
         <div v-else class="books-grid">
             <book-card
                 v-for="book in books"
-                :key="book.id"
+                :key="book._id"
                 :book="book"
-                @edit="openEditForm(book)"
-                @delete="deleteBook(book.id)"
+                @edit="openEditForm"
+                @delete="handleDelete"
+                @error="handleError"
             />
         </div>
 
         <div v-if="booksError" class="error-container">
             <error-message :message="booksError.message || booksError" />
+        </div>
+
+        <div v-if="errorMessage" class="error-container">
+            <error-message :message="errorMessage" />
         </div>
     </div>
 </template>
@@ -51,6 +56,7 @@ export default {
         return {
             showForm: false,
             selectedBook: null,
+            errorMessage: null
         };
     },
 
@@ -73,8 +79,8 @@ export default {
             this.showForm = true;
         },
 
-        openEditForm(book) {
-            this.selectedBook = book;
+        async openEditForm(book) {
+            this.selectedBook = { ...book };
             this.showForm = true;
         },
 
@@ -85,14 +91,42 @@ export default {
         async handleFormSubmit(formData) {
             try {
                 if (formData.id) {
-                    await this.updateBook(formData);
+                    await this.updateBook({ id: formData.id, formData });
                 } else {
                     await this.createBook(formData);
                 }
                 this.closeForm();
-                this.fetchBooks();
+                await this.fetchBooks();
             } catch (error) {
-                console.error('Error submitting form:', error);
+                this.errorMessage = error.message || 'Failed to save book';
+            }
+        },
+
+        handleError(message) {
+            this.errorMessage = message;
+        },
+
+        async handleDelete(bookId) {
+            console.log('BookList received delete event with ID:', bookId);
+            this.errorMessage = null;
+
+            try {
+                if (!bookId) {
+                    throw new Error('Cannot delete book: Missing book ID');
+                }
+
+                const bookToDelete = this.books.find(book => book._id === bookId);
+                console.log('Found book to delete:', bookToDelete);
+
+                if (!bookToDelete) {
+                    throw new Error('Cannot delete book: Book not found');
+                }
+
+                await this.deleteBook(bookId);
+                await this.fetchBooks();
+            } catch (error) {
+                console.error('Delete error:', error);
+                this.errorMessage = error.message || 'Failed to delete book';
             }
         },
     },
