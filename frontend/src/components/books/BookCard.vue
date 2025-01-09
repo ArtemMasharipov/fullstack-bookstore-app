@@ -111,6 +111,8 @@ export default {
     height: auto; /* Высота по содержимому */
     border: 1px solid var(--gray-light);
     margin: 1rem;
+    position: relative;
+    z-index: 1; /* Ниже чем у формы */
 }
 
 .book-card:hover {
