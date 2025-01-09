@@ -11,7 +11,7 @@
 
             <template v-if="isAuthenticated">
                 <span class="user-name">{{ currentUser?.username }}</span>
-                <button class="nav-link btn-logout" @click="logout">Logout</button>
+                <button class="nav-link btn-logout" @click="handleLogout">Logout</button>
             </template>
             <template v-else>
                 <router-link to="/login" class="nav-link">Login</router-link>
@@ -27,13 +27,14 @@ import { mapGetters, mapActions } from 'vuex';
 export default {
     name: 'NavBar',
     computed: {
-        ...mapGetters('auth', ['authToken', 'currentUser']),
-        isAuthenticated() {
-            return this.authToken !== null;
-        },
+        ...mapGetters('auth', ['currentUser', 'isAuthenticated']),
     },
     methods: {
         ...mapActions('auth', ['logout']),
+        async handleLogout() {
+            await this.logout();
+            this.$router.push('/login');
+        }
     },
 };
 </script>

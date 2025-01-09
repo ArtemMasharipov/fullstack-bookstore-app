@@ -71,18 +71,14 @@ export default {
             await handleAsyncAction(
                 commit,
                 async () => {
-                    await authApi.logout()
+                    await authApi.logout();
+                    commit(AUTH.SET_USER, null);
+                    commit(AUTH.SET_TOKEN, null);
+                    commit('setPermissions', []);
+                    localStorage.removeItem('token');
                 },
-                {
-                    setLoading: UI.SET_LOADING,
-                    onFinally: () => {
-                        commit(AUTH.SET_USER, null)
-                        commit(AUTH.SET_TOKEN, null)
-                        commit('setPermissions', [])
-                        localStorage.removeItem('token')
-                    },
-                }
-            )
+                { setLoading: UI.SET_LOADING }
+            );
         },
 
         restoreUserFromToken({ commit }) {
