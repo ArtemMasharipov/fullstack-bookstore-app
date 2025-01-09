@@ -16,13 +16,13 @@
                 {{ book.available ? '✔ In Stock' : '✖ Out of Stock' }}
             </p>
             <div class="card-actions">
-                <button v-if="book.available" class="btn btn-primary" @click.stop="$emit('add-to-cart', book._id)">
+                <button v-if="book.available" class="btn btn-primary" @click.stop="$emit('add-to-cart', book)">
                     Add to Cart
                 </button>
                 <button class="btn btn-edit" @click.stop="$emit('edit', book)">
                     <i class="fas fa-edit"></i> Edit
                 </button>
-                <button class="btn btn-delete" @click.stop="$emit('delete', book._id)">
+                <button class="btn btn-delete" @click.stop="$emit('delete', book)">
                     <i class="fas fa-trash"></i> Delete
                 </button>
             </div>

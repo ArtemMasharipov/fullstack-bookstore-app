@@ -60,6 +60,9 @@ export default {
                 const updatedBook = await booksApi.update(id, formData);
                 commit(BOOKS.UPDATE_BOOK, updatedBook);
                 return updatedBook;
+            } catch (error) {
+                commit(UI.SET_ERROR, error?.message || 'Failed to update book');
+                throw error;
             } finally {
                 commit(UI.SET_LOADING, false);
             }
@@ -72,6 +75,9 @@ export default {
             try {
                 await booksApi.delete(id);
                 commit(BOOKS.DELETE_BOOK, id);
+            } catch (error) {
+                commit(UI.SET_ERROR, error?.message || 'Failed to delete book');
+                throw error;
             } finally {
                 commit(UI.SET_LOADING, false);
             }

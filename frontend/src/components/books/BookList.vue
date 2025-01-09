@@ -20,14 +20,15 @@
                 :key="book._id"
                 :book="book"
                 @edit="openEditForm"
-                @delete="handleDelete"
+                @delete="handleDeleteClick"
                 @error="handleError"
             />
         </div>
 
         <error-message 
-            v-if="errorMessage || booksError" 
-            :message="errorMessage || booksError?.message || booksError" 
+            v-if="errorMessage" 
+            :message="errorMessage" 
+            @close="errorMessage = null"
         />
 
         <confirm-modal
@@ -35,7 +36,7 @@
             title="Delete Book"
             :message="`Are you sure you want to delete '${bookToDelete.title}'?`"
             confirm-text="Delete"
-            @confirm="confirmDelete"
+            @confirm="handleDelete(bookToDelete._id)"
             @cancel="bookToDelete = null"
         />
     </div>
@@ -116,10 +117,15 @@ export default {
             
             try {
                 await this.deleteBook(bookId);
+                this.bookToDelete = null;
                 await this.fetchBooks();
             } catch (error) {
                 this.errorMessage = error?.message || 'Failed to delete book';
             }
+        },
+
+        handleDeleteClick(book) {
+            this.bookToDelete = book;
         },
 
         async confirmDelete() {
