@@ -38,7 +38,7 @@
                 <input ref="fileInput" type="file" accept="image/*" style="display: none" @change="handleImageUpload" />
                 <div class="file-upload-container">
                     <button
-                        v-if="!isFileDialogOpen && !fileConfig.file"
+                        v-if="!fileConfig.file"
                         type="button"
                         class="btn btn-upload"
                         @click="triggerFileInput"
@@ -94,7 +94,8 @@ export default {
                 file: null,
                 preview: null,
                 error: null
-            }
+            },
+            isFileDialogOpen: false // Add this property
         }
     },
     computed: {
@@ -121,6 +122,7 @@ export default {
         ...mapActions('books', ['createBook', 'updateBook']),
 
         triggerFileInput() {
+            this.isFileDialogOpen = true
             this.$refs.fileInput.click()
         },
 
@@ -134,6 +136,7 @@ export default {
         },
 
         handleImageUpload(event) {
+            this.isFileDialogOpen = false
             const file = event.target.files[0]
             if (!file) return
 
