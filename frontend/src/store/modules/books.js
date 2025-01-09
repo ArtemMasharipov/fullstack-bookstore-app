@@ -82,16 +82,7 @@ export default {
         },
 
         async deleteBook({ commit, state }, id) {
-            console.log('Store deleteBook called with ID:', id);
-
-            if (!id) {
-                throw new Error('Book ID is required');
-            }
-
-            const bookToDelete = state.list.find(book => book._id === id);
-            console.log('Found book to delete:', bookToDelete);
-
-            if (!bookToDelete) {
+            if (!id || !state.list.find(book => book._id === id)) {
                 throw new Error('Book not found');
             }
 
@@ -99,6 +90,7 @@ export default {
 
             try {
                 commit(UI.SET_LOADING, true);
+                commit(UI.SET_ERROR, null);
                 await booksApi.delete(id);
                 commit(BOOKS.DELETE_BOOK, id);
             } catch (error) {

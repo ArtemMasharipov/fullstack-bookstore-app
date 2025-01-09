@@ -25,13 +25,10 @@
             />
         </div>
 
-        <div v-if="booksError" class="error-container">
-            <error-message :message="booksError.message || booksError" />
-        </div>
-
-        <div v-if="errorMessage" class="error-container">
-            <error-message :message="errorMessage" />
-        </div>
+        <error-message 
+            v-if="errorMessage || booksError" 
+            :message="errorMessage || booksError?.message || booksError" 
+        />
     </div>
 </template>
 
@@ -107,26 +104,17 @@ export default {
         },
 
         async handleDelete(bookId) {
-            console.log('BookList received delete event with ID:', bookId);
             this.errorMessage = null;
 
             try {
-                if (!bookId) {
-                    throw new Error('Cannot delete book: Missing book ID');
-                }
-
-                const bookToDelete = this.books.find(book => book._id === bookId);
-                console.log('Found book to delete:', bookToDelete);
-
-                if (!bookToDelete) {
-                    throw new Error('Cannot delete book: Book not found');
+                if (!bookId || !this.books.find(book => book._id === bookId)) {
+                    throw new Error('Cannot delete: Book not found');
                 }
 
                 await this.deleteBook(bookId);
                 await this.fetchBooks();
             } catch (error) {
-                console.error('Delete error:', error);
-                this.errorMessage = error.message || 'Failed to delete book';
+                this.errorMessage = error.message;
             }
         },
     },

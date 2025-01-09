@@ -60,17 +60,14 @@ export default {
     methods: {
         handleDelete() {
             const bookId = this.book._id;
-            console.log('Attempting to delete book with ID:', bookId);
-
+            
             if (!bookId) {
-                console.error('No book ID found:', this.book);
                 this.$emit('error', 'Cannot delete book: Invalid book data');
                 return;
             }
             
-            if (window.confirm(`Are you sure you want to delete "${this.book.title}"?`)) {
-                console.log('Confirmed delete for book ID:', bookId);
-                this.$emit('delete', String(bookId));
+            if (confirm(`Delete "${this.book.title}"?`)) {
+                this.$emit('delete', bookId);
             }
         }
     }
