@@ -23,8 +23,8 @@ export default {
         [BOOKS.SET_CURRENT]: (state, book) => state.current = book,
         [BOOKS.ADD_BOOK]: (state, book) => state.list.push(book),
         [BOOKS.UPDATE_BOOK]: (state, updated) => {
-            const index = state.list.findIndex(book => book.id === updated.id)
-            if (index !== -1) state.list.splice(index, 1, updated)
+            const index = state.list.findIndex(book => book._id === updated._id);
+            if (index !== -1) state.list.splice(index, 1, updated);
         },
         [BOOKS.DELETE_BOOK]: (state, id) => {
             state.list = state.list.filter(book => book._id !== id);
@@ -54,42 +54,24 @@ export default {
             })
         },
 
-        async updateBook({ commit, state }, { id, formData }) {
-            const original = state.list.find(book => book._id === id);
-            
-            if (!original) {
-                throw new Error('Book not found');
-            }
-
+        async updateBook({ commit }, { id, formData }) {
+            commit(UI.SET_LOADING, true);
             try {
-                commit(UI.SET_LOADING, true);
-                commit(UI.SET_ERROR, null);
                 const updatedBook = await booksApi.update(id, formData);
                 commit(BOOKS.UPDATE_BOOK, updatedBook);
                 return updatedBook;
-            } catch (error) {
-                commit(UI.SET_ERROR, error);
-                throw error;
             } finally {
                 commit(UI.SET_LOADING, false);
             }
         },
 
-        async deleteBook({ commit, state }, id) {
-            if (!id || !state.list.find(book => book._id === id)) {
-                throw new Error('Book not found');
-            }
-
-            const originalList = [...state.list];
-
+        async deleteBook({ commit }, id) {
+            if (!id) throw new Error('Book ID is required');
+            
+            commit(UI.SET_LOADING, true);
             try {
-                commit(UI.SET_LOADING, true);
-                commit(UI.SET_ERROR, null);
                 await booksApi.delete(id);
                 commit(BOOKS.DELETE_BOOK, id);
-            } catch (error) {
-                commit(BOOKS.SET_LIST, originalList);
-                throw error;
             } finally {
                 commit(UI.SET_LOADING, false);
             }

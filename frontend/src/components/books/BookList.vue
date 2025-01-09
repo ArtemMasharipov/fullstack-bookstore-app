@@ -112,12 +112,14 @@ export default {
         },
 
         async handleDelete(bookId) {
-            const book = this.books.find(b => b._id === bookId);
-            if (!book) {
-                this.errorMessage = 'Cannot delete: Book not found';
-                return;
+            if (!bookId) return;
+            
+            try {
+                await this.deleteBook(bookId);
+                await this.fetchBooks();
+            } catch (error) {
+                this.errorMessage = error?.message || 'Failed to delete book';
             }
-            this.bookToDelete = book;
         },
 
         async confirmDelete() {

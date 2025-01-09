@@ -16,26 +16,13 @@
                 {{ book.available ? '✔ In Stock' : '✖ Out of Stock' }}
             </p>
             <div class="card-actions">
-                <button
-                    v-if="book.available"
-                    class="btn btn-primary"
-                    @click.stop="$emit('add-to-cart', book.id)"
-                >
+                <button v-if="book.available" class="btn btn-primary" @click.stop="$emit('add-to-cart', book._id)">
                     Add to Cart
                 </button>
-                <button 
-                    class="btn btn-edit" 
-                    title="Edit book"
-                    @click.stop="$emit('edit', book)"
-                >
+                <button class="btn btn-edit" @click.stop="$emit('edit', book)">
                     <i class="fas fa-edit"></i> Edit
                 </button>
-                <button 
-                    class="btn btn-delete" 
-                    title="Delete book"
-                    type="button"
-                    @click.stop.prevent="handleDelete"
-                >
+                <button class="btn btn-delete" @click.stop="$emit('delete', book._id)">
                     <i class="fas fa-trash"></i> Delete
                 </button>
             </div>
@@ -69,24 +56,13 @@ export default {
             default: '/images/placeholder.png', // Укажите путь к placeholder-изображению
         },
     },
-    emits: ['click', 'add-to-cart', 'edit', 'delete', 'error'],
+    emits: ['add-to-cart', 'edit', 'delete'],
     data() {
         return {
             showDeleteConfirm: false
         }
     },
     methods: {
-        handleDelete() {
-            const bookId = this.book._id;
-            
-            if (!bookId) {
-                this.$emit('error', 'Cannot delete book: Invalid book data');
-                return;
-            }
-            
-            this.$emit('delete', bookId);
-        },
-
         confirmDelete() {
             this.$emit('delete', this.book._id);
             this.showDeleteConfirm = false;
