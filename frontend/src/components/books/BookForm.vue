@@ -12,6 +12,7 @@
                 <div class="form-group">
                     <label for="author">Author</label>
                     <select id="author" v-model="form.authorId" required>
+                        <option value="">Select Author</option>
                         <option v-for="author in authors" :key="author._id" :value="author._id">
                             {{ author.name }}
                         </option>
@@ -38,13 +39,17 @@
                     <label>Book Cover</label>
                     <input ref="fileInput" type="file" accept="image/*" style="display: none" @change="handleImageUpload" />
                     <div class="file-upload-container">
+                        <div v-if="currentImage" class="current-image">
+                            <img :src="currentImage" alt="Current cover" />
+                            <button type="button" class="btn btn-remove" @click="removeCurrentImage">×</button>
+                        </div>
                         <button
-                            v-if="!fileConfig.file"
+                            v-if="!fileConfig.file && !currentImage"
                             type="button"
                             class="btn btn-upload"
                             @click="triggerFileInput"
                         >
-                            Upload Image
+                            {{ isEdit ? 'Change Image' : 'Upload Image' }}
                         </button>
                         <div v-if="fileConfig.file" class="selected-file">
                             <span>{{ fileConfig.file.name }}</span>
@@ -94,6 +99,7 @@ export default {
                 publicationYear: new Date().getFullYear(),
                 category: '',
                 description: '',
+                image: null,
                 ...this.initialData,
             },
             fileConfig: {
@@ -103,6 +109,7 @@ export default {
                 preview: null,
                 error: null
             },
+            currentImage: null,
             isFileDialogOpen: false, // Add this property
             isSubmitting: false
         }
@@ -131,14 +138,41 @@ export default {
     },
     watch: {
         initialData: {
+            immediate: true,
             handler(newVal) {
-                this.form = { ...newVal }
+                if (newVal) {
+                    console.log('Initial data:', newVal); // Debug log
+                    
+                    // Правильно обрабатываем authorId из разных возможных источников
+                    const authorId = newVal.author?._id || newVal.authorId || newVal.author;
+                    
+                    this.form = {
+                        ...this.form,
+                        ...newVal,
+                        authorId: authorId
+                    };
+
+                    console.log('Form after update:', this.form); // Debug log
+                    
+                    if (newVal.image) {
+                        this.currentImage = newVal.image;
+                    }
+                }
             },
             deep: true
         }
     },
     created() {
-        this.fetchAuthors()
+        this.fetchAuthors().then(() => {
+            // После загрузки авторов обновляем форму, если есть начальные данные
+            if (this.initialData && Object.keys(this.initialData).length > 0) {
+                this.form = {
+                    ...this.form,
+                    ...this.initialData,
+                    authorId: this.initialData.author?._id || this.initialData.authorId || this.initialData.author
+                };
+            }
+        });
     },
     beforeUnmount() {
         this.resetImage()
@@ -190,6 +224,11 @@ export default {
             this.$refs.fileInput.value = ''
         },
 
+        removeCurrentImage() {
+            this.currentImage = null;
+            this.form.image = null;
+        },
+
         handleCancel() {
             this.resetImage()
             this.$emit('close')
@@ -204,6 +243,11 @@ export default {
                 const dataToSend = { ...this.form }
                 if (this.isEdit) {
                     delete dataToSend._id // Remove _id from form data
+                }
+
+                // Add current image to form if exists and no new file selected
+                if (this.currentImage && !this.fileConfig.file) {
+                    dataToSend.image = this.currentImage;
                 }
 
                 Object.entries(dataToSend).forEach(([key, value]) => {
@@ -372,5 +416,26 @@ export default {
     margin-top: 2rem;
     display: flex;
     justify-content: flex-end;
+}
+
+.current-image {
+    position: relative;
+    margin: 1rem 0;
+    max-width: 200px;
+}
+
+.current-image img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    border: 1px solid var(--gray-medium);
+}
+
+.current-image .btn-remove {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    border-radius: 50%;
+    padding: 4px 8px;
 }
 </style>
