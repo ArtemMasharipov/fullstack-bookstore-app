@@ -1,7 +1,7 @@
 <template>
     <div class="book-form-container">
         <form class="book-form" enctype="multipart/form-data" @submit.prevent="handleSubmit">
-            <h2>{{ formTitle }}</h2>
+            <h2>{{ isEdit ? 'Update Book' : 'Create New Book' }}</h2>
 
             <div class="form-group">
                 <label for="title">Title</label>
@@ -57,10 +57,12 @@
             </div>
 
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary" :disabled="isLoading">
-                    {{ isLoading ? 'Saving...' : form.id ? 'Update Book' : 'Create Book' }}
+                <button type="button" class="btn btn-secondary" @click="$emit('close')">
+                    Cancel
                 </button>
-                <button type="button" class="btn btn-secondary" @click="handleCancel">Cancel</button>
+                <button type="submit" class="btn btn-primary" :disabled="loading">
+                    {{ isEdit ? 'Update' : 'Create' }}
+                </button>
             </div>
         </form>
     </div>
@@ -75,6 +77,10 @@ export default {
         initialData: {
             type: Object,
             default: () => ({}),
+        },
+        loading: {
+            type: Boolean,
+            default: false
         }
     },
     emits: ['submit', 'close'],
@@ -109,6 +115,17 @@ export default {
         },
         isLoading() {
             return this.booksLoading
+        },
+        isEdit() {
+            return !!this.initialData._id
+        }
+    },
+    watch: {
+        initialData: {
+            handler(newVal) {
+                this.form = { ...newVal }
+            },
+            deep: true
         }
     },
     created() {
@@ -172,7 +189,14 @@ export default {
         async handleSubmit() {
             try {
                 const formData = new FormData()
-                Object.entries(this.form).forEach(([key, value]) => {
+                
+                // Don't include _id in formData for updates
+                const dataToSend = { ...this.form }
+                if (this.isEdit) {
+                    delete dataToSend._id // Remove _id from form data
+                }
+
+                Object.entries(dataToSend).forEach(([key, value]) => {
                     if (value !== null && value !== undefined) {
                         formData.append(key, value)
                     }
@@ -182,16 +206,22 @@ export default {
                     formData.append('image', this.fileConfig.file)
                 }
 
-                const action = this.form.id ? this.updateBook : this.createBook
-                const payload = this.form.id ? { id: this.form.id, formData } : formData
+                if (this.isEdit) {
+                    await this.updateBook({ 
+                        id: this.form._id,
+                        formData 
+                    });
+                } else {
+                    await this.createBook(formData);
+                }
 
-                await action(payload)
-                this.$emit('close')
+                this.$emit('submit');
+                this.$emit('close');
             } catch (error) {
                 console.error('Error saving book:', error)
             }
-        },
-    },
+        }
+    }
 }
 </script>
 

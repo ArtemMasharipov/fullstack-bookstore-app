@@ -82,18 +82,14 @@ export default {
         },
 
         closeForm() {
+            this.selectedBook = null;
             this.showForm = false;
         },
 
-        async handleFormSubmit(formData) {
+        async handleFormSubmit() {
             try {
-                if (formData.id) {
-                    await this.updateBook({ id: formData.id, formData });
-                } else {
-                    await this.createBook(formData);
-                }
+                await this.fetchBooks(); // Only refresh the list after form submission
                 this.closeForm();
-                await this.fetchBooks();
             } catch (error) {
                 this.errorMessage = error.message || 'Failed to save book';
             }

@@ -55,25 +55,21 @@ export default {
         },
 
         async updateBook({ commit, state }, { id, formData }) {
-            const original = state.list.find(book => book.id === id);
+            console.log('Updating book with ID:', id);
+            const original = state.list.find(book => book._id === id);
             
+            if (!original) {
+                throw new Error('Book not found');
+            }
+
             try {
                 commit(UI.SET_LOADING, true);
                 commit(UI.SET_ERROR, null);
                 
-                // Optimistic update
-                const optimisticBook = { ...original, ...formData };
-                commit(BOOKS.UPDATE_BOOK, optimisticBook);
-                
                 const updatedBook = await booksApi.update(id, formData);
                 commit(BOOKS.UPDATE_BOOK, updatedBook);
-                
                 return updatedBook;
             } catch (error) {
-                // Rollback on error
-                if (original) {
-                    commit(BOOKS.UPDATE_BOOK, original);
-                }
                 commit(UI.SET_ERROR, error);
                 throw error;
             } finally {

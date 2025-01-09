@@ -10,9 +10,7 @@ const createFormDataConfig = (data) => ({
 
 export const createApiClient = (resource, customMethods = {}) => {
     const validateId = (id) => {
-        if (!id || typeof id === 'undefined') {
-            throw new Error(`Invalid ${resource} ID`);
-        }
+        if (!id) throw new Error(`Invalid ${resource} ID`);
         return id;
     };
 
@@ -21,8 +19,15 @@ export const createApiClient = (resource, customMethods = {}) => {
         fetchById: id => apiRequest('get', `/${resource}/${validateId(id)}`),
         create: data => apiRequest('post', `/${resource}`, data, 
             data instanceof FormData && createFormDataConfig(data)),
-        update: (id, data) => apiRequest('put', `/${resource}/${validateId(id)}`, data,
-            data instanceof FormData && createFormDataConfig(data)),
+        update: (id, data) => {
+            console.log('API update called with ID:', id);
+            return apiRequest(
+                'put', 
+                `/${resource}/${validateId(id)}`, 
+                data,
+                data instanceof FormData ? createFormDataConfig(data) : null
+            );
+        },
         delete: id => apiRequest('delete', `/${resource}/${validateId(id)}`)
     }
 
