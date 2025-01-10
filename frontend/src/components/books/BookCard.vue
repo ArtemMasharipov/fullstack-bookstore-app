@@ -78,14 +78,13 @@ export default {
     overflow: hidden;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     cursor: pointer;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
+    height: 100%;
+    border: 1px solid var(--border-color, #eee);
     max-width: 100%; /* Адаптивная ширина */
     height: auto; /* Высота по содержимому */
-    border: 1px solid var(--gray-light);
     margin: 1rem;
     position: relative;
     z-index: 1; /* Ниже чем у формы */
@@ -124,17 +123,20 @@ export default {
 }
 
 .book-info {
-    padding: 1rem;
+    padding: 1.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
     width: 100%;
     box-sizing: border-box;
     font-family: 'Arial', sans-serif;
 }
 
 .book-title {
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: var(--secondary-color);
-    margin: 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
 }
 
 .author-name,
@@ -173,10 +175,12 @@ export default {
 }
 
 .card-actions {
+    margin-top: auto;
+    padding: 1rem;
+    border-top: 1px solid var(--border-color, #eee);
     display: flex;
     gap: 0.5rem;
-    margin-top: 1rem;
-    justify-content: center;
+    justify-content: flex-end;
 }
 
 .btn {
@@ -184,6 +188,10 @@ export default {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: 0.9rem;
 }
 
