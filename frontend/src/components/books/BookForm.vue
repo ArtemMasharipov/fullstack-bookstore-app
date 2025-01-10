@@ -90,7 +90,7 @@ export default {
             default: false
         }
     },
-    emits: ['submit', 'close'],
+    emits: ['submit', 'close', 'error'],
     data() {
         return {
             form: {

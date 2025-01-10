@@ -56,7 +56,7 @@ export default {
             default: '/images/placeholder.png', // Укажите путь к placeholder-изображению
         },
     },
-    emits: ['add-to-cart', 'edit', 'delete'],
+    emits: ['add-to-cart', 'edit', 'delete', 'click'],
     data() {
         return {
             showDeleteConfirm: false
