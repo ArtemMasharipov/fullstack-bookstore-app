@@ -39,25 +39,21 @@
                     <label>Book Cover</label>
                     <input ref="fileInput" type="file" accept="image/*" style="display: none" @change="handleImageUpload" />
                     <div class="file-upload-container">
-                        <div v-if="currentImage" class="current-image">
-                            <img :src="currentImage" alt="Current cover" />
-                            <button type="button" class="btn btn-remove" @click="removeCurrentImage">×</button>
-                        </div>
                         <button
-                            v-if="!fileConfig.file && !currentImage"
+                            v-if="!hasImage"
                             type="button"
                             class="btn btn-upload"
                             @click="triggerFileInput"
                         >
                             {{ isEdit ? 'Change Image' : 'Upload Image' }}
                         </button>
-                        <div v-if="fileConfig.file" class="selected-file">
-                            <span>{{ fileConfig.file.name }}</span>
-                            <button type="button" class="btn btn-remove" @click="resetImage">×</button>
+                        <div v-if="hasImage" class="selected-file">
+                            <span>{{ imageFileName }}</span>
+                            <button type="button" class="btn btn-remove" @click="removeImage">×</button>
                         </div>
                     </div>
-                    <div v-if="fileConfig.preview" class="image-preview">
-                        <img :src="fileConfig.preview" alt="Book cover preview" />
+                    <div v-if="hasImage" class="image-preview">
+                        <img :src="currentPreviewUrl" :alt="imageFileName || 'Preview'" />
                     </div>
                     <p v-if="fileConfig.error" class="error-message">{{ fileConfig.error }}</p>
                 </div>
@@ -134,6 +130,17 @@ export default {
                 return this.isEdit ? 'Updating...' : 'Creating...'
             }
             return this.isEdit ? 'Update' : 'Create'
+        },
+        hasImage() {
+            return this.fileConfig.file || this.currentImage;
+        },
+        imageFileName() {
+            if (this.fileConfig.file) return this.fileConfig.file.name;
+            if (this.currentImage) return this.currentImage.split('/').pop();
+            return '';
+        },
+        currentPreviewUrl() {
+            return this.fileConfig.preview || this.currentImage;
         }
     },
     watch: {
@@ -211,6 +218,11 @@ export default {
         removeCurrentImage() {
             this.currentImage = null;
             this.form.image = null;
+        },
+
+        removeImage() {
+            this.resetImage();
+            this.removeCurrentImage();
         },
 
         handleCancel() {
@@ -329,6 +341,7 @@ export default {
     padding: 8px;
     background-color: #f5f5f5;
     border-radius: 4px;
+    margin-bottom: 1rem;
 }
 
 .btn {
@@ -351,6 +364,7 @@ export default {
     color: white;
     font-size: 18px;
     line-height: 1;
+    border-radius: 4px;
 }
 
 .btn-primary {
@@ -380,8 +394,8 @@ export default {
 }
 
 .image-preview {
-    margin-top: 1rem;
     max-width: 200px;
+    margin: 1rem 0;
 }
 
 .image-preview img {
