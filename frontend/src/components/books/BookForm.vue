@@ -58,11 +58,22 @@
             </div>
 
             <div class="form-actions">
-                <button type="button" class="btn btn-secondary" :disabled="isSubmitting" @click="$emit('close')">
-                    Cancel
+                <button 
+                    type="button" 
+                    class="btn btn-secondary" 
+                    :disabled="isSubmitting" 
+                    @click="$emit('close')"
+                >
+                    <i class="fas fa-times"></i>
+                    <span>Cancel</span>
                 </button>
-                <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
-                    {{ getSubmitButtonText }}
+                <button 
+                    type="submit" 
+                    class="btn btn-primary" 
+                    :disabled="isSubmitting"
+                >
+                    <i :class="isEdit ? 'fas fa-save' : 'fas fa-plus'"></i>
+                    <span>{{ getSubmitButtonText }}</span>
                 </button>
             </div>
         </form>
@@ -125,9 +136,9 @@ export default {
         },
         getSubmitButtonText() {
             if (this.isSubmitting) {
-                return this.isEdit ? 'Updating...' : 'Creating...'
+                return this.isEdit ? 'Saving...' : 'Creating...';
             }
-            return this.isEdit ? 'Update' : 'Create'
+            return this.isEdit ? 'Save Changes' : 'Create Book';
         },
         hasImage() {
             return this.fileConfig.file || this.currentImage;
@@ -330,12 +341,20 @@ export default {
 }
 
 .btn {
-    padding: 10px 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     font-weight: 500;
-    transition: background-color 0.2s;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.btn i {
+    font-size: 1rem;
 }
 
 .btn-upload {
@@ -355,21 +374,30 @@ export default {
 .btn-primary {
     background-color: var(--primary-color);
     color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 
 .btn-secondary {
-    background-color: var(--gray-medium);
-    color: white;
-    margin-left: 10px;
+    background-color: var(--gray-light);
+    color: var(--text-primary);
 }
 
-.btn:hover {
-    opacity: 0.9;
+.btn-secondary:hover:not(:disabled) {
+    background-color: var(--gray-medium);
+    color: white;
 }
 
 .btn[disabled] {
     opacity: 0.7;
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 .error-message {
@@ -392,8 +420,11 @@ export default {
 
 .form-actions {
     margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color, #eee);
     display: flex;
     justify-content: flex-end;
+    gap: 1rem;
 }
 
 .current-image {
@@ -415,6 +446,15 @@ export default {
     right: -10px;
     border-radius: 50%;
     padding: 4px 8px;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.btn-primary[disabled] i {
+    animation: spin 1s linear infinite;
 }
 
 @media (max-width: 768px) {

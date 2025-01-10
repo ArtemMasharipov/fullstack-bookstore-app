@@ -16,15 +16,30 @@
                 {{ book.available ? '✔ In Stock' : '✖ Out of Stock' }}
             </p>
             <div class="card-actions">
-                <button v-if="book.available" class="btn btn-primary" @click.stop="$emit('add-to-cart', book)">
+                <button 
+                    v-if="book.available" 
+                    class="btn btn-primary" 
+                    @click.stop="$emit('add-to-cart', book)"
+                >
+                    <i class="fas fa-shopping-cart"></i>
                     Add to Cart
                 </button>
-                <button class="btn btn-edit" @click.stop="$emit('edit', book)">
-                    <i class="fas fa-edit"></i> Edit
-                </button>
-                <button class="btn btn-delete" @click.stop="$emit('delete', book)">
-                    <i class="fas fa-trash"></i> Delete
-                </button>
+                <div class="admin-actions">
+                    <button 
+                        class="btn btn-edit" 
+                        title="Edit book"
+                        @click.stop="$emit('edit', book)"
+                    >
+                        Edit
+                    </button>
+                    <button 
+                        class="btn btn-delete" 
+                        title="Delete book"
+                        @click.stop="$emit('delete', book)"
+                    >
+                        Delete
+                    </button>
+                </div>
             </div>
         </div>
         <confirm-modal
@@ -179,34 +194,82 @@ export default {
     padding: 1rem;
     border-top: 1px solid var(--border-color, #eee);
     display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.admin-actions {
+    display: flex;
     gap: 0.5rem;
-    justify-content: flex-end;
 }
 
 .btn {
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 500;
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
     gap: 0.5rem;
-    font-size: 0.9rem;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .btn-edit {
-    background-color: #4caf50;
-    color: white;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background: transparent;
+}
+
+.btn-edit::before {
+    content: '\270E';
+    font-size: 1rem;
+}
+
+.btn-edit:hover {
+    background-color: var(--primary-color-light);
+    border-color: var(--primary-color-dark);
+    box-shadow: 0 2px 8px rgba(4, 101, 13, 0.2);
 }
 
 .btn-delete {
-    background-color: #f44336;
-    color: white;
+    color: rgb(216, 45, 45);
+    border-color: var(--danger-color);
+    background: transparent;
+}
+
+.btn-delete::before {
+    content: '\1F5D1';
+    font-size: 1rem;
+}
+
+.btn-delete:hover {
+    background-color: var(--danger-color-light);
+    border-color: var(--danger-color-dark);
+    box-shadow: 0 2px 8px rgba(255, 77, 77, 0.5);
 }
 
 .btn:hover {
-    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn i {
+    font-size: 1rem;
 }
 
 @media screen and (max-width: 768px) {

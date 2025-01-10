@@ -20,7 +20,10 @@
                 </div>
 
                 <div v-else class="books-grid">
-                    <book-card v-for="book in books" :key="book._id" :book="book"
+                    <book-card 
+                        v-for="book in books" 
+                        :key="book._id" 
+                        :book="book"
                         @edit="openEditForm" @delete="handleDeleteClick" @error="handleError" />
                 </div>
             </div>
