@@ -1,38 +1,47 @@
 <template>
     <div class="cart-item">
-        <div class="item-info">
-            <h3>{{ item.title }}</h3>
-            <p>{{ item.author.name }}</p>
-            <p>Price: ${{ item.price }}</p>
-        </div>
-        <div class="item-actions">
-            <input v-model.number="quantity" type="number" min="1" @change="updateQuantity" />
-            <button @click="removeItem">Remove</button>
+        <img :src="item.book.image" :alt="item.book.title" class="item-image" />
+        <div class="item-details">
+            <h3>{{ item.book.title }}</h3>
+            <p class="price">${{ item.price }}</p>
+            <div class="quantity-controls">
+                <button @click="updateQuantity(item.quantity - 1)" :disabled="item.quantity <= 1">-</button>
+                <span>{{ item.quantity }}</span>
+                <button @click="updateQuantity(item.quantity + 1)">+</button>
+            </div>
+            <button class="remove-btn" @click="remove">Remove</button>
         </div>
     </div>
 </template>
 
 <script>
+import { mapActions } from 'vuex'
+
 export default {
-    name: 'CartItem',
     props: {
         item: {
             type: Object,
             required: true,
         },
     },
-    emits: ['update-quantity', 'remove'],
-    data() {
-        return {
-            quantity: this.item.quantity,
-        }
-    },
     methods: {
-        updateQuantity() {
-            this.$emit('update-quantity', { id: this.item.id, quantity: this.quantity })
+        ...mapActions('cart', ['updateCartQuantity', 'removeFromCart']),
+        async updateQuantity(newQuantity) {
+            try {
+                await this.updateCartQuantity({
+                    bookId: this.item.bookId,
+                    quantity: newQuantity,
+                })
+            } catch (error) {
+                this.$emit('error', error.message)
+            }
         },
-        removeItem() {
-            this.$emit('remove', this.item.id)
+        async remove() {
+            try {
+                await this.removeFromCart(this.item.bookId)
+            } catch (error) {
+                this.$emit('error', error.message)
+            }
         },
     },
 }
@@ -47,24 +56,27 @@ export default {
     border-bottom: 1px solid var(--gray-medium);
 }
 
-.item-info {
+.item-details {
     flex: 1;
 }
 
-.item-actions {
+.item-image {
+    width: 100px;
+    height: auto;
+    margin-right: 1rem;
+}
+
+.quantity-controls {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
 }
 
-input[type='number'] {
-    width: 60px;
-    padding: 0.5rem;
-    border: 1px solid var(--gray-medium);
-    border-radius: 4px;
+.price {
+    font-weight: bold;
 }
 
-button {
+.remove-btn {
     padding: 0.5rem 1rem;
     border: none;
     border-radius: 4px;

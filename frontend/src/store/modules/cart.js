@@ -4,7 +4,7 @@ import {cartApi} from '@/api/cartApi'
 export default {
     namespaced: true,
     state: () => ({
-        items: JSON.parse(localStorage.getItem('cart')) || [],
+        items: [],
         loading: false,
         error: null,
     }),
@@ -18,9 +18,7 @@ export default {
                 return total + item.price * item.quantity
             }, 0)
         },
-        itemCount: (state) => {
-            return state.items.reduce((count, item) => count + item.quantity, 0)
-        },
+        itemCount: (state) => state.items.length,
     },
     mutations: {
         [CART.SET_ITEMS](state, items) {
@@ -28,7 +26,7 @@ export default {
             localStorage.setItem('cart', JSON.stringify(items))
         },
         [CART.ADD_ITEM](state, item) {
-            const existingItem = state.items.find((i) => i.id === item.id)
+            const existingItem = state.items.find((i) => i.bookId === item.bookId)
             if (existingItem) {
                 existingItem.quantity += item.quantity
             } else {
@@ -40,8 +38,8 @@ export default {
             state.items = state.items.filter((item) => item.id !== itemId)
             localStorage.setItem('cart', JSON.stringify(state.items))
         },
-        [CART.UPDATE_QUANTITY](state, { id, quantity }) {
-            const item = state.items.find((i) => i.id === id)
+        [CART.UPDATE_QUANTITY](state, { bookId, quantity }) {
+            const item = state.items.find((i) => i.bookId === bookId)
             if (item) {
                 item.quantity = quantity
             }
@@ -79,7 +77,9 @@ export default {
                     const updatedCart = await cartApi.addToCart(item)
                     commit(CART.SET_ITEMS, updatedCart)
                 } else {
-                    commit(CART.ADD_ITEM, item)
+                    const response = await cartApi.addItem(item)
+                    commit(CART.ADD_ITEM, response.data)
+                    return response.data
                 }
             } catch (error) {
                 commit(UI.SET_ERROR, error)
@@ -111,7 +111,9 @@ export default {
                     const updatedCart = await cartApi.updateQuantity(payload)
                     commit(CART.SET_ITEMS, updatedCart)
                 } else {
+                    const response = await cartApi.updateQuantity(payload)
                     commit(CART.UPDATE_QUANTITY, payload)
+                    return response.data
                 }
             } catch (error) {
                 commit(UI.SET_ERROR, error)

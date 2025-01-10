@@ -11,10 +11,12 @@
             <p v-if="book.publicationYear" class="publication-year">Published: {{ book.publicationYear }}</p>
             <p v-if="book.category" class="category">Category: {{ book.category }}</p>
             <p v-if="book.description" class="description">{{ book.description }}</p>
-            <p class="price">{{ book.price ? `${book.price} грн` : 'Price not available' }}</p>
-            <p class="availability" :class="{ available: book.available }">
-                {{ book.available ? '✔ In Stock' : '✖ Out of Stock' }}
-            </p>
+            <div class="book-price">
+                <span class="price">{{ formatPrice(book.price) }}</span>
+                <span :class="['stock-status', {'in-stock': book.inStock}]">
+                    {{ book.inStock ? '✔ In Stock' : '✖ Out of Stock' }}
+                </span>
+            </div>
             <div class="actions-container">
                 <div class="admin-actions">
                     <button 
@@ -33,11 +35,13 @@
                     </button>
                 </div>
                 <button 
-                    v-if="book.available" 
+                    v-if="book.inStock" 
                     class="btn btn-cart" 
-                    @click.stop="$emit('add-to-cart', book)"
+                    :disabled="loading || !hasPermission('create:cart')"
+                    @click.stop="handleAddToCart"
                 >
-                    Add to Cart
+                    <span v-if="loading" class="spinner"></span>
+                    <span v-else>Add to Cart</span>
                 </button>
             </div>
         </div>
@@ -54,6 +58,7 @@
 
 <script>
 import ConfirmModal from '../common/ConfirmModal.vue'
+import { mapActions, mapGetters } from 'vuex'
 
 export default {
     name: 'BookCard',
@@ -70,13 +75,38 @@ export default {
             default: '/images/placeholder.png', // Укажите путь к placeholder-изображению
         },
     },
-    emits: ['add-to-cart', 'edit', 'delete', 'click'],
+    emits: ['add-to-cart', 'edit', 'delete', 'click', 'error', 'success'],
     data() {
         return {
-            showDeleteConfirm: false
+            showDeleteConfirm: false,
+            loading: false
         }
     },
     methods: {
+        ...mapActions('cart', ['addToCart']),
+        ...mapGetters('auth', ['hasPermission']),
+        
+        formatPrice(price) {
+            return price ? `${price} грн` : 'Price not available'
+        },
+
+        async handleAddToCart() {
+            if (!this.book.inStock) return
+            
+            this.loading = true
+            try {
+                await this.addToCart({
+                    bookId: this.book._id,
+                    quantity: 1,
+                    price: this.book.price
+                })
+                this.$emit('success', 'Added to cart')
+            } catch (error) {
+                this.$emit('error', error.message)
+            } finally {
+                this.loading = false
+            }
+        },
         confirmDelete() {
             this.$emit('delete', this.book._id);
             this.showDeleteConfirm = false;

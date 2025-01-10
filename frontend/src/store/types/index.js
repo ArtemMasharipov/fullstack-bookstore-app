@@ -43,3 +43,10 @@ export const UI = {
     SET_ERROR: 'ui/SET_ERROR',
     CLEAR_ERROR: 'ui/CLEAR_ERROR',
 }
+
+export const ORDER = {
+    SET_ORDERS: 'order/SET_ORDERS',
+    SET_CURRENT: 'order/SET_CURRENT',
+    ADD_ORDER: 'order/ADD_ORDER',
+    UPDATE_STATUS: 'order/UPDATE_STATUS'
+}

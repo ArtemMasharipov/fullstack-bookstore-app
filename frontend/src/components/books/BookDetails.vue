@@ -23,10 +23,22 @@
                         <span v-if="book.category">Category: {{ book.category }}</span>
                     </div>
 
+                    <div class="book-price-section">
+                        <span class="price">{{ formatPrice(book.price) }}</span>
+                        <span :class="['stock-status', {'in-stock': book.inStock}]">
+                            {{ book.inStock ? 'In Stock' : 'Out of Stock' }}
+                        </span>
+                    </div>
+
                     <p v-if="book.description" class="book-description">{{ book.description }}</p>
 
                     <div class="action-buttons">
-                        <button v-if="book.available" class="btn btn-primary" @click="addToCart(book)">
+                        <button 
+                            v-if="book.inStock" 
+                            class="btn btn-primary"
+                            :disabled="loading"
+                            @click="handleAddToCart"
+                        >
                             Add to Cart
                         </button>
                         <button v-if="hasPermission('update:book')" class="btn btn-secondary" @click="handleEdit">
@@ -82,7 +94,7 @@ export default {
         },
     },
 
-    emits: ['edit', 'delete'],
+    emits: ['edit', 'delete', 'success', 'error'],
 
     data() {
         return {
@@ -107,7 +119,8 @@ export default {
     },
 
     methods: {
-        ...mapActions('books', ['fetchBook', 'deleteBook', 'addToCart']),
+        ...mapActions('books', ['fetchBook', 'deleteBook']),
+        ...mapActions('cart', ['addToCart']),
 
         handleEdit() {
             this.$emit('edit', this.book);
@@ -126,8 +139,23 @@ export default {
             }
         },
 
-        addToCart(book) {
-            this.addToCart(book);
+        async handleAddToCart() {
+            if (!this.book.inStock) return
+            
+            try {
+                await this.addToCart({
+                    bookId: this.book._id,
+                    quantity: 1,
+                    price: this.book.price
+                })
+                this.$emit('success', 'Added to cart')
+            } catch (error) {
+                this.$emit('error', error.message)
+            }
+        },
+
+        formatPrice(price) {
+            return price ? `${price} грн` : 'Price not available'
         },
     },
 };
@@ -198,6 +226,35 @@ export default {
     margin: 1rem 0;
     font-size: 1rem;
     color: var(--gray-medium);
+}
+
+.book-price-section {
+    margin: 1rem 0;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.price {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.stock-status {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.stock-status.in-stock {
+    background-color: var(--success-light);
+    color: var(--success);
+}
+
+.stock-status:not(.in-stock) {
+    background-color: var(--danger-light);
+    color: var(--danger);
 }
 
 .book-description {
