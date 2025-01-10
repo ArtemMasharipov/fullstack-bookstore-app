@@ -38,6 +38,17 @@ const bookSchema = new Schema(
       ref: 'Author',
       required: true,
     },
+    price: {
+      type: Number,
+      required: [true, 'Book price is required'],
+      min: [0, 'Price cannot be negative'],
+      validate: {
+        validator: function(v) {
+          return v >= 0 && v <= 999999.99;
+        },
+        message: 'Price must be between 0 and 999999.99'
+      }
+    },
   },
   { timestamps: true },
 );
