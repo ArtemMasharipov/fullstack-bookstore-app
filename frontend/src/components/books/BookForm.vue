@@ -1,73 +1,71 @@
 <template>
-    <div class="book-form-overlay">
-        <div class="book-form-container">
-            <form class="book-form" enctype="multipart/form-data" @submit.prevent="handleSubmit">
-                <h2>{{ isEdit ? 'Update Book' : 'Create New Book' }}</h2>
+    <div class="form-overlay">
+        <form class="book-form" enctype="multipart/form-data" @submit.prevent="handleSubmit">
+            <h2>{{ isEdit ? 'Update Book' : 'Create New Book' }}</h2>
 
-                <div class="form-group">
-                    <label for="title">Title</label>
-                    <input id="title" v-model="form.title" type="text" required />
-                </div>
+            <div class="form-group">
+                <label for="title">Title</label>
+                <input id="title" v-model="form.title" type="text" required />
+            </div>
 
-                <div class="form-group">
-                    <label for="author">Author</label>
-                    <select id="author" v-model="form.authorId" required>
-                        <option value="">Select Author</option>
-                        <option v-for="author in authors" :key="author._id" :value="author._id">
-                            {{ author.name }}
-                        </option>
-                    </select>
-                    <p v-if="!authors.length">No authors available. Please add an author first.</p>
-                </div>
+            <div class="form-group">
+                <label for="author">Author</label>
+                <select id="author" v-model="form.authorId" required>
+                    <option value="">Select Author</option>
+                    <option v-for="author in authors" :key="author._id" :value="author._id">
+                        {{ author.name }}
+                    </option>
+                </select>
+                <p v-if="!authors.length">No authors available. Please add an author first.</p>
+            </div>
 
-                <div class="form-group">
-                    <label for="year">Publication Year</label>
-                    <input id="year" v-model="form.publicationYear" type="number" required />
-                </div>
+            <div class="form-group">
+                <label for="year">Publication Year</label>
+                <input id="year" v-model="form.publicationYear" type="number" required />
+            </div>
 
-                <div class="form-group">
-                    <label for="category">Category</label>
-                    <input id="category" v-model="form.category" type="text" />
-                </div>
+            <div class="form-group">
+                <label for="category">Category</label>
+                <input id="category" v-model="form.category" type="text" />
+            </div>
 
-                <div class="form-group">
-                    <label for="description">Description</label>
-                    <textarea id="description" v-model="form.description" rows="4"></textarea>
-                </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" v-model="form.description" rows="4"></textarea>
+            </div>
 
-                <div class="form-group">
-                    <label>Book Cover</label>
-                    <input ref="fileInput" type="file" accept="image/*" style="display: none" @change="handleImageUpload" />
-                    <div class="file-upload-container">
-                        <button
-                            v-if="!hasImage"
-                            type="button"
-                            class="btn btn-upload"
-                            @click="triggerFileInput"
-                        >
-                            {{ isEdit ? 'Change Image' : 'Upload Image' }}
-                        </button>
-                        <div v-if="hasImage" class="selected-file">
-                            <span>{{ imageFileName }}</span>
-                            <button type="button" class="btn btn-remove" @click="removeImage">×</button>
-                        </div>
-                    </div>
-                    <div v-if="hasImage" class="image-preview">
-                        <img :src="currentPreviewUrl" :alt="imageFileName || 'Preview'" />
-                    </div>
-                    <p v-if="fileConfig.error" class="error-message">{{ fileConfig.error }}</p>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" :disabled="isSubmitting" @click="$emit('close')">
-                        Cancel
+            <div class="form-group">
+                <label>Book Cover</label>
+                <input ref="fileInput" type="file" accept="image/*" style="display: none" @change="handleImageUpload" />
+                <div class="file-upload-container">
+                    <button
+                        v-if="!hasImage"
+                        type="button"
+                        class="btn btn-upload"
+                        @click="triggerFileInput"
+                    >
+                        {{ isEdit ? 'Change Image' : 'Upload Image' }}
                     </button>
-                    <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
-                        {{ getSubmitButtonText }}
-                    </button>
+                    <div v-if="hasImage" class="selected-file">
+                        <span>{{ imageFileName }}</span>
+                        <button type="button" class="btn btn-remove" @click="removeImage">×</button>
+                    </div>
                 </div>
-            </form>
-        </div>
+                <div v-if="hasImage" class="image-preview">
+                    <img :src="currentPreviewUrl" :alt="imageFileName || 'Preview'" />
+                </div>
+                <p v-if="fileConfig.error" class="error-message">{{ fileConfig.error }}</p>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" :disabled="isSubmitting" @click="$emit('close')">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
+                    {{ getSubmitButtonText }}
+                </button>
+            </div>
+        </form>
     </div>
 </template>
 
@@ -273,7 +271,7 @@ export default {
 </script>
 
 <style scoped>
-.book-form-overlay {
+.form-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -285,12 +283,10 @@ export default {
     align-items: flex-start;
     overflow-y: auto;
     padding: 2rem;
-    z-index: 1100; /* Выше чем у карточек книг */
+    z-index: 1100;
 }
 
-.book-form-container {
-    position: relative;
-    z-index: 1101; /* Выше чем оверлей */
+.book-form {
     background: var(--white);
     padding: 2rem;
     border-radius: 8px;
@@ -298,17 +294,6 @@ export default {
     width: 100%;
     max-width: 500px;
     margin: 2rem auto;
-}
-
-.book-form {
-    background: var(--white);
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 500px;
-    margin-top: 2rem;
-    box-sizing: border-box;
 }
 
 .form-group {
@@ -430,5 +415,16 @@ export default {
     right: -10px;
     border-radius: 50%;
     padding: 4px 8px;
+}
+
+@media (max-width: 768px) {
+    .form-overlay {
+        padding: 1rem;
+    }
+    
+    .book-form {
+        margin: 1rem auto;
+        padding: 1.5rem;
+    }
 }
 </style>
