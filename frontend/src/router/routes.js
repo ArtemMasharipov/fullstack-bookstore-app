@@ -81,7 +81,47 @@ const routes = [
     {
         path: '/cart',
         name: 'Cart',
-        component: () => import('@/views/CartView.vue')
+        component: () => import('@/views/CartView.vue'),
+        meta: { 
+            requiresAuth: true,
+            requiredPermission: 'read:cart'
+        }
+    },
+    {
+        path: '/checkout',
+        name: 'Checkout',
+        component: () => import('@/views/CheckoutView.vue'),
+        meta: { 
+            requiresAuth: true,
+            requiredPermission: 'create:order'
+        }
+    },
+    {
+        path: '/orders',
+        name: 'Orders',
+        component: () => import('@/views/OrdersView.vue'),
+        meta: { 
+            requiresAuth: true,
+            requiredPermission: 'read:order'
+        }
+    },
+    {
+        path: '/orders/:id',
+        name: 'OrderDetails',
+        component: () => import('@/views/OrderDetailsView.vue'),
+        meta: { 
+            requiresAuth: true,
+            requiredPermission: 'read:order'
+        }
+    },
+    {
+        path: '/orders/:id/status',
+        name: 'OrderStatus',
+        component: () => import('@/views/OrderStatusView.vue'),
+        meta: { 
+            requiresAuth: true,
+            requiredPermission: 'update:order'
+        }
     },
     {
         path: '/contact',
