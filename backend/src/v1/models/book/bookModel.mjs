@@ -49,6 +49,10 @@ const bookSchema = new Schema(
         message: 'Price must be between 0 and 999999.99'
       }
     },
+    inStock: {
+      type: Boolean,
+      default: true
+    }
   },
   { timestamps: true },
 );

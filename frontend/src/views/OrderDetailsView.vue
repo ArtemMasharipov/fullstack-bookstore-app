@@ -48,14 +48,14 @@ export default {
       return this.currentOrder || {}
     }
   },
+  async created() {
+    await this.fetchOrderById(this.$route.params.id)
+  },
   methods: {
     ...mapActions('order', ['fetchOrderById']),
     formatDate(date) {
       return new Date(date).toLocaleDateString()
     }
-  },
-  async created() {
-    await this.fetchOrderById(this.$route.params.id)
   }
 }
 </script>

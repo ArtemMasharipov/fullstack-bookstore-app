@@ -15,7 +15,7 @@
         </div>
       </div>
 
-      <form @submit.prevent="submitOrder" class="checkout-form">
+      <form class="checkout-form" @submit.prevent="submitOrder">
         <div class="form-group">
           <label for="address">Shipping Address</label>
           <textarea 
@@ -29,8 +29,8 @@
           <label for="phone">Phone Number</label>
           <input 
             id="phone" 
-            type="tel" 
             v-model="orderData.phone" 
+            type="tel" 
             required
           />
         </div>

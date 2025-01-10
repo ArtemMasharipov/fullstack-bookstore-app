@@ -35,6 +35,26 @@
             </div>
 
             <div class="form-group">
+                <label for="price">Price (грн)</label>
+                <input 
+                    id="price" 
+                    v-model.number="form.price"
+                    type="number" 
+                    min="0" 
+                    step="0.01"
+                    required 
+                />
+            </div>
+            <div class="form-group">
+                <label>
+                    <input 
+                        type="checkbox" 
+                        v-model="form.inStock"
+                    > In Stock
+                </label>
+            </div>
+
+            <div class="form-group">
                 <label>Book Cover</label>
                 <input ref="fileInput" type="file" accept="image/*" style="display: none" @change="handleImageUpload" />
                 <div class="file-upload-container">
@@ -105,6 +125,8 @@ export default {
                 category: '',
                 description: '',
                 image: null,
+                price: 0,
+                inStock: true,
                 ...this.initialData,
             },
             fileConfig: {
