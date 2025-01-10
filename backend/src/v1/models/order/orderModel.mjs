@@ -12,10 +12,17 @@ const orderSchema = new mongoose.Schema({
       ref: 'Book',
       required: true
     },
-    quantity: Number,
-    price: Number
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1
+    },
+    price: {
+      type: Number,
+      required: true
+    }
   }],
-  total: {
+  totalAmount: {
     type: Number,
     required: true
   },
@@ -25,12 +32,9 @@ const orderSchema = new mongoose.Schema({
     default: 'pending'
   },
   shippingAddress: {
-    street: String,
-    city: String,
-    state: String,
-    zipCode: String,
-    country: String
+    type: String,
+    required: true
   }
 }, { timestamps: true });
 
-export default mongoose.model('Order', orderSchema);
+export const Order = mongoose.model('Order', orderSchema);
