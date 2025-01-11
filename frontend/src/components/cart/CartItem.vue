@@ -5,7 +5,7 @@
             <h3>{{ item.book.title }}</h3>
             <p class="price">${{ item.price }}</p>
             <div class="quantity-controls">
-                <button @click="updateQuantity(item.quantity - 1)" :disabled="item.quantity <= 1">-</button>
+                <button :disabled="item.quantity <= 1" @click="updateQuantity(item.quantity - 1)">-</button>
                 <span>{{ item.quantity }}</span>
                 <button @click="updateQuantity(item.quantity + 1)">+</button>
             </div>
@@ -24,6 +24,7 @@ export default {
             required: true,
         },
     },
+    emits: ['error'],
     methods: {
         ...mapActions('cart', ['updateCartQuantity', 'removeFromCart']),
         async updateQuantity(newQuantity) {

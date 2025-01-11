@@ -7,13 +7,28 @@ class CartDBService extends MongooseCRUDManager {
     super(Cart);
   }
 
+  async validateCartItem(bookId, quantity) {
+    const book = await Book.findById(bookId);
+    if (!book) {
+      throw new Error('Book not found');
+    }
+    if (!book.inStock) {
+      throw new Error('Book is out of stock');
+    }
+    if (quantity > book.stockQuantity) {
+      throw new Error('Not enough items in stock');
+    }
+    return book;
+  }
+
   async addToCart(userId, bookId, quantity) {
+    const book = await this.validateCartItem(bookId, quantity);
     let cart = await this.findOne({ userId });
     if (!cart) {
       cart = await this.create({ 
         userId, 
         items: [],
-        totalPrice: 0 // Соответствует схеме
+        totalPrice: 0
       });
     }
 
@@ -23,7 +38,6 @@ class CartDBService extends MongooseCRUDManager {
     if (bookIndex > -1) {
       cart.items[bookIndex].quantity += quantity;
     } else {
-      const book = await Book.findById(bookId);
       if (!book) {
         throw new Error('Book not found');
       }
