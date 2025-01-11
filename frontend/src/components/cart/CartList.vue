@@ -5,13 +5,34 @@
         </div>
 
         <div v-else>
-            <cart-item
-                v-for="item in items"
-                :key="item.id"
-                :item="item"
-                @remove="removeFromCart(item.id)"
-                @update-quantity="updateQuantity"
-            />
+            <div v-if="!items.length" class="empty-cart">
+                Your cart is empty
+            </div>
+            <div v-else>
+                <cart-item
+                    v-for="item in items"
+                    :key="item.id"
+                    :item="item"
+                    @remove="removeFromCart(item.id)"
+                    @update-quantity="updateQuantity"
+                />
+                <div class="cart-actions">
+                    <router-link 
+                        v-if="isAuthenticated" 
+                        to="/checkout" 
+                        class="btn btn-primary"
+                    >
+                        Proceed to Checkout
+                    </router-link>
+                    <router-link 
+                        v-else 
+                        to="/login" 
+                        class="btn btn-primary"
+                    >
+                        Login to Checkout
+                    </router-link>
+                </div>
+            </div>
         </div>
 
         <div v-if="error" class="error-container">

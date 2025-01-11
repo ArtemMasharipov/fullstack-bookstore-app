@@ -70,16 +70,14 @@ export default {
             }
         },
 
-        async addToCart({ commit, state }, item) {
+        async addToCart({ commit, rootState }, item) {
             commit(UI.SET_LOADING, true)
             try {
-                if (state.user) {
-                    const updatedCart = await cartApi.addToCart(item)
-                    commit(CART.SET_ITEMS, updatedCart)
+                if (rootState.auth.isAuthenticated) {
+                    const response = await cartApi.addToCart(item)
+                    commit(CART.SET_ITEMS, response.data)
                 } else {
-                    const response = await cartApi.addItem(item)
-                    commit(CART.ADD_ITEM, response.data)
-                    return response.data
+                    commit(CART.ADD_ITEM, item)
                 }
             } catch (error) {
                 commit(UI.SET_ERROR, error)

@@ -7,4 +7,6 @@ export const cartApi = createApiClient('cart', {
     updateQuantity: (payload) => apiRequest('post', '/cart/update', payload),
     clearCart: () => apiRequest('post', '/cart/clear'),
     syncCart: (cart) => apiRequest('post', '/cart/sync', { cart }),
+    fetchCart: () => apiRequest('get', '/cart'),
+    addItem: (item) => apiRequest('post', '/cart/items', item),
 })

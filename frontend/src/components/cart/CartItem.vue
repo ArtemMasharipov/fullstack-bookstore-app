@@ -1,50 +1,58 @@
 <template>
-    <div class="cart-item">
-        <img :src="item.book.image" :alt="item.book.title" class="item-image" />
-        <div class="item-details">
-            <h3>{{ item.book.title }}</h3>
-            <p class="price">${{ item.price }}</p>
-            <div class="quantity-controls">
-                <button :disabled="item.quantity <= 1" @click="updateQuantity(item.quantity - 1)">-</button>
-                <span>{{ item.quantity }}</span>
-                <button @click="updateQuantity(item.quantity + 1)">+</button>
-            </div>
-            <button class="remove-btn" @click="remove">Remove</button>
-        </div>
+  <div class="cart-item" v-if="item">
+    <div class="item-image">
+      <img :src="item?.image || '/placeholder.png'" :alt="item?.name || 'Product image'" />
     </div>
+    <div class="item-details">
+      <h3>{{ item?.name || 'Unknown Product' }}</h3>
+      <p>Price: ${{ item?.price || 0 }}</p>
+      <div class="quantity-controls">
+        <button @click="updateQuantity(item?.id, (item?.quantity || 0) - 1)">-</button>
+        <span>{{ item?.quantity || 0 }}</span>
+        <button @click="updateQuantity(item?.id, (item?.quantity || 0) + 1)">+</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
 import { mapActions } from 'vuex'
 
 export default {
-    props: {
-        item: {
-            type: Object,
-            required: true,
-        },
+  name: 'CartItem',
+  props: {
+    item: {
+      type: Object,
+      required: true,
+      validator: (value) => {
+        return value && typeof value === 'object' && 'id' in value
+      }
+    }
+  },
+  emits: ['error', 'update-quantity'],
+  methods: {
+    ...mapActions('cart', ['updateCartQuantity', 'removeFromCart']),
+    async updateQuantity(id, newQuantity) {
+      if (newQuantity >= 0) {
+        try {
+          await this.updateCartQuantity({
+            bookId: id,
+            quantity: newQuantity,
+          })
+          this.$emit('update-quantity', { id, quantity: newQuantity })
+        } catch (error) {
+          this.$emit('error', error.message)
+        }
+      }
     },
-    emits: ['error'],
-    methods: {
-        ...mapActions('cart', ['updateCartQuantity', 'removeFromCart']),
-        async updateQuantity(newQuantity) {
-            try {
-                await this.updateCartQuantity({
-                    bookId: this.item.bookId,
-                    quantity: newQuantity,
-                })
-            } catch (error) {
-                this.$emit('error', error.message)
-            }
-        },
-        async remove() {
-            try {
-                await this.removeFromCart(this.item.bookId)
-            } catch (error) {
-                this.$emit('error', error.message)
-            }
-        },
+    async remove() {
+      try {
+        await this.removeFromCart(this.item.bookId)
+      } catch (error) {
+        this.$emit('error', error.message)
+      }
     },
+  },
 }
 </script>
 
