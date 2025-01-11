@@ -10,10 +10,10 @@
             </div>
             <div v-else>
                 <cart-item
-                    v-for="item in items"
-                    :key="item.id"
+                    v-for="item in cartItems"
+                    :key="item.bookId._id"
                     :item="item"
-                    @remove="removeFromCart(item.id)"
+                    @remove="removeFromCart"
                     @update-quantity="updateQuantity"
                 />
                 <div class="cart-actions">
@@ -47,7 +47,7 @@
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex'
+import { mapGetters, mapActions, mapState } from 'vuex'
 import CartItem from './CartItem.vue'
 import LoadingSpinner from '../common/LoadingSpinner.vue'
 import ErrorMessage from '../common/ErrorMessage.vue'
@@ -63,6 +63,7 @@ export default {
 
     computed: {
         ...mapGetters('cart', ['cartItems', 'cartLoading', 'cartError', 'cartTotal', 'itemCount']),
+        ...mapState('auth', ['isAuthenticated']),
         items() {
             return this.cartItems
         },
@@ -76,6 +77,9 @@ export default {
 
     methods: {
         ...mapActions('cart', ['removeFromCart', 'updateQuantity']),
+        removeFromCart(bookId) {
+            this.$store.dispatch('cart/removeFromCart', bookId)
+        }
     },
 }
 </script>

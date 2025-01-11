@@ -10,7 +10,15 @@ export default {
     }),
 
     getters: {
-        cartItems: (state) => state.items,
+        cartItems: (state) => state.items.map(item => ({
+            bookId: {
+                _id: item.bookId._id,
+                title: item.bookId.title || 'Unknown Book',
+                image: item.bookId.image
+            },
+            quantity: item.quantity,
+            price: item.price
+        })),
         cartLoading: (state) => state.loading,
         cartError: (state) => state.error,
         cartTotal: (state) => {

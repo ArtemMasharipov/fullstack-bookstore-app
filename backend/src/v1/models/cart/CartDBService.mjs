@@ -1,102 +1,74 @@
-import MongooseCRUDManager from '../MongooseCRUDManager.mjs';
 import Cart from './cartModel.mjs';
 import Book from '../book/bookModel.mjs';
+import mongoose from 'mongoose';
 
-class CartDBService extends MongooseCRUDManager {
-  constructor() {
-    super(Cart);
-  }
-
-  async validateCartItem(bookId, quantity) {
-    const book = await Book.findById(bookId);
-    if (!book) {
-      throw new Error('Book not found');
-    }
-    if (!book.inStock) {
-      throw new Error('Book is out of stock');
-    }
-    if (quantity > book.stockQuantity) {
-      throw new Error('Not enough items in stock');
-    }
-    return book;
-  }
-
-  async addToCart(userId, bookId, quantity) {
-    const book = await this.validateCartItem(bookId, quantity);
-    let cart = await this.findOne({ userId });
-    if (!cart) {
-      cart = await this.create({ 
-        userId, 
-        items: [],
-        totalPrice: 0
-      });
+class CartDBService {
+    async getUserCart(userId) {
+        let cart = await Cart.findOne({ userId }).populate('items.bookId');
+        if (!cart) {
+            cart = await Cart.create({ userId, items: [], totalPrice: 0 });
+        }
+        return cart;
     }
 
-    const bookIndex = cart.items.findIndex(
-      (item) => item.bookId.toString() === bookId,
-    );
-    if (bookIndex > -1) {
-      cart.items[bookIndex].quantity += quantity;
-    } else {
-      if (!book) {
-        throw new Error('Book not found');
-      }
-      cart.items.push({
-        bookId,
-        quantity,
-        price: book.price,
-      });
+    async addToCart(userId, bookId, quantity) {
+        const book = await Book.findById(bookId);
+        if (!book) {
+            throw new Error('Book not found');
+        }
+
+        let cart = await this.getUserCart(userId);
+        const existingItem = cart.items.find(item => 
+            item.bookId.toString() === bookId.toString()
+        );
+
+        if (existingItem) {
+            existingItem.quantity += quantity;
+        } else {
+            cart.items.push({
+                bookId: book._id,
+                quantity,
+                price: book.price
+            });
+        }
+
+        // Пересчитываем общую стоимость
+        cart.totalPrice = cart.items.reduce((total, item) => {
+            return total + (item.price * item.quantity);
+        }, 0);
+
+        await cart.save();
+        return cart.populate('items.bookId');
     }
 
-    cart.total = this._calculateTotal(cart.items);
-    return await cart.save();
-  }
+    async removeCartItem(userId, itemId) {
+        const cart = await this.getUserCart(userId);
+        cart.items = cart.items.filter(item => item._id.toString() !== itemId);
+        
+        cart.totalPrice = cart.items.reduce((total, item) => {
+            return total + (item.price * item.quantity);
+        }, 0);
 
-  async updateCartItem(userId, itemId, quantity) {
-    const cart = await this.findOne({ userId });
-    if (!cart) {
-      throw new Error('Cart not found');
+        await cart.save();
+        return cart.populate('items.bookId');
     }
 
-    const itemIndex = cart.items.findIndex(
-      (item) => item._id.toString() === itemId,
-    );
-    if (itemIndex === -1) {
-      throw new Error('Item not found in cart');
+    async updateCartItem(userId, itemId, quantity) {
+        const cart = await this.getUserCart(userId);
+        const item = cart.items.find(item => item._id.toString() === itemId);
+        
+        if (!item) {
+            throw new Error('Item not found in cart');
+        }
+
+        item.quantity = quantity;
+        cart.totalPrice = cart.items.reduce((total, item) => {
+            return total + (item.price * item.quantity);
+        }, 0);
+
+        await cart.save();
+        return cart.populate('items.bookId');
     }
-
-    cart.items[itemIndex].quantity = quantity;
-    cart.total = this._calculateTotal(cart.items);
-    return await cart.save();
-  }
-
-  async removeCartItem(userId, itemId) {
-    const cart = await this.findOne({ userId });
-    if (!cart) {
-      throw new Error('Cart not found');
-    }
-
-    cart.items = cart.items.filter((item) => item._id.toString() !== itemId);
-    cart.total = this._calculateTotal(cart.items);
-    return await cart.save();
-  }
-
-  async getUserCart(userId) {
-    const cart = await this.findOne({ userId }, null, ['items.bookId']);
-    if (!cart) {
-      throw new Error('Cart not found');
-    }
-    return cart;
-  }
-
-  _calculateTotal(items) {
-    return items.reduce((total, item) => total + item.price * item.quantity, 0);
-  }
-
-  async updateTotalPrice(cart) {
-    cart.totalPrice = this._calculateTotal(cart.items);
-    return await cart.save();
-  }
 }
 
 export default new CartDBService();

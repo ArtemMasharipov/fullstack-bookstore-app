@@ -1,17 +1,18 @@
 <template>
   <div class="cart-item" v-if="item">
     <div class="item-image">
-      <img :src="item?.image || '/placeholder.png'" :alt="item?.name || 'Product image'" />
+      <img :src="item?.bookId.image || '/placeholder.png'" :alt="item?.bookId.title || 'Product image'" @error="handleImageError" />
     </div>
     <div class="item-details">
-      <h3>{{ item?.name || 'Unknown Product' }}</h3>
+      <h3>{{ item?.bookId.title || 'Unknown Product' }}</h3>
       <p>Price: ${{ item?.price || 0 }}</p>
       <div class="quantity-controls">
-        <button @click="updateQuantity(item?.id, (item?.quantity || 0) - 1)">-</button>
+        <button @click="updateQuantity(item?.bookId._id, (item?.quantity || 0) - 1)">-</button>
         <span>{{ item?.quantity || 0 }}</span>
-        <button @click="updateQuantity(item?.id, (item?.quantity || 0) + 1)">+</button>
+        <button @click="updateQuantity(item?.bookId._id, (item?.quantity || 0) + 1)">+</button>
       </div>
     </div>
+    <button @click="remove">Remove</button>
   </div>
 </template>
 
@@ -24,8 +25,13 @@ export default {
     item: {
       type: Object,
       required: true,
-      validator: (value) => {
-        return value && typeof value === 'object' && 'id' in value
+      validator: function(item) {
+        return item && 
+               typeof item.bookId === 'object' &&
+               typeof item.bookId._id === 'string' &&
+               typeof item.bookId.title === 'string' &&
+               typeof item.quantity === 'number' &&
+               typeof item.price === 'number'
       }
     }
   },
@@ -47,11 +53,14 @@ export default {
     },
     async remove() {
       try {
-        await this.removeFromCart(this.item.bookId)
+        await this.removeFromCart(this.item.bookId._id)
       } catch (error) {
         this.$emit('error', error.message)
       }
     },
+    handleImageError(e) {
+      e.target.src = require('@/assets/images/placeholder.png')
+    }
   },
 }
 </script>

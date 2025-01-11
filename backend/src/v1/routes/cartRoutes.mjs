@@ -7,36 +7,9 @@ import { ACTION_TYPES, RESOURCE_TYPES, generatePermission } from '../../../servi
 
 const router = Router();
 
-router.get(
-  '/',
-  checkAuth,
-  checkPermission(generatePermission(ACTION_TYPES.READ, RESOURCE_TYPES.CART)),
-  cartController.getCart
-);
-
-router.post(
-  '/items',
-  checkAuth,
-  checkPermission(generatePermission(ACTION_TYPES.CREATE, RESOURCE_TYPES.CART)),
-  cartValidationSchema,
-  validateRequest,
-  cartController.addToCart
-);
-
-router.put(
-  '/items/:id',
-  checkAuth,
-  checkPermission(generatePermission(ACTION_TYPES.UPDATE, RESOURCE_TYPES.CART)),
-  cartValidationSchema,
-  validateRequest,
-  cartController.updateCartItem
-);
-
-router.delete(
-  '/items/:id',
-  checkAuth,
-  checkPermission(generatePermission(ACTION_TYPES.DELETE, RESOURCE_TYPES.CART)),
-  cartController.removeCartItem
-);
+router.get('/', checkAuth, cartController.getCart);
+router.post('/add', checkAuth, cartController.addToCart);
+router.post('/remove/:id', checkAuth, cartController.removeCartItem);
+router.put('/update/:id', checkAuth, cartController.updateCartItem);
 
 export default router;
