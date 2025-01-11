@@ -1,88 +1,131 @@
-import MongooseCRUDManager from '../MongooseCRUDManager.mjs';
 import Cart from './cartModel.mjs';
 import Book from '../book/bookModel.mjs';
+import mongoose from 'mongoose';
 
-class CartDBService extends MongooseCRUDManager {
-  constructor() {
-    super(Cart);
-  }
-
-  async addToCart(userId, bookId, quantity) {
-    let cart = await this.findOne({ userId });
-    if (!cart) {
-      cart = await this.create({ 
-        userId, 
-        items: [],
-        totalPrice: 0 // Соответствует схеме
-      });
+class CartDBService {
+    async getUserCart(userId) {
+        return Cart.findOneAndUpdate(
+            { userId },
+            { $setOnInsert: { items: [], totalPrice: 0 } },
+            { 
+                new: true, 
+                upsert: true,
+                populate: 'items.bookId'
+            }
+        );
     }
 
-    const bookIndex = cart.items.findIndex(
-      (item) => item.bookId.toString() === bookId,
-    );
-    if (bookIndex > -1) {
-      cart.items[bookIndex].quantity += quantity;
-    } else {
-      const book = await Book.findById(bookId);
-      if (!book) {
-        throw new Error('Book not found');
-      }
-      cart.items.push({
-        bookId,
-        quantity,
-        price: book.price,
-      });
+    calculateTotalPrice(items) {
+        return items.reduce((total, { price, quantity }) => 
+            total + (price * quantity), 0
+        );
     }
 
-    cart.total = this._calculateTotal(cart.items);
-    return await cart.save();
-  }
+    async addToCart(userId, bookId, quantity) {
+        const cart = await Cart.findOneAndUpdate(
+            { 
+                userId,
+                'items.bookId': bookId 
+            },
+            { 
+                $inc: { 'items.$.quantity': quantity },
+                $set: { 'items.$.price': await Book.findById(bookId).price }
+            },
+            { new: true }
+        ) || await this.createCartWithItem(userId, bookId, quantity);
 
-  async updateCartItem(userId, itemId, quantity) {
-    const cart = await this.findOne({ userId });
-    if (!cart) {
-      throw new Error('Cart not found');
+        return cart.populate('items.bookId');
     }
 
-    const itemIndex = cart.items.findIndex(
-      (item) => item._id.toString() === itemId,
-    );
-    if (itemIndex === -1) {
-      throw new Error('Item not found in cart');
+    async removeCartItem(userId, itemId) {
+        const cart = await Cart.findOneAndUpdate(
+            { userId },
+            { $pull: { items: { _id: new mongoose.Types.ObjectId(itemId) } } },
+            { new: true }
+        ).populate('items.bookId');
+
+        if (!cart) {
+            throw new Error('Cart not found');
+        }
+
+        await cart.save();
+        return cart;
     }
 
-    cart.items[itemIndex].quantity = quantity;
-    cart.total = this._calculateTotal(cart.items);
-    return await cart.save();
-  }
+    async updateCartItem(userId, itemId, quantity) {
+        const cart = await this.getUserCart(userId);
+        const item = cart.items.find(item => item._id.toString() === itemId);
+        
+        if (!item) {
+            throw new Error('Item not found in cart');
+        }
 
-  async removeCartItem(userId, itemId) {
-    const cart = await this.findOne({ userId });
-    if (!cart) {
-      throw new Error('Cart not found');
+        item.quantity = quantity;
+        cart.totalPrice = this.calculateTotalPrice(cart.items);
+        await cart.save();
+        return cart.populate('items.bookId');
     }
 
-    cart.items = cart.items.filter((item) => item._id.toString() !== itemId);
-    cart.total = this._calculateTotal(cart.items);
-    return await cart.save();
-  }
-
-  async getUserCart(userId) {
-    const cart = await this.findOne({ userId }, null, ['items.bookId']);
-    if (!cart) {
-      throw new Error('Cart not found');
+    async clearCart(userId) {
+        try {
+            const cart = await Cart.findOneAndUpdate(
+                { userId },
+                { 
+                    items: [], 
+                    totalPrice: 0 
+                },
+                { 
+                    new: true,
+                    upsert: true 
+                }
+            );
+            return cart;
+        } catch (error) {
+            console.error('Clear cart error:', error);
+            throw error;
+        }
     }
-    return cart;
-  }
 
-  _calculateTotal(items) {
-    return items.reduce((total, item) => total + item.price * item.quantity, 0);
-  }
+    async syncCart(userId, localCartItems) {
+        try {
+            let cart = await this.getUserCart(userId);
+            
+            if (!cart) {
+                cart = await Cart.create({
+                    userId,
+                    items: [],
+                    totalPrice: 0
+                });
+            }
 
-  async updateTotalPrice(cart) {
-    cart.totalPrice = this._calculateTotal(cart.items);
-    return await cart.save();
-  }
+            const validatedItems = await Promise.all(
+                localCartItems.map(async (item) => {
+                    const book = await Book.findById(item.bookId);
+                    if (!book) return null;
+                    
+                    return {
+                        bookId: book._id,
+                        quantity: parseInt(item.quantity),
+                        price: book.price
+                    };
+                })
+            );
+
+            const filteredItems = validatedItems.filter(item => item !== null);
+
+            cart.items = filteredItems;
+            
+            cart.totalPrice = filteredItems.reduce((total, item) => {
+                return total + (item.price * item.quantity);
+            }, 0);
+
+            await cart.save();
+            return cart.populate('items.bookId', 'title image price');
+        } catch (error) {
+            console.error('Cart sync error:', error);
+            throw error;
+        }
+    }
 }
 
 export default new CartDBService();

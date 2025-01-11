@@ -1,16 +1,36 @@
 import { CART, UI } from '../types'
 import {cartApi} from '@/api/cartApi'
 
+const handleAction = async (commit, action) => {
+    commit(UI.SET_LOADING, true)
+    try {
+        await action()
+    } catch (error) {
+        commit(UI.SET_ERROR, error?.message || 'Operation failed')
+    } finally {
+        commit(UI.SET_LOADING, false)
+    }
+}
+
 export default {
     namespaced: true,
     state: () => ({
-        items: [],
+        items: JSON.parse(localStorage.getItem('cart')) || [],
         loading: false,
-        error: null,
+        error: null
     }),
 
     getters: {
-        cartItems: (state) => state.items,
+        cartItems: (state) => state.items.map(({ _id, bookId, quantity, price }) => ({
+            _id,
+            bookId: {
+                _id: bookId?._id || bookId,
+                title: bookId?.title || 'Unknown Book',
+                image: bookId?.image
+            },
+            quantity: Number(quantity),
+            price: Number(price)
+        })),
         cartLoading: (state) => state.loading,
         cartError: (state) => state.error,
         cartTotal: (state) => {
@@ -22,21 +42,23 @@ export default {
     },
     mutations: {
         [CART.SET_ITEMS](state, items) {
-            state.items = items
-            localStorage.setItem('cart', JSON.stringify(items))
+            state.items = items || []
+            localStorage.setItem('cart', JSON.stringify(state.items))
         },
         [CART.ADD_ITEM](state, item) {
-            const existingItem = state.items.find((i) => i.bookId === item.bookId)
+            const existingItem = state.items.find(
+                i => i.bookId?._id === item.bookId?._id || i.bookId === item.bookId
+            );
             if (existingItem) {
-                existingItem.quantity += item.quantity
+                existingItem.quantity += item.quantity;
             } else {
-                state.items.push(item)
+                state.items.push(item);
             }
-            localStorage.setItem('cart', JSON.stringify(state.items))
+            localStorage.setItem('cart', JSON.stringify(state.items));
         },
         [CART.REMOVE_ITEM](state, itemId) {
-            state.items = state.items.filter((item) => item.id !== itemId)
-            localStorage.setItem('cart', JSON.stringify(state.items))
+            state.items = state.items.filter(item => item._id !== itemId);
+            localStorage.setItem('cart', JSON.stringify(state.items));
         },
         [CART.UPDATE_QUANTITY](state, { bookId, quantity }) {
             const item = state.items.find((i) => i.bookId === bookId)
@@ -54,98 +76,67 @@ export default {
         },
         [UI.SET_ERROR](state, error) {
             state.error = error
-        },
+        }
     },
 
     actions: {
-        async fetchCart({ commit }) {
-            commit(UI.SET_LOADING, true)
-            try {
-                const items = await cartApi.fetchCart()
+        [CART.FETCH_CART]({ commit }) {
+            return handleAction(commit, async () => {
+                const { items = [] } = await cartApi.fetchCart() || {}
                 commit(CART.SET_ITEMS, items)
-            } catch (error) {
-                commit(UI.SET_ERROR, error)
-            } finally {
-                commit(UI.SET_LOADING, false)
-            }
+            })
+        },
+        
+        async addToCart({ commit, rootGetters }, { bookId, quantity, price }) {
+            return handleAction(commit, async () => {
+                if (rootGetters['auth/isAuthenticated']) {
+                    const { items } = await cartApi.addToCart({ bookId, quantity, price })
+                    commit(CART.SET_ITEMS, items)
+                } else {
+                    commit(CART.ADD_ITEM, { bookId, quantity, price })
+                }
+            })
         },
 
-        async addToCart({ commit, state }, item) {
-            commit(UI.SET_LOADING, true)
-            try {
-                if (state.user) {
-                    const updatedCart = await cartApi.addToCart(item)
-                    commit(CART.SET_ITEMS, updatedCart)
-                } else {
-                    const response = await cartApi.addItem(item)
-                    commit(CART.ADD_ITEM, response.data)
-                    return response.data
-                }
-            } catch (error) {
-                commit(UI.SET_ERROR, error)
-            } finally {
-                commit(UI.SET_LOADING, false)
-            }
+        async removeFromCart({ commit }, itemId) {
+            return handleAction(commit, async () => {
+                const response = await cartApi.removeFromCart(itemId);
+                commit(CART.SET_ITEMS, response.items);
+            })
         },
 
-        async removeFromCart({ commit, state }, itemId) {
-            commit(UI.SET_LOADING, true)
-            try {
-                if (state.user) {
-                    const updatedCart = await cartApi.removeFromCart(itemId)
-                    commit(CART.SET_ITEMS, updatedCart)
+        async updateQuantity({ commit, rootState }, payload) {
+            return handleAction(commit, async () => {
+                if (rootState.auth.isAuthenticated) {
+                    const response = await cartApi.updateQuantity(payload.itemId, payload.quantity);
+                    if (response && response.items) {
+                        commit(CART.SET_ITEMS, response.items);
+                    }
                 } else {
-                    commit(CART.REMOVE_ITEM, itemId)
+                    commit(CART.UPDATE_QUANTITY, payload);
                 }
-            } catch (error) {
-                commit(UI.SET_ERROR, error)
-            } finally {
-                commit(UI.SET_LOADING, false)
-            }
-        },
-
-        async updateQuantity({ commit, state }, payload) {
-            commit(UI.SET_LOADING, true)
-            try {
-                if (state.user) {
-                    const updatedCart = await cartApi.updateQuantity(payload)
-                    commit(CART.SET_ITEMS, updatedCart)
-                } else {
-                    const response = await cartApi.updateQuantity(payload)
-                    commit(CART.UPDATE_QUANTITY, payload)
-                    return response.data
-                }
-            } catch (error) {
-                commit(UI.SET_ERROR, error)
-            } finally {
-                commit(UI.SET_LOADING, false)
-            }
+            })
         },
 
         async clearCart({ commit }) {
-            commit(UI.SET_LOADING, true)
-            try {
+            return handleAction(commit, async () => {
                 await cartApi.clearCart()
                 commit(CART.CLEAR)
-            } catch (error) {
-                commit(UI.SET_ERROR, error)
-            } finally {
-                commit(UI.SET_LOADING, false)
-            }
+            })
         },
 
-        async syncCart({ commit }) {
-            commit(UI.SET_LOADING, true)
-            try {
-                const localCart = JSON.parse(localStorage.getItem('cart')) || []
-                const updatedCart = await cartApi.syncCart(localCart)
-                commit(CART.SET_ITEMS, updatedCart)
-                localStorage.removeItem('cart')
-            } catch (error) {
-                commit(UI.SET_ERROR, error)
-            } finally {
-                commit(UI.SET_LOADING, false)
-            }
+        async [CART.SYNC_CART]({ commit }) {
+            return handleAction(commit, async () => {
+                const localCart = JSON.parse(localStorage.getItem('cart')) || [];
+                const response = await cartApi.syncCart(localCart);
+                
+                if (response?.items) {
+                    commit(CART.SET_ITEMS, response.items);
+                    localStorage.removeItem('cart');
+                } else {
+                    throw new Error('Failed to sync cart');
+                }
+            })
         },
     }
 }

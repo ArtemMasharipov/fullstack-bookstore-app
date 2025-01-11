@@ -7,20 +7,21 @@ import { ACTION_TYPES, RESOURCE_TYPES, generatePermission } from '../../../servi
 
 const router = Router();
 
+// Get user's orders
 router.get(
-  '/',
+  '/user',
   checkAuth,
-  checkPermission(generatePermission(ACTION_TYPES.READ, RESOURCE_TYPES.ORDER)),
   orderController.getUserOrders
 );
 
+// Get specific order
 router.get(
-  '/:id',
+  '/:orderId',
   checkAuth,
-  checkPermission(generatePermission(ACTION_TYPES.READ, RESOURCE_TYPES.ORDER)),
   orderController.getOrderDetails
 );
 
+// Create new order
 router.post(
   '/',
   checkAuth,
@@ -30,11 +31,11 @@ router.post(
   orderController.createOrder
 );
 
+// Update order status
 router.put(
   '/:id/status',
   checkAuth,
   checkPermission(generatePermission(ACTION_TYPES.UPDATE, RESOURCE_TYPES.ORDER)),
-  orderValidationSchema,
   validateRequest,
   orderController.updateOrderStatus
 );

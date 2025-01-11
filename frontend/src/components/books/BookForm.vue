@@ -48,8 +48,8 @@
             <div class="form-group">
                 <label>
                     <input 
-                        type="checkbox" 
-                        v-model="form.inStock"
+                        v-model="form.inStock" 
+                        type="checkbox"
                     > In Stock
                 </label>
             </div>

@@ -1,42 +1,22 @@
 import { Router } from 'express';
 import * as cartController from '../controllers/cartController.mjs';
 import cartValidationSchema from '../../../validation/cartValidationSchema.mjs';
-import { checkAuth, checkPermission } from '../../../middleware/authMiddleware.mjs';
+import { checkAuth } from '../../../middleware/authMiddleware.mjs';
 import { validateRequest } from '../../../middleware/validationMiddleware.mjs';
-import { ACTION_TYPES, RESOURCE_TYPES, generatePermission } from '../../../services/permissions-handler/permissionsConst.mjs';
 
 const router = Router();
 
-router.get(
-  '/',
-  checkAuth,
-  checkPermission(generatePermission(ACTION_TYPES.READ, RESOURCE_TYPES.CART)),
-  cartController.getCart
-);
+// Add auth check middleware first
+router.use(checkAuth);
 
-router.post(
-  '/items',
-  checkAuth,
-  checkPermission(generatePermission(ACTION_TYPES.CREATE, RESOURCE_TYPES.CART)),
-  cartValidationSchema,
-  validateRequest,
-  cartController.addToCart
+router.get('/', cartController.getCart);
+router.post('/add', 
+    cartValidationSchema, 
+    validateRequest,
+    cartController.addToCart
 );
-
-router.put(
-  '/items/:id',
-  checkAuth,
-  checkPermission(generatePermission(ACTION_TYPES.UPDATE, RESOURCE_TYPES.CART)),
-  cartValidationSchema,
-  validateRequest,
-  cartController.updateCartItem
-);
-
-router.delete(
-  '/items/:id',
-  checkAuth,
-  checkPermission(generatePermission(ACTION_TYPES.DELETE, RESOURCE_TYPES.CART)),
-  cartController.removeCartItem
-);
+router.put('/update/:id', cartController.updateCartItem);
+router.post('/sync', cartController.syncCart);
+router.delete('/items/:id', cartController.removeCartItem);
 
 export default router;

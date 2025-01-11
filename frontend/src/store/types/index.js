@@ -25,10 +25,16 @@ export const AUTHORS = {
 }
 
 export const CART = {
-    ADD_ITEM: 'cart/ADD_ITEM',
+    SET_ITEMS: 'cart/SET_ITEMS',
+    ADD_ITEM: 'cart/ADD_ITEM', 
     REMOVE_ITEM: 'cart/REMOVE_ITEM',
     UPDATE_QUANTITY: 'cart/UPDATE_QUANTITY',
     CLEAR: 'cart/CLEAR',
+    SET_TOTAL: 'cart/SET_TOTAL',
+    SYNC_CART: 'cart/SYNC_CART',
+    FETCH_CART: 'cart/FETCH_CART',
+    SET_PENDING: 'cart/SET_PENDING',
+    SET_TIMESTAMP: 'cart/SET_TIMESTAMP'
 }
 
 export const USERS = {

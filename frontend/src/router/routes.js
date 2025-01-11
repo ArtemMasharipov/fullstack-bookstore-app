@@ -82,9 +82,8 @@ const routes = [
         path: '/cart',
         name: 'Cart',
         component: () => import('@/views/CartView.vue'),
-        meta: { 
-            requiresAuth: true,
-            requiredPermission: 'read:cart'
+        meta: {
+            requiresAuth: false // Allow both authenticated and unauthenticated users
         }
     },
     {
