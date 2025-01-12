@@ -1,67 +1,70 @@
 <template>
-  <div class="cart-item" v-if="item">
-    <div class="item-image">
-      <img :src="item?.bookId.image || '/placeholder.png'" :alt="item?.bookId.title || 'Product image'" @error="handleImageError" />
+    <div class="cart-item" v-if="item">
+        <div class="item-image">
+            <img :src="bookImage" :alt="bookTitle" @error="handleImageError" />
+        </div>
+        <div class="item-details">
+            <h3>{{ bookTitle }}</h3>
+            <p>Price: ${{ item?.price || 0 }}</p>
+            <div class="quantity-controls">
+                <button @click="updateQuantity(item?.bookId._id, (item?.quantity || 0) - 1)">-</button>
+                <span>{{ item?.quantity || 0 }}</span>
+                <button @click="updateQuantity(item?.bookId._id, (item?.quantity || 0) + 1)">+</button>
+            </div>
+        </div>
+        <button @click="remove">Remove</button>
     </div>
-    <div class="item-details">
-      <h3>{{ item?.bookId.title || 'Unknown Product' }}</h3>
-      <p>Price: ${{ item?.price || 0 }}</p>
-      <div class="quantity-controls">
-        <button @click="updateQuantity(item?.bookId._id, (item?.quantity || 0) - 1)">-</button>
-        <span>{{ item?.quantity || 0 }}</span>
-        <button @click="updateQuantity(item?.bookId._id, (item?.quantity || 0) + 1)">+</button>
-      </div>
-    </div>
-    <button @click="remove">Remove</button>
-  </div>
 </template>
 
 <script>
 import { mapActions } from 'vuex'
 
 export default {
-  name: 'CartItem',
-  props: {
-    item: {
-      type: Object,
-      required: true,
-      validator: function(item) {
-        return item && 
-               typeof item.bookId === 'object' &&
-               typeof item.bookId._id === 'string' &&
-               typeof item.bookId.title === 'string' &&
-               typeof item.quantity === 'number' &&
-               typeof item.price === 'number'
-      }
-    }
-  },
-  emits: ['error', 'update-quantity'],
-  methods: {
-    ...mapActions('cart', ['updateCartQuantity', 'removeFromCart']),
-    async updateQuantity(id, newQuantity) {
-      if (newQuantity >= 0) {
-        try {
-          await this.updateCartQuantity({
-            bookId: id,
-            quantity: newQuantity,
-          })
-          this.$emit('update-quantity', { id, quantity: newQuantity })
-        } catch (error) {
-          this.$emit('error', error.message)
-        }
-      }
+    name: 'CartItem',
+    props: {
+        item: {
+            type: Object,
+            required: true,
+            validator(value) {
+                return value && value.bookId && typeof value.quantity === 'number' && typeof value.price === 'number'
+            },
+        },
     },
-    async remove() {
-      try {
-        await this.removeFromCart(this.item.bookId._id)
-      } catch (error) {
-        this.$emit('error', error.message)
-      }
+    computed: {
+        bookTitle() {
+            return this.item.bookId?.title || 'Unknown Book'
+        },
+        bookImage() {
+            return this.item.bookId?.image || require('@/assets/images/placeholder.png')
+        },
     },
-    handleImageError(e) {
-      e.target.src = require('@/assets/images/placeholder.png')
-    }
-  },
+    emits: ['error', 'update-quantity'],
+    methods: {
+        ...mapActions('cart', ['updateCartQuantity', 'removeFromCart']),
+        async updateQuantity(id, newQuantity) {
+            if (newQuantity >= 0) {
+                try {
+                    await this.updateCartQuantity({
+                        bookId: id,
+                        quantity: newQuantity,
+                    })
+                    this.$emit('update-quantity', { id, quantity: newQuantity })
+                } catch (error) {
+                    this.$emit('error', error.message)
+                }
+            }
+        },
+        async remove() {
+            try {
+                await this.removeFromCart(this.item.bookId._id)
+            } catch (error) {
+                this.$emit('error', error.message)
+            }
+        },
+        handleImageError(e) {
+            e.target.src = require('@/assets/images/placeholder.png')
+        },
+    },
 }
 </script>
 

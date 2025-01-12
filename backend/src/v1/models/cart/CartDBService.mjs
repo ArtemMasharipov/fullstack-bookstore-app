@@ -1,6 +1,5 @@
 import Cart from './cartModel.mjs';
 import Book from '../book/bookModel.mjs';
-import mongoose from 'mongoose';
 
 class CartDBService {
     async getUserCart(userId) {
@@ -32,11 +31,7 @@ class CartDBService {
             });
         }
 
-        // Пересчитываем общую стоимость
-        cart.totalPrice = cart.items.reduce((total, item) => {
-            return total + (item.price * item.quantity);
-        }, 0);
-
+        cart.totalPrice = this.calculateTotalPrice(cart.items);
         await cart.save();
         return cart.populate('items.bookId');
     }
@@ -44,11 +39,7 @@ class CartDBService {
     async removeCartItem(userId, itemId) {
         const cart = await this.getUserCart(userId);
         cart.items = cart.items.filter(item => item._id.toString() !== itemId);
-        
-        cart.totalPrice = cart.items.reduce((total, item) => {
-            return total + (item.price * item.quantity);
-        }, 0);
-
+        cart.totalPrice = this.calculateTotalPrice(cart.items);
         await cart.save();
         return cart.populate('items.bookId');
     }
@@ -62,12 +53,21 @@ class CartDBService {
         }
 
         item.quantity = quantity;
-        cart.totalPrice = cart.items.reduce((total, item) => {
-            return total + (item.price * item.quantity);
-        }, 0);
-
+        cart.totalPrice = this.calculateTotalPrice(cart.items);
         await cart.save();
         return cart.populate('items.bookId');
+    }
+
+    async clearCart(userId) {
+        await Cart.findOneAndUpdate(
+            { userId },
+            { items: [], totalPrice: 0 },
+            { new: true }
+        );
+    }
+
+    calculateTotalPrice(items) {
+        return items.reduce((total, item) => total + (item.price * item.quantity), 0);
     }
 }
 

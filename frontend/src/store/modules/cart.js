@@ -12,12 +12,12 @@ export default {
     getters: {
         cartItems: (state) => state.items.map(item => ({
             bookId: {
-                _id: item.bookId._id,
-                title: item.bookId.title || 'Unknown Book',
-                image: item.bookId.image
+                _id: item.bookId?._id || item.bookId,
+                title: item.bookId?.title || 'Unknown Book',
+                image: item.bookId?.image || null
             },
-            quantity: item.quantity,
-            price: item.price
+            quantity: Number(item.quantity) || 1,
+            price: Number(item.price) || 0
         })),
         cartLoading: (state) => state.loading,
         cartError: (state) => state.error,
@@ -78,33 +78,33 @@ export default {
             }
         },
 
-        async addToCart({ commit, rootState }, item) {
+        async addToCart({ commit, rootState }, { bookId, quantity, price }) {
             commit(UI.SET_LOADING, true)
             try {
                 if (rootState.auth.isAuthenticated) {
-                    const response = await cartApi.addToCart(item)
-                    commit(CART.SET_ITEMS, response.data)
+                    const response = await cartApi.addToCart({ bookId, quantity, price })
+                    commit(CART.SET_ITEMS, response.data.items)
                 } else {
-                    commit(CART.ADD_ITEM, item)
+                    commit(CART.ADD_ITEM, { bookId, quantity, price })
                 }
             } catch (error) {
-                commit(UI.SET_ERROR, error)
+                commit(UI.SET_ERROR, error.message)
             } finally {
                 commit(UI.SET_LOADING, false)
             }
         },
 
-        async removeFromCart({ commit, state }, itemId) {
+        async removeFromCart({ commit, rootState }, itemId) {
             commit(UI.SET_LOADING, true)
             try {
-                if (state.user) {
-                    const updatedCart = await cartApi.removeFromCart(itemId)
-                    commit(CART.SET_ITEMS, updatedCart)
+                if (rootState.auth.isAuthenticated) {
+                    const response = await cartApi.removeFromCart(itemId)
+                    commit(CART.SET_ITEMS, response.data.items)
                 } else {
                     commit(CART.REMOVE_ITEM, itemId)
                 }
             } catch (error) {
-                commit(UI.SET_ERROR, error)
+                commit(UI.SET_ERROR, error.message)
             } finally {
                 commit(UI.SET_LOADING, false)
             }
@@ -144,11 +144,11 @@ export default {
             commit(UI.SET_LOADING, true)
             try {
                 const localCart = JSON.parse(localStorage.getItem('cart')) || []
-                const updatedCart = await cartApi.syncCart(localCart)
-                commit(CART.SET_ITEMS, updatedCart)
+                const response = await cartApi.syncCart(localCart)
+                commit(CART.SET_ITEMS, response.data.items || [])
                 localStorage.removeItem('cart')
             } catch (error) {
-                commit(UI.SET_ERROR, error)
+                commit(UI.SET_ERROR, error.message || 'Failed to sync cart')
             } finally {
                 commit(UI.SET_LOADING, false)
             }

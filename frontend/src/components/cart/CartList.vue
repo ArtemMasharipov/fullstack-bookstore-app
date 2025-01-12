@@ -5,7 +5,7 @@
         </div>
 
         <div v-else>
-            <div v-if="!items.length" class="empty-cart">
+            <div v-if="!cartItems.length" class="empty-cart">
                 Your cart is empty
             </div>
             <div v-else>

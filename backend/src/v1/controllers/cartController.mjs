@@ -55,3 +55,18 @@ export const removeCartItem = async (req, res) => {
       .json({ error: error.message });
   }
 };
+
+export const syncCart = async (req, res) => {
+    try {
+        const { cart } = req.body;
+        if (!Array.isArray(cart)) {
+            return res.status(400).json({ error: 'Cart must be an array' });
+        }
+
+        const syncedCart = await CartDBService.syncCart(req.user.id, cart);
+        res.status(200).json(syncedCart);
+    } catch (error) {
+        console.error('Sync cart error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};

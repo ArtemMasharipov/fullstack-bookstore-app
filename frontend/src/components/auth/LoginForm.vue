@@ -5,12 +5,12 @@
             <form class="auth-form" @submit.prevent="handleSubmit">
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input id="email" v-model="email" type="email" required />
+                    <input id="email" v-model="email" type="email" required autocomplete="username" />
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input id="password" v-model="password" type="password" required />
+                    <input id="password" v-model="password" type="password" required autocomplete="current-password" />
                 </div>
 
                 <button type="submit" class="btn btn-primary" :disabled="authLoading">

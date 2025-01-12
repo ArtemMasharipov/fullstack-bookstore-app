@@ -18,6 +18,8 @@ export default {
         authToken: (state) => state.token,
         isAuthenticated: (state) => !!state.token,
         hasPermission: (state) => (permission) => state.permissions.includes(permission),
+        authLoading: state => state.loading,
+        authError: state => state.error
     },
 
     mutations: {
