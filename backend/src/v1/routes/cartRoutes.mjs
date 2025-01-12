@@ -7,7 +7,20 @@ import { validateRequest } from '../../../middleware/validationMiddleware.mjs';
 const router = Router();
 
 router.get('/', checkAuth, cartController.getCart);
-router.post('/add', checkAuth, cartValidationSchema, validateRequest, cartController.addToCart);
+router.post('/add', 
+    (req, res, next) => {
+        console.log('Cart route: Received add request:', {
+            body: req.body,
+            headers: req.headers,
+            user: req.user
+        });
+        next();
+    },
+    checkAuth, 
+    cartValidationSchema, 
+    validateRequest, 
+    cartController.addToCart
+);
 router.post('/remove/:id', checkAuth, cartController.removeCartItem);
 router.put('/update/:id', checkAuth, cartController.updateCartItem);
 router.post('/sync', checkAuth, cartController.syncCart);

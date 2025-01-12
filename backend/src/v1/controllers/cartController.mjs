@@ -3,11 +3,15 @@ import CartDBService from '../models/cart/CartDBService.mjs';
 export const addToCart = async (req, res) => {
     try {
         const { bookId, quantity } = req.body;
+        console.log('Adding to cart:', { userId: req.user.id, bookId, quantity });
+
         if (!bookId || !quantity) {
             return res.status(400).json({ error: 'BookId and quantity are required' });
         }
 
         const cart = await CartDBService.addToCart(req.user.id, bookId, parseInt(quantity));
+        console.log('Cart after addition:', cart);
+        
         res.status(200).json(cart);
     } catch (error) {
         console.error('Add to cart error:', error);
@@ -64,9 +68,15 @@ export const syncCart = async (req, res) => {
         }
 
         const syncedCart = await CartDBService.syncCart(req.user.id, cart);
-        res.status(200).json(syncedCart);
+        res.status(200).json({
+            success: true,
+            items: syncedCart.items,
+            totalPrice: syncedCart.totalPrice
+        });
     } catch (error) {
         console.error('Sync cart error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ 
+            error: error.message || 'Failed to sync cart'
+        });
     }
 };

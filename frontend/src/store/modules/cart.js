@@ -78,19 +78,28 @@ export default {
             }
         },
 
-        async addToCart({ commit, rootState }, { bookId, quantity, price }) {
+        async addToCart({ commit, rootGetters }, { bookId, quantity, price }) {
             commit(UI.SET_LOADING, true)
             try {
-                if (rootState.auth.isAuthenticated) {
-                    const response = await cartApi.addToCart({ bookId, quantity, price })
-                    commit(CART.SET_ITEMS, response.data.items)
+                const isAuthenticated = rootGetters['auth/isAuthenticated'];
+                
+                if (isAuthenticated) {
+                    const response = await cartApi.addToCart({ bookId, quantity, price });
+                    console.log('Cart API response:', response);
+                    
+                    if (response && response.items) {
+                        commit(CART.SET_ITEMS, response.items);
+                    } else {
+                        throw new Error('Invalid server response structure');
+                    }
                 } else {
-                    commit(CART.ADD_ITEM, { bookId, quantity, price })
+                    commit(CART.ADD_ITEM, { bookId, quantity, price });
                 }
             } catch (error) {
-                commit(UI.SET_ERROR, error.message)
+                console.error('Add to cart error:', error);
+                commit(UI.SET_ERROR, error.message || 'Failed to add item to cart');
             } finally {
-                commit(UI.SET_LOADING, false)
+                commit(UI.SET_LOADING, false);
             }
         },
 
@@ -141,16 +150,23 @@ export default {
         },
 
         async syncCart({ commit }) {
-            commit(UI.SET_LOADING, true)
+            commit(UI.SET_LOADING, true);
             try {
-                const localCart = JSON.parse(localStorage.getItem('cart')) || []
-                const response = await cartApi.syncCart(localCart)
-                commit(CART.SET_ITEMS, response.data.items || [])
-                localStorage.removeItem('cart')
+                const localCart = JSON.parse(localStorage.getItem('cart')) || [];
+                const response = await cartApi.syncCart(localCart);
+                
+                if (response && response.items) {
+                    commit(CART.SET_ITEMS, response.items);
+                    localStorage.removeItem('cart');
+                } else {
+                    console.error('Invalid sync response:', response);
+                    throw new Error('Failed to sync cart');
+                }
             } catch (error) {
-                commit(UI.SET_ERROR, error.message || 'Failed to sync cart')
+                console.error('Sync cart error:', error);
+                commit(UI.SET_ERROR, error.message || 'Failed to sync cart');
             } finally {
-                commit(UI.SET_LOADING, false)
+                commit(UI.SET_LOADING, false);
             }
         },
     }

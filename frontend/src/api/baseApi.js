@@ -25,11 +25,21 @@ const handleError = error => {
 }
 
 baseApi.interceptors.request.use(config => {
+    console.log('API Request Config:', {
+        url: config.url,
+        method: config.method,
+        headers: config.headers,
+        data: config.data
+    });
+
     const token = localStorage.getItem('token')
     const isPublic = ['/auth/login', '/auth/register'].some(ep => config.url.endsWith(ep))
 
     if (!isPublic) {
-        if (!token) throw new Error('Authorization required')
+        if (!token) {
+            console.error('No token found for protected route');
+            throw new Error('Authorization required')
+        }
         config.headers.Authorization = `Bearer ${token}`
     }
 
@@ -38,22 +48,48 @@ baseApi.interceptors.request.use(config => {
     }
 
     return config
-}, Promise.reject)
+}, error => {
+    console.error('Request interceptor error:', error);
+    return Promise.reject(error);
+})
 
-baseApi.interceptors.response.use(response => response, handleError)
+baseApi.interceptors.response.use(
+    response => {
+        console.log('API Response:', {
+            status: response.status,
+            data: response.data,
+            url: response.config.url
+        });
+        return response;
+    }, 
+    error => {
+        console.error('API Error:', {
+            message: error.message,
+            response: error.response,
+            request: error.config
+        });
+        return handleError(error);
+    }
+);
 
 export const apiRequest = async (method, url, data = null, config = {}) => {
     try {
+        console.log(`API Request ${method.toUpperCase()} ${url}:`, { data, config });
         const response = await baseApi({
             method,
             url,
             ...(data && method !== 'GET' && { data }),
             ...config
-        })
-        return response.data
+        });
+        console.log(`API Response ${method.toUpperCase()} ${url}:`, response.data);
+        return response.data;
     } catch (error) {
-        console.error(`API ${method.toUpperCase()} ${url} failed:`, error)
-        throw error
+        console.error(`API ${method.toUpperCase()} ${url} failed:`, {
+            error,
+            response: error.response,
+            data: error.response?.data
+        });
+        throw error;
     }
 }
 

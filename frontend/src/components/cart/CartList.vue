@@ -47,7 +47,7 @@
 </template>
 
 <script>
-import { mapGetters, mapActions, mapState } from 'vuex'
+import { mapGetters, mapActions } from 'vuex'
 import CartItem from './CartItem.vue'
 import LoadingSpinner from '../common/LoadingSpinner.vue'
 import ErrorMessage from '../common/ErrorMessage.vue'
@@ -63,7 +63,7 @@ export default {
 
     computed: {
         ...mapGetters('cart', ['cartItems', 'cartLoading', 'cartError', 'cartTotal', 'itemCount']),
-        ...mapState('auth', ['isAuthenticated']),
+        ...mapGetters('auth', ['isAuthenticated']),
         items() {
             return this.cartItems
         },

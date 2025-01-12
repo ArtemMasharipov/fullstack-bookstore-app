@@ -6,23 +6,35 @@ import {jwtDecode} from 'jwt-decode'
 export default {
     namespaced: true,
     state: () => ({
+        token: localStorage.getItem('token') || null,
         user: null,
-        token: localStorage.getItem('token'),
         loading: false,
         error: null,
         permissions: [],
     }),
 
     getters: {
+        isAuthenticated: state => !!state.token,
+        user: state => state.user,
+        authError: state => state.error,
+        authLoading: state => state.loading,
         currentUser: (state) => state.user,
         authToken: (state) => state.token,
-        isAuthenticated: (state) => !!state.token,
         hasPermission: (state) => (permission) => state.permissions.includes(permission),
-        authLoading: state => state.loading,
-        authError: state => state.error
     },
 
     mutations: {
+        SET_TOKEN(state, token) {
+            state.token = token;
+            if (token) {
+                localStorage.setItem('token', token);
+            } else {
+                localStorage.removeItem('token');
+            }
+        },
+        SET_USER(state, user) {
+            state.user = user;
+        },
         [AUTH.SET_USER](state, user) {
             state.user = user
         },
@@ -42,6 +54,12 @@ export default {
     },
 
     actions: {
+        initialize({ commit }) {
+            const token = localStorage.getItem('token');
+            if (token) {
+                commit('SET_TOKEN', token);
+            }
+        },
         async login({ commit, dispatch }, credentials) {
             await handleAsyncAction(
                 commit,
