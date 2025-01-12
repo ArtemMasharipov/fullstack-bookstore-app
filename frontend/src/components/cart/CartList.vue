@@ -47,11 +47,11 @@
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex'
-import CartItem from './CartItem.vue'
-import LoadingSpinner from '../common/LoadingSpinner.vue'
-import ErrorMessage from '../common/ErrorMessage.vue'
-import { debounce } from 'lodash'
+import { mapGetters, mapActions } from 'vuex';
+import CartItem from './CartItem.vue';
+import LoadingSpinner from '../common/LoadingSpinner.vue';
+import ErrorMessage from '../common/ErrorMessage.vue';
+import { debounce } from 'lodash';
 
 export default {
     name: 'CartList',
@@ -65,34 +65,53 @@ export default {
     computed: {
         ...mapGetters('cart', ['cartItems', 'cartLoading', 'cartError', 'cartTotal', 'itemCount']),
         ...mapGetters('auth', ['isAuthenticated']),
-        items() {
-            return this.cartItems
-        },
         loading() {
-            return this.cartLoading
+            return this.cartLoading;
         },
         error() {
-            return this.cartError
+            return this.cartError;
         },
     },
 
-    created() {
-        this.debouncedRemoveFromCart = debounce(this.removeFromCart, 300)
+    watch: {
+        isAuthenticated: {
+            immediate: true,
+            async handler(newVal) {
+                if (newVal) {
+                    try {
+                        await this.fetchCart();
+                    } catch (error) {
+                        console.error('Error fetching cart on auth change:', error);
+                    }
+                }
+            },
+        },
+    },
+
+    async created() {
+        this.debouncedRemoveFromCart = debounce(this.removeFromCart, 300);
+        if (this.isAuthenticated) {
+            try {
+                await this.fetchCart();
+            } catch (error) {
+                console.error('Error initializing cart in created hook:', error);
+            }
+        }
     },
 
     beforeUnmount() {
         if (this.debouncedRemoveFromCart) {
-            this.debouncedRemoveFromCart.cancel()
+            this.debouncedRemoveFromCart.cancel();
         }
     },
 
     methods: {
-        ...mapActions('cart', ['removeFromCart', 'updateQuantity']),
+        ...mapActions('cart', ['removeFromCart', 'updateQuantity', 'fetchCart']),
         handleRemoveFromCart(bookId) {
-            this.debouncedRemoveFromCart(bookId)
-        }
+            this.debouncedRemoveFromCart(bookId);
+        },
     },
-}
+};
 </script>
 
 <style scoped>

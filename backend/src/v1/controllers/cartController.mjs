@@ -32,14 +32,18 @@ export const addToCart = async (req, res) => {
 };
 
 export const getCart = async (req, res) => {
-  try {
-    const cart = await CartDBService.getUserCart(req.user.id).populate('items.bookId', 'title image');
-    res.status(200).json(cart);
-  } catch (error) {
-    res
-      .status(error.message.includes('not found') ? 404 : 500)
-      .json({ error: error.message });
-  }
+    try {
+        const cart = await CartDBService.getUserCart(req.user.id);
+        res.status(200).json({
+            items: cart?.items || [],
+            totalPrice: cart?.totalPrice || 0
+        });
+    } catch (error) {
+        console.error('Get cart error:', error);
+        res.status(500).json({ 
+            error: error.message || 'Failed to fetch cart'
+        });
+    }
 };
 
 export const updateCartItem = async (req, res) => {
@@ -89,5 +93,15 @@ export const syncCart = async (req, res) => {
         res.status(500).json({ 
             error: error.message || 'Failed to sync cart'
         });
+    }
+};
+
+export const clearCart = async (req, res) => {
+    try {
+        await CartDBService.clearCart(req.user.id);
+        res.status(200).json({ items: [], totalPrice: 0 });
+    } catch (error) {
+        console.error('Clear cart error:', error);
+        res.status(500).json({ error: error.message });
     }
 };

@@ -3,11 +3,20 @@ import Book from '../book/bookModel.mjs';
 
 class CartDBService {
     async getUserCart(userId) {
-        let cart = await Cart.findOne({ userId }).populate('items.bookId');
-        if (!cart) {
-            cart = await Cart.create({ userId, items: [], totalPrice: 0 });
+        try {
+            let cart = await Cart.findOne({ userId }).populate('items.bookId');
+            if (!cart) {
+                cart = await Cart.create({ 
+                    userId, 
+                    items: [], 
+                    totalPrice: 0 
+                });
+            }
+            return cart;
+        } catch (error) {
+            console.error('Get user cart error:', error);
+            throw error;
         }
-        return cart;
     }
 
     async addToCart(userId, bookId, quantity) {
@@ -87,11 +96,23 @@ class CartDBService {
     }
 
     async clearCart(userId) {
-        await Cart.findOneAndUpdate(
-            { userId },
-            { items: [], totalPrice: 0 },
-            { new: true }
-        );
+        try {
+            const cart = await Cart.findOneAndUpdate(
+                { userId },
+                { 
+                    items: [], 
+                    totalPrice: 0 
+                },
+                { 
+                    new: true,
+                    upsert: true 
+                }
+            );
+            return cart;
+        } catch (error) {
+            console.error('Clear cart error:', error);
+            throw error;
+        }
     }
 
     async syncCart(userId, localCartItems) {

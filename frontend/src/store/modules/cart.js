@@ -4,11 +4,11 @@ import {cartApi} from '@/api/cartApi'
 export default {
     namespaced: true,
     state: () => ({
-        items: [],
+        items: JSON.parse(localStorage.getItem('cart')) || [],
         loading: false,
         error: null,
-        pendingRequest: false,
-        lastRequestTimestamp: 0
+        isPending: false,
+        lastTimestamp: 0
     }),
 
     getters: {
@@ -32,21 +32,25 @@ export default {
     },
     mutations: {
         [CART.SET_ITEMS](state, items) {
-            state.items = items
-            localStorage.setItem('cart', JSON.stringify(items))
+            state.items = items || [];
+            localStorage.setItem('cart', JSON.stringify(state.items));
         },
         [CART.ADD_ITEM](state, item) {
-            const existingItem = state.items.find((i) => i.bookId === item.bookId)
+            const existingItem = state.items.find(
+                i => i.bookId?._id === item.bookId?._id || i.bookId === item.bookId
+            );
             if (existingItem) {
-                existingItem.quantity += item.quantity
+                existingItem.quantity += item.quantity;
             } else {
-                state.items.push(item)
+                state.items.push(item);
             }
-            localStorage.setItem('cart', JSON.stringify(state.items))
+            localStorage.setItem('cart', JSON.stringify(state.items));
         },
         [CART.REMOVE_ITEM](state, itemId) {
-            state.items = state.items.filter((item) => item.id !== itemId)
-            localStorage.setItem('cart', JSON.stringify(state.items))
+            state.items = state.items.filter(item => 
+                item.bookId?._id !== itemId && item.bookId !== itemId
+            );
+            localStorage.setItem('cart', JSON.stringify(state.items));
         },
         [CART.UPDATE_QUANTITY](state, { bookId, quantity }) {
             const item = state.items.find((i) => i.bookId === bookId)
@@ -65,99 +69,92 @@ export default {
         [UI.SET_ERROR](state, error) {
             state.error = error
         },
-        SET_PENDING_REQUEST(state, value) {
-            state.pendingRequest = value;
+        [CART.SET_PENDING](state, value) {
+            state.isPending = value;
         },
-        SET_LAST_REQUEST_TIMESTAMP(state, timestamp) {
-            state.lastRequestTimestamp = timestamp;
+        [CART.SET_TIMESTAMP](state, timestamp) {
+            state.lastTimestamp = timestamp;
         }
     },
 
     actions: {
-        async fetchCart({ commit }) {
+        async [CART.FETCH_CART]({ commit }) {
             commit(UI.SET_LOADING, true)
             try {
-                const items = await cartApi.fetchCart()
-                commit(CART.SET_ITEMS, items)
+                const response = await cartApi.fetchCart()
+                commit(CART.SET_ITEMS, response?.items || [])
             } catch (error) {
-                commit(UI.SET_ERROR, error)
+                console.error('Fetch cart error:', error)
+                commit(UI.SET_ERROR, error?.message || 'Failed to fetch cart')
+                commit(CART.SET_ITEMS, [])
             } finally {
                 commit(UI.SET_LOADING, false)
             }
         },
 
         async addToCart({ commit, state, rootGetters }, { bookId, quantity, price }) {
-            // Prevent duplicate requests
-            const now = Date.now();
-            if (state.pendingRequest || (now - state.lastRequestTimestamp < 500)) {
-                console.log('Skipping duplicate request');
-                return;
-            }
-
-            commit('SET_PENDING_REQUEST', true);
-            commit('SET_LAST_REQUEST_TIMESTAMP', now);
-            commit(UI.SET_LOADING, true);
-
+            if (state.isPending) return;
+            
+            commit(CART.SET_PENDING, true)
+            commit(CART.SET_TIMESTAMP, Date.now())
+            commit(UI.SET_LOADING, true)
+            
             try {
-                const isAuthenticated = rootGetters['auth/isAuthenticated'];
+                const isAuthenticated = rootGetters['auth/isAuthenticated']
                 if (isAuthenticated) {
-                    const response = await cartApi.addToCart({ bookId, quantity, price });
+                    const response = await cartApi.addToCart({ bookId, quantity, price })
                     if (response?.items) {
-                        // Ensure all necessary data is present
-                        const processedItems = response.items.map(item => ({
-                            bookId: {
-                                _id: item.bookId._id,
-                                title: item.bookId.title,
-                                image: item.bookId.image
-                            },
-                            quantity: item.quantity,
-                            price: item.price
-                        }));
-                        commit(CART.SET_ITEMS, processedItems);
+                        commit(CART.SET_ITEMS, response.items)
+                    } else {
+                        throw new Error('Invalid response structure')
                     }
                 } else {
-                    commit(CART.ADD_ITEM, { bookId, quantity, price });
+                    commit(CART.ADD_ITEM, { bookId, quantity, price })
                 }
             } catch (error) {
-                console.error('Add to cart error:', error);
-                commit(UI.SET_ERROR, error.message || 'Failed to add item to cart');
+                console.error('Add to cart error:', error)
+                commit(UI.SET_ERROR, String(error.message || 'Failed to add item to cart'))
             } finally {
-                commit(UI.SET_LOADING, false);
-                setTimeout(() => commit('SET_PENDING_REQUEST', false), 500);
+                commit(UI.SET_LOADING, false)
+                setTimeout(() => commit(CART.SET_PENDING, false), 500)
             }
         },
 
         async removeFromCart({ commit, rootState }, itemId) {
-            commit(UI.SET_LOADING, true)
+            commit(UI.SET_LOADING, true);
             try {
                 if (rootState.auth.isAuthenticated) {
-                    const response = await cartApi.removeFromCart(itemId)
-                    commit(CART.SET_ITEMS, response.data.items)
+                    const response = await cartApi.removeFromCart(itemId);
+                    if (response && response.items) {
+                        commit(CART.SET_ITEMS, response.items);
+                    } else {
+                        commit(CART.SET_ITEMS, []);
+                    }
                 } else {
-                    commit(CART.REMOVE_ITEM, itemId)
+                    commit(CART.REMOVE_ITEM, itemId);
                 }
             } catch (error) {
-                commit(UI.SET_ERROR, error.message)
+                commit(UI.SET_ERROR, String(error.message || 'Failed to remove item'));
             } finally {
-                commit(UI.SET_LOADING, false)
+                commit(UI.SET_LOADING, false);
             }
         },
 
-        async updateQuantity({ commit, state }, payload) {
-            commit(UI.SET_LOADING, true)
+        async updateQuantity({ commit, rootState }, payload) {
+            commit(UI.SET_LOADING, true);
             try {
-                if (state.user) {
-                    const updatedCart = await cartApi.updateQuantity(payload)
-                    commit(CART.SET_ITEMS, updatedCart)
+                if (rootState.auth.isAuthenticated) {
+                    const response = await cartApi.updateQuantity(payload.itemId, payload.quantity);
+                    if (response && response.items) {
+                        commit(CART.SET_ITEMS, response.items);
+                    }
                 } else {
-                    const response = await cartApi.updateQuantity(payload)
-                    commit(CART.UPDATE_QUANTITY, payload)
-                    return response.data
+                    commit(CART.UPDATE_QUANTITY, payload);
                 }
             } catch (error) {
-                commit(UI.SET_ERROR, error)
+                commit(UI.SET_ERROR, String(error.message || 'Failed to update quantity'));
             } finally {
-                commit(UI.SET_LOADING, false)
+                commit(UI.SET_LOADING, false);
             }
         },
 
@@ -173,17 +170,16 @@ export default {
             }
         },
 
-        async syncCart({ commit }) {
+        async [CART.SYNC_CART]({ commit }) {
             commit(UI.SET_LOADING, true);
             try {
                 const localCart = JSON.parse(localStorage.getItem('cart')) || [];
                 const response = await cartApi.syncCart(localCart);
                 
-                if (response && response.items) {
+                if (response?.items) {
                     commit(CART.SET_ITEMS, response.items);
                     localStorage.removeItem('cart');
                 } else {
-                    console.error('Invalid sync response:', response);
                     throw new Error('Failed to sync cart');
                 }
             } catch (error) {

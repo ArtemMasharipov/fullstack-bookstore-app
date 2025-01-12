@@ -10,18 +10,22 @@ const baseApi = axios.create(API_CONFIG)
 
 const handleError = error => {
     if (!error.response) {
-        throw new Error('Network connection error')
+        throw new Error('Network connection error');
     }
 
-    const { status, data } = error.response
-    const message = data?.message || data?.error || 'Unexpected error occurred'
+    const { status, data } = error.response;
+    const message = data?.message || data?.error || 'Unexpected error occurred';
 
     if (status === 401) {
-        localStorage.removeItem('token')
-        window.location.href = '/login'
+        localStorage.removeItem('token');
+        window.location.href = '/login';
     }
 
-    throw { status, message, data }
+    // Ensure we always return a string message
+    const errorObject = new Error(message);
+    errorObject.status = status;
+    errorObject.data = data;
+    throw errorObject;
 }
 
 baseApi.interceptors.request.use(config => {
