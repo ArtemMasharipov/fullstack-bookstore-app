@@ -52,6 +52,7 @@ import CartItem from './CartItem.vue';
 import LoadingSpinner from '../common/LoadingSpinner.vue';
 import ErrorMessage from '../common/ErrorMessage.vue';
 import { debounce } from 'lodash';
+import { CART } from '@/store/types';
 
 export default {
     name: 'CartList',
@@ -79,7 +80,7 @@ export default {
             async handler(newVal) {
                 if (newVal) {
                     try {
-                        await this.fetchCart();
+                        await this[CART.FETCH_CART]();
                     } catch (error) {
                         console.error('Error fetching cart on auth change:', error);
                     }
@@ -92,7 +93,7 @@ export default {
         this.debouncedRemoveFromCart = debounce(this.removeFromCart, 300);
         if (this.isAuthenticated) {
             try {
-                await this.fetchCart();
+                await this[CART.FETCH_CART]();
             } catch (error) {
                 console.error('Error initializing cart in created hook:', error);
             }
@@ -106,7 +107,7 @@ export default {
     },
 
     methods: {
-        ...mapActions('cart', ['removeFromCart', 'updateQuantity', 'fetchCart']),
+        ...mapActions('cart', [CART.FETCH_CART, 'removeFromCart', 'updateQuantity']),
         handleRemoveFromCart(bookId) {
             this.debouncedRemoveFromCart(bookId);
         },
