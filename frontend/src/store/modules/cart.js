@@ -7,6 +7,8 @@ export default {
         items: [],
         loading: false,
         error: null,
+        pendingRequest: false,
+        lastRequestTimestamp: 0
     }),
 
     getters: {
@@ -63,6 +65,12 @@ export default {
         [UI.SET_ERROR](state, error) {
             state.error = error
         },
+        SET_PENDING_REQUEST(state, value) {
+            state.pendingRequest = value;
+        },
+        SET_LAST_REQUEST_TIMESTAMP(state, timestamp) {
+            state.lastRequestTimestamp = timestamp;
+        }
     },
 
     actions: {
@@ -78,19 +86,34 @@ export default {
             }
         },
 
-        async addToCart({ commit, rootGetters }, { bookId, quantity, price }) {
-            commit(UI.SET_LOADING, true)
+        async addToCart({ commit, state, rootGetters }, { bookId, quantity, price }) {
+            // Prevent duplicate requests
+            const now = Date.now();
+            if (state.pendingRequest || (now - state.lastRequestTimestamp < 500)) {
+                console.log('Skipping duplicate request');
+                return;
+            }
+
+            commit('SET_PENDING_REQUEST', true);
+            commit('SET_LAST_REQUEST_TIMESTAMP', now);
+            commit(UI.SET_LOADING, true);
+
             try {
                 const isAuthenticated = rootGetters['auth/isAuthenticated'];
-                
                 if (isAuthenticated) {
                     const response = await cartApi.addToCart({ bookId, quantity, price });
-                    console.log('Cart API response:', response);
-                    
-                    if (response && response.items) {
-                        commit(CART.SET_ITEMS, response.items);
-                    } else {
-                        throw new Error('Invalid server response structure');
+                    if (response?.items) {
+                        // Ensure all necessary data is present
+                        const processedItems = response.items.map(item => ({
+                            bookId: {
+                                _id: item.bookId._id,
+                                title: item.bookId.title,
+                                image: item.bookId.image
+                            },
+                            quantity: item.quantity,
+                            price: item.price
+                        }));
+                        commit(CART.SET_ITEMS, processedItems);
                     }
                 } else {
                     commit(CART.ADD_ITEM, { bookId, quantity, price });
@@ -100,6 +123,7 @@ export default {
                 commit(UI.SET_ERROR, error.message || 'Failed to add item to cart');
             } finally {
                 commit(UI.SET_LOADING, false);
+                setTimeout(() => commit('SET_PENDING_REQUEST', false), 500);
             }
         },
 

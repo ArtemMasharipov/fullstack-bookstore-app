@@ -2,27 +2,30 @@ import CartDBService from '../models/cart/CartDBService.mjs';
 
 export const addToCart = async (req, res) => {
     try {
-        const { bookId, quantity } = req.body;
-        console.log('CartController: Adding to cart:', { userId: req.user.id, bookId, quantity });
-
+        const { bookId, quantity, price } = req.body;
         if (!bookId || !quantity) {
             return res.status(400).json({ error: 'BookId and quantity are required' });
         }
 
-        const cart = await CartDBService.addToCart(
-            req.user.id, 
-            bookId, 
-            parseInt(quantity)
-        );
+        const cart = await CartDBService.addToCart(req.user.id, bookId, quantity);
+        const populatedCart = await cart.populate('items.bookId', 'title image price');
+        
+        const response = {
+            items: populatedCart.items.map(item => ({
+                bookId: {
+                    _id: item.bookId._id,
+                    title: item.bookId.title,
+                    image: item.bookId.image
+                },
+                quantity: item.quantity,
+                price: item.price
+            })),
+            totalPrice: populatedCart.totalPrice
+        };
 
-        console.log('CartController: Updated cart:', {
-            itemsCount: cart.items.length,
-            totalPrice: cart.totalPrice
-        });
-
-        res.status(200).json(cart);
+        res.status(200).json(response);
     } catch (error) {
-        console.error('CartController error:', error);
+        console.error('Add to cart error:', error);
         res.status(error.message.includes('not found') ? 404 : 500)
             .json({ error: error.message });
     }

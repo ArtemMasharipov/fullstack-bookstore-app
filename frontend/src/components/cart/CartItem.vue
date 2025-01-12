@@ -1,5 +1,5 @@
 <template>
-    <div class="cart-item" v-if="item">
+    <div v-if="item" class="cart-item">
         <div class="item-image">
             <img :src="bookImage" :alt="bookTitle" @error="handleImageError" />
         </div>
@@ -7,9 +7,9 @@
             <h3>{{ bookTitle }}</h3>
             <p>Price: ${{ item?.price || 0 }}</p>
             <div class="quantity-controls">
-                <button @click="updateQuantity(item?.bookId._id, (item?.quantity || 0) - 1)">-</button>
+                <button @click="handleQuantityClick((item?.quantity || 0) - 1)">-</button>
                 <span>{{ item?.quantity || 0 }}</span>
-                <button @click="updateQuantity(item?.bookId._id, (item?.quantity || 0) + 1)">+</button>
+                <button @click="handleQuantityClick((item?.quantity || 0) + 1)">+</button>
             </div>
         </div>
         <button @click="remove">Remove</button>
@@ -18,6 +18,7 @@
 
 <script>
 import { mapActions } from 'vuex'
+import { debounce } from 'lodash'
 
 export default {
     name: 'CartItem',
@@ -30,6 +31,7 @@ export default {
             },
         },
     },
+    emits: ['error', 'update-quantity'],
     computed: {
         bookTitle() {
             return this.item.bookId?.title || 'Unknown Book'
@@ -38,7 +40,14 @@ export default {
             return this.item.bookId?.image || require('@/assets/images/placeholder.png')
         },
     },
-    emits: ['error', 'update-quantity'],
+    created() {
+        this.debouncedUpdateQuantity = debounce(this.updateQuantity, 300)
+    },
+    beforeUnmount() {
+        if (this.debouncedUpdateQuantity) {
+            this.debouncedUpdateQuantity.cancel()
+        }
+    },
     methods: {
         ...mapActions('cart', ['updateCartQuantity', 'removeFromCart']),
         async updateQuantity(id, newQuantity) {
@@ -64,6 +73,11 @@ export default {
         handleImageError(e) {
             e.target.src = require('@/assets/images/placeholder.png')
         },
+        handleQuantityClick(newQuantity) {
+            if (newQuantity >= 0) {
+                this.debouncedUpdateQuantity(this.item.bookId._id, newQuantity)
+            }
+        }
     },
 }
 </script>

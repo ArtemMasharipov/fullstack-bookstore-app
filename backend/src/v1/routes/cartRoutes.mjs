@@ -6,23 +6,21 @@ import { validateRequest } from '../../../middleware/validationMiddleware.mjs';
 
 const router = Router();
 
-router.get('/', checkAuth, cartController.getCart);
+// Add auth check middleware first
+router.use(checkAuth);
+
+router.get('/', cartController.getCart);
 router.post('/add', 
+    cartValidationSchema, 
+    validateRequest,
     (req, res, next) => {
-        console.log('Cart route: Received add request:', {
-            body: req.body,
-            headers: req.headers,
-            user: req.user
-        });
+        console.log('Cart route: Request user:', req.user);
         next();
     },
-    checkAuth, 
-    cartValidationSchema, 
-    validateRequest, 
     cartController.addToCart
 );
-router.post('/remove/:id', checkAuth, cartController.removeCartItem);
-router.put('/update/:id', checkAuth, cartController.updateCartItem);
-router.post('/sync', checkAuth, cartController.syncCart);
+router.post('/remove/:id', cartController.removeCartItem);
+router.put('/update/:id', cartController.updateCartItem);
+router.post('/sync', cartController.syncCart);
 
 export default router;

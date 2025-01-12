@@ -13,7 +13,7 @@
                     v-for="item in cartItems"
                     :key="item.bookId._id"
                     :item="item"
-                    @remove="removeFromCart"
+                    @remove="handleRemoveFromCart"
                     @update-quantity="updateQuantity"
                 />
                 <div class="cart-actions">
@@ -51,6 +51,7 @@ import { mapGetters, mapActions } from 'vuex'
 import CartItem from './CartItem.vue'
 import LoadingSpinner from '../common/LoadingSpinner.vue'
 import ErrorMessage from '../common/ErrorMessage.vue'
+import { debounce } from 'lodash'
 
 export default {
     name: 'CartList',
@@ -75,10 +76,20 @@ export default {
         },
     },
 
+    created() {
+        this.debouncedRemoveFromCart = debounce(this.removeFromCart, 300)
+    },
+
+    beforeUnmount() {
+        if (this.debouncedRemoveFromCart) {
+            this.debouncedRemoveFromCart.cancel()
+        }
+    },
+
     methods: {
         ...mapActions('cart', ['removeFromCart', 'updateQuantity']),
-        removeFromCart(bookId) {
-            this.$store.dispatch('cart/removeFromCart', bookId)
+        handleRemoveFromCart(bookId) {
+            this.debouncedRemoveFromCart(bookId)
         }
     },
 }
