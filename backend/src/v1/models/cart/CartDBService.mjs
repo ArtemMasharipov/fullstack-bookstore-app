@@ -12,36 +12,54 @@ class CartDBService {
 
     async addToCart(userId, bookId, quantity) {
         try {
+            console.log('CartDBService: Adding to cart:', { userId, bookId, quantity });
+            
             const book = await Book.findById(bookId);
             if (!book) {
                 throw new Error('Book not found');
             }
 
-            let cart = await this.getUserCart(userId);
-            
-            // Правильное сравнение ID книг
+            let cart = await Cart.findOne({ userId });
+            if (!cart) {
+                cart = await Cart.create({
+                    userId,
+                    items: [],
+                    totalPrice: 0
+                });
+            }
+
+            // Ищем существующий товар по bookId
             const existingItemIndex = cart.items.findIndex(item => 
-                item.bookId.toString() === bookId.toString()
+                item.bookId?.toString() === bookId.toString()
             );
 
             if (existingItemIndex > -1) {
-                // Обновляем существующий item
+                // Обновляем количество существующего товара
                 cart.items[existingItemIndex].quantity += quantity;
+                console.log('Updated existing item quantity:', cart.items[existingItemIndex]);
             } else {
-                // Добавляем новый item
+                // Добавляем новый товар
                 cart.items.push({
                     bookId: book._id,
                     quantity,
                     price: book.price
                 });
+                console.log('Added new item to cart');
             }
 
-            cart.totalPrice = this.calculateTotalPrice(cart.items);
+            // Пересчитываем общую стоимость
+            cart.totalPrice = cart.items.reduce((total, item) => 
+                total + (item.price * item.quantity), 0
+            );
+
+            // Сохраняем и возвращаем обновленную корзину с populated items
             await cart.save();
+            const populatedCart = await cart.populate('items.bookId');
+            console.log('Cart after update:', populatedCart);
             
-            return cart.populate('items.bookId');
+            return populatedCart;
         } catch (error) {
-            console.error('AddToCart error:', error);
+            console.error('CartDBService addToCart error:', error);
             throw error;
         }
     }

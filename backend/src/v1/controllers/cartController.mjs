@@ -3,18 +3,26 @@ import CartDBService from '../models/cart/CartDBService.mjs';
 export const addToCart = async (req, res) => {
     try {
         const { bookId, quantity } = req.body;
-        console.log('Adding to cart:', { userId: req.user.id, bookId, quantity });
+        console.log('CartController: Adding to cart:', { userId: req.user.id, bookId, quantity });
 
         if (!bookId || !quantity) {
             return res.status(400).json({ error: 'BookId and quantity are required' });
         }
 
-        const cart = await CartDBService.addToCart(req.user.id, bookId, parseInt(quantity));
-        console.log('Cart after addition:', cart);
-        
+        const cart = await CartDBService.addToCart(
+            req.user.id, 
+            bookId, 
+            parseInt(quantity)
+        );
+
+        console.log('CartController: Updated cart:', {
+            itemsCount: cart.items.length,
+            totalPrice: cart.totalPrice
+        });
+
         res.status(200).json(cart);
     } catch (error) {
-        console.error('Add to cart error:', error);
+        console.error('CartController error:', error);
         res.status(error.message.includes('not found') ? 404 : 500)
             .json({ error: error.message });
     }
