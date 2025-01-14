@@ -76,22 +76,15 @@ class CartDBService {
 
     async removeCartItem(userId, itemId) {
         try {
-            console.log('Removing item:', { userId, itemId });
-            
-            // Правильное создание ObjectId
-            const itemObjectId = new mongoose.Types.ObjectId(itemId);
-            
-            // Находим и обновляем корзину одной операцией
             const cart = await Cart.findOneAndUpdate(
                 { userId },
                 { 
                     $pull: { 
-                        items: { _id: itemObjectId } 
+                        items: { _id: new mongoose.Types.ObjectId(itemId) } 
                     } 
                 },
                 { 
-                    new: true,
-                    runValidators: true 
+                    new: true 
                 }
             ).populate('items.bookId');
 
@@ -99,20 +92,10 @@ class CartDBService {
                 throw new Error('Cart not found');
             }
 
-            // Пересчитываем totalPrice
-            cart.totalPrice = cart.items.reduce((total, item) => 
-                total + (item.price * item.quantity), 0
-            );
+            // totalPrice пересчитается автоматически через pre-save hook
             await cart.save();
-
-            console.log('Cart after removal:', {
-                itemsCount: cart.items.length,
-                totalPrice: cart.totalPrice
-            });
-
             return cart;
         } catch (error) {
-            console.error('Remove cart error:', error);
             throw error;
         }
     }

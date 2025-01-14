@@ -24,7 +24,7 @@ const cartSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User',
         required: true,
-        unique: true
+        unique: true // Это уже создает индекс
     },
     items: [cartItemSchema],
     totalPrice: {
@@ -34,30 +34,24 @@ const cartSchema = new Schema({
     }
 }, { timestamps: true });
 
-// Только один набор индексов
+// Только один индекс для items, убираем дублирующийся индекс userId
 cartSchema.index({ 'items._id': 1 });
 
-// Один pre-save hook для всех операций
+// Один pre-save hook для всей логики
 cartSchema.pre('save', function(next) {
-    console.log('DEBUG - Pre save hook:', {
-        isModified: this.isModified('items'),
-        itemsCount: this.items.length,
-        totalPrice: this.totalPrice
-    });
-
-    // Убедимся, что все items имеют валидные ID
-    this.items.forEach(item => {
-        if (!item._id) {
-            item._id = new mongoose.Types.ObjectId();
-        }
-    });
-
-    // Пересчитаем totalPrice
+    // Пересчет totalPrice
     this.totalPrice = this.items.reduce((total, item) => 
         total + (item.price * item.quantity), 0
     );
-
     next();
+});
+
+// Один post-save hook для логирования
+cartSchema.post('save', function(doc) {
+    console.log('Cart saved:', {
+        itemsCount: doc.items.length,
+        totalPrice: doc.totalPrice
+    });
 });
 
 // Один pre-findOneAndUpdate hook
@@ -69,24 +63,7 @@ cartSchema.pre('findOneAndUpdate', function(next) {
     next();
 });
 
-// Добавляем middleware для отслеживания операций с items
-cartSchema.pre('findOneAndUpdate', function(next) {
-    console.log('DEBUG - Cart update operation:', {
-        filter: this.getFilter(),
-        update: this.getUpdate(),
-        options: this.getOptions()
-    });
-    next();
-});
-
 // Один post-findOneAndUpdate hook
-cartSchema.post('findOneAndUpdate', function(doc) {
-    console.log('DEBUG - Post findOneAndUpdate:', {
-        success: !!doc,
-        itemsCount: doc?.items?.length
-    });
-});
-
 cartSchema.post('findOneAndUpdate', function(doc) {
     if (doc) {
         console.log('DEBUG - Cart after update:', {
@@ -100,49 +77,6 @@ cartSchema.post('findOneAndUpdate', function(doc) {
         console.log('DEBUG - No cart found after update');
     }
 });
-
-// Метод для удаления элемента
-cartSchema.methods.removeItem = async function(itemId) {
-    try {
-        console.log('DEBUG - Cart.removeItem called:', {
-            cartId: this._id,
-            itemId,
-            currentItems: this.items.length
-        });
-
-        // Проверяем ID элемента
-        if (!mongoose.Types.ObjectId.isValid(itemId)) {
-            throw new Error('Invalid item ID format');
-        }
-
-        // Находим индекс элемента для удаления
-        const itemIndex = this.items.findIndex(item => 
-            item._id.toString() === itemId.toString()
-        );
-
-        console.log('DEBUG - Found item at index:', itemIndex);
-
-        if (itemIndex === -1) {
-            throw new Error(`Item ${itemId} not found in cart`);
-        }
-
-        // Удаляем элемент
-        this.items.splice(itemIndex, 1);
-        
-        // Сохраняем изменения
-        const savedCart = await this.save();
-        
-        console.log('DEBUG - Cart after save:', {
-            itemsRemoved: savedCart.items.length < this.items.length,
-            newItemCount: savedCart.items.length
-        });
-
-        return savedCart;
-    } catch (error) {
-        console.error('DEBUG - removeItem error:', error);
-        throw error;
-    }
-};
 
 const Cart = mongoose.model('Cart', cartSchema);
 export default Cart;

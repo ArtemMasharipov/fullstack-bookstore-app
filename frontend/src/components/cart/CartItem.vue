@@ -65,19 +65,8 @@ export default {
         },
         async remove() {
             try {
-                // Для отладки распечатаем полный объект item
-                console.log('DEBUG - Full item object:', this.item);
-                const itemId = this.item._id;
-                
-                if (!itemId) {
-                    console.error('DEBUG - Missing _id in item:', this.item);
-                    throw new Error('Item ID is missing');
-                }
-
-                console.log('DEBUG - Attempting to remove item with ID:', itemId);
-                await this.removeFromCart(itemId);
+                await this.removeFromCart(this.item._id);
             } catch (error) {
-                console.error('DEBUG - Remove error:', error);
                 this.$emit('error', error.message);
             }
         },
