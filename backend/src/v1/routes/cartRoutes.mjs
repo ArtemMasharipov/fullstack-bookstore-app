@@ -19,8 +19,18 @@ router.post('/add',
     },
     cartController.addToCart
 );
-router.post('/remove/:id', cartController.removeCartItem);
+router.post('/remove/:id', async (req, res, next) => {
+    console.log('DEBUG - Cart remove route:', {
+        params: req.params,
+        userId: req.user?.id,
+        method: req.method,
+        path: req.path,
+        body: req.body
+    });
+    next();
+}, cartController.removeCartItem);
 router.put('/update/:id', cartController.updateCartItem);
 router.post('/sync', cartController.syncCart);
+router.delete('/items/:id', cartController.removeCartItem); // Изменили метод на DELETE
 
 export default router;

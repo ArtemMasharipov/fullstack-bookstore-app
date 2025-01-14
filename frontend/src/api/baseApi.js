@@ -78,23 +78,36 @@ baseApi.interceptors.response.use(
 
 export const apiRequest = async (method, url, data = null, config = {}) => {
     try {
-        console.log(`API Request ${method.toUpperCase()} ${url}:`, { data, config });
+        console.log(`API ${method.toUpperCase()} Request:`, {
+            url,
+            data,
+            config,
+            token: localStorage.getItem('token')
+        });
+
         const response = await baseApi({
             method,
             url,
-            ...(data && method !== 'GET' && { data }),
+            ...(data && { data }),
             ...config
         });
-        console.log(`API Response ${method.toUpperCase()} ${url}:`, response.data);
+
+        console.log(`API ${method.toUpperCase()} Response:`, {
+            url,
+            status: response.status,
+            data: response.data
+        });
+
         return response.data;
     } catch (error) {
-        console.error(`API ${method.toUpperCase()} ${url} failed:`, {
+        console.error(`API ${method.toUpperCase()} Error:`, {
+            url,
             error,
             response: error.response,
-            data: error.response?.data
+            config: error.config
         });
         throw error;
     }
-}
+};
 
 export default baseApi

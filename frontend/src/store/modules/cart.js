@@ -13,6 +13,7 @@ export default {
 
     getters: {
         cartItems: (state) => state.items.map(item => ({
+            _id: item._id, // Добавляем _id самого item
             bookId: {
                 _id: item.bookId?._id || item.bookId,
                 title: item.bookId?.title || 'Unknown Book',
@@ -47,8 +48,9 @@ export default {
             localStorage.setItem('cart', JSON.stringify(state.items));
         },
         [CART.REMOVE_ITEM](state, itemId) {
+            console.log('Removing item with ID:', itemId);
             state.items = state.items.filter(item => 
-                item.bookId?._id !== itemId && item.bookId !== itemId
+                item._id !== itemId // Изменили условие фильтрации
             );
             localStorage.setItem('cart', JSON.stringify(state.items));
         },
@@ -120,21 +122,13 @@ export default {
             }
         },
 
-        async removeFromCart({ commit, rootState }, itemId) {
+        async removeFromCart({ commit }, itemId) {
             commit(UI.SET_LOADING, true);
             try {
-                if (rootState.auth.isAuthenticated) {
-                    const response = await cartApi.removeFromCart(itemId);
-                    if (response && response.items) {
-                        commit(CART.SET_ITEMS, response.items);
-                    } else {
-                        commit(CART.SET_ITEMS, []);
-                    }
-                } else {
-                    commit(CART.REMOVE_ITEM, itemId);
-                }
+                const response = await cartApi.removeFromCart(itemId);
+                commit(CART.SET_ITEMS, response.items);
             } catch (error) {
-                commit(UI.SET_ERROR, String(error.message || 'Failed to remove item'));
+                commit(UI.SET_ERROR, 'Failed to remove item');
             } finally {
                 commit(UI.SET_LOADING, false);
             }
