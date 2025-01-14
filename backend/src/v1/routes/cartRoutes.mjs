@@ -13,14 +13,10 @@ router.get('/', cartController.getCart);
 router.post('/add', 
     cartValidationSchema, 
     validateRequest,
-    (req, res, next) => {
-        console.log('Cart route: Request user:', req.user);
-        next();
-    },
     cartController.addToCart
 );
 router.put('/update/:id', cartController.updateCartItem);
 router.post('/sync', cartController.syncCart);
-router.delete('/items/:id', cartController.removeCartItem); // Правильный метод и путь
+router.delete('/items/:id', cartController.removeCartItem);
 
 export default router;

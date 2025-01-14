@@ -6,9 +6,7 @@ export default {
     state: () => ({
         items: JSON.parse(localStorage.getItem('cart')) || [],
         loading: false,
-        error: null,
-        isPending: false,
-        lastTimestamp: 0
+        error: null
     }),
 
     getters: {
@@ -48,7 +46,6 @@ export default {
             localStorage.setItem('cart', JSON.stringify(state.items));
         },
         [CART.REMOVE_ITEM](state, itemId) {
-            console.log('Removing item with ID:', itemId);
             state.items = state.items.filter(item => 
                 item._id !== itemId // Изменили условие фильтрации
             );
@@ -70,12 +67,6 @@ export default {
         },
         [UI.SET_ERROR](state, error) {
             state.error = error
-        },
-        [CART.SET_PENDING](state, value) {
-            state.isPending = value;
-        },
-        [CART.SET_TIMESTAMP](state, timestamp) {
-            state.lastTimestamp = timestamp;
         }
     },
 
@@ -94,11 +85,7 @@ export default {
             }
         },
 
-        async addToCart({ commit, state, rootGetters }, { bookId, quantity, price }) {
-            if (state.isPending) return;
-            
-            commit(CART.SET_PENDING, true)
-            commit(CART.SET_TIMESTAMP, Date.now())
+        async addToCart({ commit, rootGetters }, { bookId, quantity, price }) {
             commit(UI.SET_LOADING, true)
             
             try {
@@ -118,7 +105,6 @@ export default {
                 commit(UI.SET_ERROR, String(error.message || 'Failed to add item to cart'))
             } finally {
                 commit(UI.SET_LOADING, false)
-                setTimeout(() => commit(CART.SET_PENDING, false), 500)
             }
         },
 

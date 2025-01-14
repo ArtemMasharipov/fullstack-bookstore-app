@@ -75,29 +75,18 @@ class CartDBService {
     }
 
     async removeCartItem(userId, itemId) {
-        try {
-            const cart = await Cart.findOneAndUpdate(
-                { userId },
-                { 
-                    $pull: { 
-                        items: { _id: new mongoose.Types.ObjectId(itemId) } 
-                    } 
-                },
-                { 
-                    new: true 
-                }
-            ).populate('items.bookId');
+        const cart = await Cart.findOneAndUpdate(
+            { userId },
+            { $pull: { items: { _id: new mongoose.Types.ObjectId(itemId) } } },
+            { new: true }
+        ).populate('items.bookId');
 
-            if (!cart) {
-                throw new Error('Cart not found');
-            }
-
-            // totalPrice пересчитается автоматически через pre-save hook
-            await cart.save();
-            return cart;
-        } catch (error) {
-            throw error;
+        if (!cart) {
+            throw new Error('Cart not found');
         }
+
+        await cart.save();
+        return cart;
     }
 
     async updateCartItem(userId, itemId, quantity) {
@@ -177,10 +166,6 @@ class CartDBService {
             console.error('Cart sync error:', error);
             throw error;
         }
-    }
-
-    calculateTotalPrice(items) {
-        return items.reduce((total, item) => total + (item.price * item.quantity), 0);
     }
 }
 

@@ -63,36 +63,18 @@ export const updateCartItem = async (req, res) => {
 
 export const removeCartItem = async (req, res) => {
     try {
-        console.log('Remove request:', { 
-            userId: req.user.id, 
-            itemId: req.params.id 
-        });
-
         const cart = await CartDBService.removeCartItem(
             req.user.id,
             req.params.id
         );
 
-        // Отправляем обновленную корзину
         res.json({
             success: true,
-            items: cart.items.map(item => ({
-                _id: item._id.toString(),
-                bookId: {
-                    _id: item.bookId._id.toString(),
-                    title: item.bookId.title,
-                    image: item.bookId.image
-                },
-                quantity: item.quantity,
-                price: item.price
-            })),
+            items: cart.items,
             totalPrice: cart.totalPrice
         });
     } catch (error) {
-        console.error('Remove cart error:', error);
-        res.status(500).json({ 
-            error: error.message || 'Failed to remove item from cart' 
-        });
+        res.status(500).json({ error: error.message });
     }
 };
 
