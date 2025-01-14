@@ -24,7 +24,7 @@ const cartSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User',
         required: true,
-        unique: true // Это уже создает индекс
+        unique: true // Это единственный индекс, который нам нужен
     },
     items: [cartItemSchema],
     totalPrice: {
@@ -34,10 +34,8 @@ const cartSchema = new Schema({
     }
 }, { timestamps: true });
 
-// Только один индекс для items, убираем дублирующийся индекс userId
-cartSchema.index({ 'items._id': 1 });
-
-// Один pre-save hook для всей логики
+// Удаляем лишний индекс items._id
+// Оставляем только hooks
 cartSchema.pre('save', function(next) {
     // Пересчет totalPrice
     this.totalPrice = this.items.reduce((total, item) => 
