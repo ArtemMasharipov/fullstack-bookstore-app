@@ -41,28 +41,15 @@ export default {
         },
     },
     created() {
-        this.debouncedUpdateQuantity = debounce(this.updateQuantity, 300)
+        this.debouncedQuantityUpdate = debounce(this.handleQuantityUpdate, 300)
     },
     beforeUnmount() {
-        if (this.debouncedUpdateQuantity) {
-            this.debouncedUpdateQuantity.cancel()
+        if (this.debouncedQuantityUpdate?.cancel) {
+            this.debouncedQuantityUpdate.cancel()
         }
     },
     methods: {
-        ...mapActions('cart', ['updateCartQuantity', 'removeFromCart']),
-        async updateQuantity(id, newQuantity) {
-            if (newQuantity >= 0) {
-                try {
-                    await this.updateCartQuantity({
-                        bookId: id,
-                        quantity: newQuantity,
-                    })
-                    this.$emit('update-quantity', { id, quantity: newQuantity })
-                } catch (error) {
-                    this.$emit('error', error.message)
-                }
-            }
-        },
+        ...mapActions('cart', ['removeFromCart', 'updateQuantity']),
         async remove() {
             try {
                 await this.removeFromCart(this.item._id);
@@ -70,13 +57,29 @@ export default {
                 this.$emit('error', error.message);
             }
         },
-        handleImageError(e) {
-            e.target.src = require('@/assets/images/placeholder.png')
+        async handleQuantityUpdate(id, newQuantity) {
+            if (newQuantity >= 0) {
+                try {
+                    await this.updateQuantity({
+                        itemId: id,
+                        quantity: newQuantity
+                    });
+                    this.$emit('update-quantity', { id, quantity: newQuantity });
+                } catch (error) {
+                    this.$emit('error', error.message);
+                }
+            }
         },
         handleQuantityClick(newQuantity) {
             if (newQuantity >= 0) {
-                this.debouncedUpdateQuantity(this.item.bookId._id, newQuantity)
+                this.debouncedQuantityUpdate(
+                    this.item.bookId._id,
+                    newQuantity
+                );
             }
+        },
+        handleImageError(e) {
+            e.target.src = require('@/assets/images/placeholder.png');
         }
     },
 }

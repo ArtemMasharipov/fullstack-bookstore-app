@@ -99,11 +99,11 @@ export default {
     },
 
     methods: {
-        ...mapActions('cart', [CART.FETCH_CART, 'removeFromCart', 'updateQuantity']),
-        handleRemoveFromCart(bookId) {
-            this.removeFromCart(bookId);
-        },
-    },
+        ...mapActions('cart', [CART.FETCH_CART, 'removeFromCart']),
+        handleRemoveFromCart(itemId) {
+            this.removeFromCart(itemId);
+        }
+    }
 };
 </script>
 
