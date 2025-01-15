@@ -34,17 +34,11 @@ const cartSchema = new Schema({
     }
 }, { timestamps: true });
 
-// Только один pre-save hook для пересчета totalPrice
+// Оставляем только необходимые hooks
 cartSchema.pre('save', function(next) {
     this.totalPrice = this.items.reduce((total, item) => 
         total + (item.price * item.quantity), 0
     );
-    next();
-});
-
-// Один pre-findOneAndUpdate hook для логирования
-cartSchema.pre('findOneAndUpdate', function(next) {
-    console.log('Cart update:', this.getUpdate());
     next();
 });
 

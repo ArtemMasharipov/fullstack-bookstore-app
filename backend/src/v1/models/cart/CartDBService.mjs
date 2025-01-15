@@ -22,8 +22,6 @@ class CartDBService {
 
     async addToCart(userId, bookId, quantity) {
         try {
-            console.log('CartDBService: Adding to cart:', { userId, bookId, quantity });
-            
             const book = await Book.findById(bookId);
             if (!book) {
                 throw new Error('Book not found');
@@ -38,34 +36,26 @@ class CartDBService {
                 });
             }
 
-            // Ищем существующий товар по bookId
             const existingItemIndex = cart.items.findIndex(item => 
                 item.bookId?.toString() === bookId.toString()
             );
 
             if (existingItemIndex > -1) {
-                // Обновляем количество существующего товара
                 cart.items[existingItemIndex].quantity += quantity;
-                console.log('Updated existing item quantity:', cart.items[existingItemIndex]);
             } else {
-                // Добавляем новый товар
                 cart.items.push({
                     bookId: book._id,
                     quantity,
                     price: book.price
                 });
-                console.log('Added new item to cart');
             }
 
-            // Пересчитываем общую стоимость
             cart.totalPrice = cart.items.reduce((total, item) => 
                 total + (item.price * item.quantity), 0
             );
 
-            // Сохраняем и возвращаем обновленную корзину с populated items
             await cart.save();
             const populatedCart = await cart.populate('items.bookId');
-            console.log('Cart after update:', populatedCart);
             
             return populatedCart;
         } catch (error) {
@@ -135,7 +125,6 @@ class CartDBService {
                 });
             }
 
-            // Validate and fetch books for local cart items
             const validatedItems = await Promise.all(
                 localCartItems.map(async (item) => {
                     const book = await Book.findById(item.bookId);
@@ -149,13 +138,10 @@ class CartDBService {
                 })
             );
 
-            // Filter out invalid items
             const filteredItems = validatedItems.filter(item => item !== null);
 
-            // Merge with existing cart items
             cart.items = filteredItems;
             
-            // Recalculate total price
             cart.totalPrice = filteredItems.reduce((total, item) => {
                 return total + (item.price * item.quantity);
             }, 0);

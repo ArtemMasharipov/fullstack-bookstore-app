@@ -51,7 +51,6 @@ import { mapGetters, mapActions } from 'vuex';
 import CartItem from './CartItem.vue';
 import LoadingSpinner from '../common/LoadingSpinner.vue';
 import ErrorMessage from '../common/ErrorMessage.vue';
-import { debounce } from 'lodash';
 import { CART } from '@/store/types';
 
 export default {
@@ -90,7 +89,6 @@ export default {
     },
 
     async created() {
-        this.debouncedRemoveFromCart = debounce(this.removeFromCart, 300);
         if (this.isAuthenticated) {
             try {
                 await this[CART.FETCH_CART]();
@@ -100,16 +98,10 @@ export default {
         }
     },
 
-    beforeUnmount() {
-        if (this.debouncedRemoveFromCart) {
-            this.debouncedRemoveFromCart.cancel();
-        }
-    },
-
     methods: {
         ...mapActions('cart', [CART.FETCH_CART, 'removeFromCart', 'updateQuantity']),
         handleRemoveFromCart(bookId) {
-            this.debouncedRemoveFromCart(bookId);
+            this.removeFromCart(bookId);
         },
     },
 };
