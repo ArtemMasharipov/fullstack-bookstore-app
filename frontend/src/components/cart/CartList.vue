@@ -109,6 +109,8 @@ export default {
 
 <style scoped>
 .cart-list {
+    max-width: 900px;
+    margin: 0 auto;
     padding: 1rem;
 }
 
@@ -118,6 +120,15 @@ export default {
     padding: 2rem;
 }
 
+.empty-cart {
+    text-align: center;
+    padding: 3rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    color: #6c757d;
+}
+
 .error-container {
     max-width: 600px;
     margin: 2rem auto;
@@ -125,6 +136,30 @@ export default {
 
 .cart-summary {
     margin-top: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.cart-actions {
+    margin-top: 2rem;
     text-align: right;
+}
+
+.cart-actions .btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+    .cart-list {
+        padding: 0.5rem;
+    }
+    
+    .cart-summary {
+        margin-top: 1.5rem;
+        padding: 1rem;
+    }
 }
 </style>

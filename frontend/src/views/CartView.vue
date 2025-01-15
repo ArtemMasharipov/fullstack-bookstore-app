@@ -18,9 +18,14 @@ export default {
 
 <style scoped>
 .cart-view {
-  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
 }
+
 .cart-view h1 {
   color: #333;
+  margin-bottom: 2rem;
+  text-align: center;
 }
 </style>
