@@ -1,5 +1,5 @@
 <template>
-    <div v-if="item" class="cart-item">
+    <div class="cart-item">
         <div class="item-image">
             <img :src="bookImage" :alt="bookTitle" @error="handleImageError" />
         </div>
@@ -34,18 +34,20 @@ export default {
     emits: ['error', 'update-quantity'],
     computed: {
         bookTitle() {
-            return this.item.bookId?.title || 'Unknown Book'
+            return this.item?.bookId?.title || 'Unknown Book'
         },
         bookImage() {
-            return this.item.bookId?.image || require('@/assets/images/placeholder.png')
+            return this.item?.bookId?.image || require('@/assets/images/placeholder.png')
         },
     },
     created() {
-        this.debouncedQuantityUpdate = debounce(this.handleQuantityUpdate, 300)
+        this.debouncedUpdateQuantity = debounce((quantity) => {
+            this.updateQuantityInCart(this.item.bookId._id, quantity)
+        }, 300)
     },
     beforeUnmount() {
-        if (this.debouncedQuantityUpdate?.cancel) {
-            this.debouncedQuantityUpdate.cancel()
+        if (this.debouncedUpdateQuantity) {
+            this.debouncedUpdateQuantity.cancel()
         }
     },
     methods: {
@@ -57,29 +59,19 @@ export default {
                 this.$emit('error', error.message);
             }
         },
-        async handleQuantityUpdate(id, newQuantity) {
-            if (newQuantity >= 0) {
-                try {
-                    await this.updateQuantity({
-                        itemId: id,
-                        quantity: newQuantity
-                    });
-                    this.$emit('update-quantity', { id, quantity: newQuantity });
-                } catch (error) {
-                    this.$emit('error', error.message);
-                }
-            }
+        handleImageError(e) {
+            e.target.src = require('@/assets/images/placeholder.png')
+        },
+        updateQuantityInCart(bookId, quantity) {
+            this.$emit('update-quantity', { bookId, quantity });
+            this.updateQuantity({ bookId, quantity }).catch(error => {
+                this.$emit('error', error.message);
+            });
         },
         handleQuantityClick(newQuantity) {
             if (newQuantity >= 0) {
-                this.debouncedQuantityUpdate(
-                    this.item.bookId._id,
-                    newQuantity
-                );
+                this.debouncedUpdateQuantity(newQuantity)
             }
-        },
-        handleImageError(e) {
-            e.target.src = require('@/assets/images/placeholder.png');
         }
     },
 }

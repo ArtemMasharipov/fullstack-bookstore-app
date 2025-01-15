@@ -11,14 +11,14 @@ export default {
 
     getters: {
         cartItems: (state) => state.items.map(item => ({
-            _id: item._id, // Добавляем _id самого item
+            _id: item._id,
             bookId: {
                 _id: item.bookId?._id || item.bookId,
                 title: item.bookId?.title || 'Unknown Book',
-                image: item.bookId?.image || null
+                image: item.bookId?.image
             },
-            quantity: Number(item.quantity) || 1,
-            price: Number(item.price) || 0
+            quantity: Number(item.quantity),
+            price: Number(item.price)
         })),
         cartLoading: (state) => state.loading,
         cartError: (state) => state.error,
@@ -46,9 +46,7 @@ export default {
             localStorage.setItem('cart', JSON.stringify(state.items));
         },
         [CART.REMOVE_ITEM](state, itemId) {
-            state.items = state.items.filter(item => 
-                item._id !== itemId // Изменили условие фильтрации
-            );
+            state.items = state.items.filter(item => item._id !== itemId);
             localStorage.setItem('cart', JSON.stringify(state.items));
         },
         [CART.UPDATE_QUANTITY](state, { bookId, quantity }) {

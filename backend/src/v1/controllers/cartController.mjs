@@ -2,32 +2,15 @@ import CartDBService from '../models/cart/CartDBService.mjs';
 
 export const addToCart = async (req, res) => {
     try {
-        const { bookId, quantity, price } = req.body;
+        const { bookId, quantity } = req.body;
         if (!bookId || !quantity) {
-            return res.status(400).json({ error: 'BookId and quantity are required' });
+            return res.status(400).json({ error: 'Missing required fields' });
         }
-
         const cart = await CartDBService.addToCart(req.user.id, bookId, quantity);
-        const populatedCart = await cart.populate('items.bookId', 'title image price');
-        
-        const response = {
-            items: populatedCart.items.map(item => ({
-                bookId: {
-                    _id: item.bookId._id,
-                    title: item.bookId.title,
-                    image: item.bookId.image
-                },
-                quantity: item.quantity,
-                price: item.price
-            })),
-            totalPrice: populatedCart.totalPrice
-        };
-
-        res.status(200).json(response);
+        const populatedCart = await cart.populate('items.bookId');
+        res.status(200).json(populatedCart);
     } catch (error) {
-        console.error('Add to cart error:', error);
-        res.status(error.message.includes('not found') ? 404 : 500)
-            .json({ error: error.message });
+        res.status(500).json({ error: error.message });
     }
 };
 
@@ -39,7 +22,6 @@ export const getCart = async (req, res) => {
             totalPrice: cart?.totalPrice || 0
         });
     } catch (error) {
-        console.error('Get cart error:', error);
         res.status(500).json({ 
             error: error.message || 'Failed to fetch cart'
         });
@@ -92,7 +74,6 @@ export const syncCart = async (req, res) => {
             totalPrice: syncedCart.totalPrice
         });
     } catch (error) {
-        console.error('Sync cart error:', error);
         res.status(500).json({ 
             error: error.message || 'Failed to sync cart'
         });
@@ -104,7 +85,6 @@ export const clearCart = async (req, res) => {
         await CartDBService.clearCart(req.user.id);
         res.status(200).json({ items: [], totalPrice: 0 });
     } catch (error) {
-        console.error('Clear cart error:', error);
         res.status(500).json({ error: error.message });
     }
 };

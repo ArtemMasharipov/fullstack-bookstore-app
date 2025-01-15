@@ -34,9 +34,8 @@ const cartSchema = new Schema({
     }
 }, { timestamps: true });
 
-// Оставляем только один необходимый хук
+// Оставляем только один базовый хук для пересчета totalPrice
 cartSchema.pre('save', function(next) {
-    // Автоматический пересчет totalPrice при любом изменении items
     this.totalPrice = this.items.reduce((total, item) => 
         total + (item.price * item.quantity), 0
     );

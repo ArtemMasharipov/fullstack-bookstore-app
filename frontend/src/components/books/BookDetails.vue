@@ -132,7 +132,7 @@ export default {
 
         async handleDelete() {
             try {
-                await this.deleteBook(this.book._id); // Используем _id вместо id
+                await this.deleteBook(this.book.id);
                 this.$router.push('/books');
             } catch (error) {
                 console.error('Failed to delete book:', error);

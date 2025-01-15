@@ -4,20 +4,11 @@ import mongoose from 'mongoose';
 
 class CartDBService {
     async getUserCart(userId) {
-        try {
-            let cart = await Cart.findOne({ userId }).populate('items.bookId');
-            if (!cart) {
-                cart = await Cart.create({ 
-                    userId, 
-                    items: [], 
-                    totalPrice: 0 
-                });
-            }
-            return cart;
-        } catch (error) {
-            console.error('Get user cart error:', error);
-            throw error;
+        const cart = await Cart.findOne({ userId }).populate('items.bookId');
+        if (!cart) {
+            return Cart.create({ userId, items: [], totalPrice: 0 });
         }
+        return cart;
     }
 
     async addToCart(userId, bookId, quantity) {
