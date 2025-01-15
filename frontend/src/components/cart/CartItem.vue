@@ -5,14 +5,17 @@
         </div>
         <div class="item-details">
             <h3>{{ bookTitle }}</h3>
-            <p>Price: ${{ item?.price || 0 }}</p>
+            <p>Price: ${{ formattedPrice }}</p>
             <div class="quantity-controls">
-                <button @click="handleQuantityClick((item?.quantity || 0) - 1)">-</button>
-                <span>{{ item?.quantity || 0 }}</span>
-                <button @click="handleQuantityClick((item?.quantity || 0) + 1)">+</button>
+                <button 
+                    :disabled="item.quantity <= 1"
+                    @click="handleQuantityClick(item.quantity - 1)"
+                >-</button>
+                <span>{{ item.quantity }}</span>
+                <button @click="handleQuantityClick(item.quantity + 1)">+</button>
             </div>
         </div>
-        <button @click="remove">Remove</button>
+        <button class="remove-btn" @click="remove">Remove</button>
     </div>
 </template>
 
@@ -39,6 +42,9 @@ export default {
         bookImage() {
             return this.item?.bookId?.image || require('@/assets/images/placeholder.png')
         },
+        formattedPrice() {
+            return Number(this.item?.price || 0).toFixed(2)
+        }
     },
     created() {
         this.debouncedUpdateQuantity = debounce((quantity) => {
@@ -68,12 +74,12 @@ export default {
                 this.$emit('error', error.message);
             });
         },
-        handleQuantityClick(newQuantity) {
-            if (newQuantity >= 0) {
-                this.debouncedUpdateQuantity(newQuantity)
+        handleQuantityClick: debounce(function(newQuantity) {
+            if (newQuantity >= 1) {
+                this.updateQuantityInCart(this.item.bookId._id, newQuantity)
             }
-        }
-    },
+        }, 300)
+    }
 }
 </script>
 

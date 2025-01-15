@@ -4,55 +4,48 @@ import mongoose from 'mongoose';
 
 class CartDBService {
     async getUserCart(userId) {
-        const cart = await Cart.findOne({ userId }).populate('items.bookId');
-        if (!cart) {
-            return Cart.create({ userId, items: [], totalPrice: 0 });
-        }
-        return cart;
+        return Cart.findOneAndUpdate(
+            { userId },
+            { $setOnInsert: { items: [], totalPrice: 0 } },
+            { 
+                new: true, 
+                upsert: true,
+                populate: 'items.bookId'
+            }
+        );
+    }
+
+    calculateTotalPrice(items) {
+        return items.reduce((total, { price, quantity }) => 
+            total + (price * quantity), 0
+        );
     }
 
     async addToCart(userId, bookId, quantity) {
-        try {
-            const book = await Book.findById(bookId);
-            if (!book) {
-                throw new Error('Book not found');
-            }
+        const [book, cart] = await Promise.all([
+            Book.findById(bookId),
+            this.getUserCart(userId)
+        ]);
 
-            let cart = await Cart.findOne({ userId });
-            if (!cart) {
-                cart = await Cart.create({
-                    userId,
-                    items: [],
-                    totalPrice: 0
-                });
-            }
+        if (!book) throw new Error('Book not found');
 
-            const existingItemIndex = cart.items.findIndex(item => 
-                item.bookId?.toString() === bookId.toString()
-            );
+        const existingItem = cart.items.find(item => 
+            item.bookId?.toString() === bookId.toString()
+        );
 
-            if (existingItemIndex > -1) {
-                cart.items[existingItemIndex].quantity += quantity;
-            } else {
-                cart.items.push({
-                    bookId: book._id,
-                    quantity,
-                    price: book.price
-                });
-            }
-
-            cart.totalPrice = cart.items.reduce((total, item) => 
-                total + (item.price * item.quantity), 0
-            );
-
-            await cart.save();
-            const populatedCart = await cart.populate('items.bookId');
-            
-            return populatedCart;
-        } catch (error) {
-            console.error('CartDBService addToCart error:', error);
-            throw error;
+        if (existingItem) {
+            existingItem.quantity += quantity;
+        } else {
+            cart.items.push({
+                bookId: book._id,
+                quantity,
+                price: book.price
+            });
         }
+
+        cart.totalPrice = this.calculateTotalPrice(cart.items);
+        await cart.save();
+        return cart.populate('items.bookId');
     }
 
     async removeCartItem(userId, itemId) {

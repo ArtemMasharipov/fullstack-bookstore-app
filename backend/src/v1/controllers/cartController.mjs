@@ -1,5 +1,10 @@
 import CartDBService from '../models/cart/CartDBService.mjs';
 
+const handleCartError = (res, error) => {
+    const status = error.message.includes('not found') ? 404 : 500;
+    res.status(status).json({ error: error.message });
+};
+
 export const addToCart = async (req, res) => {
     try {
         const { bookId, quantity } = req.body;
@@ -7,10 +12,9 @@ export const addToCart = async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
         const cart = await CartDBService.addToCart(req.user.id, bookId, quantity);
-        const populatedCart = await cart.populate('items.bookId');
-        res.status(200).json(populatedCart);
+        res.status(200).json(cart);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        handleCartError(res, error);
     }
 };
 
@@ -37,9 +41,7 @@ export const updateCartItem = async (req, res) => {
     );
     res.status(200).json(cart);
   } catch (error) {
-    res
-      .status(error.message.includes('not found') ? 404 : 500)
-      .json({ error: error.message });
+    handleCartError(res, error);
   }
 };
 
@@ -56,7 +58,7 @@ export const removeCartItem = async (req, res) => {
             totalPrice: cart.totalPrice
         });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        handleCartError(res, error);
     }
 };
 
@@ -74,9 +76,7 @@ export const syncCart = async (req, res) => {
             totalPrice: syncedCart.totalPrice
         });
     } catch (error) {
-        res.status(500).json({ 
-            error: error.message || 'Failed to sync cart'
-        });
+        handleCartError(res, error);
     }
 };
 
@@ -85,6 +85,6 @@ export const clearCart = async (req, res) => {
         await CartDBService.clearCart(req.user.id);
         res.status(200).json({ items: [], totalPrice: 0 });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        handleCartError(res, error);
     }
 };

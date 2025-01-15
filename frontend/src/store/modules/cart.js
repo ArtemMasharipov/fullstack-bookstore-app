@@ -10,15 +10,15 @@ export default {
     }),
 
     getters: {
-        cartItems: (state) => state.items.map(item => ({
-            _id: item._id,
+        cartItems: (state) => state.items.map(({ _id, bookId, quantity, price }) => ({
+            _id,
             bookId: {
-                _id: item.bookId?._id || item.bookId,
-                title: item.bookId?.title || 'Unknown Book',
-                image: item.bookId?.image
+                _id: bookId?._id || bookId,
+                title: bookId?.title || 'Unknown Book',
+                image: bookId?.image
             },
-            quantity: Number(item.quantity),
-            price: Number(item.price)
+            quantity: Number(quantity),
+            price: Number(price)
         })),
         cartLoading: (state) => state.loading,
         cartError: (state) => state.error,
@@ -70,12 +70,11 @@ export default {
 
     actions: {
         async [CART.FETCH_CART]({ commit }) {
-            commit(UI.SET_LOADING, true)
             try {
-                const response = await cartApi.fetchCart()
-                commit(CART.SET_ITEMS, response?.items || [])
+                commit(UI.SET_LOADING, true)
+                const { items = [] } = await cartApi.fetchCart() || {}
+                commit(CART.SET_ITEMS, items)
             } catch (error) {
-                console.error('Fetch cart error:', error)
                 commit(UI.SET_ERROR, error?.message || 'Failed to fetch cart')
                 commit(CART.SET_ITEMS, [])
             } finally {
