@@ -1,6 +1,17 @@
 import { CART, UI } from '../types'
 import {cartApi} from '@/api/cartApi'
 
+const handleAction = async (commit, action) => {
+    commit(UI.SET_LOADING, true)
+    try {
+        await action()
+    } catch (error) {
+        commit(UI.SET_ERROR, error?.message || 'Operation failed')
+    } finally {
+        commit(UI.SET_LOADING, false)
+    }
+}
+
 export default {
     namespaced: true,
     state: () => ({
@@ -31,8 +42,8 @@ export default {
     },
     mutations: {
         [CART.SET_ITEMS](state, items) {
-            state.items = items || [];
-            localStorage.setItem('cart', JSON.stringify(state.items));
+            state.items = items || []
+            localStorage.setItem('cart', JSON.stringify(state.items))
         },
         [CART.ADD_ITEM](state, item) {
             const existingItem = state.items.find(
@@ -69,57 +80,33 @@ export default {
     },
 
     actions: {
-        async [CART.FETCH_CART]({ commit }) {
-            try {
-                commit(UI.SET_LOADING, true)
+        [CART.FETCH_CART]({ commit }) {
+            return handleAction(commit, async () => {
                 const { items = [] } = await cartApi.fetchCart() || {}
                 commit(CART.SET_ITEMS, items)
-            } catch (error) {
-                commit(UI.SET_ERROR, error?.message || 'Failed to fetch cart')
-                commit(CART.SET_ITEMS, [])
-            } finally {
-                commit(UI.SET_LOADING, false)
-            }
+            })
         },
-
+        
         async addToCart({ commit, rootGetters }, { bookId, quantity, price }) {
-            commit(UI.SET_LOADING, true)
-            
-            try {
-                const isAuthenticated = rootGetters['auth/isAuthenticated']
-                if (isAuthenticated) {
-                    const response = await cartApi.addToCart({ bookId, quantity, price })
-                    if (response?.items) {
-                        commit(CART.SET_ITEMS, response.items)
-                    } else {
-                        throw new Error('Invalid response structure')
-                    }
+            return handleAction(commit, async () => {
+                if (rootGetters['auth/isAuthenticated']) {
+                    const { items } = await cartApi.addToCart({ bookId, quantity, price })
+                    commit(CART.SET_ITEMS, items)
                 } else {
                     commit(CART.ADD_ITEM, { bookId, quantity, price })
                 }
-            } catch (error) {
-                console.error('Add to cart error:', error)
-                commit(UI.SET_ERROR, String(error.message || 'Failed to add item to cart'))
-            } finally {
-                commit(UI.SET_LOADING, false)
-            }
+            })
         },
 
         async removeFromCart({ commit }, itemId) {
-            commit(UI.SET_LOADING, true);
-            try {
+            return handleAction(commit, async () => {
                 const response = await cartApi.removeFromCart(itemId);
                 commit(CART.SET_ITEMS, response.items);
-            } catch (error) {
-                commit(UI.SET_ERROR, 'Failed to remove item');
-            } finally {
-                commit(UI.SET_LOADING, false);
-            }
+            })
         },
 
         async updateQuantity({ commit, rootState }, payload) {
-            commit(UI.SET_LOADING, true);
-            try {
+            return handleAction(commit, async () => {
                 if (rootState.auth.isAuthenticated) {
                     const response = await cartApi.updateQuantity(payload.itemId, payload.quantity);
                     if (response && response.items) {
@@ -128,28 +115,18 @@ export default {
                 } else {
                     commit(CART.UPDATE_QUANTITY, payload);
                 }
-            } catch (error) {
-                commit(UI.SET_ERROR, String(error.message || 'Failed to update quantity'));
-            } finally {
-                commit(UI.SET_LOADING, false);
-            }
+            })
         },
 
         async clearCart({ commit }) {
-            commit(UI.SET_LOADING, true)
-            try {
+            return handleAction(commit, async () => {
                 await cartApi.clearCart()
                 commit(CART.CLEAR)
-            } catch (error) {
-                commit(UI.SET_ERROR, error)
-            } finally {
-                commit(UI.SET_LOADING, false)
-            }
+            })
         },
 
         async [CART.SYNC_CART]({ commit }) {
-            commit(UI.SET_LOADING, true);
-            try {
+            return handleAction(commit, async () => {
                 const localCart = JSON.parse(localStorage.getItem('cart')) || [];
                 const response = await cartApi.syncCart(localCart);
                 
@@ -159,12 +136,7 @@ export default {
                 } else {
                     throw new Error('Failed to sync cart');
                 }
-            } catch (error) {
-                console.error('Sync cart error:', error);
-                commit(UI.SET_ERROR, error.message || 'Failed to sync cart');
-            } finally {
-                commit(UI.SET_LOADING, false);
-            }
+            })
         },
     }
 }

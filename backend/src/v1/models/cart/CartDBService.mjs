@@ -22,29 +22,18 @@ class CartDBService {
     }
 
     async addToCart(userId, bookId, quantity) {
-        const [book, cart] = await Promise.all([
-            Book.findById(bookId),
-            this.getUserCart(userId)
-        ]);
+        const cart = await Cart.findOneAndUpdate(
+            { 
+                userId,
+                'items.bookId': bookId 
+            },
+            { 
+                $inc: { 'items.$.quantity': quantity },
+                $set: { 'items.$.price': await Book.findById(bookId).price }
+            },
+            { new: true }
+        ) || await this.createCartWithItem(userId, bookId, quantity);
 
-        if (!book) throw new Error('Book not found');
-
-        const existingItem = cart.items.find(item => 
-            item.bookId?.toString() === bookId.toString()
-        );
-
-        if (existingItem) {
-            existingItem.quantity += quantity;
-        } else {
-            cart.items.push({
-                bookId: book._id,
-                quantity,
-                price: book.price
-            });
-        }
-
-        cart.totalPrice = this.calculateTotalPrice(cart.items);
-        await cart.save();
         return cart.populate('items.bookId');
     }
 

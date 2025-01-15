@@ -1,48 +1,50 @@
 import CartDBService from '../models/cart/CartDBService.mjs';
 
-const handleCartError = (res, error) => {
-    const status = error.message.includes('not found') ? 404 : 500;
-    res.status(status).json({ error: error.message });
-};
+const sendResponse = (res, data, status = 200) => 
+    res.status(status).json({ success: true, ...data });
+
+const handleError = (res, error) => 
+    res.status(error.status || 500).json({ 
+        success: false, 
+        error: error.message 
+    });
 
 export const addToCart = async (req, res) => {
     try {
         const { bookId, quantity } = req.body;
-        if (!bookId || !quantity) {
-            return res.status(400).json({ error: 'Missing required fields' });
+        if (!bookId || quantity < 1) {
+            throw { status: 400, message: 'Invalid input' };
         }
         const cart = await CartDBService.addToCart(req.user.id, bookId, quantity);
-        res.status(200).json(cart);
+        sendResponse(res, { cart });
     } catch (error) {
-        handleCartError(res, error);
+        handleError(res, error);
     }
 };
 
 export const getCart = async (req, res) => {
     try {
         const cart = await CartDBService.getUserCart(req.user.id);
-        res.status(200).json({
+        sendResponse(res, {
             items: cart?.items || [],
             totalPrice: cart?.totalPrice || 0
         });
     } catch (error) {
-        res.status(500).json({ 
-            error: error.message || 'Failed to fetch cart'
-        });
+        handleError(res, error);
     }
 };
 
 export const updateCartItem = async (req, res) => {
-  try {
-    const cart = await CartDBService.updateCartItem(
-      req.user.id,
-      req.params.itemId,
-      req.body.quantity,
-    );
-    res.status(200).json(cart);
-  } catch (error) {
-    handleCartError(res, error);
-  }
+    try {
+        const cart = await CartDBService.updateCartItem(
+            req.user.id,
+            req.params.itemId,
+            req.body.quantity,
+        );
+        sendResponse(res, { cart });
+    } catch (error) {
+        handleError(res, error);
+    }
 };
 
 export const removeCartItem = async (req, res) => {
@@ -51,14 +53,12 @@ export const removeCartItem = async (req, res) => {
             req.user.id,
             req.params.id
         );
-
-        res.json({
-            success: true,
+        sendResponse(res, {
             items: cart.items,
             totalPrice: cart.totalPrice
         });
     } catch (error) {
-        handleCartError(res, error);
+        handleError(res, error);
     }
 };
 
@@ -66,25 +66,24 @@ export const syncCart = async (req, res) => {
     try {
         const { cart } = req.body;
         if (!Array.isArray(cart)) {
-            return res.status(400).json({ error: 'Cart must be an array' });
+            throw { status: 400, message: 'Cart must be an array' };
         }
 
         const syncedCart = await CartDBService.syncCart(req.user.id, cart);
-        res.status(200).json({
-            success: true,
+        sendResponse(res, {
             items: syncedCart.items,
             totalPrice: syncedCart.totalPrice
         });
     } catch (error) {
-        handleCartError(res, error);
+        handleError(res, error);
     }
 };
 
 export const clearCart = async (req, res) => {
     try {
         await CartDBService.clearCart(req.user.id);
-        res.status(200).json({ items: [], totalPrice: 0 });
+        sendResponse(res, { items: [], totalPrice: 0 });
     } catch (error) {
-        handleCartError(res, error);
+        handleError(res, error);
     }
 };

@@ -6,14 +6,11 @@
         <div class="item-details">
             <h3>{{ bookTitle }}</h3>
             <p>Price: ${{ formattedPrice }}</p>
-            <div class="quantity-controls">
-                <button 
-                    :disabled="item.quantity <= 1"
-                    @click="handleQuantityClick(item.quantity - 1)"
-                >-</button>
-                <span>{{ item.quantity }}</span>
-                <button @click="handleQuantityClick(item.quantity + 1)">+</button>
-            </div>
+            <quantity-control
+                :value="item.quantity"
+                :min="1"
+                @update="handleQuantityClick"
+            />
         </div>
         <button class="remove-btn" @click="remove">Remove</button>
     </div>
@@ -29,21 +26,21 @@ export default {
         item: {
             type: Object,
             required: true,
-            validator(value) {
-                return value && value.bookId && typeof value.quantity === 'number' && typeof value.price === 'number'
-            },
-        },
+            validator: ({ bookId, quantity, price }) => 
+                bookId && Number.isFinite(quantity) && Number.isFinite(price)
+        }
     },
     emits: ['error', 'update-quantity'],
     computed: {
         bookTitle() {
-            return this.item?.bookId?.title || 'Unknown Book'
+            const { title = 'Unknown Book' } = this.item.bookId || {}
+            return title
         },
         bookImage() {
             return this.item?.bookId?.image || require('@/assets/images/placeholder.png')
         },
         formattedPrice() {
-            return Number(this.item?.price || 0).toFixed(2)
+            return Number(this.item.price).toFixed(2)
         }
     },
     created() {
@@ -74,9 +71,12 @@ export default {
                 this.$emit('error', error.message);
             });
         },
-        handleQuantityClick: debounce(function(newQuantity) {
-            if (newQuantity >= 1) {
-                this.updateQuantityInCart(this.item.bookId._id, newQuantity)
+        handleQuantityClick: debounce(function(quantity) {
+            if (quantity >= 1) {
+                this.updateQuantity({ 
+                    bookId: this.item.bookId._id, 
+                    quantity 
+                })
             }
         }, 300)
     }
