@@ -1,87 +1,101 @@
 <template>
-    <nav class="navbar">
-        <div class="navbar-brand">
-            <router-link to="/" class="brand-logo">BookStore</router-link>
-        </div>
+    <v-app-bar app color="primary" dark>
+        <v-container class="py-0 px-2">
+            <v-row align="center" no-gutters>
+                <!-- Logo/Brand -->
+                <v-col cols="auto">
+                    <router-link to="/" class="text-decoration-none text-white">
+                        <v-btn variant="text" size="large" class="text-h6 font-weight-bold">
+                            📚 Bookstore
+                        </v-btn>
+                    </router-link>
+                </v-col>
 
-        <div class="navbar-menu">
-            <router-link to="/books" class="nav-link">Books</router-link>
-            <router-link to="/authors" class="nav-link">Authors</router-link>
-            <router-link to="/cart" class="nav-link">Cart</router-link>
+                <v-spacer></v-spacer>
 
-            <template v-if="isAuthenticated">
-                <span class="user-name">{{ currentUser?.username }}</span>
-                <button class="nav-link btn-logout" @click="handleLogout">Logout</button>
-            </template>
-            <template v-else>
-                <router-link to="/login" class="nav-link">Login</router-link>
-                <router-link to="/register" class="nav-link btn-primary">Register</router-link>
-            </template>
-        </div>
-    </nav>
+                <!-- Navigation Links -->
+                <v-col cols="auto">
+                    <v-btn variant="text" to="/books">Books</v-btn>
+                    <v-btn variant="text" to="/authors">Authors</v-btn>
+                    <v-btn variant="text" to="/contact">Contact</v-btn>
+                </v-col>
+
+                <!-- Auth Section -->
+                <v-col cols="auto">
+                    <template v-if="isAuthenticated">
+                        <!-- Cart Icon -->
+                        <v-btn variant="text" to="/cart" icon>
+                            <v-badge :content="cartItemsCount" color="red" v-if="cartItemsCount > 0">
+                                <v-icon>mdi-cart</v-icon>
+                            </v-badge>
+                            <v-icon v-else>mdi-cart</v-icon>
+                        </v-btn>
+
+                        <!-- User Menu -->
+                        <v-menu>
+                            <template v-slot:activator="{ props }">
+                                <v-btn variant="text" v-bind="props">
+                                    <v-icon left>mdi-account</v-icon>
+                                    {{ user.name }}
+                                    <v-icon right>mdi-chevron-down</v-icon>
+                                </v-btn>
+                            </template>
+                            <v-list>
+                                <v-list-item to="/profile">
+                                    <v-list-item-title>Profile</v-list-item-title>
+                                </v-list-item>
+                                <v-list-item to="/orders">
+                                    <v-list-item-title>My Orders</v-list-item-title>
+                                </v-list-item>
+                                <v-list-item v-if="isAdmin" to="/admin">
+                                    <v-list-item-title>Admin Panel</v-list-item-title>
+                                </v-list-item>
+                                <v-divider></v-divider>
+                                <v-list-item @click="logout">
+                                    <v-list-item-title>Logout</v-list-item-title>
+                                </v-list-item>
+                            </v-list>
+                        </v-menu>
+                    </template>
+
+                    <template v-else>
+                        <v-btn variant="text" to="/login">Login</v-btn>
+                        <v-btn variant="outlined" to="/register">Register</v-btn>
+                    </template>
+                </v-col>
+            </v-row>
+        </v-container>
+    </v-app-bar>
 </template>
 
-<script>
-import { mapGetters, mapActions } from 'vuex';
+<script setup>
+import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useAuthStore, useCartStore } from '@/store'
+import { useRouter } from 'vue-router'
 
-export default {
-    name: 'NavBar',
-    computed: {
-        ...mapGetters('auth', ['currentUser', 'isAuthenticated']),
-    },
-    methods: {
-        ...mapActions('auth', ['logout']),
-        async handleLogout() {
-            await this.logout();
-            this.$router.push('/login');
-        }
-    },
-};
+/**
+ * NavBar component - Application navigation bar
+ */
+
+// Router
+const router = useRouter()
+
+// Stores
+const authStore = useAuthStore()
+const cartStore = useCartStore()
+
+// Reactive state
+const { isAuthenticated, user } = storeToRefs(authStore)
+const { items } = storeToRefs(cartStore)
+
+// Computed properties
+const isAdmin = computed(() => user.value?.role === 'admin')
+const cartItemsCount = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0))
+
+// Methods
+const logout = async () => {
+    await authStore.logout()
+    router.push('/')
+}
 </script>
-
-<style scoped>
-.navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.navbar-brand .brand-logo {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--white);
-    text-decoration: none;
-}
-
-.navbar-menu {
-    display: flex;
-    align-items: center;
-}
-
-.nav-link {
-    margin: 0 0.5rem;
-    color: var(--white);
-    text-decoration: none;
-}
-
-.nav-link:hover {
-    text-decoration: underline;
-}
-
-.nav-link.router-link-active {
-    font-weight: bold;
-    border-bottom: 2px solid var(--white);
-}
-
-.btn-logout {
-    background: none;
-    border: none;
-    color: var(--white);
-    cursor: pointer;
-}
-
-.user-name {
-    margin-right: 1rem;
-    color: var(--white);
-}
-</style>

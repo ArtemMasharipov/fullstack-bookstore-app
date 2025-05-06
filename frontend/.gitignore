@@ -2,6 +2,13 @@
 node_modules
 /dist
 
+# Vite specific
+*.local
+.vite/
+/dev-dist
+.env*.local
+vite.config.js.timestamp-*
+.vite-ssg-temp/
 
 # local env files
 .env.local

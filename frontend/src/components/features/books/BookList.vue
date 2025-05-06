@@ -1,0 +1,246 @@
+<template>
+    <div>
+        <v-card flat class="mb-4">
+            <v-toolbar color="primary" flat rounded="0" elevation="1">
+                <v-toolbar-title class="text-white font-weight-medium"> Books </v-toolbar-title>
+
+                <v-spacer></v-spacer>
+                <v-text-field
+                    v-model="searchQuery"
+                    prepend-inner-icon="mdi-magnify"
+                    label="Search books"
+                    hide-details
+                    density="compact"
+                    variant="solo-filled"
+                    class="mx-2 mt-1 shrink"
+                    bg-color="primary-lighten-1"
+                    style="max-width: 250px"
+                    clearable
+                ></v-text-field>
+                <!-- Admin button removed in preparation for new admin panel -->
+            </v-toolbar>
+
+            <!-- Loading state -->
+            <v-skeleton-loader
+                v-if="booksLoading"
+                type="card-avatar, article, actions"
+                class="py-4"
+            ></v-skeleton-loader>
+
+            <!-- Empty state -->
+            <v-alert
+                v-else-if="!books.length"
+                type="info"
+                variant="tonal"
+                class="ma-4 text-center"
+                icon="mdi-bookshelf"
+                border="start"
+            >
+                <p class="mb-1">No books found.</p>
+                <v-btn
+                    v-if="authStore.hasPermission('admin:access')"
+                    color="primary"
+                    variant="text"
+                    density="comfortable"
+                    to="/admin/books"
+                    prepend-icon="mdi-shield-account"
+                >
+                    Manage Books
+                </v-btn>
+                <p v-else class="mt-2 text-caption">Check back later for new books.</p>
+            </v-alert>
+
+            <!-- Books grid -->
+            <v-container v-else fluid class="py-2">
+                <v-row>
+                    <v-col
+                        v-for="book in books"
+                        :key="book._id"
+                        cols="12"
+                        sm="6"
+                        md="4"
+                        lg="3"
+                        class="d-flex align-stretch"
+                    >
+                        <book-card
+                            :book="book"
+                            @click="viewDetails(book._id)"
+                            @add-to-cart="addToCartSuccess"
+                            class="w-100"
+                        />
+                    </v-col>
+                </v-row>
+            </v-container>
+
+            <!-- Pagination -->
+            <v-card-actions v-if="books.length && totalPages > 1" class="justify-center pa-4">
+                <v-pagination
+                    v-model="currentPage"
+                    :length="totalPages"
+                    :total-visible="isMobile ? 3 : 7"
+                    @update:model-value="changePage"
+                    rounded
+                    color="primary"
+                    active-color="primary"
+                ></v-pagination>
+            </v-card-actions>
+        </v-card>
+        <!-- Snackbars removed - now using Toast.vue component -->
+    </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useAuthStore, useBooksStore, useBooksUiStore, useUiStore } from '@/store'
+import { syncSuccess } from '@/utils'
+import LoadingSpinner from '../../ui/LoadingSpinner.vue'
+import BookCard from './BookCard.vue'
+
+/**
+ * Component for displaying and managing a paginated list of books
+ */
+
+// Props
+const props = defineProps({
+    /**
+     * Optional category filter
+     */
+    category: {
+        type: String,
+        default: null,
+    },
+
+    /**
+     * Optional author filter
+     */
+    authorId: {
+        type: String,
+        default: null,
+    },
+
+    /**
+     * Number of items to display per page
+     */
+    itemsPerPage: {
+        type: Number,
+        default: 12,
+    },
+})
+
+// Router
+const router = useRouter()
+
+// Stores
+const authStore = useAuthStore()
+const booksStore = useBooksStore()
+const booksUiStore = useBooksUiStore()
+const uiStore = useUiStore()
+
+// Extract reactive state from stores
+const { booksList: books, booksLoading, booksPagination } = storeToRefs(booksStore)
+const { 
+    showForm, 
+    selectedBook, 
+    bookToDelete, 
+    formSubmitting, 
+    showDeleteDialog, 
+    filterParams,
+    currentPage: uiCurrentPage
+} = storeToRefs(booksUiStore)
+
+// Local reactive state
+const searchQuery = ref('')
+const windowWidth = ref(window.innerWidth)
+
+// Computed properties
+const totalPages = computed(() => booksPagination.value?.pages || 1)
+
+const isMobile = computed(() => windowWidth.value < 600)
+
+const currentPage = computed({
+    get() {
+        return uiCurrentPage.value
+    },
+    set(value) {
+        uiCurrentPage.value = value
+    }
+})
+
+// Methods
+const changePage = (page) => {
+    return booksUiStore.changePage(page)
+}
+
+const loadBooks = () => {
+    return booksUiStore.loadBooks()
+}
+
+const handleResize = () => {
+    windowWidth.value = window.innerWidth
+    // Also update the UI store
+    uiStore.handleWindowResize()
+}
+
+const viewDetails = (bookId) => {
+    router.push(`/books/${bookId}`)
+}
+
+const addToCartSuccess = () => {
+    syncSuccess('Item added to cart successfully')
+}
+
+const handleError = (message) => {
+    console.error(message)
+}
+
+// Watchers
+watch(filterParams, () => {
+    loadBooks()
+}, { deep: true })
+
+watch(searchQuery, (val) => {
+    booksUiStore.debouncedSearch(val)
+})
+
+// Watch for prop changes to update store
+watch(() => props.category, (val) => {
+    booksUiStore.category = val
+})
+
+watch(() => props.authorId, (val) => {
+    booksUiStore.authorId = val
+})
+
+watch(() => props.itemsPerPage, (val) => {
+    booksUiStore.itemsPerPage = val
+})
+
+// Lifecycle hooks
+onMounted(() => {
+    try {
+        // Initialize the store with props
+        booksUiStore.initialize({
+            category: props.category,
+            authorId: props.authorId,
+            itemsPerPage: props.itemsPerPage,
+        })
+        // Set up search debounce
+        booksUiStore.setupSearchDebounce()
+
+        // Add event listener for window resizing
+        window.addEventListener('resize', handleResize)
+
+        // Initial data fetch - wrapped in try/catch in loadBooks method
+        loadBooks()
+    } catch (error) {
+        handleError(error.message || 'An error occurred while initializing the book list')
+    }
+})
+
+onBeforeUnmount(() => {
+    // Clean up event listener
+    window.removeEventListener('resize', handleResize)
+})
+</script>

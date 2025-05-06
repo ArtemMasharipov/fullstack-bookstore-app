@@ -3,6 +3,7 @@ export const ACTION_TYPES = Object.freeze({
   READ: 'read',
   UPDATE: 'update',
   DELETE: 'delete',
+  ADMIN: 'admin', // Add admin action type
 });
 
 export const RESOURCE_TYPES = Object.freeze({
@@ -10,6 +11,7 @@ export const RESOURCE_TYPES = Object.freeze({
   BOOK: 'book',
   USER: 'user',
   ORDER: 'order',
+  ACCESS: 'access', // Add access resource type
 });
 
 export const generatePermission = (action, resource) =>

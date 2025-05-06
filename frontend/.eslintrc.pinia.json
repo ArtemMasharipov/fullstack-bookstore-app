@@ -1,0 +1,13 @@
+{
+  "rules": {
+    "no-restricted-imports": ["error", {
+      "paths": [
+        {
+          "name": "pinia",
+          "importNames": ["mapGetters", "mapActions", "mapStores"],
+          "message": "Please don't use map* helpers from Pinia. Follow our standard approach from PINIA_USAGE_GUIDELINES.md"
+        }
+      ]
+    }]
+  }
+}

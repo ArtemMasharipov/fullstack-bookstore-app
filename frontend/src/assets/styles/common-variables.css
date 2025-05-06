@@ -1,0 +1,38 @@
+:root {
+  /* Основные цвета приложения */
+  --primary-color: #42b983;
+  --primary-color-dark: #3a9e77;
+  --primary-color-light: #8dedc9;
+  --danger-color: #dc3545;
+  --danger-color-dark: #c82333;
+  --danger-color-light: #f8d7da;
+  --gray-light: #f8f9fa;
+  --gray-medium: #6c757d;
+  --text-primary: #2c3e50;
+  --text-secondary: #6c757d;
+  --text-muted: #adb5bd;
+  --white: #ffffff;
+}
+
+/* Кастомные классы, которые можно использовать вместе с Vuetify */
+.custom-text-primary {
+  color: var(--text-primary) !important;
+}
+
+.custom-text-secondary {
+  color: var(--text-secondary) !important;
+}
+
+.custom-bg-primary {
+  background-color: var(--primary-color) !important;
+}
+
+.custom-bg-secondary {
+  background-color: var(--gray-medium) !important;
+}
+
+/* Общие утилитарные классы */
+.router-link-custom-active {
+  font-weight: bold;
+  border-bottom: 2px solid var(--white);
+}

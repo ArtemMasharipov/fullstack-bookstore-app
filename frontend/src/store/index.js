@@ -1,17 +1,20 @@
-import { createStore } from 'vuex'
-import auth from './modules/auth'
-import books from './modules/books'
-import authors from './modules/authors'
-import cart from './modules/cart'
-import users from './modules/users'
+// Экспортируем все хранилища из одной точки для удобства использования
+export { useAuthStore } from './modules/auth/auth'
+export { useAuthUiStore } from './modules/auth/authUi'
+export { useAuthorsStore } from './modules/authors/authors'
+export { useAuthorsUiStore } from './modules/authors/authorsUi'
+export { useBooksStore } from './modules/books/books'
+export { useBooksUiStore } from './modules/books/booksUi'
+export { useCartStore } from './modules/cart/cart'
+export { useOrdersStore } from './modules/orders/orders'
+export { useOrdersUiStore } from './modules/orders/ordersUi'
+export { useUiStore } from './modules/ui/ui'
+export { useUsersStore } from './modules/users/users'
+export { useUsersUiStore } from './modules/users/usersUi'
 
-export default createStore({
-    modules: {
-        auth,
-        books,
-        authors,
-        cart,
-        users
-    },
-    strict: process.env.NODE_ENV !== 'production'
-})
+// Direct imports and exports for toast services to avoid circular dependencies
+import toast from '@/services/notifications/enhancedToast'
+import toastHelpers from '@/services/notifications/toastHelpers'
+
+export { toast, toastHelpers }
+
