@@ -1,52 +1,105 @@
 <template>
-    <div class="author-details-page">
-        <loading-spinner v-if="loading" />
+    <div>
+        <div v-if="loading" class="text-center py-8">
+            <loading-spinner />
+        </div>
 
-        <template v-else-if="author">
-            <div class="breadcrumb"><router-link to="/authors">Authors</router-link> / {{ author.name }}</div>
+        <v-container v-else-if="author">
+            <v-breadcrumbs :items="breadcrumbItems" class="pa-0 mb-4"></v-breadcrumbs>
 
-            <div class="author-details">
-                <div class="author-info">
-                    <h1>{{ author.name }}</h1>
-                    <p>{{ author.biography }}</p>
-                </div>
+            <v-card class="mb-6" variant="outlined">
+                <v-card-item>
+                    <v-card-title class="text-h4 mb-2">{{ author.name }}</v-card-title>
+                    
+                    <v-card-text class="text-body-1">
+                        <p>{{ author.biography }}</p>
+                    </v-card-text>
+                    
+                    <v-card-actions v-if="hasPermission('update:author') || hasPermission('delete:author')">
+                        <v-spacer></v-spacer>
+                        
+                        <v-btn 
+                            v-if="hasPermission('update:author')" 
+                            color="primary" 
+                            variant="outlined"
+                            prepend-icon="mdi-pencil"
+                            @click="handleEdit"
+                        >
+                            Edit
+                        </v-btn>
+                        
+                        <v-btn 
+                            v-if="hasPermission('delete:author')" 
+                            color="error" 
+                            variant="outlined"
+                            prepend-icon="mdi-delete"
+                            class="ml-2"
+                            @click="confirmDelete"
+                        >
+                            Delete
+                        </v-btn>
+                    </v-card-actions>
+                </v-card-item>
+            </v-card>
 
-                <div v-if="hasPermission('update:author') || hasPermission('delete:author')" class="action-buttons">
-                    <button v-if="hasPermission('update:author')" class="btn btn-primary" @click="handleEdit">
-                        Edit
-                    </button>
-                    <button v-if="hasPermission('delete:author')" class="btn btn-danger" @click="confirmDelete">
-                        Delete
-                    </button>
-                </div>
-            </div>
+            <template v-if="author.books.length">
+                <h2 class="text-h5 mb-4">Books by {{ author.name }}</h2>
+                
+                <v-row>
+                    <v-col 
+                        v-for="book in author.books" 
+                        :key="book.id" 
+                        cols="12" sm="6" md="4" lg="3"
+                    >
+                        <book-card 
+                            :book="book"
+                            @click="$router.push(`/books/${book.id}`)"
+                        />
+                    </v-col>
+                </v-row>
+            </template>
+            <v-alert
+                v-else
+                type="info"
+                variant="tonal"
+                class="mt-4"
+            >
+                No books found for this author.
+            </v-alert>
+        </v-container>
 
-            <div v-if="author.books.length" class="author-books">
-                <h2>Books by {{ author.name }}</h2>
-                <div class="books-grid">
-                    <book-card
-                        v-for="book in author.books"
-                        :key="book.id"
-                        :book="book"
-                        @click="$router.push(`/books/${book.id}`)"
-                    />
-                </div>
-            </div>
-        </template>
+        <v-alert
+            v-else-if="error"
+            type="error"
+            variant="tonal"
+            class="mx-auto my-6"
+            max-width="800"
+        >
+            {{ error }}
+        </v-alert>
 
-        <error-message v-else-if="error" :message="error" />
-
-        <modal v-if="showDeleteModalPage" @close="showDeleteModalPage = false" @confirm="handleDelete">
-            <p>Are you sure you want to delete this author?</p>
-        </modal>
+        <v-dialog v-model="showDeleteModalPage" max-width="400">
+            <v-card>
+                <v-card-title class="text-h5">Delete Author</v-card-title>
+                <v-card-text>
+                    <p>Are you sure you want to delete this author?</p>
+                    <p class="text-caption mt-2">This will also remove all books associated with this author.</p>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="grey" variant="text" @click="showDeleteModalPage = false">Cancel</v-btn>
+                    <v-btn color="error" @click="handleDelete">Delete</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex'
 import BookCard from '@/components/books/BookCard.vue'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import ErrorMessage from '@/components/common/ErrorMessage.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import { useAuthorsStore, useAuthStore } from '@/stores'
 
 export default {
     name: 'AuthorDetails',
@@ -73,10 +126,38 @@ export default {
     },
 
     computed: {
-        ...mapGetters('authors', ['currentAuthor', 'loading', 'error']),
-        ...mapGetters('auth', ['hasPermission']),
+        authorsStore() {
+            return useAuthorsStore()
+        },
+        authStore() {
+            return useAuthStore()
+        },
+        currentAuthor() {
+            return this.authorsStore.currentAuthor
+        },
+        loading() {
+            return this.authorsStore.loading
+        },
+        error() {
+            return this.authorsStore.error
+        },
+        hasPermission() {
+            return this.authStore.hasPermission
+        },
         author() {
             return this.currentAuthor
+        },
+        breadcrumbItems() {
+            return [
+                {
+                    title: 'Authors',
+                    to: '/authors',
+                },
+                {
+                    title: this.author?.name || 'Unknown Author',
+                    disabled: true,
+                },
+            ];
         },
     },
 
@@ -85,7 +166,12 @@ export default {
     },
 
     methods: {
-        ...mapActions('authors', ['fetchAuthor', 'deleteAuthor']),
+        fetchAuthor(id) {
+            return this.authorsStore.fetchAuthor(id)
+        },
+        deleteAuthor(id) {
+            return this.authorsStore.deleteAuthor(id)
+        },
 
         handleEdit() {
             this.$emit('edit', this.author)
@@ -106,59 +192,3 @@ export default {
     },
 }
 </script>
-
-<style scoped>
-.author-details-page {
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.breadcrumb {
-    margin-bottom: 2rem;
-
-    a {
-        color: var(--primary-color);
-        text-decoration: none;
-
-        &:hover {
-            text-decoration: underline;
-        }
-    }
-}
-
-.author-details {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-    margin-bottom: 3rem;
-}
-
-.author-info {
-    h1 {
-        margin: 0 0 1rem;
-        color: var(--secondary-color);
-    }
-}
-
-.action-buttons {
-    margin-top: 2rem;
-    display: flex;
-    gap: 1rem;
-}
-
-.author-books {
-    margin-top: 3rem;
-
-    h2 {
-        margin-bottom: 1.5rem;
-        color: var(--secondary-color);
-    }
-}
-
-.books-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 2rem;
-}
-</style>

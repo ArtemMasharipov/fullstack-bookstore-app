@@ -1,40 +1,102 @@
 <template>
-  <div class="order-status">
-    <h2>Update Order Status</h2>
-    <div v-if="loading" class="loading">Loading...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
-    <div v-else class="order-details">
-      <p>Order ID: {{ order._id }}</p>
-      <p>Current Status: {{ order.status }}</p>
+  <v-container>
+    <v-card class="mx-auto" max-width="600px">
+      <v-card-title class="text-h4 mb-2">Update Order Status</v-card-title>
       
-      <div class="status-update">
-        <select v-model="newStatus">
-          <option value="pending">Pending</option>
-          <option value="processing">Processing</option>
-          <option value="shipped">Shipped</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-        <button :disabled="newStatus === order.status" @click="updateStatus">
-          Update Status
-        </button>
-      </div>
-    </div>
-  </div>
+      <v-card-text v-if="loading" class="text-center py-5">
+        <v-progress-circular indeterminate color="primary"></v-progress-circular>
+      </v-card-text>
+      
+      <v-card-text v-else-if="error">
+        <v-alert type="error" variant="tonal">{{ error }}</v-alert>
+      </v-card-text>
+      
+      <v-card-text v-else>
+        <v-row>
+          <v-col cols="12" sm="6">
+            <p class="text-subtitle-1 font-weight-bold">Order ID: <span class="font-weight-regular">{{ order._id }}</span></p>
+          </v-col>
+          <v-col cols="12" sm="6">
+            <p class="text-subtitle-1 font-weight-bold">Current Status: 
+              <v-chip
+                :color="getStatusColor(order.status)"
+                size="small"
+                class="text-uppercase font-weight-medium ml-2"
+              >
+                {{ order.status }}
+              </v-chip>
+            </p>
+          </v-col>
+        </v-row>
+        
+        <v-divider class="my-4"></v-divider>
+        
+        <v-row class="mt-4">
+          <v-col cols="12" md="8">
+            <v-select
+              v-model="newStatus"
+              :items="statusOptions"
+              label="New Status"
+              variant="outlined"
+              density="comfortable"
+            ></v-select>
+          </v-col>
+          <v-col cols="12" md="4" class="d-flex align-center">
+            <v-btn 
+              color="primary"
+              block
+              :disabled="newStatus === order.status"
+              @click="updateStatus"
+            >
+              Update Status
+            </v-btn>
+          </v-col>
+        </v-row>
+      </v-card-text>
+      
+      <v-card-actions class="px-4 pb-4">
+        <v-btn
+          variant="text"
+          :to="`/orders/${$route.params.id}`"
+          prepend-icon="mdi-arrow-left"
+        >
+          Back to Order Details
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-container>
 </template>
 
 <script>
-import { mapActions, mapGetters } from 'vuex'
+import { useOrdersStore } from '@/stores'
 
 export default {
   name: 'OrderStatusView',
   data() {
     return {
       newStatus: '',
+      statusOptions: [
+        'pending',
+        'processing',
+        'shipped',
+        'delivered',
+        'cancelled'
+      ]
     }
   },
   computed: {
-    ...mapGetters('order', ['currentOrder', 'loading', 'error']),
+    ordersStore() {
+      return useOrdersStore()
+    },
+    currentOrder() {
+      return this.ordersStore.currentOrder
+    },
+    loading() {
+      return this.ordersStore.loading
+    },
+    error() {
+      return this.ordersStore.error
+    },
     order() {
       return this.currentOrder || {}
     }
@@ -44,10 +106,12 @@ export default {
     this.newStatus = this.order.status
   },
   methods: {
-    ...mapActions('order', ['fetchOrderById', 'updateOrderStatus']),
+    fetchOrderById(id) {
+      return this.ordersStore.fetchOrderById(id)
+    },
     async updateStatus() {
       try {
-        await this.updateOrderStatus({
+        await this.ordersStore.updateOrderStatus({
           id: this.$route.params.id,
           status: this.newStatus
         })
@@ -55,40 +119,17 @@ export default {
       } catch (error) {
         console.error('Failed to update order status:', error)
       }
+    },
+    getStatusColor(status) {
+      const statusColors = {
+        pending: 'warning',
+        processing: 'info',
+        shipped: 'success',
+        delivered: 'primary',
+        cancelled: 'error'
+      }
+      return statusColors[status] || 'grey'
     }
   }
 }
 </script>
-
-<style scoped>
-.order-status {
-  max-width: 600px;
-  margin: 2rem auto;
-  padding: 1rem;
-}
-
-.status-update {
-  margin-top: 2rem;
-  display: flex;
-  gap: 1rem;
-}
-
-select {
-  padding: 0.5rem;
-  border-radius: 4px;
-}
-
-button {
-  padding: 0.5rem 1rem;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-button:disabled {
-  background-color: var(--gray-medium);
-  cursor: not-allowed;
-}
-</style>

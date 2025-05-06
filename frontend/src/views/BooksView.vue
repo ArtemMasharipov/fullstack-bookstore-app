@@ -1,7 +1,7 @@
 <template>
-  <div class="book-list">
+  <v-container>
     <book-list />
-  </div>
+  </v-container>
 </template>
 
 <script>
@@ -14,9 +14,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.book-list {
-  padding: 2rem;
-}
-</style>

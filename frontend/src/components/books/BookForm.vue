@@ -1,107 +1,210 @@
 <template>
-    <div class="form-overlay">
-        <form class="book-form" enctype="multipart/form-data" @submit.prevent="handleSubmit">
-            <h2>{{ isEdit ? 'Update Book' : 'Create New Book' }}</h2>
-
-            <div class="form-group">
-                <label for="title">Title</label>
-                <input id="title" v-model="form.title" type="text" required />
-            </div>
-
-            <div class="form-group">
-                <label for="author">Author</label>
-                <select id="author" v-model="form.authorId" required>
-                    <option value="">Select Author</option>
-                    <option v-for="author in authors" :key="author._id" :value="author._id">
-                        {{ author.name }}
-                    </option>
-                </select>
-                <p v-if="!authors.length">No authors available. Please add an author first.</p>
-            </div>
-
-            <div class="form-group">
-                <label for="year">Publication Year</label>
-                <input id="year" v-model="form.publicationYear" type="number" required />
-            </div>
-
-            <div class="form-group">
-                <label for="category">Category</label>
-                <input id="category" v-model="form.category" type="text" />
-            </div>
-
-            <div class="form-group">
-                <label for="description">Description</label>
-                <textarea id="description" v-model="form.description" rows="4"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="price">Price (грн)</label>
-                <input 
-                    id="price" 
-                    v-model.number="form.price"
-                    type="number" 
-                    min="0" 
-                    step="0.01"
-                    required 
-                />
-            </div>
-            <div class="form-group">
-                <label>
-                    <input 
-                        v-model="form.inStock" 
-                        type="checkbox"
-                    > In Stock
-                </label>
-            </div>
-
-            <div class="form-group">
-                <label>Book Cover</label>
-                <input ref="fileInput" type="file" accept="image/*" style="display: none" @change="handleImageUpload" />
-                <div class="file-upload-container">
-                    <button
-                        v-if="!hasImage"
-                        type="button"
-                        class="btn btn-upload"
-                        @click="triggerFileInput"
-                    >
-                        {{ isEdit ? 'Change Image' : 'Upload Image' }}
-                    </button>
-                    <div v-if="hasImage" class="selected-file">
-                        <span>{{ imageFileName }}</span>
-                        <button type="button" class="btn btn-remove" @click="removeImage">×</button>
-                    </div>
-                </div>
-                <div v-if="hasImage" class="image-preview">
-                    <img :src="currentPreviewUrl" :alt="imageFileName || 'Preview'" />
-                </div>
-                <p v-if="fileConfig.error" class="error-message">{{ fileConfig.error }}</p>
-            </div>
-
-            <div class="form-actions">
-                <button 
-                    type="button" 
-                    class="btn btn-secondary" 
-                    :disabled="isSubmitting" 
-                    @click="$emit('close')"
-                >
-                    <i class="fas fa-times"></i>
-                    <span>Cancel</span>
-                </button>
-                <button 
-                    type="submit" 
-                    class="btn btn-primary" 
-                    :disabled="isSubmitting"
-                >
-                    <i :class="isEdit ? 'fas fa-save' : 'fas fa-plus'"></i>
-                    <span>{{ getSubmitButtonText }}</span>
-                </button>
-            </div>
-        </form>
-    </div>
+    <v-dialog
+        fullscreen
+        persistent
+        :scrim="true"
+    >
+        <v-card>
+            <v-toolbar color="primary" dark>
+                <v-toolbar-title>{{ isEdit ? 'Update Book' : 'Create New Book' }}</v-toolbar-title>
+                <v-spacer></v-spacer>
+                <v-btn icon @click="$emit('close')">
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </v-toolbar>
+            
+            <v-card-text>
+                <v-container>
+                    <v-form @submit.prevent="handleSubmit" enctype="multipart/form-data">
+                        <v-row>
+                            <v-col cols="12">
+                                <v-text-field
+                                    id="title"
+                                    v-model="form.title"
+                                    label="Title"
+                                    variant="outlined"
+                                    required
+                                ></v-text-field>
+                            </v-col>
+                            
+                            <v-col cols="12">
+                                <v-select
+                                    id="author"
+                                    v-model="form.authorId"
+                                    :items="authors"
+                                    item-title="name"
+                                    item-value="_id"
+                                    label="Author"
+                                    variant="outlined"
+                                    required
+                                    :hint="!authors.length ? 'No authors available. Please add an author first.' : ''"
+                                    persistent-hint
+                                ></v-select>
+                            </v-col>
+                            
+                            <v-col cols="12" md="6">
+                                <v-text-field
+                                    id="year"
+                                    v-model="form.publicationYear"
+                                    label="Publication Year"
+                                    variant="outlined"
+                                    type="number"
+                                    required
+                                ></v-text-field>
+                            </v-col>
+                            
+                            <v-col cols="12" md="6">
+                                <v-text-field
+                                    id="category"
+                                    v-model="form.category"
+                                    label="Category"
+                                    variant="outlined"
+                                ></v-text-field>
+                            </v-col>
+                            
+                            <v-col cols="12">
+                                <v-textarea
+                                    id="description"
+                                    v-model="form.description"
+                                    label="Description"
+                                    variant="outlined"
+                                    rows="4"
+                                    auto-grow
+                                ></v-textarea>
+                            </v-col>
+                            
+                            <v-col cols="12" md="6">
+                                <v-text-field
+                                    id="price"
+                                    v-model.number="form.price"
+                                    label="Price (грн)"
+                                    variant="outlined"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    required
+                                ></v-text-field>
+                            </v-col>
+                            
+                            <v-col cols="12" md="6">
+                                <v-switch
+                                    v-model="form.inStock"
+                                    label="In Stock"
+                                    color="success"
+                                    hide-details
+                                    density="compact"
+                                    inset
+                                ></v-switch>
+                            </v-col>
+                            
+                            <v-col cols="12">
+                                <v-card variant="outlined" class="pa-4">
+                                    <v-card-title class="pl-0 pt-0">Book Cover</v-card-title>
+                                    
+                                    <input 
+                                        ref="fileInput" 
+                                        type="file" 
+                                        accept="image/*" 
+                                        style="display: none" 
+                                        @change="handleImageUpload"
+                                    />
+                                    
+                                    <v-card-text class="pa-0">
+                                        <v-row v-if="!hasImage" align="center">
+                                            <v-col cols="12" class="py-2">
+                                                <v-btn
+                                                    color="primary"
+                                                    variant="elevated"
+                                                    prepend-icon="mdi-cloud-upload"
+                                                    @click="triggerFileInput"
+                                                >
+                                                    {{ isEdit ? 'Change Image' : 'Upload Image' }}
+                                                </v-btn>
+                                            </v-col>
+                                        </v-row>
+                                        
+                                        <v-row v-else align="center" class="mt-0">
+                                            <v-col cols="12" md="8" class="py-2">
+                                                <v-chip
+                                                    closable
+                                                    class="text-body-2"
+                                                    @click:close="removeImage"
+                                                >
+                                                    {{ imageFileName }}
+                                                </v-chip>
+                                            </v-col>
+                                            
+                                            <v-col cols="12" md="4" class="text-end py-2">
+                                                <v-btn
+                                                    variant="text"
+                                                    color="primary"
+                                                    size="small"
+                                                    @click="triggerFileInput"
+                                                >
+                                                    Change
+                                                </v-btn>
+                                            </v-col>
+                                        </v-row>
+                                        
+                                        <v-row v-if="hasImage">
+                                            <v-col cols="12" sm="6" md="4">
+                                                <v-img
+                                                    :src="currentPreviewUrl"
+                                                    :alt="imageFileName || 'Preview'"
+                                                    class="rounded"
+                                                    height="200"
+                                                    cover
+                                                ></v-img>
+                                            </v-col>
+                                        </v-row>
+                                        
+                                        <v-alert
+                                            v-if="fileConfig.error"
+                                            type="error"
+                                            variant="tonal"
+                                            class="mt-3"
+                                            density="compact"
+                                        >
+                                            {{ fileConfig.error }}
+                                        </v-alert>
+                                    </v-card-text>
+                                </v-card>
+                            </v-col>
+                        </v-row>
+                        
+                        <v-divider class="my-4"></v-divider>
+                        
+                        <v-row class="justify-end">
+                            <v-col cols="auto">
+                                <v-btn
+                                    color="secondary"
+                                    variant="text"
+                                    :disabled="isSubmitting"
+                                    @click="$emit('close')"
+                                >
+                                    Cancel
+                                </v-btn>
+                                
+                                <v-btn
+                                    color="primary"
+                                    type="submit"
+                                    :loading="isSubmitting"
+                                    :prepend-icon="isEdit ? 'mdi-content-save' : 'mdi-plus'"
+                                    class="ml-2"
+                                >
+                                    {{ getSubmitButtonText }}
+                                </v-btn>
+                            </v-col>
+                        </v-row>
+                    </v-form>
+                </v-container>
+            </v-card-text>
+        </v-card>
+    </v-dialog>
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex'
+import { useAuthorsStore, useBooksStore } from '@/stores'
 
 export default {
     name: 'BookForm',
@@ -137,13 +240,23 @@ export default {
                 error: null
             },
             currentImage: null,
-            isFileDialogOpen: false, // Add this property
+            isFileDialogOpen: false,
             isSubmitting: false
         }
     },
     computed: {
-        ...mapGetters('authors', ['authorsList']),
-        ...mapGetters('books', ['booksLoading']), // добавляем геттер состояния загрузки
+        authorsStore() {
+            return useAuthorsStore()
+        },
+        booksStore() {
+            return useBooksStore()
+        },
+        authorsList() {
+            return this.authorsStore.authorsList
+        },
+        booksLoading() {
+            return this.booksStore.loading
+        },
         authors() {
             return this.authorsList
         },
@@ -200,8 +313,15 @@ export default {
         this.resetImage()
     },
     methods: {
-        ...mapActions('authors', ['fetchAuthors']),
-        ...mapActions('books', ['createBook', 'updateBook']),
+        fetchAuthors() {
+            return this.authorsStore.fetchAuthors();
+        },
+        createBook(formData) {
+            return this.booksStore.createBook(formData);
+        },
+        updateBook(payload) {
+            return this.booksStore.updateBook(payload);
+        },
 
         triggerFileInput() {
             this.isFileDialogOpen = true
@@ -243,7 +363,9 @@ export default {
                 preview: null,
                 error: null
             }
-            this.$refs.fileInput.value = ''
+            if (this.$refs.fileInput) {
+                this.$refs.fileInput.value = ''
+            }
         },
 
         removeCurrentImage() {
@@ -302,191 +424,3 @@ export default {
     }
 }
 </script>
-
-<style scoped>
-.form-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    overflow-y: auto;
-    padding: 2rem;
-    z-index: 1100;
-}
-
-.book-form {
-    background: var(--white);
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    width: 100%;
-    max-width: 500px;
-    margin: 2rem auto;
-}
-
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-}
-
-.form-group input,
-.form-group textarea,
-.form-group select {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid var(--gray-medium);
-    border-radius: 4px;
-}
-
-.file-upload-container {
-    margin-top: 0.5rem;
-}
-
-.selected-file {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px;
-    background-color: #f5f5f5;
-    border-radius: 4px;
-    margin-bottom: 1rem;
-}
-
-.btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    font-size: 0.9rem;
-}
-
-.btn i {
-    font-size: 1rem;
-}
-
-.btn-upload {
-    background-color: var(--primary-color);
-    color: white;
-}
-
-.btn-remove {
-    padding: 4px 8px;
-    background-color: #ff4444;
-    color: white;
-    font-size: 18px;
-    line-height: 1;
-    border-radius: 4px;
-}
-
-.btn-primary {
-    background-color: var(--primary-color);
-    color: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.btn-primary:hover:not(:disabled) {
-    background-color: var(--primary-dark);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-}
-
-.btn-secondary {
-    background-color: var(--gray-light);
-    color: var(--text-primary);
-}
-
-.btn-secondary:hover:not(:disabled) {
-    background-color: var(--gray-medium);
-    color: white;
-}
-
-.btn[disabled] {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-.error-message {
-    color: #ff4444;
-    margin-top: 0.5rem;
-    font-size: 0.875rem;
-}
-
-.image-preview {
-    max-width: 200px;
-    margin: 1rem 0;
-}
-
-.image-preview img {
-    width: 100%;
-    height: auto;
-    border-radius: 4px;
-    border: 1px solid var(--gray-medium);
-}
-
-.form-actions {
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-color, #eee);
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-}
-
-.current-image {
-    position: relative;
-    margin: 1rem 0;
-    max-width: 200px;
-}
-
-.current-image img {
-    width: 100%;
-    height: auto;
-    border-radius: 4px;
-    border: 1px solid var(--gray-medium);
-}
-
-.current-image .btn-remove {
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    border-radius: 50%;
-    padding: 4px 8px;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-.btn-primary[disabled] i {
-    animation: spin 1s linear infinite;
-}
-
-@media (max-width: 768px) {
-    .form-overlay {
-        padding: 1rem;
-    }
-    
-    .book-form {
-        margin: 1rem auto;
-        padding: 1.5rem;
-    }
-}
-</style>

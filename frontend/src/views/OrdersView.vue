@@ -1,12 +1,16 @@
 <template>
-  <div class="orders">
-    <h2>My Orders</h2>
-    <orders-list />
-  </div>
+  <v-container>
+    <v-row>
+      <v-col>
+        <h1 class="text-h3 mb-6">My Orders</h1>
+        <orders-list />
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script>
-import OrdersList from '@/components/orders/OrdersList.vue'
+import OrdersList from '@/components/orders/OrdersList.vue';
 
 export default {
   name: 'OrdersView',
@@ -15,13 +19,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.orders {
-  padding: 2rem;
-}
-
-h2 {
-  margin-bottom: 2rem;
-}
-</style>

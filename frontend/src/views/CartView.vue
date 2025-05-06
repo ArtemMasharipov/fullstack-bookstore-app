@@ -1,8 +1,12 @@
 <template>
-  <div class="cart-view">
-    <h1>Your Cart</h1>
-    <cart-list />
-  </div>
+  <v-container>
+    <v-row justify="center">
+      <v-col cols="12" lg="10">
+        <h1 class="text-h4 text-center mb-6">Your Cart</h1>
+        <cart-list />
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script>
@@ -15,17 +19,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.cart-view {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
-.cart-view h1 {
-  color: #333;
-  margin-bottom: 2rem;
-  text-align: center;
-}
-</style>

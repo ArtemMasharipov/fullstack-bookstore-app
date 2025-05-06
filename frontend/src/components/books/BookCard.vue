@@ -1,64 +1,113 @@
 <template>
-    <div class="book-card" @click="$emit('click', book.id)">
-        <div class="book-image-container">
-            <div class="book-image-wrapper">
-                <img :src="book.image || placeholderImage" :alt="book.title || 'No image available'" class="book-image" />
+    <v-card 
+        class="book-card" 
+        @click="$emit('click', book.id)"
+        elevation="2" 
+        height="100%"
+        hover
+    >
+        <v-img
+            :src="book.image || placeholderImage"
+            :alt="book.title || 'No image available'" 
+            class="book-image"
+            height="280"
+            cover
+        ></v-img>
+        
+        <v-card-item>
+            <v-card-title class="text-truncate">
+                {{ book.title || 'No title' }}
+            </v-card-title>
+            
+            <v-card-subtitle v-if="book.author?.name">
+                {{ book.author.name }}
+            </v-card-subtitle>
+        </v-card-item>
+        
+        <v-card-text>
+            <div v-if="book.publicationYear" class="text-caption mb-1">
+                Published: {{ book.publicationYear }}
             </div>
-        </div>
-        <div class="book-info">
-            <h3 class="book-title">{{ book.title || 'No title' }}</h3>
-            <p v-if="book.author?.name" class="author-name">{{ book.author.name }}</p>
-            <p v-if="book.publicationYear" class="publication-year">Published: {{ book.publicationYear }}</p>
-            <p v-if="book.category" class="category">Category: {{ book.category }}</p>
-            <p v-if="book.description" class="description">{{ book.description }}</p>
-            <div class="book-price">
-                <span class="price">{{ formatPrice(book.price) }}</span>
-                <span :class="['stock-status', {'in-stock': book.inStock}]">
-                    {{ book.inStock ? '✔ In Stock' : '✖ Out of Stock' }}
-                </span>
+            
+            <div v-if="book.category" class="text-caption mb-1">
+                Category: {{ book.category }}
             </div>
-            <div class="actions-container">
-                <div class="admin-actions">
-                    <button 
-                        class="btn btn-edit" 
-                        aria-label="Edit book"
+            
+            <div v-if="book.description" class="text-body-2 my-1 text-truncate-2">
+                {{ book.description }}
+            </div>
+            
+            <div class="d-flex align-center justify-space-between mt-3">
+                <div class="text-subtitle-1 font-weight-bold">
+                    {{ formatPrice(book.price) }}
+                </div>
+                
+                <v-chip
+                    :color="book.inStock ? 'success' : 'error'"
+                    size="small"
+                    variant="tonal"
+                >
+                    {{ book.inStock ? 'In Stock' : 'Out of Stock' }}
+                </v-chip>
+            </div>
+        </v-card-text>
+        
+        <v-divider></v-divider>
+        
+        <v-card-actions class="pa-2">
+            <div class="d-flex flex-column w-100 gap-2">
+                <div class="d-flex justify-space-between w-100">
+                    <v-btn 
+                        variant="outlined"
+                        color="primary"
+                        density="comfortable"
+                        prepend-icon="mdi-pencil"
+                        class="flex-grow-1 me-2"
                         @click.stop="$emit('edit', book)"
                     >
                         Edit
-                    </button>
-                    <button 
-                        class="btn btn-delete" 
-                        aria-label="Delete book"
-                        @click.stop="$emit('delete', book)"
+                    </v-btn>
+                    
+                    <v-btn 
+                        variant="outlined"
+                        color="error"
+                        density="comfortable"
+                        prepend-icon="mdi-delete"
+                        class="flex-grow-1"
+                        @click.stop="showDeleteConfirm = true"
                     >
                         Delete
-                    </button>
+                    </v-btn>
                 </div>
-                <button 
-                    v-if="book.inStock" 
-                    class="btn btn-cart" 
-                    :disabled="loading || !hasPermission('create:cart')"
+                
+                <v-btn
+                    v-if="book.inStock"
+                    color="primary"
+                    block
+                    prepend-icon="mdi-cart"
+                    :disabled="loading || !authStore.hasPermission('create:cart')"
+                    :loading="loading"
                     @click.stop="handleAddToCart"
                 >
-                    <span v-if="loading" class="spinner"></span>
-                    <span v-else>Add to Cart</span>
-                </button>
+                    Add to Cart
+                </v-btn>
             </div>
-        </div>
+        </v-card-actions>
+        
         <confirm-modal
-            v-if="showDeleteConfirm"
+            v-model="showDeleteConfirm"
             title="Delete Book"
             :message="`Are you sure you want to delete '${book.title}'?`"
             confirm-text="Delete"
             @confirm="confirmDelete"
             @cancel="showDeleteConfirm = false"
         />
-    </div>
+    </v-card>
 </template>
 
 <script>
-import ConfirmModal from '../common/ConfirmModal.vue'
-import { mapActions, mapGetters } from 'vuex'
+import { useAuthStore, useCartStore } from '@/stores';
+import ConfirmModal from '../common/ConfirmModal.vue';
 
 export default {
     name: 'BookCard',
@@ -72,7 +121,7 @@ export default {
         },
         placeholderImage: {
             type: String,
-            default: '/images/placeholder.png', // Укажите путь к placeholder-изображению
+            default: '/images/placeholder.png',
         },
     },
     emits: ['add-to-cart', 'edit', 'delete', 'click', 'error', 'success'],
@@ -82,10 +131,15 @@ export default {
             loading: false
         }
     },
+    computed: {
+        cartStore() {
+            return useCartStore();
+        },
+        authStore() {
+            return useAuthStore();
+        }
+    },
     methods: {
-        ...mapActions('cart', ['addToCart']),
-        ...mapGetters('auth', ['hasPermission']),
-        
         formatPrice(price) {
             return price ? `${price} грн` : 'Price not available'
         },
@@ -95,7 +149,7 @@ export default {
             
             this.loading = true
             try {
-                await this.addToCart({
+                await this.cartStore.addToCart({
                     bookId: this.book._id,
                     quantity: 1,
                     price: this.book.price
@@ -116,268 +170,12 @@ export default {
 </script>
 
 <style scoped>
-.book-card {
-    background: var(--white);
-    border-radius: 8px;
-    overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    border: 1px solid var(--border-color, #eee);
-    max-width: 100%; /* Адаптивная ширина */
-    height: auto; /* Высота по содержимому */
-    margin: 1rem;
-    position: relative;
-    z-index: 1; /* Ниже чем у формы */
-}
-
-.book-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-.book-image-container {
-    width: 100%;
-    aspect-ratio: 3 / 4; /* Отношение сторон изображения */
-    overflow: hidden;
-    background: var(--gray-light);
-}
-
-.book-image-wrapper {
-    position: relative;
-    width: 100%;
-    height: 100%;
-}
-
-.book-image {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-}
-
-.book-image:hover {
-    transform: scale(1.05);
-}
-
-.book-info {
-    padding: 1.5rem;
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    box-sizing: border-box;
-    font-family: 'Arial', sans-serif;
-}
-
-.book-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 1rem;
-}
-
-.author-name,
-.publication-year,
-.category,
-.description,
-.price,
-.availability {
-    font-size: 0.9rem;
-    margin: 0.25rem 0;
-}
-
-.availability.available {
-    color: green;
-}
-
-.availability:not(.available) {
-    color: red;
-}
-
-.add-to-cart {
-    background-color: var(--primary-color);
-    color: var(--white);
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    margin-top: 0.5rem;
-    width: 100%;
-    transition: background-color 0.3s ease;
-}
-
-.add-to-cart:hover {
-    background-color: var(--primary-dark);
-}
-
-.actions-container {
-    margin-top: auto;
-    padding: 1rem;
-    border-top: 1px solid var(--gray-light);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-}
-
-.admin-actions {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: center;
-    width: 100%;
-}
-
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    border: 1px solid transparent;
-    border-radius: 0.375rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    gap: 0.5rem;
-}
-
-.btn-edit {
-    color: var(--primary-color);
-    border-color: var(--primary-color);
-    background: transparent;
-}
-
-.btn-edit::before {
-    content: '\270E';
-    font-size: 1rem;
-}
-
-.btn-edit:hover {
-    background-color: var(--primary-color-light);
-    border-color: var(--primary-color-dark);
-    box-shadow: 0 2px 8px rgba(4, 101, 13, 0.2);
-}
-
-.btn-delete {
-    color: rgb(216, 45, 45);
-    border-color: var(--danger-color);
-    background: transparent;
-}
-
-.btn-delete::before {
-    content: '\1F5D1';
-    font-size: 1rem;
-}
-
-.btn-delete:hover {
-    background-color: var(--danger-color-light);
-    border-color: var(--danger-color-dark);
-    box-shadow: 0 2px 8px rgba(255, 77, 77, 0.5);
-}
-
-.btn-cart {
-    color: white;
-    background-color: var(--primary-color);
-    padding: 0.5rem 2rem;
-}
-
-.btn-cart::before {
-    content: '\1F6D2';
-    font-size: 1rem;
-    margin-right: 0.5rem;
-}
-
-.btn-cart:hover {
-    background-color: var(--primary-dark);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.icon {
-    font-size: 1.1rem;
-    line-height: 1;
-}
-
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    border: 1px solid transparent;
-    border-radius: 0.375rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    gap: 0.5rem;
-}
-
-.btn-primary {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-}
-
-.btn-primary:hover {
-    background-color: var(--primary-dark);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.btn-edit {
-    color: var(--primary-color);
-    border-color: var(--primary-color);
-    background: transparent;
-}
-
-.btn-edit::before {
-    content: '\270E';
-    font-size: 1rem;
-}
-
-.btn-edit:hover {
-    background-color: var(--primary-color-light);
-    border-color: var(--primary-color-dark);
-    box-shadow: 0 2px 8px rgba(4, 101, 13, 0.2);
-}
-
-.btn-delete {
-    color: rgb(216, 45, 45);
-    border-color: var(--danger-color);
-    background: transparent;
-}
-
-.btn-delete::before {
-    content: '\1F5D1';
-    font-size: 1rem;
-}
-
-.btn-delete:hover {
-    background-color: var(--danger-color-light);
-    border-color: var(--danger-color-dark);
-    box-shadow: 0 2px 8px rgba(255, 77, 77, 0.5);
-}
-
-.btn:hover {
-    transform: translateY(-1px);
-}
-
-.btn i {
-    font-size: 1rem;
-}
-
-@media screen and (max-width: 768px) {
-    .book-card {
-        width: 100%;
-    }
+.text-truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

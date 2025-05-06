@@ -1,7 +1,14 @@
 <template>
-    <div v-if="message" class="error-message">
+    <v-alert
+        v-if="message"
+        type="error"
+        variant="tonal"
+        closable
+        class="mb-4"
+        @close="$emit('close')"
+    >
         {{ message }}
-    </div>
+    </v-alert>
 </template>
 
 <script>
@@ -12,16 +19,7 @@ export default {
             type: String,
             required: true
         }
-    }
+    },
+    emits: ['close']
 }
 </script>
-
-<style scoped>
-.error-message {
-    color: var(--error-color);
-    padding: 0.5rem;
-    margin: 0.5rem 0;
-    border-radius: 4px;
-    background-color: rgba(220, 53, 69, 0.1);
-}
-</style>

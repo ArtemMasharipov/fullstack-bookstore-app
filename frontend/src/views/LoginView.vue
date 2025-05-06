@@ -1,11 +1,9 @@
 <template>
-    <div class="login">
-        <login-form />
-    </div>
+    <login-form />
 </template>
 
 <script>
-import LoginForm from '@/components/auth/LoginForm.vue'
+import LoginForm from '@/components/auth/LoginForm.vue';
 
 export default {
     name: 'LoginView',
@@ -14,14 +12,3 @@ export default {
     },
 }
 </script>
-
-<style scoped>
-.login {
-    padding: 2rem;
-    max-width: 400px;
-    margin: 0 auto;
-}
-.login h1 {
-    color: #333;
-}
-</style>

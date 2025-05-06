@@ -1,21 +1,21 @@
 <template>
-  <div id="app">
-    <header>
-      <nav-bar />
-    </header>
-    <main>
-      <router-view />
-    </main>
-    <footer>
-      <footer-layout />
-    </footer>
-  </div>
+  <v-app>
+    <nav-bar />
+    
+    <v-main>
+      <v-container fluid>
+        <router-view />
+      </v-container>
+    </v-main>
+    
+    <footer-layout />
+  </v-app>
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex';
-import NavBar from '@/components/layout/NavBar.vue';
 import FooterLayout from '@/components/layout/FooterLayout.vue';
+import NavBar from '@/components/layout/NavBar.vue';
+import { useAuthStore } from '@/stores';
 
 export default {
   name: 'App',
@@ -24,30 +24,29 @@ export default {
     FooterLayout,
   },
   computed: {
-    ...mapGetters('auth', ['isAuthenticated']),
+    authStore() {
+      return useAuthStore();
+    }
   },
   created() {
-    this.restoreUserFromToken();
-  },
-  methods: {
-    ...mapActions('auth', ['restoreUserFromToken']),
-  },
+    // Восстанавливаем данные пользователя из токена при загрузке приложения
+    this.authStore.restoreUserFromToken();
+  }
 };
 </script>
 
 <style>
-@import '@/styles/common.css';
-
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: var(--secondary-color);
+/* Базовые стили для интеграции с Vuetify */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
 }
 
-main {
-  flex: 1;
-  padding: 1rem;
+.v-application {
+  font-family: "Roboto", sans-serif;
 }
+
+/* Импортируем общие стили, но только те, которые не конфликтуют с Vuetify */
+@import '@/styles/common-variables.css';
 </style>

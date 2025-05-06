@@ -15,7 +15,7 @@ export const createApiClient = (resource, customMethods = {}) => {
     };
 
     const defaultMethods = {
-        fetchAll: () => apiRequest('get', `/${resource}`),
+        fetchAll: (params) => apiRequest('get', `/${resource}`, null, { params }),
         fetchById: id => apiRequest('get', `/${resource}/${validateId(id)}`),
         create: data => apiRequest('post', `/${resource}`, data, 
             data instanceof FormData && createFormDataConfig(data)),

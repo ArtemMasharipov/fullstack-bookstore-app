@@ -1,33 +1,61 @@
 <template>
-    <div class="book-list">
-        <div class="content-container">
-            <div class="header-section">
-                <h2 class="section-title">Books</h2>
-                <button class="create-button" @click="openCreateForm">
-                    <span class="button-icon">+</span> Create New Book
-                </button>
+    <div>
+        <v-card class="mb-4">
+            <v-toolbar color="primary" flat>
+                <v-toolbar-title class="text-h5 font-weight-medium white--text">Books</v-toolbar-title>
+                <v-spacer></v-spacer>
+                <v-btn
+                    color="white"
+                    variant="outlined"
+                    prepend-icon="mdi-plus"
+                    @click="openCreateForm"
+                >
+                    Create New Book
+                </v-btn>
+            </v-toolbar>
+
+            <div v-if="booksLoading" class="text-center py-8">
+                <loading-spinner />
             </div>
 
-            <hr class="divider">
+            <v-alert 
+                v-else-if="!books.length" 
+                type="info" 
+                variant="tonal" 
+                class="ma-4 text-center"
+            >
+                No books found. Add your first book!
+            </v-alert>
 
-            <div class="list-section">
-                <div v-if="booksLoading" class="loading-container">
-                    <loading-spinner />
-                </div>
-
-                <div v-else-if="!books.length" class="empty-state">
-                    <p>No books found. Add your first book!</p>
-                </div>
-
-                <div v-else class="books-grid">
-                    <book-card 
+            <v-container v-else fluid>
+                <v-row>
+                    <v-col 
                         v-for="book in books" 
                         :key="book._id" 
-                        :book="book"
-                        @edit="openEditForm" @delete="handleDeleteClick" @error="handleError" />
-                </div>
-            </div>
-        </div>
+                        cols="12" sm="6" md="4" lg="3"
+                    >
+                        <book-card 
+                            :book="book"
+                            @edit="openEditForm" 
+                            @delete="handleDeleteClick" 
+                            @error="handleError" 
+                        />
+                    </v-col>
+                </v-row>
+            </v-container>
+
+            <v-divider v-if="books.length"></v-divider>
+
+            <v-card-actions v-if="books.length" class="justify-center py-3">
+                <v-pagination
+                    v-model="currentPage"
+                    :length="totalPages"
+                    :total-visible="5"
+                    @update:model-value="changePage"
+                    rounded
+                ></v-pagination>
+            </v-card-actions>
+        </v-card>
 
         <book-form
             v-if="showForm"
@@ -37,30 +65,44 @@
             @close="closeForm"
         />
 
-        <error-message 
-            v-if="errorMessage" 
-            :message="errorMessage" 
-            @close="errorMessage = null"
-        />
+        <v-snackbar
+            v-model="hasError"
+            color="error"
+            timeout="5000"
+        >
+            {{ errorMessage }}
+            <template v-slot:actions>
+                <v-btn
+                    variant="text"
+                    @click="hasError = false"
+                >
+                    Close
+                </v-btn>
+            </template>
+        </v-snackbar>
 
-        <confirm-modal
-            v-if="bookToDelete"
-            title="Delete Book"
-            :message="`Are you sure you want to delete '${bookToDelete.title}'?`"
-            confirm-text="Delete"
-            @confirm="handleDelete(bookToDelete._id)"
-            @cancel="bookToDelete = null"
-        />
+        <v-dialog v-model="showDeleteDialog" max-width="400">
+            <v-card v-if="bookToDelete">
+                <v-card-title class="text-h5">Delete Book</v-card-title>
+                <v-card-text>
+                    Are you sure you want to delete '{{ bookToDelete.title }}'?
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="grey" variant="text" @click="bookToDelete = null">Cancel</v-btn>
+                    <v-btn color="error" @click="handleDelete(bookToDelete._id)">Delete</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex'
+import { useBooksStore } from '@/stores'
+import ErrorMessage from '../common/ErrorMessage.vue'
+import LoadingSpinner from '../common/LoadingSpinner.vue'
 import BookCard from './BookCard.vue'
 import BookForm from './BookForm.vue'
-import LoadingSpinner from '../common/LoadingSpinner.vue'
-import ErrorMessage from '../common/ErrorMessage.vue'
-import ConfirmModal from '../common/ConfirmModal.vue'
 
 export default {
     name: 'BookList',
@@ -70,7 +112,6 @@ export default {
         BookForm,
         LoadingSpinner,
         ErrorMessage,
-        ConfirmModal,
     },
 
     data() {
@@ -78,24 +119,47 @@ export default {
             showForm: false,
             selectedBook: null,
             errorMessage: null,
-            bookToDelete: null
+            hasError: false,
+            bookToDelete: null,
+            currentPage: 1,
+            itemsPerPage: 12
         };
     },
 
     computed: {
-        ...mapGetters('books', ['booksList', 'booksLoading', 'booksError']),
+        booksStore() {
+            return useBooksStore();
+        },
         books() {
-            return this.booksList
+            return this.booksStore.booksList || [];
+        },
+        totalPages() {
+            return this.booksStore.pagination?.pages || 1;
+        },
+        booksLoading() {
+            return this.booksStore.loading;
+        },
+        showDeleteDialog: {
+            get() {
+                return !!this.bookToDelete;
+            },
+            set(value) {
+                if (!value) this.bookToDelete = null;
+            }
+        }
+    },
+
+    watch: {
+        errorMessage(val) {
+            this.hasError = !!val;
         }
     },
 
     created() {
-        this.fetchBooks()
+        this.fetchBooks({ page: this.currentPage, limit: this.itemsPerPage });
     },
 
     methods: {
-        ...mapActions('books', ['fetchBooks', 'createBook', 'updateBook', 'deleteBook']),
-
         openCreateForm() {
             this.selectedBook = {};
             this.showForm = true;
@@ -128,7 +192,7 @@ export default {
             if (!bookId) return;
             
             try {
-                await this.deleteBook(bookId);
+                await this.booksStore.deleteBook(bookId);
                 this.bookToDelete = null;
                 await this.fetchBooks();
             } catch (error) {
@@ -140,142 +204,24 @@ export default {
             this.bookToDelete = book;
         },
 
-        async confirmDelete() {
+        async changePage(page) {
+            this.currentPage = page;
+            await this.fetchBooks({ 
+                page: this.currentPage, 
+                limit: this.itemsPerPage 
+            });
+        },
+
+        async fetchBooks(params) {
             try {
-                await this.deleteBook(this.bookToDelete._id);
-                await this.fetchBooks();
-                this.bookToDelete = null;
+                await this.booksStore.fetchBooks(params || {
+                    page: this.currentPage, 
+                    limit: this.itemsPerPage
+                });
             } catch (error) {
                 this.errorMessage = error.message;
             }
-        },
+        }
     },
 }
 </script>
-
-<style scoped>
-.book-list {
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.content-container {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-}
-
-.header-section {
-    padding: 1.5rem 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.section-title {
-    font-size: 1.5rem;
-    color: var(--text-primary);
-    margin: 0;
-    font-weight: 600;
-}
-
-.divider {
-    margin: 0;
-    border: none;
-    border-top: 1px solid var(--border-color, #eee);
-}
-
-.list-section {
-    padding: 2rem;
-}
-
-.create-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.button-icon {
-    font-size: 1.2em;
-    line-height: 1;
-}
-
-.create-button:hover {
-    background-color: var(--primary-dark);
-    transform: translateY(-1px);
-}
-
-.books-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 2rem;
-}
-
-.list-header h1 {
-    font-size: 2rem;
-    color: var(--text-primary);
-    margin: 0;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 3rem;
-    color: var(--text-secondary);
-}
-
-.loading-container {
-    display: flex;
-    justify-content: center;
-    padding: 3rem;
-}
-
-.error-container {
-    max-width: 600px;
-    margin: 1rem auto;
-}
-
-.btn-primary {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.2s;
-}
-
-.btn-primary:hover {
-    background-color: var(--primary-dark);
-}
-
-@media (max-width: 768px) {
-    .book-list {
-        padding: 1rem;
-    }
-
-    .header-section {
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
-        padding: 1rem;
-    }
-
-    .list-section {
-        padding: 1rem;
-    }
-}
-</style>

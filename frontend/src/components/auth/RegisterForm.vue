@@ -1,35 +1,62 @@
 <template>
-    <form class="auth-form" @submit.prevent="handleSubmit">
-        <div class="form-group">
-            <label for="username">Username</label>
-            <input id="username" v-model="username" type="text" required />
-        </div>
+    <v-form class="auth-form" @submit.prevent="handleSubmit">
+        <v-text-field
+            id="username"
+            v-model="username"
+            label="Username"
+            variant="outlined"
+            required
+        ></v-text-field>
 
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input id="email" v-model="email" type="email" required />
-        </div>
+        <v-text-field
+            id="email"
+            v-model="email"
+            label="Email"
+            variant="outlined"
+            type="email"
+            required
+        ></v-text-field>
 
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input id="password" v-model="password" type="password" required />
-        </div>
+        <v-text-field
+            id="password"
+            v-model="password"
+            label="Password"
+            variant="outlined"
+            type="password"
+            required
+        ></v-text-field>
 
-        <div class="form-group">
-            <label for="confirmPassword">Confirm Password</label>
-            <input id="confirmPassword" v-model="confirmPassword" type="password" required />
-        </div>
+        <v-text-field
+            id="confirmPassword"
+            v-model="confirmPassword"
+            label="Confirm Password"
+            variant="outlined"
+            type="password"
+            required
+        ></v-text-field>
 
-        <button type="submit" class="btn btn-primary" :disabled="authLoading">
+        <v-btn 
+            type="submit" 
+            color="primary" 
+            block 
+            :loading="authLoading"
+            class="mt-4"
+        >
             {{ authLoading ? 'Creating Account...' : 'Register' }}
-        </button>
+        </v-btn>
 
-        <p v-if="authError" class="error-message">{{ authError }}</p>
-    </form>
+        <v-alert
+            v-if="authError"
+            type="error"
+            class="mt-4"
+        >
+            {{ authError }}
+        </v-alert>
+    </v-form>
 </template>
 
 <script>
-import { mapActions, mapGetters } from 'vuex';
+import { useAuthStore } from '@/stores';
 
 export default {
     name: 'RegisterForm',
@@ -42,13 +69,20 @@ export default {
         };
     },
     computed: {
-        ...mapGetters('auth', ['authError', 'authLoading']),
+        authStore() {
+            return useAuthStore();
+        },
+        authLoading() {
+            return this.authStore.loading;
+        },
+        authError() {
+            return this.authStore.error;
+        }
     },
     methods: {
-        ...mapActions('auth', ['register']),
         async handleSubmit() {
             try {
-                await this.register({
+                await this.authStore.register({
                     username: this.username,
                     email: this.email,
                     password: this.password,
@@ -58,8 +92,8 @@ export default {
             } catch (error) {
                 console.error('Registration error:', error.response ? error.response.data : error.message);
             }
-        },
-    },
+        }
+    }
 };
 </script>
 
@@ -68,15 +102,5 @@ export default {
     width: 100%;
     max-width: 400px;
     margin: 0 auto;
-}
-
-.btn {
-    width: 100%;
-    margin-top: 1rem;
-}
-
-.error-message {
-    color: red;
-    margin-top: 1rem;
 }
 </style>

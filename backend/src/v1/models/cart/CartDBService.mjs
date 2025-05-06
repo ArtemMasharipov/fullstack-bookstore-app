@@ -1,6 +1,6 @@
-import Cart from './cartModel.mjs';
-import Book from '../book/bookModel.mjs';
 import mongoose from 'mongoose';
+import Book from '../book/bookModel.mjs';
+import Cart from './cartModel.mjs';
 
 class CartDBService {
     async getUserCart(userId) {
@@ -22,19 +22,69 @@ class CartDBService {
     }
 
     async addToCart(userId, bookId, quantity) {
-        const cart = await Cart.findOneAndUpdate(
-            { 
-                userId,
-                'items.bookId': bookId 
-            },
-            { 
-                $inc: { 'items.$.quantity': quantity },
-                $set: { 'items.$.price': await Book.findById(bookId).price }
-            },
-            { new: true }
-        ) || await this.createCartWithItem(userId, bookId, quantity);
+        // First check if the cart exists with this item
+        let cart = await Cart.findOne({ 
+            userId,
+            'items.bookId': bookId 
+        });
+
+        if (cart) {
+            // Cart exists and contains this item - update quantity
+            cart = await Cart.findOneAndUpdate(
+                { 
+                    userId,
+                    'items.bookId': bookId 
+                },
+                { 
+                    $inc: { 'items.$.quantity': quantity },
+                    $set: { 'items.$.price': (await Book.findById(bookId)).price }
+                },
+                { new: true }
+            );
+        } else {
+            // Item not in the cart - check if the user has a cart
+            cart = await Cart.findOne({ userId });
+            
+            if (cart) {
+                // User has a cart but not this item - add the new item
+                const book = await Book.findById(bookId);
+                if (!book) {
+                    throw new Error('Book not found');
+                }
+                
+                cart.items.push({
+                    bookId: book._id,
+                    quantity: quantity,
+                    price: book.price
+                });
+                
+                await cart.save();
+            } else {
+                // User has no cart - create a new one with this item
+                cart = await this.createCartWithItem(userId, bookId, quantity);
+            }
+        }
 
         return cart.populate('items.bookId');
+    }
+
+    async createCartWithItem(userId, bookId, quantity) {
+        const book = await Book.findById(bookId);
+        if (!book) {
+            throw new Error('Book not found');
+        }
+
+        const newCart = await Cart.create({
+            userId,
+            items: [{
+                bookId: book._id,
+                quantity: quantity,
+                price: book.price
+            }],
+            totalPrice: book.price * quantity
+        });
+        
+        return newCart;
     }
 
     async removeCartItem(userId, itemId) {

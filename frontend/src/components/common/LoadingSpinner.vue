@@ -1,6 +1,10 @@
 <template>
-    <div class="loading-spinner">
-        <div class="spinner"></div>
+    <div class="d-flex justify-center align-center" style="min-height: 200px;">
+        <v-progress-circular
+            indeterminate
+            color="primary"
+            size="50"
+        ></v-progress-circular>
     </div>
 </template>
 
@@ -11,25 +15,4 @@ export default {
 </script>
 
 <style scoped>
-.loading-spinner {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 200px;
-}
-
-.spinner {
-    width: 50px;
-    height: 50px;
-    border: 3px solid var(--gray-light);
-    border-top: 3px solid var(--primary-color);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    box-sizing: border-box;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
 </style>

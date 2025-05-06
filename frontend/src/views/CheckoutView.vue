@@ -1,53 +1,87 @@
 <template>
-  <div class="checkout">
-    <h2>Checkout</h2>
-    <div v-if="loading" class="loading">Loading...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
-    <div v-else>
-      <div class="order-summary">
-        <h3>Order Summary</h3>
-        <div v-for="item in cartItems" :key="item.id" class="order-item">
-          <span>{{ item.title }}</span>
-          <span>{{ item.quantity }} x ${{ item.price }}</span>
-        </div>
-        <div class="total">
-          <strong>Total: ${{ cartTotal }}</strong>
-        </div>
-      </div>
-
-      <form class="checkout-form" @submit.prevent="submitOrder">
-        <div class="form-group">
-          <label for="address">Shipping Address</label>
-          <textarea 
-            id="address" 
-            v-model="orderData.address" 
-            required
-          ></textarea>
-        </div>
-        
-        <div class="form-group">
-          <label for="phone">Phone Number</label>
-          <input 
-            id="phone" 
-            v-model="orderData.phone" 
-            type="tel" 
-            required
-          />
-        </div>
-
-        <button type="submit" :disabled="loading">
-          Place Order
-        </button>
-      </form>
-    </div>
-  </div>
+  <v-container class="checkout">
+    <v-card class="mx-auto" max-width="800px">
+      <v-card-title class="text-h4 mb-2">Checkout</v-card-title>
+      
+      <v-card-text v-if="loading" class="text-center py-5">
+        <loading-spinner />
+      </v-card-text>
+      
+      <v-card-text v-else-if="error">
+        <error-message :message="error" />
+      </v-card-text>
+      
+      <template v-else>
+        <v-card-text>
+          <v-sheet class="pa-4 mb-4 rounded border">
+            <div class="text-h6 mb-3">Order Summary</div>
+            
+            <v-list density="compact" class="pa-0 bg-transparent">
+              <v-list-item
+                v-for="item in cartItems" 
+                :key="item.id"
+                :title="item.title"
+              >
+                <template v-slot:append>
+                  {{ item.quantity }} x ${{ item.price }}
+                </template>
+              </v-list-item>
+            </v-list>
+            
+            <v-divider class="my-2"></v-divider>
+            
+            <div class="d-flex justify-end font-weight-bold text-body-1">
+              Total: ${{ cartTotal }}
+            </div>
+          </v-sheet>
+          
+          <v-form @submit.prevent="submitOrder">
+            <v-textarea
+              id="address"
+              v-model="orderData.address"
+              label="Shipping Address"
+              variant="outlined"
+              rows="3"
+              required
+            ></v-textarea>
+            
+            <v-text-field
+              id="phone"
+              v-model="orderData.phone"
+              label="Phone Number"
+              variant="outlined"
+              type="tel"
+              required
+            ></v-text-field>
+            
+            <v-btn
+              type="submit"
+              color="primary"
+              block
+              :disabled="loading"
+              size="large"
+              class="mt-4"
+            >
+              Place Order
+            </v-btn>
+          </v-form>
+        </v-card-text>
+      </template>
+    </v-card>
+  </v-container>
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex'
+import ErrorMessage from '@/components/common/ErrorMessage.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import { useCartStore, useOrdersStore } from '@/stores'
 
 export default {
   name: 'CheckoutView',
+  components: {
+    LoadingSpinner,
+    ErrorMessage
+  },
   data() {
     return {
       orderData: {
@@ -57,13 +91,29 @@ export default {
     }
   },
   computed: {
-    ...mapGetters('cart', ['cartItems', 'cartTotal', 'loading', 'error'])
+    cartStore() {
+      return useCartStore()
+    },
+    ordersStore() {
+      return useOrdersStore()
+    },
+    cartItems() {
+      return this.cartStore.cartItems
+    },
+    cartTotal() {
+      return this.cartStore.cartTotal
+    },
+    loading() {
+      return this.cartStore.loading
+    },
+    error() {
+      return this.cartStore.error
+    }
   },
   methods: {
-    ...mapActions('order', ['createOrder']),
     async submitOrder() {
       try {
-        const order = await this.createOrder({
+        const order = await this.ordersStore.createOrder({
           ...this.orderData,
           items: this.cartItems,
           total: this.cartTotal
@@ -76,69 +126,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.checkout {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.order-summary {
-  margin-bottom: 2rem;
-  padding: 1rem;
-  border: 1px solid var(--gray-light);
-  border-radius: 4px;
-}
-
-.order-item {
-  display: flex;
-  justify-content: space-between;
-  margin: 0.5rem 0;
-}
-
-.total {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--gray-light);
-  text-align: right;
-}
-
-.checkout-form {
-  max-width: 500px;
-}
-
-.form-group {
-  margin-bottom: 1rem;
-}
-
-label {
-  display: block;
-  margin-bottom: 0.5rem;
-}
-
-input, textarea {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid var(--gray-medium);
-  border-radius: 4px;
-}
-
-textarea {
-  height: 100px;
-}
-
-button {
-  width: 100%;
-  padding: 1rem;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-button:disabled {
-  background-color: var(--gray-medium);
-}
-</style>

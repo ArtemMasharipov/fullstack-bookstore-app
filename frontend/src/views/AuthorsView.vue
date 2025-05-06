@@ -1,7 +1,7 @@
 <template>
-  <div class="authors">
+  <v-container>
     <author-list />
-  </div>
+  </v-container>
 </template>
 
 <script>
@@ -14,9 +14,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.authors {
-  padding: 2rem;
-}
-</style>

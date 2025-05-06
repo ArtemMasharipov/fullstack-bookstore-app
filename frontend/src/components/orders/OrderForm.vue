@@ -1,29 +1,46 @@
 <template>
-    <form class="order-form" @submit.prevent="handleSubmit">
-        <div class="form-group">
-            <label>Street</label>
-            <input v-model="form.street" required />
-        </div>
-        <div class="form-group">
-            <label>City</label>
-            <input v-model="form.city" required />
-        </div>
-        <div class="form-group">
-            <label>Country</label>
-            <input v-model="form.country" required />
-        </div>
-        <div class="form-group">
-            <label>Zip Code</label>
-            <input v-model="form.zipCode" required />
-        </div>
-        <button type="submit" :disabled="loading">
+    <v-form class="order-form" @submit.prevent="handleSubmit">
+        <v-text-field
+            v-model="form.street"
+            label="Street"
+            variant="outlined"
+            required
+        ></v-text-field>
+        
+        <v-text-field
+            v-model="form.city"
+            label="City"
+            variant="outlined"
+            required
+        ></v-text-field>
+        
+        <v-text-field
+            v-model="form.country"
+            label="Country"
+            variant="outlined"
+            required
+        ></v-text-field>
+        
+        <v-text-field
+            v-model="form.zipCode"
+            label="Zip Code"
+            variant="outlined"
+            required
+        ></v-text-field>
+        
+        <v-btn 
+            type="submit" 
+            color="primary" 
+            block 
+            :loading="loading"
+        >
             {{ loading ? 'Processing...' : 'Place Order' }}
-        </button>
-    </form>
+        </v-btn>
+    </v-form>
 </template>
 
 <script>
-import { mapActions, mapState } from 'vuex'
+import { useOrdersStore } from '@/stores'
 
 export default {
     name: 'OrderForm',
@@ -38,13 +55,17 @@ export default {
         }
     },
     computed: {
-        ...mapState('order', ['loading'])
+        ordersStore() {
+            return useOrdersStore()
+        },
+        loading() {
+            return this.ordersStore.loading
+        }
     },
     methods: {
-        ...mapActions('order', ['createOrder']),
         async handleSubmit() {
             try {
-                await this.createOrder({
+                await this.ordersStore.createOrder({
                     shippingAddress: { ...this.form }
                 })
                 this.$router.push('/orders')

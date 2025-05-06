@@ -1,113 +1,125 @@
 <template>
-  <div class="order-details">
-    <h2>Order Details</h2>
-    <div v-if="loading" class="loading">Loading...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
-    <div v-else class="order-info">
-      <div class="order-header">
-        <h3>Order #{{ order._id }}</h3>
-        <span :class="['status', order.status]">{{ order.status }}</span>
-      </div>
-
-      <div class="order-items">
-        <h4>Items</h4>
-        <div v-for="item in order.items" :key="item.id" class="item">
-          <span>{{ item.title }}</span>
-          <span>{{ item.quantity }} x ${{ item.price }}</span>
-        </div>
-      </div>
-
-      <div class="order-summary">
-        <p><strong>Total:</strong> ${{ order.total }}</p>
-        <p><strong>Date:</strong> {{ formatDate(order.createdAt) }}</p>
-        <p><strong>Address:</strong> {{ order.address }}</p>
-        <p><strong>Phone:</strong> {{ order.phone }}</p>
-      </div>
-
-      <div v-if="hasPermission('update:order')" class="order-actions">
-        <router-link 
-          :to="`/orders/${order._id}/status`" 
-          class="btn-update"
-        >
-          Update Status
-        </router-link>
-      </div>
-    </div>
-  </div>
+  <v-container>
+    <v-card class="mx-auto" max-width="800px">
+      <v-card-title class="text-h4 mb-2">Order Details</v-card-title>
+      
+      <v-card-text v-if="loading" class="text-center py-5">
+        <v-progress-circular indeterminate color="primary"></v-progress-circular>
+      </v-card-text>
+      
+      <v-card-text v-else-if="error">
+        <v-alert type="error" variant="tonal">{{ error }}</v-alert>
+      </v-card-text>
+      
+      <template v-else>
+        <v-card-text>
+          <v-row align="center" class="mb-4">
+            <v-col cols="12" sm="6">
+              <div class="text-h5">Order #{{ order._id }}</div>
+            </v-col>
+            <v-col cols="12" sm="6" class="d-flex justify-end">
+              <v-chip
+                :color="getStatusColor(order.status)"
+                class="text-uppercase font-weight-medium"
+              >
+                {{ order.status }}
+              </v-chip>
+            </v-col>
+          </v-row>
+          
+          <v-card variant="outlined" class="mb-4">
+            <v-card-title class="text-h6">Items</v-card-title>
+            <v-list density="compact">
+              <v-list-item
+                v-for="item in order.items"
+                :key="item.id"
+                :title="item.title"
+              >
+                <template v-slot:append>
+                  {{ item.quantity }} x ${{ item.price }}
+                </template>
+              </v-list-item>
+            </v-list>
+          </v-card>
+          
+          <v-card variant="outlined" class="mb-4">
+            <v-card-text>
+              <v-row>
+                <v-col cols="12" sm="6">
+                  <p class="text-subtitle-1 font-weight-bold">Total: <span class="font-weight-regular">${{ order.total }}</span></p>
+                  <p class="text-subtitle-1 font-weight-bold">Date: <span class="font-weight-regular">{{ formatDate(order.createdAt) }}</span></p>
+                </v-col>
+                <v-col cols="12" sm="6">
+                  <p class="text-subtitle-1 font-weight-bold">Address: <span class="font-weight-regular">{{ order.address }}</span></p>
+                  <p class="text-subtitle-1 font-weight-bold">Phone: <span class="font-weight-regular">{{ order.phone }}</span></p>
+                </v-col>
+              </v-row>
+            </v-card-text>
+          </v-card>
+          
+          <div v-if="hasPermission('update:order')" class="d-flex justify-end mt-4">
+            <v-btn
+              color="primary"
+              :to="`/orders/${order._id}/status`"
+              prepend-icon="mdi-pencil"
+            >
+              Update Status
+            </v-btn>
+          </div>
+        </v-card-text>
+      </template>
+    </v-card>
+  </v-container>
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex'
+import { useAuthStore, useOrdersStore } from '@/stores'
 
 export default {
   name: 'OrderDetailsView',
   computed: {
-    ...mapGetters('order', ['currentOrder', 'loading', 'error']),
-    ...mapGetters('auth', ['hasPermission']),
+    ordersStore() {
+      return useOrdersStore()
+    },
+    authStore() {
+      return useAuthStore()
+    },
+    currentOrder() {
+      return this.ordersStore.currentOrder
+    },
+    loading() {
+      return this.ordersStore.loading
+    },
+    error() {
+      return this.ordersStore.error
+    },
     order() {
       return this.currentOrder || {}
+    },
+    hasPermission() {
+      return this.authStore.hasPermission
     }
   },
   async created() {
     await this.fetchOrderById(this.$route.params.id)
   },
   methods: {
-    ...mapActions('order', ['fetchOrderById']),
+    fetchOrderById(id) {
+      return this.ordersStore.fetchOrderById(id)
+    },
     formatDate(date) {
       return new Date(date).toLocaleDateString()
+    },
+    getStatusColor(status) {
+      const statusColors = {
+        pending: 'warning',
+        processing: 'info',
+        shipped: 'success',
+        delivered: 'primary',
+        cancelled: 'error'
+      }
+      return statusColors[status] || 'grey'
     }
   }
 }
 </script>
-
-<style scoped>
-.order-details {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.order-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.status {
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-weight: bold;
-}
-
-.order-items {
-  margin: 2rem 0;
-  border: 1px solid var(--gray-light);
-  border-radius: 4px;
-  padding: 1rem;
-}
-
-.item {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--gray-light);
-}
-
-.order-summary {
-  margin: 2rem 0;
-}
-
-.order-actions {
-  margin-top: 2rem;
-}
-
-.btn-update {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  background-color: var(--primary-color);
-  color: white;
-  text-decoration: none;
-  border-radius: 4px;
-}
-</style>

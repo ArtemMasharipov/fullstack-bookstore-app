@@ -1,35 +1,52 @@
 <template>
     <base-modal size="medium" @close="$emit('close')">
-        <form class="author-form" @submit.prevent="handleSubmit">
-            <h2>{{ form._id ? 'Edit Author' : 'Create Author' }}</h2>
-            <div class="form-group">
-                <label for="name">Name</label>
-                <input 
-                id="name"
-                v-model="form.name"
-                    type="text"
-                    required
-                />
-            </div>
-
-            <div class="form-group">
-                <label for="biography">Biography</label>
-                <textarea 
-                    id="biography"
-                    v-model="form.biography"
-                    rows="5"
-                ></textarea>
-            </div>
-
-            <button 
-                type="submit" 
-                class="btn btn-primary"
-                :disabled="loading"
-            >
-                {{ loading ? 'Saving...' : (form._id ? 'Update Author' : 'Create Author') }}
-            </button>
-            <button type="button" class="btn btn-secondary" @click="$emit('close')">Cancel</button>
-        </form>
+        <v-card class="pa-4">
+            <v-card-title class="text-h5 mb-3">
+                {{ form._id ? 'Edit Author' : 'Create Author' }}
+            </v-card-title>
+            
+            <v-form @submit.prevent="handleSubmit">
+                <v-card-text>
+                    <v-text-field
+                        id="name"
+                        v-model="form.name"
+                        label="Name"
+                        variant="outlined"
+                        density="comfortable"
+                        required
+                    ></v-text-field>
+                    
+                    <v-textarea
+                        id="biography"
+                        v-model="form.biography"
+                        label="Biography"
+                        variant="outlined"
+                        auto-grow
+                        rows="5"
+                    ></v-textarea>
+                </v-card-text>
+                
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    
+                    <v-btn
+                        color="secondary"
+                        variant="text"
+                        @click="$emit('close')"
+                    >
+                        Cancel
+                    </v-btn>
+                    
+                    <v-btn
+                        color="primary"
+                        :loading="loading"
+                        type="submit"
+                    >
+                        {{ loading ? 'Saving...' : (form._id ? 'Update Author' : 'Create Author') }}
+                    </v-btn>
+                </v-card-actions>
+            </v-form>
+        </v-card>
     </base-modal>
 </template>
 
@@ -78,45 +95,3 @@ export default {
     }
 }
 </script>
-
-<style scoped>
-.author-form {
-    padding: 2rem;
-}
-
-.form-group {
-    margin-bottom: 1rem;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-}
-
-.form-group input,
-.form-group textarea {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid var(--gray-medium);
-    border-radius: 4px;
-}
-
-button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.btn-primary {
-    background-color: var(--primary-color);
-    color: var(--white);
-}
-
-.btn-secondary {
-    background-color: var(--gray-medium);
-    color: var(--white);
-    margin-left: 10px;
-}
-
-</style>

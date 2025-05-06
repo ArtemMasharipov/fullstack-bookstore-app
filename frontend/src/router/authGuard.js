@@ -1,7 +1,8 @@
-import store from '@/store'
+import { useAuthStore } from '@/stores'
 
 const authGuard = (to, from, next) => {
-    const isAuthenticated = store.getters['auth/isAuthenticated']
+    const authStore = useAuthStore()
+    const isAuthenticated = authStore.isAuthenticated
     const requiredPermission = to.meta.requiredPermission
     
     if (to.meta.requiresAuth && !isAuthenticated) {
@@ -9,7 +10,7 @@ const authGuard = (to, from, next) => {
         return
     }
     
-    if (requiredPermission && !store.getters['auth/hasPermission'](requiredPermission)) {
+    if (requiredPermission && !authStore.hasPermission(requiredPermission)) {
         next('/unauthorized')
         return
     }
