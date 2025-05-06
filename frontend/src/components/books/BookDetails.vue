@@ -107,19 +107,21 @@
 
             <v-divider class="my-6"></v-divider>
 
-            <v-row v-if="relatedBooks.length">
+            <v-row v-if="relatedBooks && relatedBooks.length > 0">
                 <v-col cols="12">
                     <h2 class="text-h5 mb-4">Related Books</h2>
                     
-                    <v-slide-group show-arrows>
+                    <v-slide-group v-if="!loading" show-arrows>
                         <v-slide-group-item
-                            v-for="relatedBook in relatedBooks"
-                            :key="relatedBook.id"
+                            v-for="(relatedBook, index) in relatedBooks"
+                            :key="relatedBook?.id || `related-book-${index}`"
+                            v-slot="{ isSelected, toggle, selectedClass }"
                         >
                             <div class="pa-2">
                                 <book-card
+                                    v-if="relatedBook"
                                     :book="relatedBook"
-                                    @click="$router.push(`/books/${relatedBook.id}`)"
+                                    @click="navigateToBook(relatedBook)"
                                 />
                             </div>
                         </v-slide-group-item>
@@ -233,7 +235,7 @@ export default {
 
     methods: {
         fetchBook(id) {
-            return this.booksStore.fetchBook(id);
+            return this.booksStore.fetchBookById(id);
         },
         deleteBook(id) {
             return this.booksStore.deleteBook(id);
@@ -276,6 +278,16 @@ export default {
 
         formatPrice(price) {
             return price ? `${price} грн` : 'Price not available'
+        },
+        
+        navigateToBook(book) {
+            // Prevent navigation if we're already on this book
+            if (book.id === this.bookId) return;
+            
+            // Navigate to the new book and refresh the page
+            this.$router.push(`/books/${book.id}`);
+            // Fetch the new book data
+            this.fetchBook(book.id);
         },
     },
 };

@@ -1,6 +1,6 @@
 <template>
-    <v-card class="mb-4">
-        <v-row no-gutters>
+    <v-card variant="outlined" class="mb-4">
+        <v-row no-gutters align="center">
             <v-col cols="12" sm="3" md="2">
                 <v-img
                     :src="bookImage"
@@ -8,56 +8,66 @@
                     @error="handleImageError"
                     height="160"
                     cover
-                    class="rounded-s-md h-100"
+                    class="rounded-ss-md rounded-es-md"
                 ></v-img>
             </v-col>
             
             <v-col cols="12" sm="7" md="8">
                 <v-card-item>
                     <v-card-title>{{ bookTitle }}</v-card-title>
-                    <v-card-subtitle class="pt-2">
+                    <v-card-subtitle class="mt-1">
                         Price: ${{ formattedPrice }}
                     </v-card-subtitle>
                     
-                    <div class="d-flex align-center mt-2">
-                        <v-btn-toggle
-                            v-model="quantity"
-                            density="comfortable"
-                            mandatory
-                            class="border rounded"
-                        >
-                            <v-btn
-                                icon="mdi-minus"
-                                density="compact"
-                                :disabled="item.quantity <= 1"
-                                @click="handleQuantityClick(item.quantity - 1)"
-                            ></v-btn>
-                            
-                            <v-card class="d-flex justify-center align-center px-2">
-                                <span>{{ item.quantity }}</span>
-                            </v-card>
-                            
-                            <v-btn
-                                icon="mdi-plus"
-                                density="compact"
-                                @click="handleQuantityClick(item.quantity + 1)"
-                            ></v-btn>
-                        </v-btn-toggle>
+                    <div class="mt-3 d-flex align-center">
+                        <span class="text-caption me-2">Quantity:</span>
+                        <v-btn
+                            icon="mdi-minus"
+                            density="compact"
+                            variant="outlined"
+                            size="small"
+                            class="mr-1"
+                            :disabled="item.quantity <= 1"
+                            @click="updateQuantity(item.quantity - 1)"
+                        ></v-btn>
+                        
+                        <span class="text-body-1 mx-2">{{ item.quantity }}</span>
+                        
+                        <v-btn
+                            icon="mdi-plus"
+                            density="compact"
+                            variant="outlined"
+                            size="small"
+                            class="ml-1"
+                            @click="updateQuantity(item.quantity + 1)"
+                        ></v-btn>
+                    </div>
+                    
+                    <div class="text-subtitle-1 font-weight-bold mt-3">
+                        Total: ${{ (item.quantity * item.price).toFixed(2) }}
                     </div>
                 </v-card-item>
             </v-col>
             
-            <v-col cols="12" sm="2" md="2" class="d-flex align-center justify-end pe-4">
+            <v-col cols="12" sm="2" md="2" class="d-flex align-center justify-end pr-4">
                 <v-btn
                     color="error"
                     variant="text"
-                    prepend-icon="mdi-delete"
-                    @click="remove"
-                >
-                    Remove
-                </v-btn>
+                    icon="mdi-delete"
+                    size="small"
+                    @click="confirmRemove"
+                    :loading="removing"
+                ></v-btn>
             </v-col>
         </v-row>
+
+        <confirm-modal
+            v-model="showDeleteConfirm"
+            title="Remove Item"
+            :message="`Are you sure you want to remove '${bookTitle}' from your cart?`"
+            confirm-text="Remove"
+            @confirm="remove"
+        />
     </v-card>
 </template>
 
@@ -65,10 +75,20 @@
 import placeholderImage from '@/assets/images/placeholder.png';
 import { useCartStore } from '@/stores';
 import { debounce } from 'lodash';
+import ConfirmModal from '../common/ConfirmModal.vue';
 
+/**
+ * Cart item component for displaying a single cart item
+ */
 export default {
     name: 'CartItem',
+    components: {
+        ConfirmModal
+    },
     props: {
+        /**
+         * Cart item object with book details, quantity and price
+         */
         item: {
             type: Object,
             required: true,
@@ -80,7 +100,8 @@ export default {
     
     data() {
         return {
-            quantity: null
+            removing: false,
+            showDeleteConfirm: false
         };
     },
     
@@ -101,36 +122,58 @@ export default {
     },
     
     created() {
-        this.handleQuantityClick = debounce(this.updateQuantityInCart, 300);
+        // Initialize debounced quantity update function
+        this.updateQuantity = debounce(this.handleQuantityChange, 300);
     },
     
     methods: {
+        /**
+         * Show confirmation dialog before removing item
+         */
+        confirmRemove() {
+            this.showDeleteConfirm = true;
+        },
+
+        /**
+         * Remove item from cart
+         */
         async remove() {
+            if (this.removing) return;
+            
+            this.removing = true;
             try {
                 await this.cartStore.removeFromCart(this.item._id);
             } catch (error) {
                 this.$emit('error', error.message);
+            } finally {
+                this.removing = false;
             }
         },
         
+        /**
+         * Handle image loading errors
+         */
         handleImageError(e) {
             e.target.src = placeholderImage;
         },
         
-        updateQuantityInCart(quantity) {
-            if (quantity >= 1) {
-                this.$emit('update-quantity', { 
-                    bookId: this.item.bookId._id, 
-                    quantity 
-                });
-                
-                this.cartStore.updateQuantity({ 
-                    bookId: this.item.bookId._id, 
-                    quantity 
-                }).catch(error => {
-                    this.$emit('error', error.message);
-                });
-            }
+        /**
+         * Update quantity in cart (debounced)
+         */
+        handleQuantityChange(quantity) {
+            if (quantity < 1) return;
+            
+            this.$emit('update-quantity', { 
+                bookId: this.item.bookId._id, 
+                quantity 
+            });
+            
+            this.cartStore.updateQuantity({ 
+                bookId: this.item.bookId._id, 
+                quantity 
+            }).catch(error => {
+                this.$emit('error', error.message);
+            });
         }
     }
 }

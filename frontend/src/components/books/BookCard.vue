@@ -1,15 +1,13 @@
 <template>
     <v-card 
-        class="book-card" 
-        @click="$emit('click', book.id)"
         elevation="2" 
         height="100%"
         hover
+        @click="$emit('click', book.id)"
     >
         <v-img
             :src="book.image || placeholderImage"
             :alt="book.title || 'No image available'" 
-            class="book-image"
             height="280"
             cover
         ></v-img>
@@ -25,17 +23,23 @@
         </v-card-item>
         
         <v-card-text>
-            <div v-if="book.publicationYear" class="text-caption mb-1">
-                Published: {{ book.publicationYear }}
-            </div>
+            <v-list-item density="compact" class="px-0" v-if="book.publicationYear">
+                <template v-slot:prepend>
+                    <v-icon size="small" class="me-1">mdi-calendar</v-icon>
+                </template>
+                <v-list-item-subtitle>Published: {{ book.publicationYear }}</v-list-item-subtitle>
+            </v-list-item>
             
-            <div v-if="book.category" class="text-caption mb-1">
-                Category: {{ book.category }}
-            </div>
+            <v-list-item density="compact" class="px-0" v-if="book.category">
+                <template v-slot:prepend>
+                    <v-icon size="small" class="me-1">mdi-tag</v-icon>
+                </template>
+                <v-list-item-subtitle>{{ book.category }}</v-list-item-subtitle>
+            </v-list-item>
             
-            <div v-if="book.description" class="text-body-2 my-1 text-truncate-2">
+            <p v-if="book.description" class="text-body-2 mt-3 text-truncate-2">
                 {{ book.description }}
-            </div>
+            </p>
             
             <div class="d-flex align-center justify-space-between mt-3">
                 <div class="text-subtitle-1 font-weight-bold">
@@ -54,44 +58,48 @@
         
         <v-divider></v-divider>
         
-        <v-card-actions class="pa-2">
-            <div class="d-flex flex-column w-100 gap-2">
-                <div class="d-flex justify-space-between w-100">
+        <v-card-actions>
+            <v-row dense>
+                <v-col cols="6">
                     <v-btn 
                         variant="outlined"
                         color="primary"
+                        block
                         density="comfortable"
                         prepend-icon="mdi-pencil"
-                        class="flex-grow-1 me-2"
                         @click.stop="$emit('edit', book)"
                     >
                         Edit
                     </v-btn>
-                    
+                </v-col>
+                
+                <v-col cols="6">
                     <v-btn 
                         variant="outlined"
                         color="error"
+                        block
                         density="comfortable"
                         prepend-icon="mdi-delete"
-                        class="flex-grow-1"
                         @click.stop="showDeleteConfirm = true"
                     >
                         Delete
                     </v-btn>
-                </div>
+                </v-col>
                 
-                <v-btn
-                    v-if="book.inStock"
-                    color="primary"
-                    block
-                    prepend-icon="mdi-cart"
-                    :disabled="loading || !authStore.hasPermission('create:cart')"
-                    :loading="loading"
-                    @click.stop="handleAddToCart"
-                >
-                    Add to Cart
-                </v-btn>
-            </div>
+                <v-col cols="12" class="mt-2">
+                    <v-btn
+                        v-if="book.inStock"
+                        color="primary"
+                        block
+                        prepend-icon="mdi-cart"
+                        :disabled="!canAddToCart"
+                        :loading="loading"
+                        @click.stop="handleAddToCart"
+                    >
+                        Add to Cart
+                    </v-btn>
+                </v-col>
+            </v-row>
         </v-card-actions>
         
         <confirm-modal
@@ -109,16 +117,26 @@
 import { useAuthStore, useCartStore } from '@/stores';
 import ConfirmModal from '../common/ConfirmModal.vue';
 
+/**
+ * Book card component for displaying a single book
+ * Used in book listings and search results
+ */
 export default {
     name: 'BookCard',
     components: {
         ConfirmModal
     },
     props: {
+        /**
+         * Book object with details
+         */
         book: {
             type: Object,
             required: true,
         },
+        /**
+         * Fallback image when book image is missing
+         */
         placeholderImage: {
             type: String,
             default: '/images/placeholder.png',
@@ -137,13 +155,27 @@ export default {
         },
         authStore() {
             return useAuthStore();
+        },
+        /**
+         * Determines if user can add book to cart
+         */
+        canAddToCart() {
+            return !this.loading && 
+                   this.book.inStock && 
+                   this.authStore.hasPermission('create:cart');
         }
     },
     methods: {
+        /**
+         * Format the book price with currency
+         */
         formatPrice(price) {
             return price ? `${price} грн` : 'Price not available'
         },
 
+        /**
+         * Handle adding the book to cart
+         */
         async handleAddToCart() {
             if (!this.book.inStock) return
             
@@ -161,6 +193,10 @@ export default {
                 this.loading = false
             }
         },
+        
+        /**
+         * Confirm book deletion
+         */
         confirmDelete() {
             this.$emit('delete', this.book._id);
             this.showDeleteConfirm = false;
@@ -173,7 +209,6 @@ export default {
 .text-truncate-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
-  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
