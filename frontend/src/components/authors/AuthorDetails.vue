@@ -100,6 +100,7 @@ import BookCard from '@/components/books/BookCard.vue'
 import ErrorMessage from '@/components/common/ErrorMessage.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { useAuthorsStore, useAuthStore } from '@/stores'
+import { mapActions, mapGetters } from 'pinia'
 
 export default {
     name: 'AuthorDetails',
@@ -126,24 +127,14 @@ export default {
     },
 
     computed: {
-        authorsStore() {
-            return useAuthorsStore()
-        },
-        authStore() {
-            return useAuthStore()
-        },
-        currentAuthor() {
-            return this.authorsStore.currentAuthor
-        },
-        loading() {
-            return this.authorsStore.loading
-        },
-        error() {
-            return this.authorsStore.error
-        },
-        hasPermission() {
-            return this.authStore.hasPermission
-        },
+        ...mapGetters(useAuthorsStore, {
+            currentAuthor: 'currentAuthor',
+            loading: 'loading',
+            error: 'error'
+        }),
+        
+        ...mapGetters(useAuthStore, ['hasPermission']),
+        
         author() {
             return this.currentAuthor
         },
@@ -159,19 +150,12 @@ export default {
                 },
             ];
         },
-    },
-
-    created() {
+    },    created() {
         this.fetchAuthor(this.authorId)
     },
 
     methods: {
-        fetchAuthor(id) {
-            return this.authorsStore.fetchAuthor(id)
-        },
-        deleteAuthor(id) {
-            return this.authorsStore.deleteAuthor(id)
-        },
+        ...mapActions(useAuthorsStore, ['fetchAuthor', 'deleteAuthor']),
 
         handleEdit() {
             this.$emit('edit', this.author)
@@ -179,14 +163,12 @@ export default {
 
         confirmDelete() {
             this.showDeleteModalPage = true
-        },
-
-        async handleDelete() {
+        },        async handleDelete() {
             try {
                 await this.deleteAuthor(this.author.id)
                 this.$router.push('/authors')
             } catch (error) {
-                console.error('Failed to delete author:', error)
+                // Error is already handled by the store
             }
         },
     },

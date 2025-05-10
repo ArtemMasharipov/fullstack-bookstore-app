@@ -14,9 +14,7 @@ export const authApi = {
             const { token } = response;
             if (token) localStorage.setItem('token', token);
             
-            return response;
-        } catch (error) {
-            console.error('Login API error:', error);
+            return response;        } catch (error) {
             // Ensure we throw an error with a proper message
             throw new Error(error.message || 'Login failed. Please check your credentials.');
         }
@@ -33,12 +31,17 @@ export const authApi = {
             const { token } = response;
             if (token) localStorage.setItem('token', token);
             
-            return response;
-        } catch (error) {
-            console.error('Registration API error:', error);
+            return response;        } catch (error) {
             throw new Error(error.message || 'Registration failed. Please try again.');
         }
     },
     
     logout: () => localStorage.removeItem('token'),
+    
+    getCurrentUser: async () => {        try {
+            return await apiRequest('get', '/auth/current-user');
+        } catch (error) {
+            return null;
+        }
+    },
 }

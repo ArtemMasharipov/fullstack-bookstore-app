@@ -1,16 +1,26 @@
 import { cartApi } from '@/api/cartApi'
-import { defineStore } from 'pinia'
 import { useAuthStore } from './auth'
+import { useNotificationStore } from './notification'
 import { handleAsyncAction } from './utils/stateHelpers'
+import { createBaseStore } from './utils/storeFactory'
 
-export const useCartStore = defineStore('cart', {
-  state: () => ({
+/**
+ * Cart store using the base store factory
+ * - Uses shared logic from the factory for loading and error states
+ * - Implements cart-specific functionality for local and server storage
+ */
+export const useCartStore = createBaseStore({
+  id: 'cart',
+  api: cartApi,
+  
+  // Custom state specific to cart store
+  customState: () => ({
     items: JSON.parse(localStorage.getItem('cart')) || [],
-    loading: false,
-    error: null
+    // loading and error are provided by the base store
   }),
   
-  getters: {
+  // Custom getters specific to cart store
+  customGetters: {
     cartItems: (state) => state.items.map(({ _id, bookId, quantity, price }) => ({
       _id,
       bookId: {
@@ -31,93 +41,169 @@ export const useCartStore = defineStore('cart', {
     itemCount: (state) => state.items.length
   },
   
-  actions: {
+  // Custom actions specific to cart store
+  customActions: {
+    /**
+     * Fetch cart items from the server
+     */
     async fetchCart() {
       return handleAsyncAction(this, async () => {
-        const { items = [] } = await cartApi.fetchCart() || {}
-        this.setItems(items)
-      })
+        const { items = [] } = await cartApi.fetchCart() || {};
+        this.setItems(items);
+      });
     },
-    
-    async addToCart({ bookId, quantity, price }) {
+      /**
+     * Add an item to the cart
+     * @param {Object} item - Item to add
+     * @param {string} item.bookId - Book ID
+     * @param {number} item.quantity - Quantity
+     * @param {number} item.price - Price
+     * @param {string} item.title - Book title (optional)
+     */
+    async addToCart({ bookId, quantity, price, title = 'Book' }) {
+      const notificationStore = useNotificationStore();
+      
       return handleAsyncAction(this, async () => {
-        const authStore = useAuthStore()
-        if (authStore.isAuthenticated) {
-          const { items } = await cartApi.addToCart({ bookId, quantity, price })
-          this.setItems(items)
-        } else {
-          this.addLocalItem({ bookId, quantity, price })
-        }
-      })
-    },
-    
-    async removeFromCart(itemId) {
-      return handleAsyncAction(this, async () => {
-        const response = await cartApi.removeFromCart(itemId)
-        this.setItems(response.items)
-      })
-    },
-    
-    async updateQuantity(payload) {
-      return handleAsyncAction(this, async () => {
-        const authStore = useAuthStore()
-        if (authStore.isAuthenticated) {
-          const response = await cartApi.updateQuantity(payload.itemId, payload.quantity)
-          if (response && response.items) {
-            this.setItems(response.items)
+        try {
+          const authStore = useAuthStore();
+          if (authStore.isAuthenticated) {
+            // Server-side cart
+            const { items } = await cartApi.addToCart({ bookId, quantity, price });
+            this.setItems(items);
+          } else {
+            // Local cart
+            this.addLocalItem({ bookId, quantity, price });
           }
-        } else {
-          this.updateLocalQuantity(payload)
+          notificationStore.success(`"${title}" added to cart`, { 
+            icon: "shopping_cart" 
+          });
+        } catch (error) {
+          notificationStore.error(`Failed to add "${title}" to cart: ${error.message}`);
+          throw error;
         }
-      })
+      });
     },
-    
-    async clearCart() {
+      /**
+     * Remove an item from the cart
+     * @param {string} itemId - Item ID to remove
+     * @param {string} title - Book title (optional)
+     */
+    async removeFromCart(itemId, title = 'Item') {
+      const notificationStore = useNotificationStore();
+      
       return handleAsyncAction(this, async () => {
-        await cartApi.clearCart()
-        this.items = []
-        localStorage.removeItem('cart')
-      })
+        try {
+          const response = await cartApi.removeFromCart(itemId);
+          this.setItems(response.items);
+          notificationStore.info(`"${title}" removed from cart`);
+        } catch (error) {
+          notificationStore.error(`Failed to remove "${title}" from cart: ${error.message}`);
+          throw error;
+        }
+      });
+    },
+      /**
+     * Update item quantity
+     * @param {Object} payload - Update data
+     * @param {string} payload.itemId - Item ID
+     * @param {number} payload.quantity - New quantity
+     * @param {string} payload.title - Book title (optional)
+     */
+    async updateQuantity(payload) {
+      const notificationStore = useNotificationStore();
+      const { title = 'Item' } = payload;
+      
+      return handleAsyncAction(this, async () => {
+        try {
+          const authStore = useAuthStore();
+          if (authStore.isAuthenticated) {
+            // Server-side cart
+            const response = await cartApi.updateQuantity(payload.itemId, payload.quantity);
+            if (response && response.items) {
+              this.setItems(response.items);
+            }
+          } else {
+            // Local cart
+            this.updateLocalQuantity(payload);
+          }
+          notificationStore.info(`"${title}" quantity updated to ${payload.quantity}`);
+        } catch (error) {
+          notificationStore.error(`Failed to update quantity: ${error.message}`);
+          throw error;
+        }
+      });
+    },
+      /**
+     * Clear the cart
+     */
+    async clearCart() {
+      const notificationStore = useNotificationStore();
+      
+      return handleAsyncAction(this, async () => {
+        try {
+          await cartApi.clearCart();
+          this.items = [];
+          localStorage.removeItem('cart');
+          notificationStore.info('Cart cleared successfully');
+        } catch (error) {
+          notificationStore.error(`Failed to clear cart: ${error.message}`);
+          throw error;
+        }
+      });
     },
     
+    /**
+     * Synchronize local cart with server after login
+     */
     async syncCart() {
       return handleAsyncAction(this, async () => {
-        const localCart = JSON.parse(localStorage.getItem('cart')) || []
-        const response = await cartApi.syncCart(localCart)
+        const localCart = JSON.parse(localStorage.getItem('cart')) || [];
+        const response = await cartApi.syncCart(localCart);
         
         if (response?.items) {
-          this.setItems(response.items)
-          localStorage.removeItem('cart')
+          this.setItems(response.items);
+          localStorage.removeItem('cart');
         } else {
-          throw new Error('Failed to sync cart')
+          throw new Error('Failed to sync cart');
         }
-      })
+      });
     },
     
-    // Вспомогательные методы для управления состоянием
+    /**
+     * Helper method to set items and update localStorage
+     * @param {Array} items - Cart items
+     */
     setItems(items) {
-      this.items = items || []
-      localStorage.setItem('cart', JSON.stringify(this.items))
+      this.items = items || [];
+      localStorage.setItem('cart', JSON.stringify(this.items));
     },
     
+    /**
+     * Add an item to local storage cart
+     * @param {Object} item - Item to add
+     */
     addLocalItem(item) {
       const existingItem = this.items.find(
         i => i.bookId?._id === item.bookId?._id || i.bookId === item.bookId
-      )
+      );
       if (existingItem) {
-        existingItem.quantity += item.quantity
+        existingItem.quantity += item.quantity;
       } else {
-        this.items.push(item)
+        this.items.push(item);
       }
-      localStorage.setItem('cart', JSON.stringify(this.items))
+      localStorage.setItem('cart', JSON.stringify(this.items));
     },
     
+    /**
+     * Update quantity in local storage cart
+     * @param {Object} payload - Update data
+     */
     updateLocalQuantity({ bookId, quantity }) {
-      const item = this.items.find((i) => i.bookId === bookId)
+      const item = this.items.find((i) => i.bookId === bookId);
       if (item) {
-        item.quantity = quantity
+        item.quantity = quantity;
       }
-      localStorage.setItem('cart', JSON.stringify(this.items))
+      localStorage.setItem('cart', JSON.stringify(this.items));
     }
   }
-})
+});

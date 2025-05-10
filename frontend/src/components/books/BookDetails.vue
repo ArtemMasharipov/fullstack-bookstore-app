@@ -250,14 +250,12 @@ export default {
 
         confirmDelete() {
             this.showDeleteModalPage = true;
-        },
-
-        async handleDelete() {
+        },        async handleDelete() {
             try {
                 await this.deleteBook(this.book.id);
                 this.$router.push('/books');
             } catch (error) {
-                console.error('Failed to delete book:', error);
+                // Error is already handled by the store
             }
         },
 

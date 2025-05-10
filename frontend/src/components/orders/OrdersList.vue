@@ -195,7 +195,8 @@
 <script>
 import ErrorMessage from '@/components/common/ErrorMessage.vue';
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue';
-import { useAuthStore, useOrdersStore } from '@/stores';
+import { useAuthStore, useOrdersStore, useOrdersUiStore } from '@/stores';
+import { mapActions, mapGetters } from 'pinia';
 
 /**
  * Component for displaying and managing user orders
@@ -206,198 +207,75 @@ export default {
     ErrorMessage,
     LoadingSpinner
   },
-  
-  data() {
-    return {
-      statusFilter: null,
-      sortBy: 'newest',
-      currentPage: 1,
-      itemsPerPage: 5,
-      statusOptions: [
-        { title: 'All Orders', value: null },
-        { title: 'Pending', value: 'pending' },
-        { title: 'Processing', value: 'processing' },
-        { title: 'Shipped', value: 'shipped' },
-        { title: 'Delivered', value: 'delivered' },
-        { title: 'Cancelled', value: 'cancelled' }
-      ],
-      sortOptions: [
-        { title: 'Newest First', value: 'newest' },
-        { title: 'Oldest First', value: 'oldest' },
-        { title: 'Highest Total', value: 'total-desc' },
-        { title: 'Lowest Total', value: 'total-asc' }
-      ]
-    };
-  },
-  
-  computed: {
+    computed: {
+    ...mapGetters(useOrdersStore, {
+      orders: 'ordersList',
+      loading: 'loading',
+      error: 'error'
+    }),
+    ...mapGetters(useOrdersUiStore, [
+      'getStatusOptions',
+      'getSortOptions',
+      'displayedOrders',
+      'pageCount'
+    ]),
+    ...mapGetters(useAuthStore, ['hasPermission']),
+    
+    // Aliases for better readability
+    statusOptions() {
+      return this.getStatusOptions;
+    },
+    sortOptions() {
+      return this.getSortOptions;
+    },    statusFilter: {
+      get() {
+        return this.ordersUiStore.getStatusFilter;
+      },
+      set(value) {
+        this.ordersUiStore.applyFilter(value);
+      }
+    },
+    
+    sortBy: {
+      get() {
+        return this.ordersUiStore.getSortBy;
+      },
+      set(value) {
+        this.ordersUiStore.applySort(value);
+      }
+    },
+    
+    currentPage: {
+      get() {
+        return this.ordersUiStore.getCurrentPage;
+      },
+      set(value) {
+        this.ordersUiStore.currentPage = value;
+        // Scroll to top when changing page
+        window.scrollTo(0, 0);
+      }
+    },
+    
     ordersStore() {
       return useOrdersStore();
     },
     
-    authStore() {
-      return useAuthStore();
-    },
-    
-    ordersList() {
-      return this.ordersStore.ordersList;
-    },
-    
-    loading() {
-      return this.ordersStore.loading;
-    },
-    
-    error() {
-      return this.ordersStore.error;
-    },
-    
-    hasPermission() {
-      return this.authStore.hasPermission;
-    },
-    
-    orders() {
-      return this.ordersList || [];
-    },
-    
-    /**
-     * Filter and sort orders based on selected criteria
-     */
-    filteredOrders() {
-      let result = [...this.orders];
-      
-      // Apply status filter
-      if (this.statusFilter) {
-        result = result.filter(order => order.status === this.statusFilter);
-      }
-      
-      // Apply sort
-      switch (this.sortBy) {
-        case 'newest':
-          result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          break;
-        case 'oldest':
-          result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-          break;
-        case 'total-desc':
-          result.sort((a, b) => parseFloat(b.total) - parseFloat(a.total));
-          break;
-        case 'total-asc':
-          result.sort((a, b) => parseFloat(a.total) - parseFloat(b.total));
-          break;
-      }
-      
-      return result;
-    },
-    
-    /**
-     * Get orders for current page
-     */
-    displayedOrders() {
-      const start = (this.currentPage - 1) * this.itemsPerPage;
-      const end = start + this.itemsPerPage;
-      return this.filteredOrders.slice(start, end);
-    },
-    
-    /**
-     * Calculate total page count
-     */
-    pageCount() {
-      return Math.ceil(this.filteredOrders.length / this.itemsPerPage);
+    ordersUiStore() {
+      return useOrdersUiStore();
     }
   },
-  
-  watch: {
-    currentPage() {
-      // Scroll to top when changing page
-      window.scrollTo(0, 0);
-    }
-  },
-  
-  async created() {
+    async created() {
     await this.fetchOrders();
   },
   
-  methods: {
-    /**
-     * Fetch orders from API
-     */
-    async fetchOrders() {
-      try {
-        return await this.ordersStore.fetchOrders();
-      } catch (error) {
-        console.error("Failed to fetch orders:", error);
-      }
-    },
-    
-    /**
-     * Reset error state
-     */
-    clearError() {
-      this.ordersStore.clearError();
-    },
-    
-    /**
-     * Apply status filter
-     */
-    applyFilter() {
-      this.currentPage = 1; // Reset to first page when filtering
-    },
-    
-    /**
-     * Apply sorting
-     */
-    applySort() {
-      this.currentPage = 1; // Reset to first page when sorting
-    },
-    
-    /**
-     * Get appropriate color for order status
-     */
-    getStatusColor(status) {
-      const statusColors = {
-        pending: 'warning',
-        processing: 'info',
-        shipped: 'success',
-        delivered: 'primary',
-        cancelled: 'error'
-      };
-      return statusColors[status] || 'grey';
-    },
-    
-    /**
-     * Get appropriate icon for order status
-     */
-    getStatusIcon(status) {
-      const statusIcons = {
-        pending: 'mdi-clock-outline',
-        processing: 'mdi-progress-check',
-        shipped: 'mdi-truck-delivery-outline',
-        delivered: 'mdi-check-circle-outline',
-        cancelled: 'mdi-cancel'
-      };
-      return statusIcons[status] || 'mdi-help-circle-outline';
-    },
-    
-    /**
-     * Format date in user-friendly way
-     */
-    formatDate(dateString) {
-      const options = { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      };
-      return new Date(dateString).toLocaleDateString(undefined, options);
-    },
-    
-    /**
-     * Format price with 2 decimal places
-     */
-    formatPrice(price) {
-      return parseFloat(price).toFixed(2);
-    }
+  methods: {    ...mapActions(useOrdersUiStore, [
+      'fetchOrders',
+      'getStatusColor',
+      'getStatusIcon',
+      'formatDate',
+      'formatPrice',
+      'clearError'
+    ])
   }
 };
 </script>

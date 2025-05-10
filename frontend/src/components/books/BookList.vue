@@ -12,8 +12,7 @@
                 </v-toolbar-title>
                 
                 <v-spacer></v-spacer>
-                
-                <v-text-field
+                  <v-text-field
                     v-model="searchQuery"
                     prepend-inner-icon="mdi-magnify"
                     label="Search books"
@@ -24,7 +23,6 @@
                     bg-color="primary-lighten-1"
                     style="max-width: 250px;"
                     clearable
-                    @update:model-value="debounceSearch"
                 ></v-text-field>
                 
                 <v-btn
@@ -123,9 +121,7 @@
             confirm-color="error"
             icon="mdi-delete-alert"
             @confirm="handleDelete"
-        />
-
-        <!-- Feedback snackbars -->
+        />        <!-- Feedback snackbars -->
         <v-snackbar
             v-model="showSuccessSnackbar"
             color="success"
@@ -136,7 +132,7 @@
                 <v-btn
                     variant="text"
                     icon="mdi-close"
-                    @click="showSuccessSnackbar = false"
+                    @click="uiStore.closeSnackbar()"
                 ></v-btn>
             </template>
         </v-snackbar>
@@ -151,7 +147,7 @@
                 <v-btn
                     variant="text"
                     icon="mdi-close"
-                    @click="hasError = false"
+                    @click="uiStore.clearError()"
                 ></v-btn>
             </template>
         </v-snackbar>
@@ -159,12 +155,12 @@
 </template>
 
 <script>
-import { useBooksStore } from '@/stores';
-import { debounce } from 'lodash';
+import { useBooksStore, useBooksUiStore, useUiStore } from '@/stores';
+import { mapActions, mapGetters } from 'pinia';
+import ConfirmModal from '../common/ConfirmModal.vue';
 import LoadingSpinner from '../common/LoadingSpinner.vue';
 import BookCard from './BookCard.vue';
 import BookForm from './BookForm.vue';
-import ConfirmModal from '../common/ConfirmModal.vue';
 
 /**
  * Component for displaying and managing a paginated list of books
@@ -207,44 +203,43 @@ export default {
 
     data() {
         return {
-            showForm: false,
-            selectedBook: null,
-            errorMessage: null,
-            hasError: false,
-            bookToDelete: null,
-            currentPage: 1,
-            formSubmitting: false,
             searchQuery: '',
-            showSuccessSnackbar: false,
-            successMessage: '',
             windowWidth: window.innerWidth
         };
-    },
-
-    computed: {
-        booksStore() {
-            return useBooksStore();
-        },
-        
-        books() {
-            return this.booksStore.booksList || [];
-        },
+    },    computed: {
+        ...mapGetters(useBooksStore, {
+            books: 'booksList',
+            booksLoading: 'booksLoading'
+        }),
+        ...mapGetters(useBooksUiStore, [
+            'showForm', 
+            'selectedBook', 
+            'bookToDelete',
+            'formSubmitting',
+            'showDeleteDialog', 
+            'filterParams'
+        ]),
+        ...mapGetters(useUiStore, {
+            showSuccessSnackbar: 'snackbarVisible',
+            successMessage: 'snackbarMessage',
+            hasError: 'errorVisible',
+            errorMessage: 'errorMessage'
+        }),
         
         totalPages() {
             return this.booksStore.pagination?.pages || 1;
         },
         
-        booksLoading() {
-            return this.booksStore.loading;
+        booksStore() {
+            return useBooksStore();
         },
         
-        showDeleteDialog: {
-            get() {
-                return !!this.bookToDelete;
-            },
-            set(value) {
-                if (!value) this.bookToDelete = null;
-            }
+        booksUiStore() {
+            return useBooksUiStore();
+        },
+        
+        uiStore() {
+            return useUiStore();
         },
         
         /**
@@ -254,57 +249,59 @@ export default {
             return this.windowWidth < 600;
         },
         
-        /**
-         * Construct filter parameters for API calls
-         */
-        filterParams() {
-            const params = {
-                page: this.currentPage,
-                limit: this.itemsPerPage
-            };
-            
-            if (this.searchQuery) {
-                params.search = this.searchQuery;
+        currentPage: {
+            get() {
+                return this.booksUiStore.currentPage;
+            },
+            set(value) {
+                this.booksUiStore.currentPage = value;
             }
-            
-            if (this.category) {
-                params.category = this.category;
-            }
-            
-            if (this.authorId) {
-                params.author = this.authorId;
-            }
-            
-            return params;
         }
     },
 
     watch: {
-        errorMessage(val) {
-            this.hasError = !!val;
-        },
-        
-        // Reload books when filter props change
         filterParams: {
             handler() {
-                this.fetchBooks();
+                this.loadBooks();
             },
             deep: true
+        },
+        
+        searchQuery(val) {
+            this.booksUiStore.debouncedSearch(val);
+        },
+        
+        // Watch for prop changes to update store
+        category(val) {
+            this.booksUiStore.category = val;
+        },
+        
+        authorId(val) {
+            this.booksUiStore.authorId = val;
+        },
+        
+        itemsPerPage(val) {
+            this.booksUiStore.itemsPerPage = val;
         }
-    },
-
-    created() {
-        // Initialize debounced search function
-        this.debounceSearch = debounce(() => {
-            this.currentPage = 1; // Reset to page 1 on search
-            this.fetchBooks();
-        }, 500);
-        
-        // Set window resize event listener
-        window.addEventListener('resize', this.handleResize);
-        
-        // Initial data fetch
-        this.fetchBooks();
+    },    created() {
+        try {
+            // Initialize the store with props
+            this.booksUiStore.initialize({
+                category: this.category,
+                authorId: this.authorId,
+                itemsPerPage: this.itemsPerPage
+            });
+            
+            // Set up search debounce
+            this.booksUiStore.setupSearchDebounce();
+            
+            // Set window resize event listener
+            window.addEventListener('resize', this.handleResize);
+            
+            // Initial data fetch - wrapped in try/catch in loadBooks method
+            this.loadBooks();        } catch (error) {
+            this.handleError(error.message || 'An error occurred while initializing the book list');
+        }
     },
     
     beforeUnmount() {
@@ -313,19 +310,30 @@ export default {
     },
 
     methods: {
+        ...mapActions(useBooksUiStore, [
+            'openCreateForm',
+            'openEditForm',
+            'closeForm',
+            'handleFormSubmit',
+            'deleteBook',
+            'changePage',
+            'loadBooks'
+        ]),
+        
         /**
          * Track window width for responsive design
          */
         handleResize() {
             this.windowWidth = window.innerWidth;
+            // Also update the UI store
+            this.uiStore.handleWindowResize();
         },
         
         /**
          * Show success snackbar with message
          */
         showSnackbar(message) {
-            this.successMessage = message;
-            this.showSuccessSnackbar = true;
+            this.uiStore.showSnackbar({ message });
         },
         
         /**
@@ -341,102 +349,26 @@ export default {
         addToCartSuccess() {
             this.showSnackbar('Item added to cart successfully');
         },
-        
-        /**
-         * Open create book modal
-         */
-        openCreateForm() {
-            this.selectedBook = {};
-            this.showForm = true;
-        },
-
-        /**
-         * Open edit book modal
-         */
-        async openEditForm(book) {
-            this.selectedBook = { ...book };
-            this.showForm = true;
-        },
-
-        /**
-         * Close form modal
-         */
-        closeForm() {
-            this.selectedBook = null;
-            this.showForm = false;
-        },
-
-        /**
-         * Handle form submission
-         */
-        async handleFormSubmit(bookData) {
-            try {
-                this.formSubmitting = true;
-                
-                if (bookData._id) {
-                    await this.booksStore.updateBook(bookData);
-                    this.showSnackbar('Book updated successfully');
-                } else {
-                    await this.booksStore.createBook(bookData);
-                    this.showSnackbar('Book created successfully');
-                }
-                
-                await this.fetchBooks();
-                this.closeForm();
-            } catch (error) {
-                this.errorMessage = error.message || 'Failed to save book';
-            } finally {
-                this.formSubmitting = false;
-            }
-        },
 
         /**
          * Handle error display
          */
         handleError(message) {
-            this.errorMessage = message;
-        },
-
-        /**
-         * Delete book after confirmation
-         */
-        async handleDelete() {
-            if (!this.bookToDelete?._id) return;
-            
-            try {
-                await this.booksStore.deleteBook(this.bookToDelete._id);
-                this.showSnackbar(`'${this.bookToDelete.title}' was deleted successfully`);
-                this.bookToDelete = null;
-                await this.fetchBooks();
-            } catch (error) {
-                this.errorMessage = error?.message || 'Failed to delete book';
-            }
+            this.uiStore.showError(message);
         },
 
         /**
          * Show delete confirmation dialog
          */
         handleDeleteClick(book) {
-            this.bookToDelete = book;
+            this.booksUiStore.confirmDeleteBook(book);
         },
 
         /**
-         * Handle page change
+         * Handle delete after confirmation
          */
-        changePage(page) {
-            this.currentPage = page;
-            this.fetchBooks();
-        },
-
-        /**
-         * Fetch books from API with current filters
-         */
-        async fetchBooks() {
-            try {
-                await this.booksStore.fetchBooks(this.filterParams);
-            } catch (error) {
-                this.errorMessage = error.message || 'Failed to load books';
-            }
+        handleDelete() {
+            this.deleteBook();
         }
     }
 };

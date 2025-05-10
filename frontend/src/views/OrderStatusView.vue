@@ -108,8 +108,7 @@ export default {
   methods: {
     fetchOrderById(id) {
       return this.ordersStore.fetchOrderById(id)
-    },
-    async updateStatus() {
+    },    async updateStatus() {
       try {
         await this.ordersStore.updateOrderStatus({
           id: this.$route.params.id,
@@ -117,7 +116,7 @@ export default {
         })
         this.$router.push(`/orders/${this.$route.params.id}`)
       } catch (error) {
-        console.error('Failed to update order status:', error)
+        // Notification is already handled by the store
       }
     },
     getStatusColor(status) {

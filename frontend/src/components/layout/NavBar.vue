@@ -41,15 +41,14 @@
                             <v-avatar start>
                                 <v-icon icon="mdi-account-circle"></v-icon>
                             </v-avatar>
-                            {{ currentUser?.username }}
+                            <span>{{ getUserDisplayName }}</span>
                         </v-chip>
                     </template>
                     <v-list density="compact">
                         <v-list-item to="/orders" prepend-icon="mdi-package">
                             <v-list-item-title>My Orders</v-list-item-title>
                         </v-list-item>
-                        <v-divider></v-divider>
-                        <v-list-item @click="handleLogout" prepend-icon="mdi-logout">
+                        <v-divider></v-divider>                        <v-list-item @click="logout" prepend-icon="mdi-logout">
                             <v-list-item-title>Logout</v-list-item-title>
                         </v-list-item>
                     </v-list>
@@ -118,7 +117,7 @@
                                 <span class="text-white">{{ userInitials }}</span>
                             </v-avatar>
                         </template>
-                        <v-list-item-title>{{ currentUser?.username }}</v-list-item-title>
+                        <v-list-item-title>{{ getUserDisplayName }}</v-list-item-title>
                     </v-list-item>
                     
                     <v-list-item to="/orders" @click="drawer = false" prepend-icon="mdi-package">
@@ -147,7 +146,8 @@
 </template>
 
 <script>
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useAuthUiStore } from '@/stores';
+import { mapActions, mapGetters } from 'pinia';
 
 /**
  * Main navigation component for the application
@@ -167,28 +167,8 @@ export default {
                 { title: 'Contact', path: '/contact', icon: 'mdi-email', requiresAuth: false }
             ]
         }
-    },
-    computed: {
-        /**
-         * Access to auth store
-         */
-        authStore() {
-            return useAuthStore();
-        },
-        
-        /**
-         * Check if user is authenticated
-         */
-        isAuthenticated() {
-            return this.authStore.isAuthenticated;
-        },
-        
-        /**
-         * Get current user information
-         */
-        currentUser() {
-            return this.authStore.currentUser;
-        },
+    },    computed: {
+        ...mapGetters(useAuthStore, ['isAuthenticated', 'currentUser', 'hasPermission']),
         
         /**
          * Generate user initials for avatar
@@ -202,14 +182,28 @@ export default {
                 .join('')
                 .toUpperCase()
                 .substring(0, 2);
+        },
+
+        /**
+         * Get formatted user display name with role
+         */
+        getUserDisplayName() {
+            if (!this.currentUser) return 'Guest';
+            
+            const username = this.currentUser.name || this.currentUser.username || 'User';
+            const email = this.currentUser.email;
+            
+            // Отображаем email в скобках, если он доступен
+            return email ? `${username} (${email})` : username;
         }
-    },
-    methods: {
+    },    methods: {
+        ...mapActions(useAuthUiStore, ['handleLogout']),
+        
         /**
          * Handle logout action
          */
-        async handleLogout() {
-            await this.authStore.logout();
+        async logout() {
+            await this.handleLogout();
             this.$router.push('/login');
         },
         
@@ -218,7 +212,7 @@ export default {
          */
         async handleLogoutAndCloseDrawer() {
             this.drawer = false;
-            await this.handleLogout();
+            await this.logout();
         }
     }
 };

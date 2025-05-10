@@ -51,6 +51,7 @@
 
 <script>
 import { useAuthStore } from '@/stores';
+import { mapGetters } from 'pinia';
 
 export default {
     name: 'AuthorListItem',
@@ -65,20 +66,22 @@ export default {
     emits: ['click', 'edit', 'delete'],
 
     computed: {
+        ...mapGetters(useAuthStore, ['hasPermission']),
+        
+        // For convenient template access, maintaining the previous naming convention
         authStore() {
-            return useAuthStore();
+            return {
+                hasPermission: this.hasPermission
+            };
         },
     },
 
     methods: {
         handleClick() {
             this.$emit('click');
-        },
-
-        handleDelete() {
+        },        handleDelete() {
             const authorId = this.author._id;
             if (!authorId) {
-                console.error('No author ID available:', this.author);
                 return;
             }
             this.$emit('delete', authorId);

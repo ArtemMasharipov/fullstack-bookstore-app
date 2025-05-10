@@ -1,64 +1,130 @@
-import { authorsApi } from '@/api/authorsApi'
-import { defineStore } from 'pinia'
-import { handleAsyncAction } from './utils/stateHelpers'
+import { authorsApi } from '@/api/authorsApi';
+import { useNotificationStore } from './notification';
+import { handleAsyncAction } from './utils/stateHelpers';
+import { createBaseStore } from './utils/storeFactory';
 
-export const useAuthorsStore = defineStore('authors', {
-  state: () => ({
-    list: [],
-    current: null,
-    loading: false,
-    error: null
+/**
+ * Authors store using the base store factory
+ * - Uses shared logic from the factory to eliminate code duplication
+ */
+export const useAuthorsStore = createBaseStore({
+  id: 'authors',
+  api: authorsApi,
+  
+  // Custom state specific to authors store
+  customState: () => ({
+    // Map to maintain API compatibility with existing components
+    list: [] // This will be synced with 'items' in the base store
   }),
   
-  getters: {
-    authorsList: (state) => state.list,
+  // Custom getters specific to authors store
+  customGetters: {
+    // Map base store getters to author-specific names for API compatibility
+    authorsList: (state) => state.list || state.items,
     currentAuthor: (state) => state.current,
     authorsLoading: (state) => state.loading,
     authorsError: (state) => state.error
   },
   
-  actions: {
+  // Custom actions specific to authors store
+  customActions: {
+    /**
+     * Fetch all authors
+     */
     async fetchAuthors() {
-      return handleAsyncAction(this, async () => {
-        const authors = await authorsApi.fetchAll()
-        this.list = authors
-        return authors
-      })
+      // Use the base fetchAll method but update our list property
+      const authors = await this.fetchAll();
+      this.list = authors; // Keep list in sync with items
+      return authors;
     },
     
+    /**
+     * Fetch author by ID
+     * @param {string} id - Author ID
+     */
     async fetchAuthorById(id) {
-      return handleAsyncAction(this, async () => {
-        const author = await authorsApi.fetchById(id)
-        this.current = author
-        return author
-      })
+      const author = await this.fetchById(id);
+      return author;
     },
-    
+      /**
+     * Create a new author
+     * @param {Object} authorData - Author data
+     */
     async createAuthor(authorData) {
+      const notificationStore = useNotificationStore();
+      
       return handleAsyncAction(this, async () => {
-        const newAuthor = await authorsApi.create(authorData)
-        this.list.push(newAuthor)
-        return newAuthor
-      })
-    },
-    
-    async updateAuthor(authorData) {
-      return handleAsyncAction(this, async () => {
-        const updatedAuthor = await authorsApi.update(authorData._id, authorData)
-        const index = this.list.findIndex((author) => author._id === updatedAuthor._id)
-        if (index !== -1) {
-          this.list.splice(index, 1, updatedAuthor)
+        try {
+          const author = await this.create(authorData);
+          // Ensure list stays in sync with items
+          this.list = [...this.items];
+          
+          const authorName = authorData.name || 'Author';
+          notificationStore.success(`Author "${authorName}" created successfully`);
+          
+          return author;
+        } catch (error) {
+          notificationStore.error(`Failed to create author: ${error.message}`);
+          throw error;
         }
-        return updatedAuthor
-      })
+      });
     },
-    
-    async deleteAuthor(authorId) {
+      /**
+     * Update an existing author
+     * @param {Object} authorData - Author data with ID
+     */
+    async updateAuthor(authorData) {
+      const notificationStore = useNotificationStore();
+      
       return handleAsyncAction(this, async () => {
-        await authorsApi.delete(authorId)
-        this.list = this.list.filter((author) => author._id !== authorId)
-        return true
-      })
+        try {
+          if (!authorData || (!authorData._id && !authorData.id)) {
+            throw new Error('Author ID is required for update');
+          }
+          
+          const id = authorData._id || authorData.id;
+          const author = await this.update(id, authorData);
+          // Ensure list stays in sync with items
+          this.list = [...this.items];
+          
+          const authorName = authorData.name || author.name || 'Author';
+          notificationStore.success(`Author "${authorName}" updated successfully`);
+          
+          return author;
+        } catch (error) {
+          notificationStore.error(`Failed to update author: ${error.message}`);
+          throw error;
+        }
+      });
+    },
+      /**
+     * Delete an author
+     * @param {string} authorId - Author ID
+     * @param {string} authorName - Author name for notification (optional)
+     */
+    async deleteAuthor(authorId, authorName = 'Author') {
+      const notificationStore = useNotificationStore();
+      
+      return handleAsyncAction(this, async () => {
+        try {
+          // If authorName wasn't provided but we have the current author details, use that
+          let displayName = authorName;
+          if (displayName === 'Author' && this.current && 
+             (this.current.id === authorId || this.current._id === authorId)) {
+            displayName = this.current.name || 'Author';
+          }
+          
+          const result = await this.delete(authorId);
+          // Ensure list stays in sync with items
+          this.list = [...this.items];
+          
+          notificationStore.info(`Author "${displayName}" deleted successfully`);
+          return result;
+        } catch (error) {
+          notificationStore.error(`Failed to delete author: ${error.message}`);
+          throw error;
+        }
+      });
     }
   }
-})
+});

@@ -1,61 +1,128 @@
-import { usersApi } from '@/api/usersApi'
-import { defineStore } from 'pinia'
-import { handleAsyncAction } from './utils/stateHelpers'
+import { usersApi } from '@/api/usersApi';
+import { useNotificationStore } from './notification';
+import { handleAsyncAction } from './utils/stateHelpers';
+import { createBaseStore } from './utils/storeFactory';
 
-export const useUsersStore = defineStore('users', {
-  state: () => ({
-    list: [],
-    current: null,
-    loading: false,
-    error: null
+/**
+ * Users store using the base store factory
+ * - Uses shared logic from the factory to eliminate code duplication
+ * - Preserves specific user store functionality
+ */
+export const useUsersStore = createBaseStore({
+  id: 'users',
+  api: usersApi,
+  
+  // Custom state specific to users store
+  customState: () => ({
+    // Map to maintain API compatibility with existing components
+    list: [] // This will be synced with 'items' in the base store
   }),
   
-  getters: {
-    usersList: (state) => state.list,
+  // Custom getters specific to users store
+  customGetters: {
+    // Map base store getters to user-specific names for API compatibility
+    usersList: (state) => state.list || state.items,
     currentUser: (state) => state.current,
     usersLoading: (state) => state.loading,
     usersError: (state) => state.error,
-    getUserById: (state) => (id) => state.list.find((user) => user.id === id)
+    
+    // Custom getter that is specific to this store
+    getUserById: (state) => (id) => (state.list || state.items).find((user) => user.id === id)
   },
   
-  actions: {
+  // Custom actions specific to users store
+  customActions: {
+    /**
+     * Fetch all users
+     */
     async fetchUsers() {
-      return handleAsyncAction(this, async () => {
-        const users = await usersApi.fetchAll()
-        this.list = users
-        return users
-      })
+      const users = await this.fetchAll();
+      this.list = users; // Keep list in sync with items
+      return users;
     },
     
+    /**
+     * Fetch user by ID
+     * @param {string} id - User ID
+     */
     async fetchUserById(id) {
-      return handleAsyncAction(this, async () => {
-        const user = await usersApi.fetchById(id)
-        this.current = user
-        return user
-      })
+      return this.fetchById(id);
     },
-    
+      /**
+     * Create a new user
+     * @param {Object} userData - User data
+     */
     async createUser(userData) {
+      const notificationStore = useNotificationStore();
+      
       return handleAsyncAction(this, async () => {
-        const user = await usersApi.create(userData)
-        this.current = user
-        return user
-      })
+        try {
+          const user = await this.create(userData);
+          // Ensure list stays in sync with items
+          this.list = [...this.items];
+          
+          const userName = userData.name || userData.username || 'User';
+          notificationStore.success(`User "${userName}" created successfully`);
+          
+          return user;
+        } catch (error) {
+          notificationStore.error(`Failed to create user: ${error.message}`);
+          throw error;
+        }
+      });
     },
-    
+      /**
+     * Update an existing user
+     * @param {Object} params - Parameters object
+     * @param {string} params.id - User ID
+     * @param {Object} params.userData - Updated user data
+     */
     async updateUser({ id, userData }) {
+      const notificationStore = useNotificationStore();
+      
       return handleAsyncAction(this, async () => {
-        const user = await usersApi.update(id, userData)
-        this.current = user
-        return user
-      })
+        try {
+          const user = await this.update(id, userData);
+          // Ensure list stays in sync with items
+          this.list = [...this.items];
+          
+          const userName = userData.name || userData.username || user.name || user.username || 'User';
+          notificationStore.success(`User "${userName}" updated successfully`);
+          
+          return user;
+        } catch (error) {
+          notificationStore.error(`Failed to update user: ${error.message}`);
+          throw error;
+        }
+      });
     },
-    
-    async deleteUser(id) {
+      /**
+     * Delete a user
+     * @param {string} id - User ID
+     * @param {string} userName - User name for notification (optional)
+     */
+    async deleteUser(id, userName = 'User') {
+      const notificationStore = useNotificationStore();
+      
       return handleAsyncAction(this, async () => {
-        await usersApi.delete(id)
-        this.current = null
-      })
+        try {
+          // If userName wasn't provided but we have the current user details, use that
+          let displayName = userName;
+          if (displayName === 'User' && this.current && this.current.id === id) {
+            displayName = this.current.name || this.current.username || 'User';
+          }
+          
+          const result = await this.delete(id);
+          // Ensure list stays in sync with items
+          this.list = [...this.items];
+          
+          notificationStore.info(`User "${displayName}" deleted successfully`);
+          return result;
+        } catch (error) {
+          notificationStore.error(`Failed to delete user: ${error.message}`);
+          throw error;
+        }
+      });
     }
   }
-})
+});

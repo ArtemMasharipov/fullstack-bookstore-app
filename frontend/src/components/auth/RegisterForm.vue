@@ -56,7 +56,8 @@
 </template>
 
 <script>
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useAuthUiStore } from '@/stores';
+import { mapActions, mapGetters } from 'pinia';
 
 export default {
     name: 'RegisterForm',
@@ -69,28 +70,27 @@ export default {
         };
     },
     computed: {
-        authStore() {
-            return useAuthStore();
-        },
-        authLoading() {
-            return this.authStore.loading;
-        },
-        authError() {
-            return this.authStore.error;
-        }
+        ...mapGetters(useAuthStore, {
+            authLoading: 'loading',
+            authError: 'error',
+        })
     },
     methods: {
+        ...mapActions(useAuthUiStore, ['handleRegister', 'clearError']),
+        
         async handleSubmit() {
-            try {
-                await this.authStore.register({
-                    username: this.username,
-                    email: this.email,
-                    password: this.password,
-                    confirmPassword: this.confirmPassword,
-                });
+            // Clear any previous errors
+            this.clearError();
+            
+            const success = await this.handleRegister({
+                username: this.username,
+                email: this.email,
+                password: this.password,
+                confirmPassword: this.confirmPassword,
+            });
+            
+            if (success) {
                 this.$router.push('/');
-            } catch (error) {
-                console.error('Registration error:', error.response ? error.response.data : error.message);
             }
         }
     }

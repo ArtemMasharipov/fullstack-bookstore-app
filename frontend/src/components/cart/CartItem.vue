@@ -75,6 +75,7 @@
 import placeholderImage from '@/assets/images/placeholder.png';
 import { useCartStore } from '@/stores';
 import { debounce } from 'lodash';
+import { mapActions } from 'pinia';
 import ConfirmModal from '../common/ConfirmModal.vue';
 
 /**
@@ -106,9 +107,6 @@ export default {
     },
     
     computed: {
-        cartStore() {
-            return useCartStore();
-        },
         bookTitle() {
             const { title = 'Unknown Book' } = this.item.bookId || {};
             return title;
@@ -125,8 +123,9 @@ export default {
         // Initialize debounced quantity update function
         this.updateQuantity = debounce(this.handleQuantityChange, 300);
     },
-    
-    methods: {
+      methods: {
+        ...mapActions(useCartStore, ['removeFromCart', 'updateQuantity']),
+        
         /**
          * Show confirmation dialog before removing item
          */
@@ -142,7 +141,7 @@ export default {
             
             this.removing = true;
             try {
-                await this.cartStore.removeFromCart(this.item._id);
+                await this.removeFromCart(this.item._id);
             } catch (error) {
                 this.$emit('error', error.message);
             } finally {
@@ -168,7 +167,7 @@ export default {
                 quantity 
             });
             
-            this.cartStore.updateQuantity({ 
+            this.updateQuantity({ 
                 bookId: this.item.bookId._id, 
                 quantity 
             }).catch(error => {

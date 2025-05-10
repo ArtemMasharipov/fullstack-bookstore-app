@@ -77,8 +77,7 @@
         </v-alert>
       </v-card-text>
     </v-card>
-    
-    <v-dialog v-model="showConfirmDialog" max-width="400">
+      <v-dialog v-model="showConfirmDialog" max-width="400">
       <v-card>
         <v-card-title>Delete User</v-card-title>
         <v-card-text>
@@ -86,7 +85,7 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="grey" variant="text" @click="showConfirmDialog = false">Cancel</v-btn>
+          <v-btn color="grey" variant="text" @click="cancelDelete">Cancel</v-btn>
           <v-btn color="error" @click="performDelete">Delete</v-btn>
         </v-card-actions>
       </v-card>
@@ -95,65 +94,37 @@
 </template>
 
 <script>
-import { useAuthStore, useUsersStore } from '@/stores'
+import { useAuthStore, useUsersStore, useUsersUiStore } from '@/stores';
+import { mapActions } from 'pinia';
 
 export default {
   name: 'UserManagement',
-  data() {
-    return {
-      showConfirmDialog: false,
-      userToDelete: null
-    }
+    computed: {
+    ...mapGetters(useUsersStore, {
+      users: 'usersList',
+      loading: 'usersLoading',
+      error: 'usersError'
+    }),
+    ...mapGetters(useAuthStore, ['isAuthenticated', 'isAdmin']),
+    ...mapGetters(useUsersUiStore, {
+      showConfirmDialog: 'getShowConfirmDialog',
+      userToDelete: 'getUserToDelete'
+    })
   },
-  computed: {
-    usersStore() {
-      return useUsersStore()
-    },
-    authStore() {
-      return useAuthStore()
-    },
-    usersList() {
-      return this.usersStore.usersList
-    },
-    usersLoading() {
-      return this.usersStore.usersLoading
-    },
-    usersError() {
-      return this.usersStore.usersError
-    },
-    isAdmin() {
-      return this.authStore.isAdmin
-    },
-    users() {
-      return this.usersList
-    },
-    loading() {
-      return this.usersLoading
-    },
-    error() {
-      return this.usersError
-    }
-  },
+  
   created() {
     if (this.isAdmin) {
       this.fetchUsers()
     }
   },
+  
   methods: {
-    fetchUsers() {
-      return this.usersStore.fetchUsers()
-    },
-    confirmDelete(user) {
-      this.userToDelete = user;
-      this.showConfirmDialog = true;
-    },
-    async performDelete() {
-      if (this.userToDelete && this.userToDelete.id) {
-        await this.usersStore.deleteUser(this.userToDelete.id);
-        this.showConfirmDialog = false;
-        this.userToDelete = null;
-      }
-    }
+    ...mapActions(useUsersUiStore, [
+      'fetchUsers',
+      'confirmDelete',
+      'cancelDelete',
+      'performDelete'
+    ])
   }
 }
 </script>

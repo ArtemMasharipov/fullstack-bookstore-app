@@ -111,8 +111,7 @@ export default {
     }
   },
   methods: {
-    async submitOrder() {
-      try {
+    async submitOrder() {      try {
         const order = await this.ordersStore.createOrder({
           ...this.orderData,
           items: this.cartItems,
@@ -120,7 +119,7 @@ export default {
         })
         this.$router.push(`/orders/${order._id}`)
       } catch (error) {
-        console.error('Failed to create order:', error)
+        // Notification is already handled by the store
       }
     }
   }

@@ -75,6 +75,7 @@
 
 <script>
 import { useAuthStore, useCartStore } from '@/stores';
+import { mapGetters } from 'pinia';
 import ErrorMessage from '../common/ErrorMessage.vue';
 import LoadingSpinner from '../common/LoadingSpinner.vue';
 import CartItem from './CartItem.vue';
@@ -89,51 +90,40 @@ export default {
     },
 
     computed: {
+        ...mapGetters(useCartStore, {
+            cartItems: 'cartItems',
+            cartLoading: 'loading',
+            cartError: 'error',
+            cartTotal: 'cartTotal',
+            itemCount: 'itemCount'
+        }),
+        ...mapGetters(useAuthStore, ['isAuthenticated']),
+        
+        // Store instances for methods that might need them
         cartStore() {
             return useCartStore();
         },
         authStore() {
             return useAuthStore();
-        },
-        cartItems() {
-            return this.cartStore.cartItems;
-        },
-        cartLoading() {
-            return this.cartStore.loading;
-        },
-        cartError() {
-            return this.cartStore.error;
-        },
-        cartTotal() {
-            return this.cartStore.cartTotal;
-        },
-        itemCount() {
-            return this.cartStore.itemCount;
-        },
-        isAuthenticated() {
-            return this.authStore.isAuthenticated;
         }
     },
 
     watch: {
-        isAuthenticated: {
-            immediate: true,
+        isAuthenticated: {            immediate: true,
             async handler(newVal) {
                 if (newVal) {
                     try {
                         await this.fetchCart();
                     } catch (error) {
-                        console.error('Error fetching cart on auth change:', error);
+                        // Error is already handled by the store
                     }
                 }
             },
         },
-    },
-
-    created() {
+    },    created() {
         if (this.isAuthenticated) {
-            this.fetchCart().catch(error => {
-                console.error('Error initializing cart in created hook:', error);
+            this.fetchCart().catch(() => {
+                // Error is already handled by the store
             });
         }
     },

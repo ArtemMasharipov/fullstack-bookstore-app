@@ -19,9 +19,9 @@
         </v-card-item>
                 
         <v-divider class="mb-3"></v-divider>
-        
-        <author-form
+          <author-form
             v-if="showForm"
+            v-model="showForm"
             :initial-data="selectedAuthor"
             :loading="loading"
             @submit="handleFormSubmit"
@@ -46,9 +46,8 @@
                 @click="handleAuthorClick(author._id)"
             />
         </v-card-text>
-        
-        <v-card-text v-if="error" class="px-0">
-            <error-message :message="error" @close="error = null" />
+          <v-card-text v-if="error" class="px-0">
+            <error-message :message="error" @close="clearError" />
         </v-card-text>
         
         <base-modal v-model="showDeleteConfirm" size="small">
@@ -65,7 +64,8 @@
 </template>
 
 <script>
-import { useAuthorsStore } from '@/stores'
+import { useAuthorsStore, useAuthorsUiStore } from '@/stores'
+import { mapActions, mapGetters } from 'pinia'
 import BaseModal from '../common/BaseModal.vue'
 import ConfirmModal from '../common/ConfirmModal.vue'
 import ErrorMessage from '../common/ErrorMessage.vue'
@@ -86,24 +86,31 @@ export default {
     },
     
     emits: ['author-click'],
-    
-    data() {
-        return {
-            showForm: false,
-            selectedAuthor: null,
-            loading: false,
-            error: null,
-            showDeleteConfirm: false,
-            authorToDelete: null,
-        }
-    },
-    
-    computed: {
-        authorsStore() {
-            return useAuthorsStore();
+      computed: {
+        ...mapGetters(useAuthorsStore, {
+            authors: 'authorsList',
+            loading: 'authorsLoading',
+            error: 'authorsError'
+        }),
+        ...mapGetters(useAuthorsUiStore, [
+            'getShowForm',
+            'getSelectedAuthor',
+            'getShowDeleteConfirm',
+            'getAuthorToDelete'
+        ]),
+        
+        // Aliases for better readability
+        showForm() {
+            return this.getShowForm;
         },
-        authors() {
-            return this.authorsStore.authorsList || [];
+        selectedAuthor() {
+            return this.getSelectedAuthor;
+        },
+        showDeleteConfirm() {
+            return this.getShowDeleteConfirm;
+        },
+        authorToDelete() {
+            return this.getAuthorToDelete;
         }
     },
     
@@ -112,70 +119,21 @@ export default {
     },
     
     methods: {
-        async fetchAuthors() {
-            await this.authorsStore.fetchAuthors();
-        },
-        
-        async handleAction(action, ...args) {
-            this.error = null;
-            this.loading = true;
-            try {
-                await action(...args);
-                await this.fetchAuthors();
-                this.closeForm();
-            } catch (error) {
-                this.error = error.message;
-                console.error(`Action failed:`, error);
-            } finally {
-                this.loading = false;
-            }
-        },
-        
-        openCreateForm() {
-            this.selectedAuthor = { _id: null, name: '', biography: '' };
-            this.showForm = true;
-        },
-        
-        openEditForm(author) {
-            this.selectedAuthor = { ...author };
-            this.showForm = true;
-        },
-        
-        closeForm() {
-            this.showForm = false;
-            this.selectedAuthor = null;
-            this.error = null;
-        },
-        
-        handleFormSubmit(formData) {
-            const action = formData._id 
-                ? (data) => this.authorsStore.updateAuthor(data)
-                : (data) => this.authorsStore.createAuthor(data);
-            
-            this.handleAction(action, formData);
-        },
-        
-        handleDelete(authorId) {
-            this.authorToDelete = authorId;
-            this.showDeleteConfirm = true;
-        },
-        
-        async confirmDelete() {
-            await this.handleAction(
-                (id) => this.authorsStore.deleteAuthor(id), 
-                this.authorToDelete
-            );
-            this.showDeleteConfirm = false;
-            this.authorToDelete = null;
-        },
-        
-        cancelDelete() {
-            this.showDeleteConfirm = false;
-            this.authorToDelete = null;
-        },
-
-        handleAuthorClick(authorId) {
+        ...mapActions(useAuthorsUiStore, [
+            'fetchAuthors',
+            'openCreateForm',
+            'openEditForm',
+            'closeForm',
+            'handleFormSubmit',
+            'handleDelete',
+            'confirmDelete',
+            'cancelDelete'
+        ]),        handleAuthorClick(authorId) {
             this.$emit('author-click', authorId);
+        },
+          clearError() {
+            const authorsStore = useAuthorsStore();
+            authorsStore.clearError();
         },
     },
 }

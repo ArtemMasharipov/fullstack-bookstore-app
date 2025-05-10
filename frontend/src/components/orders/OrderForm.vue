@@ -63,14 +63,13 @@ export default {
         }
     },
     methods: {
-        async handleSubmit() {
-            try {
+        async handleSubmit() {            try {
                 await this.ordersStore.createOrder({
                     shippingAddress: { ...this.form }
                 })
                 this.$router.push('/orders')
             } catch (error) {
-                console.error('Order creation failed:', error)
+                // Notification is already handled by the store
             }
         }
     }

@@ -66,7 +66,8 @@
 </template>
 
 <script>
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useAuthUiStore } from '@/stores';
+import { mapActions, mapGetters } from 'pinia';
 
 export default {
     name: 'LoginForm',
@@ -77,38 +78,35 @@ export default {
         };
     },
     computed: {
-        authStore() {
-            return useAuthStore();
-        },
-        authLoading() {
-            return this.authStore.loading;
-        },
-        authError() {
-            return this.authStore.error;
-        },
-        isAuthenticated() {
-            return this.authStore.isAuthenticated;
-        }
+        ...mapGetters(useAuthStore, {
+            authLoading: 'loading',
+            authError: 'error',
+            isAuthenticated: 'isAuthenticated',
+            currentUser: 'currentUser'
+        })
     },
     methods: {
-        async handleSubmit() {
-            try {
-                // Clear any previous errors
-                this.authStore.$patch({ error: null });
-                
-                // Attempt login
-                await this.authStore.login({ email: this.email, password: this.password });
-                
-                // If successfully authenticated, redirect to home page
-                if (this.isAuthenticated) {
-                    console.log('User logged in:', this.authStore.currentUser);
+        ...mapActions(useAuthUiStore, ['handleLogin', 'clearError']),
+          async handleSubmit() {
+            // Clear any previous errors
+            this.clearError();
+            
+            // Attempt login
+            const success = await this.handleLogin({ 
+                email: this.email, 
+                password: this.password 
+            });
+              // If successfully authenticated, redirect to saved path or home page
+            if (success && this.isAuthenticated) {
+                // Check for a saved redirect path
+                const redirectPath = localStorage.getItem('redirectPath');
+                if (redirectPath) {
+                    // Clear the saved path before redirecting
+                    localStorage.removeItem('redirectPath');
+                    this.$router.push(redirectPath);
+                } else {
                     this.$router.push('/');
                 }
-            } catch (error) {
-                // Error is already set in the store, but we log it here for debugging
-                console.error('Login error:', error.message);
-                
-                // No need to manually set error as it's already handled in the auth store
             }
         }
     }
