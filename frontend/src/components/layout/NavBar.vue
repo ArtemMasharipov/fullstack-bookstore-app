@@ -13,21 +13,36 @@
             </router-link>
         </v-app-bar-title>
 
-        <v-spacer></v-spacer>
-
-        <!-- Desktop navigation menu -->
+        <v-spacer></v-spacer>        <!-- Desktop navigation menu -->
         <nav class="d-none d-md-flex align-center">
-            <v-btn 
-                v-for="item in navigationItems" 
-                :key="item.path"
-                :to="item.path" 
-                variant="text" 
-                class="text-white"
-                :prepend-icon="item.icon"
-                :disabled="item.requiresAuth && !isAuthenticated"
-            >
-                {{ item.title }}
-            </v-btn>
+            <template v-for="item in navigationItems" :key="item.path">
+                <v-btn 
+                    :to="item.path" 
+                    variant="text" 
+                    class="text-white"
+                    :prepend-icon="item.icon"
+                    :disabled="item.requiresAuth && !isAuthenticated"
+                >                    {{ item.title }}                    <v-tooltip
+                        v-if="item.path === '/cart' && cartBadgeContent > 0"
+                        activator="parent"
+                        location="bottom"
+                    >
+                        {{ totalQuantity === itemCount 
+                            ? `${cartBadgeContent} item${cartBadgeContent > 1 ? 's' : ''} in cart` 
+                            : `${itemCount} item${itemCount > 1 ? 's' : ''} (${totalQuantity} total) in cart` 
+                        }}
+                    </v-tooltip>                    <v-badge
+                        v-if="item.path === '/cart' && cartBadgeContent > 0"
+                        :content="cartBadgeContent"
+                        color="error"
+                        floating
+                        dot-size="8"
+                        offset-x="2"
+                        offset-y="2"
+                        class="cart-badge"
+                    ></v-badge>
+                </v-btn>
+            </template>
             
             <template v-if="isAuthenticated">
                 <v-menu transition="slide-y-transition" open-on-hover>
@@ -44,11 +59,17 @@
                             <span>{{ getUserDisplayName }}</span>
                         </v-chip>
                     </template>
-                    <v-list density="compact">
-                        <v-list-item to="/orders" prepend-icon="mdi-package">
+                    <v-list density="compact">                        <v-list-item to="/orders" prepend-icon="mdi-package">
                             <v-list-item-title>My Orders</v-list-item-title>
+                        </v-list-item>                        <v-list-item 
+                            v-if="authStore.hasPermission('admin:access')" 
+                            to="/admin" 
+                            prepend-icon="mdi-shield-account"
+                        >
+                            <v-list-item-title>Admin Panel</v-list-item-title>
                         </v-list-item>
-                        <v-divider></v-divider>                        <v-list-item @click="logout" prepend-icon="mdi-logout">
+                        <v-divider></v-divider>
+                        <v-list-item @click="logout" prepend-icon="mdi-logout">
                             <v-list-item-title>Logout</v-list-item-title>
                         </v-list-item>
                     </v-list>
@@ -92,9 +113,7 @@
                 </template>
             </v-list-item>
 
-            <v-divider></v-divider>
-
-            <v-list nav>
+            <v-divider></v-divider>            <v-list nav>
                 <v-list-item 
                     v-for="item in navigationItems" 
                     :key="item.path"
@@ -102,8 +121,25 @@
                     :prepend-icon="item.icon"
                     :disabled="item.requiresAuth && !isAuthenticated"
                     @click="drawer = false"
-                >
-                    <v-list-item-title>{{ item.title }}</v-list-item-title>
+                >                    <v-list-item-title>
+                        {{ item.title }}
+                        <v-tooltip
+                            v-if="item.path === '/cart' && cartBadgeContent > 0"
+                            activator="parent"
+                            location="end"
+                        >
+                            {{ totalQuantity === itemCount 
+                                ? `${cartBadgeContent} item${cartBadgeContent > 1 ? 's' : ''} in cart` 
+                                : `${itemCount} item${itemCount > 1 ? 's' : ''} (${totalQuantity} total) in cart` 
+                            }}
+                        </v-tooltip>                        <v-badge
+                            v-if="item.path === '/cart' && cartBadgeContent > 0"
+                            :content="cartBadgeContent"
+                            color="error"
+                            inline
+                            class="ml-2 cart-badge"
+                        ></v-badge>
+                    </v-list-item-title>
                 </v-list-item>
 
                 <v-divider class="my-2"></v-divider>
@@ -119,9 +155,16 @@
                         </template>
                         <v-list-item-title>{{ getUserDisplayName }}</v-list-item-title>
                     </v-list-item>
-                    
-                    <v-list-item to="/orders" @click="drawer = false" prepend-icon="mdi-package">
+                      <v-list-item to="/orders" @click="drawer = false" prepend-icon="mdi-package">
                         <v-list-item-title>My Orders</v-list-item-title>
+                    </v-list-item>
+                      <v-list-item 
+                        v-if="authStore.hasPermission('admin:access')" 
+                        to="/admin" 
+                        @click="drawer = false"
+                        prepend-icon="mdi-shield-account"
+                    >
+                        <v-list-item-title>Admin Panel</v-list-item-title>
                     </v-list-item>
                     
                     <v-list-item @click="handleLogoutAndCloseDrawer" prepend-icon="mdi-logout">
@@ -146,7 +189,7 @@
 </template>
 
 <script>
-import { useAuthStore, useAuthUiStore } from '@/stores';
+import { useAuthStore, useAuthUiStore, useCartStore } from '@/stores';
 import { mapActions, mapGetters } from 'pinia';
 
 /**
@@ -166,9 +209,23 @@ export default {
                 { title: 'About', path: '/about', icon: 'mdi-information', requiresAuth: false },
                 { title: 'Contact', path: '/contact', icon: 'mdi-email', requiresAuth: false }
             ]
-        }
-    },    computed: {
-        ...mapGetters(useAuthStore, ['isAuthenticated', 'currentUser', 'hasPermission']),
+        }    },    
+    computed: {
+        ...mapGetters(useAuthStore, ['isAuthenticated', 'currentUser']),
+        ...mapGetters(useCartStore, ['itemCount', 'totalQuantity']),
+        
+        authStore() {
+            return useAuthStore();
+        },
+          /**
+         * Get cart badge content - either unique items count or total quantity
+         * Uses unique item count as default, or total quantity if showTotalQuantity is true
+         */
+        cartBadgeContent() {
+            // Could be configurable through user preferences or app settings
+            const showTotalQty = false; // Set to true to show total quantity instead of unique items
+            return showTotalQty ? this.totalQuantity : this.itemCount;
+        },
         
         /**
          * Generate user initials for avatar
@@ -195,9 +252,23 @@ export default {
             
             // Отображаем email в скобках, если он доступен
             return email ? `${username} (${email})` : username;
+        }    },    watch: {
+        // Update cart count when route changes
+        '$route.path': {
+            handler(newPath) {
+                // Always refresh cart data when navigating between pages
+                // This ensures the cart badge is always up-to-date
+                this.fetchCart();
+            }
         }
-    },    methods: {
+    },
+      created() {
+        // Fetch cart items to display accurate count
+        this.fetchCart();
+    },
+      methods: {
         ...mapActions(useAuthUiStore, ['handleLogout']),
+        ...mapActions(useCartStore, ['fetchCart']),
         
         /**
          * Handle logout action
@@ -217,3 +288,22 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+.cart-badge :deep(.v-badge__content) {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: pulse 1s;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+</style>

@@ -164,9 +164,8 @@
             >
               View Details
             </v-btn>
-            
-            <v-btn
-              v-if="hasPermission('update:order')"
+              <v-btn
+              v-if="authStore && authStore.hasPermission('update:order')"
               color="warning"
               variant="text"
               :to="`/orders/${order._id}/status`"
@@ -219,7 +218,9 @@ export default {
       'displayedOrders',
       'pageCount'
     ]),
-    ...mapGetters(useAuthStore, ['hasPermission']),
+    authStore() {
+      return useAuthStore();
+    },
     
     // Aliases for better readability
     statusOptions() {

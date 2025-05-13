@@ -1,6 +1,6 @@
 import { cartApi } from '@/api/cartApi'
 import { useAuthStore } from './auth'
-import { useNotificationStore } from './notification'
+import { toast } from '.'
 import { handleAsyncAction } from './utils/stateHelpers'
 import { createBaseStore } from './utils/storeFactory'
 
@@ -32,13 +32,18 @@ export const useCartStore = createBaseStore({
       price: Number(price)
     })),
     cartLoading: (state) => state.loading,
-    cartError: (state) => state.error,
-    cartTotal: (state) => {
+    cartError: (state) => state.error,    cartTotal: (state) => {
       return state.items.reduce((total, item) => {
         return total + item.price * item.quantity
       }, 0)
     },
-    itemCount: (state) => state.items.length
+    itemCount: (state) => state.items.length,
+    /**
+     * Total quantity of all items in the cart
+     */
+    totalQuantity: (state) => {
+      return state.items.reduce((total, item) => total + (Number(item.quantity) || 1), 0)
+    }
   },
   
   // Custom actions specific to cart store
@@ -61,7 +66,6 @@ export const useCartStore = createBaseStore({
      * @param {string} item.title - Book title (optional)
      */
     async addToCart({ bookId, quantity, price, title = 'Book' }) {
-      const notificationStore = useNotificationStore();
       
       return handleAsyncAction(this, async () => {
         try {
@@ -89,15 +93,13 @@ export const useCartStore = createBaseStore({
      * @param {string} title - Book title (optional)
      */
     async removeFromCart(itemId, title = 'Item') {
-      const notificationStore = useNotificationStore();
-      
       return handleAsyncAction(this, async () => {
         try {
           const response = await cartApi.removeFromCart(itemId);
           this.setItems(response.items);
-          notificationStore.info(`"${title}" removed from cart`);
+          toast.info(`"${title}" removed from cart`);
         } catch (error) {
-          notificationStore.error(`Failed to remove "${title}" from cart: ${error.message}`);
+          toast.error(`Failed to remove "${title}" from cart: ${error.message}`);
           throw error;
         }
       });
@@ -110,7 +112,6 @@ export const useCartStore = createBaseStore({
      * @param {string} payload.title - Book title (optional)
      */
     async updateQuantity(payload) {
-      const notificationStore = useNotificationStore();
       const { title = 'Item' } = payload;
       
       return handleAsyncAction(this, async () => {
@@ -126,9 +127,9 @@ export const useCartStore = createBaseStore({
             // Local cart
             this.updateLocalQuantity(payload);
           }
-          notificationStore.info(`"${title}" quantity updated to ${payload.quantity}`);
+          toast.info(`"${title}" quantity updated to ${payload.quantity}`);
         } catch (error) {
-          notificationStore.error(`Failed to update quantity: ${error.message}`);
+          toast.error(`Failed to update quantity: ${error.message}`);
           throw error;
         }
       });
@@ -137,7 +138,6 @@ export const useCartStore = createBaseStore({
      * Clear the cart
      */
     async clearCart() {
-      const notificationStore = useNotificationStore();
       
       return handleAsyncAction(this, async () => {
         try {

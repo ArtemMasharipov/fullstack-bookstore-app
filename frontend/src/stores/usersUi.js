@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { useUiStore } from './ui'
 import { useUsersStore } from './users'
+import { toast } from '.'
 
 /**
  * Store for managing Users UI state and interactions
@@ -33,9 +34,8 @@ export const useUsersUiStore = defineStore('usersUi', {
         return await usersStore.fetchUsers()
       } catch (error) {
         // Don't show auth errors since they're handled by the API interceptor
-        const uiStore = useUiStore()
         if (error.status !== 401) {
-          uiStore.showError(error.message || 'Failed to fetch users')
+          toast.error(error.message || 'Failed to fetch users')
         }
       }
     },
@@ -63,15 +63,14 @@ export const useUsersUiStore = defineStore('usersUi', {
       if (!this.userToDelete || !this.userToDelete.id) return;
       
       const usersStore = useUsersStore()
-      const uiStore = useUiStore()
       
       try {
         await usersStore.deleteUser(this.userToDelete.id);
         this.showConfirmDialog = false;
         this.userToDelete = null;
-        uiStore.showSnackbar({ message: 'User deleted successfully' });
+        toast.success('User deleted successfully');
       } catch (error) {
-        uiStore.showError(error.message || 'Failed to delete user');
+        toast.error(error.message || 'Failed to delete user');
       }
     }
   }

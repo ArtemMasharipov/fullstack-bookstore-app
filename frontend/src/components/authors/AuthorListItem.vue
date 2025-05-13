@@ -16,32 +16,17 @@
                     <div class="text-caption mt-2">Books: {{ author.books?.length || 0 }}</div>
                 </v-card-text>
             </div>
-            
-            <template v-if="authStore.hasPermission('update:author') || authStore.hasPermission('delete:author')">
+              <template v-if="authStore.hasPermission('admin:access')">
                 <v-card-actions class="justify-end">
                     <v-btn
-                        v-if="authStore.hasPermission('update:author')"
                         variant="outlined"
-                        color="primary"
+                        color="secondary"
                         density="comfortable"
-                        prepend-icon="mdi-pencil"
-                        aria-label="Edit author"
-                        @click.stop="$emit('edit', author)"
+                        prepend-icon="mdi-shield-account"
+                        aria-label="Manage author in admin"
+                        @click.stop="$router.push('/admin/authors')"
                     >
-                        Edit
-                    </v-btn>
-                    
-                    <v-btn
-                        v-if="authStore.hasPermission('delete:author')"
-                        variant="outlined"
-                        color="error"
-                        class="ml-2"
-                        density="comfortable"
-                        prepend-icon="mdi-delete"
-                        aria-label="Delete author"
-                        @click.stop="handleDelete"
-                    >
-                        Delete
+                        Manage in Admin
                     </v-btn>
                 </v-card-actions>
             </template>
@@ -63,29 +48,14 @@ export default {
         },
     },
 
-    emits: ['click', 'edit', 'delete'],
-
-    computed: {
-        ...mapGetters(useAuthStore, ['hasPermission']),
-        
-        // For convenient template access, maintaining the previous naming convention
+    emits: ['click'],    computed: {
         authStore() {
-            return {
-                hasPermission: this.hasPermission
-            };
+            return useAuthStore();
         },
-    },
-
-    methods: {
+    },methods: {
         handleClick() {
             this.$emit('click');
-        },        handleDelete() {
-            const authorId = this.author._id;
-            if (!authorId) {
-                return;
-            }
-            this.$emit('delete', authorId);
-        },
+        }
     },
 };
 </script>

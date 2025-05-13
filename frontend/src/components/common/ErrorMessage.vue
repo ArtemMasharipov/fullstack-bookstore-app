@@ -30,15 +30,15 @@ export default {
          */
         message: {
             type: String,
-            required: true
+            required: true,
         },
         /**
          * Alert type from Vuetify options
          */
         type: {
-            type: String, 
+            type: String,
             default: 'error',
-            validator: (val) => ['success', 'info', 'warning', 'error'].includes(val)
+            validator: (val) => ['success', 'info', 'warning', 'error'].includes(val),
         },
         /**
          * Visual variant style
@@ -46,35 +46,35 @@ export default {
         variant: {
             type: String,
             default: 'tonal',
-            validator: (val) => ['flat', 'tonal', 'outlined', 'text', 'elevated'].includes(val)
+            validator: (val) => ['flat', 'tonal', 'outlined', 'text', 'elevated'].includes(val),
         },
         /**
          * Custom color override (uses type color by default)
          */
         color: {
             type: String,
-            default: null
+            default: null,
         },
         /**
          * Whether user can close the alert
          */
         closable: {
             type: Boolean,
-            default: true
+            default: true,
         },
         /**
          * Additional CSS classes
          */
         classes: {
             type: [String, Array, Object],
-            default: 'mb-4'
+            default: 'mb-4',
         },
         /**
          * Custom icon (uses default for type if not specified)
          */
         icon: {
             type: String,
-            default: undefined
+            default: undefined,
         },
         /**
          * Controls the alert's padding density
@@ -82,9 +82,9 @@ export default {
         density: {
             type: String,
             default: 'comfortable',
-            validator: (val) => ['default', 'comfortable', 'compact'].includes(val)
-        }
+            validator: (val) => ['default', 'comfortable', 'compact'].includes(val),
+        },
     },
-    emits: ['close']
+    emits: ['close'],
 }
 </script>

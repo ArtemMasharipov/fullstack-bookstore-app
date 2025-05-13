@@ -1,4 +1,23 @@
-import { UI } from '@/store/types'
+// Define mutation types directly since we're using Pinia
+const UI = {
+    SET_LOADING: 'setLoading',
+    SET_ERROR: 'setError'
+};
+
+/**
+ * Format a number value as a currency
+ * @param {number} amount - Amount to format
+ * @param {string} currencyCode - ISO 4217 currency code
+ * @returns {string} Formatted currency string
+ */
+export const formatCurrency = (amount, currencyCode = 'USD') => {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currencyCode,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount || 0);
+};
 
 export const handleAsyncAction = async (commit, action, options = {}) => {
     const { 

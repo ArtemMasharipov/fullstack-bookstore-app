@@ -23,17 +23,16 @@
                     bg-color="primary-lighten-1"
                     style="max-width: 250px;"
                     clearable
-                ></v-text-field>
-                
-                <v-btn
+                ></v-text-field>                  <v-btn
+                    v-if="authStore.hasPermission('admin:access')"
                     color="white"
                     variant="outlined"
-                    prepend-icon="mdi-plus"
-                    @click="openCreateForm"
+                    prepend-icon="mdi-shield-account"
+                    to="/admin/books"
                     :disabled="booksLoading"
                     class="ml-2"
                 >
-                    Create New Book
+                    Manage Books
                 </v-btn>
             </v-toolbar>
 
@@ -44,8 +43,7 @@
                 class="py-4"
             ></v-skeleton-loader>
 
-            <!-- Empty state -->
-            <v-alert 
+            <!-- Empty state -->            <v-alert 
                 v-else-if="!books.length" 
                 type="info" 
                 variant="tonal" 
@@ -53,16 +51,17 @@
                 icon="mdi-bookshelf"
                 border="start"
             >
-                <p class="mb-1">No books found.</p>
-                <v-btn
+                <p class="mb-1">No books found.</p>                <v-btn
+                    v-if="authStore.hasPermission('admin:access')"
                     color="primary"
                     variant="text"
                     density="comfortable"
-                    @click="openCreateForm"
-                    prepend-icon="mdi-plus"
+                    to="/admin/books"
+                    prepend-icon="mdi-shield-account"
                 >
-                    Add your first book
+                    Manage Books
                 </v-btn>
+                <p v-else class="mt-2 text-caption">Check back later for new books.</p>
             </v-alert>
 
             <!-- Books grid -->
@@ -73,15 +72,10 @@
                         :key="book._id" 
                         cols="12" sm="6" md="4" lg="3"
                         class="d-flex align-stretch"
-                    >
-                        <book-card 
+                    >                        <book-card 
                             :book="book"
                             @click="viewDetails(book._id)"
-                            @edit="openEditForm" 
-                            @delete="handleDeleteClick"
                             @add-to-cart="addToCartSuccess"
-                            @error="handleError" 
-                            @success="showSnackbar"
                             class="w-100"
                         />
                     </v-col>
@@ -101,78 +95,23 @@
                 ></v-pagination>
             </v-card-actions>
         </v-card>
-
-        <!-- Create/Edit form modal -->
-        <book-form
-            v-if="showForm"
-            v-model="showForm"
-            :initial-data="selectedBook"
-            :loading="formSubmitting"
-            @submit="handleFormSubmit"
-            @close="closeForm"
-        />
-
-        <!-- Delete confirmation -->
-        <confirm-modal
-            v-model="showDeleteDialog"
-            title="Delete Book"
-            :message="`Are you sure you want to delete '${bookToDelete?.title || 'this book'}'?`"
-            confirm-text="Delete"
-            confirm-color="error"
-            icon="mdi-delete-alert"
-            @confirm="handleDelete"
-        />        <!-- Feedback snackbars -->
-        <v-snackbar
-            v-model="showSuccessSnackbar"
-            color="success"
-            :timeout="3000"
-        >
-            {{ successMessage }}
-            <template v-slot:actions>
-                <v-btn
-                    variant="text"
-                    icon="mdi-close"
-                    @click="uiStore.closeSnackbar()"
-                ></v-btn>
-            </template>
-        </v-snackbar>
-
-        <v-snackbar
-            v-model="hasError"
-            color="error"
-            timeout="5000"
-        >
-            {{ errorMessage }}
-            <template v-slot:actions>
-                <v-btn
-                    variant="text"
-                    icon="mdi-close"
-                    @click="uiStore.clearError()"
-                ></v-btn>
-            </template>
-        </v-snackbar>
+        <!-- Snackbars removed - now using Toast.vue component -->
     </div>
 </template>
 
 <script>
-import { useBooksStore, useBooksUiStore, useUiStore } from '@/stores';
+import { useBooksStore, useBooksUiStore, useUiStore, useAuthStore, toast } from '@/stores';
 import { mapActions, mapGetters } from 'pinia';
-import ConfirmModal from '../common/ConfirmModal.vue';
 import LoadingSpinner from '../common/LoadingSpinner.vue';
 import BookCard from './BookCard.vue';
-import BookForm from './BookForm.vue';
 
 /**
  * Component for displaying and managing a paginated list of books
  */
 export default {
-    name: 'BookList',
-
-    components: {
+    name: 'BookList',    components: {
         BookCard,
-        BookForm,
-        LoadingSpinner,
-        ConfirmModal
+        LoadingSpinner
     },
 
     props: {
@@ -219,27 +158,26 @@ export default {
             'showDeleteDialog', 
             'filterParams'
         ]),
-        ...mapGetters(useUiStore, {
-            showSuccessSnackbar: 'snackbarVisible',
-            successMessage: 'snackbarMessage',
-            hasError: 'errorVisible',
-            errorMessage: 'errorMessage'
-        }),
-        
-        totalPages() {
-            return this.booksStore.pagination?.pages || 1;
+        // UI store getters removed - now using notification system
+          totalPages() {
+            return this.booksStore.booksPagination?.pages || 1;
         },
         
         booksStore() {
             return useBooksStore();
         },
-        
-        booksUiStore() {
+          booksUiStore() {
             return useBooksUiStore();
         },
         
         uiStore() {
             return useUiStore();
+        },
+        
+        // removed notificationStore in favor of toast service
+        
+        authStore() {
+            return useAuthStore();
         },
         
         /**
@@ -291,15 +229,14 @@ export default {
                 authorId: this.authorId,
                 itemsPerPage: this.itemsPerPage
             });
-            
-            // Set up search debounce
+              // Set up search debounce
             this.booksUiStore.setupSearchDebounce();
             
-            // Set window resize event listener
+            // Add event listener for window resizing
             window.addEventListener('resize', this.handleResize);
             
             // Initial data fetch - wrapped in try/catch in loadBooks method
-            this.loadBooks();        } catch (error) {
+            this.loadBooks();} catch (error) {
             this.handleError(error.message || 'An error occurred while initializing the book list');
         }
     },
@@ -307,18 +244,17 @@ export default {
     beforeUnmount() {
         // Clean up event listener
         window.removeEventListener('resize', this.handleResize);
-    },
-
-    methods: {
+    },    methods: {
         ...mapActions(useBooksUiStore, [
-            'openCreateForm',
-            'openEditForm',
-            'closeForm',
-            'handleFormSubmit',
-            'deleteBook',
             'changePage',
             'loadBooks'
         ]),
+        
+        /**
+         * Check if user has the specified permission
+         * @param {string} permission - The permission to check
+         * @returns {boolean} - Whether the user has the permission
+         */
         
         /**
          * Track window width for responsive design
@@ -327,13 +263,6 @@ export default {
             this.windowWidth = window.innerWidth;
             // Also update the UI store
             this.uiStore.handleWindowResize();
-        },
-        
-        /**
-         * Show success snackbar with message
-         */
-        showSnackbar(message) {
-            this.uiStore.showSnackbar({ message });
         },
         
         /**
@@ -347,28 +276,7 @@ export default {
          * Handle successful cart addition
          */
         addToCartSuccess() {
-            this.showSnackbar('Item added to cart successfully');
-        },
-
-        /**
-         * Handle error display
-         */
-        handleError(message) {
-            this.uiStore.showError(message);
-        },
-
-        /**
-         * Show delete confirmation dialog
-         */
-        handleDeleteClick(book) {
-            this.booksUiStore.confirmDeleteBook(book);
-        },
-
-        /**
-         * Handle delete after confirmation
-         */
-        handleDelete() {
-            this.deleteBook();
+            toast.success('Item added to cart successfully');
         }
     }
 };

@@ -1,7 +1,7 @@
 import { authApi } from '@/api/authApi'
 import { jwtDecode } from 'jwt-decode'
 import { useCartStore } from './cart'
-import { useNotificationStore } from './notification'
+import { toast } from '.'
 import { handleAsyncAction } from './utils/stateHelpers'
 import { createBaseStore } from './utils/storeFactory'
 
@@ -48,7 +48,6 @@ export const useAuthStore = createBaseStore({
      * @param {Object} credentials - Login credentials
      */
     async login(credentials) {
-      const notificationStore = useNotificationStore();
       this.loading = true;
       this.error = null;
       
@@ -74,7 +73,7 @@ export const useAuthStore = createBaseStore({
         await cartStore.syncCart();
         
         // Show success notification
-        notificationStore.success(`Welcome back, ${user.name || user.email || 'User'}!`, {
+        toast.success(`Welcome back, ${user.name || user.email || 'User'}!`, {
           duration: 4000
         });
         
@@ -88,7 +87,7 @@ export const useAuthStore = createBaseStore({
         localStorage.removeItem('userData');
         
         // Show error notification
-        notificationStore.error(`Login failed: ${error.message || 'Invalid credentials'}`, {
+        toast.error(`Login failed: ${error.message || 'Invalid credentials'}`, {
           duration: 5000
         });
         
@@ -102,7 +101,6 @@ export const useAuthStore = createBaseStore({
      * @param {Object} userData - User registration data
      */
     async register(userData) {
-      const notificationStore = useNotificationStore();
       
       return handleAsyncAction(this, 
         async () => {
@@ -114,7 +112,7 @@ export const useAuthStore = createBaseStore({
           localStorage.setItem('userData', JSON.stringify(user));
           
           // Show success notification
-          notificationStore.success(`Welcome to Bookstore, ${user.name || user.email || 'User'}!`, {
+          toast.success(`Welcome to Bookstore, ${user.name || user.email || 'User'}!`, {
             duration: 5000
           });
           
@@ -122,7 +120,7 @@ export const useAuthStore = createBaseStore({
         },
         {
           onError: (error) => {
-            notificationStore.error(`Registration failed: ${error.message || 'Please try again'}`, {
+            toast.error(`Registration failed: ${error.message || 'Please try again'}`, {
               duration: 5000
             });
           }
@@ -133,7 +131,6 @@ export const useAuthStore = createBaseStore({
      * Log out the current user
      */
     async logout() {
-      const notificationStore = useNotificationStore();
       const userName = this.user?.name || this.user?.email || 'User';
       
       return handleAsyncAction(this, 
@@ -146,13 +143,13 @@ export const useAuthStore = createBaseStore({
           localStorage.removeItem('userData');
           
           // Show logout notification
-          notificationStore.info(`${userName} has been logged out`, {
+          toast.info(`${userName} has been logged out`, {
             duration: 3000
           });
         },
         {
           onError: (error) => {
-            notificationStore.error(`Logout failed: ${error.message}`, {
+            toast.error(`Logout failed: ${error.message}`, {
               duration: 5000
             });
           }

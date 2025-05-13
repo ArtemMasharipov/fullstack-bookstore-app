@@ -9,11 +9,19 @@
     </v-main>
     
     <footer-layout />
+      
+    <!-- Legacy GlobalUI (will be deprecated) -->
+    <GlobalUI />
+    
+    <!-- Dialog system (separate from notifications for SOLID principles) -->
+    <DialogUI />
   </v-app>
 </template>
 
 <script>
 import FooterLayout from '@/components/layout/FooterLayout.vue';
+import GlobalUI from '@/components/layout/GlobalUI.vue';
+import DialogUI from '@/components/layout/DialogUI.vue';
 import NavBar from '@/components/layout/NavBar.vue';
 import { useAuthStore } from '@/stores';
 
@@ -22,6 +30,8 @@ export default {
   components: {
     NavBar,
     FooterLayout,
+    GlobalUI,
+    DialogUI
   },
   computed: {
     authStore() {

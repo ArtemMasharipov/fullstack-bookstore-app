@@ -2,15 +2,23 @@ import axios from 'axios';
 
 const API_CONFIG = {
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1',
-    timeout: 10000,
+    timeout: 15000, // Increased timeout for better reliability
     validateStatus: status => status < 500
 }
 
 const baseApi = axios.create(API_CONFIG)
 
 const handleError = error => {
-    if (!error.response) {
-        throw new Error('Network connection error');
+    // Improved network error detection
+    if (error.message === 'Network Error' || !error.response || error.code === 'ECONNABORTED') {
+        console.error('Network connection error:', error);
+        let errorMessage = 'Network connection error. Please check your connection and try again.';
+        
+        if (error.code === 'ECONNABORTED') {
+            errorMessage = 'Request timed out. Please try again later.';
+        }
+        
+        throw new Error(errorMessage);
     }
 
     const { status, data } = error.response;

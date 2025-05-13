@@ -8,5 +8,5 @@ export const orderApi = createApiClient('orders', {
     updateOrderStatus: (id, status) => apiRequest('put', `/orders/${id}/status`, { status }),
     getOrderStatus: (id) => apiRequest('get', `/orders/${id}/status`),
     updateTracking: (id, trackingNumber) => apiRequest('put', `/orders/${id}/tracking`, { trackingNumber }),
-    getOrderHistory: (id) => apiRequest('get', `/orders/${id}/history`)
+    getOrderHistory: (id) => apiRequest('get', `/orders/${id}/history`),
 })

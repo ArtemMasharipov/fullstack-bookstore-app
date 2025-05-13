@@ -56,36 +56,24 @@
             </div>
         </v-card-text>
         
-        <v-divider></v-divider>
-        
-        <v-card-actions>
-            <v-row dense>
-                <v-col cols="6">
-                    <v-btn 
-                        variant="outlined"
-                        color="primary"
-                        block
-                        density="comfortable"
-                        prepend-icon="mdi-pencil"
-                        @click.stop="$emit('edit', book)"
-                    >
-                        Edit
-                    </v-btn>
-                </v-col>
+        <v-divider></v-divider>          <v-card-actions>            <v-row dense>
+                <!-- Admin actions - only visible to users with admin access -->
+                <template v-if="authStore.hasPermission('admin:access')">
+                    <v-col cols="12">
+                        <v-btn 
+                            variant="outlined"
+                            color="secondary"
+                            block
+                            density="comfortable"
+                            prepend-icon="mdi-shield-account"
+                            @click.stop="$router.push('/admin/books')"
+                        >
+                            Manage in Admin
+                        </v-btn>
+                    </v-col>
+                </template>
                 
-                <v-col cols="6">
-                    <v-btn 
-                        variant="outlined"
-                        color="error"
-                        block
-                        density="comfortable"
-                        prepend-icon="mdi-delete"
-                        @click.stop="showDeleteConfirm = true"
-                    >
-                        Delete
-                    </v-btn>
-                </v-col>
-                
+                <!-- Shopping actions -->
                 <v-col cols="12" class="mt-2">
                     <v-btn
                         v-if="book.inStock"
@@ -99,23 +87,12 @@
                         Add to Cart
                     </v-btn>
                 </v-col>
-            </v-row>
-        </v-card-actions>
-        
-        <confirm-modal
-            v-model="showDeleteConfirm"
-            title="Delete Book"
-            :message="`Are you sure you want to delete '${book.title}'?`"
-            confirm-text="Delete"
-            @confirm="confirmDelete"
-            @cancel="showDeleteConfirm = false"
-        />
+            </v-row>        </v-card-actions>
     </v-card>
 </template>
 
 <script>
-import { useAuthStore, useCartStore } from '@/stores';
-import ConfirmModal from '../common/ConfirmModal.vue';
+import { useAuthStore, useCartStore, toast } from '@/stores';
 
 /**
  * Book card component for displaying a single book
@@ -123,9 +100,6 @@ import ConfirmModal from '../common/ConfirmModal.vue';
  */
 export default {
     name: 'BookCard',
-    components: {
-        ConfirmModal
-    },
     props: {
         /**
          * Book object with details
@@ -141,15 +115,12 @@ export default {
             type: String,
             default: '/images/placeholder.png',
         },
-    },
-    emits: ['add-to-cart', 'edit', 'delete', 'click', 'error', 'success'],
+    },    emits: ['add-to-cart', 'click'],
     data() {
         return {
-            showDeleteConfirm: false,
             loading: false
         }
-    },
-    computed: {
+    },    computed: {
         cartStore() {
             return useCartStore();
         },
@@ -158,11 +129,10 @@ export default {
         },
         /**
          * Determines if user can add book to cart
-         */
-        canAddToCart() {
+         */        canAddToCart() {
             return !this.loading && 
                    this.book.inStock && 
-                   this.authStore.hasPermission('create:cart');
+                   (this.authStore && this.authStore.hasPermission('create:cart'));
         }
     },
     methods: {
@@ -186,20 +156,13 @@ export default {
                     quantity: 1,
                     price: this.book.price
                 })
-                this.$emit('success', 'Added to cart')
+                toast.success('Added to cart')
+                this.$emit('add-to-cart') // Emit just the add-to-cart event
             } catch (error) {
-                this.$emit('error', error.message)
+                toast.error(error.message)
             } finally {
                 this.loading = false
             }
-        },
-        
-        /**
-         * Confirm book deletion
-         */
-        confirmDelete() {
-            this.$emit('delete', this.book._id);
-            this.showDeleteConfirm = false;
         }
     }
 };
@@ -209,6 +172,7 @@ export default {
 .text-truncate-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;

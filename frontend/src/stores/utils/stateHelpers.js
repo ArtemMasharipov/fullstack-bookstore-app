@@ -5,28 +5,24 @@
  * @returns {Promise} Результат выполнения действия
  */
 export const handleAsyncAction = async (store, action, options = {}) => {
-    const {
-        onSuccess,
-        onError,
-        skipLoading = false
-    } = options;
+    const { onSuccess, onError, skipLoading = false } = options
 
     if (!skipLoading) {
-        store.loading = true;
+        store.loading = true
     }
 
     try {
-        const result = await action();
-        onSuccess?.(result);
-        return result;
+        const result = await action()
+        onSuccess?.(result)
+        return result
     } catch (error) {
-        const errorMessage = error?.response?.data?.message || error.message;
-        store.error = errorMessage;
-        onError?.(error);
-        throw error;
+        const errorMessage = error?.response?.data?.message || error.message
+        store.error = errorMessage
+        onError?.(error)
+        throw error
     } finally {
         if (!skipLoading) {
-            store.loading = false;
+            store.loading = false
         }
     }
 }

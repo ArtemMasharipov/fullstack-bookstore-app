@@ -1,61 +1,35 @@
 <template>
   <div>
-    <!-- Global Snackbars -->
-    <v-snackbar
-      v-model="snackbarVisible"
-      :color="snackbarColor"
-      :timeout="snackbarTimeout"
-    >
-      {{ snackbarMessage }}
-      <template v-slot:actions>
-        <v-btn
-          variant="text"
-          icon="mdi-close"
-          @click="closeSnackbar"
-        ></v-btn>
-      </template>
-    </v-snackbar>
-
-    <!-- Global Error Display -->
-    <v-snackbar
-      v-model="errorVisible"
-      color="error"
-      timeout="5000"
-    >
-      {{ errorMessage }}
-      <template v-slot:actions>
-        <v-btn
-          variant="text"
-          icon="mdi-close"
-          @click="clearError"
-        ></v-btn>
-      </template>
-    </v-snackbar>
+    <!-- Note: This component is deprecated. 
+         Toast notifications are now handled by the Toast component.
+         Dialog functionality has moved to the DialogUI component. -->
+    <div class="deprecated-component"></div>
   </div>
 </template>
 
 <script>
-import { useUiStore } from '@/stores';
-import { mapActions, mapGetters } from 'pinia';
-
 /**
- * Global UI component for handling app-level UI feedback (snackbars, alerts, etc.)
- * This component is always present in the app layout
+ * DEPRECATED: Global UI component
+ * 
+ * This component is kept for backward compatibility but no longer contains functionality.
+ * - Toast notifications are now handled by the Toast component
+ * - Dialog functionality is now handled by the DialogUI component
+ *
+ * This component will be removed in a future release.
  */
 export default {
   name: 'GlobalUI',
-  computed: {
-    ...mapGetters(useUiStore, {
-      snackbarVisible: 'snackbarVisible',
-      snackbarMessage: 'snackbarMessage',
-      snackbarColor: 'snackbarColor',
-      snackbarTimeout: 'snackbarTimeout',
-      errorVisible: 'errorVisible',
-      errorMessage: 'errorMessage'
-    })
-  },
-  methods: {
-    ...mapActions(useUiStore, ['closeSnackbar', 'clearError'])
-  }
 };
 </script>
+
+<style scoped>
+.toast-notification {
+  margin-top: 0px !important;
+  margin-right: 16px !important;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+  border-radius: 4px !important;
+  width: auto !important;
+  min-width: 250px !important;
+  max-width: 400px !important;
+}
+</style>

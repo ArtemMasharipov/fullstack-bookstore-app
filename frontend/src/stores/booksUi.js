@@ -1,6 +1,6 @@
 import { debounce } from 'lodash'
 import { defineStore } from 'pinia'
-import { useBooksStore, useUiStore } from '.'
+import { useBooksStore, useUiStore, toast } from '.'
 
 /**
  * Store for managing Books UI state and interactions
@@ -105,23 +105,22 @@ export const useBooksUiStore = defineStore('booksUi', {
      */
     async handleFormSubmit(bookData) {
       const booksStore = useBooksStore()
-      const uiStore = useUiStore()
       
       try {
         this.formSubmitting = true
         
         if (bookData._id) {
           await booksStore.updateBook({ id: bookData._id, formData: bookData.formData })
-          uiStore.showSnackbar({ message: 'Book updated successfully' })
+          toast.success('Book updated successfully')
         } else {
           await booksStore.createBook(bookData.formData)
-          uiStore.showSnackbar({ message: 'Book created successfully' })
+          toast.success('Book created successfully')
         }
         
         await this.loadBooks()
         this.closeForm()
       } catch (error) {
-        uiStore.showError(error.message || 'Failed to save book')
+        toast.error(error.message || 'Failed to save book')
       } finally {
         this.formSubmitting = false
       }
@@ -134,15 +133,14 @@ export const useBooksUiStore = defineStore('booksUi', {
       if (!this.bookToDelete?._id) return
       
       const booksStore = useBooksStore()
-      const uiStore = useUiStore()
       
       try {
         await booksStore.deleteBook(this.bookToDelete._id)
-        uiStore.showSnackbar({ message: `'${this.bookToDelete.title}' was deleted successfully` })
+        toast.success(`'${this.bookToDelete.title}' was deleted successfully`)
         this.bookToDelete = null
         await this.loadBooks()
       } catch (error) {
-        uiStore.showError(error?.message || 'Failed to delete book')
+        toast.error(error?.message || 'Failed to delete book')
       }
     },
     
@@ -170,13 +168,12 @@ export const useBooksUiStore = defineStore('booksUi', {
      */
     async loadBooks() {
       const booksStore = useBooksStore()
-      const uiStore = useUiStore()
         try {
         await booksStore.fetchBooks(this.filterParams)
       } catch (error) {
         // Don't show auth errors since they're handled by the API interceptor
         if (error.status !== 401) {
-          uiStore.showError(error.message || 'Failed to load books')
+          toast.error(error.message || 'Failed to load books')
         }
       }
     },

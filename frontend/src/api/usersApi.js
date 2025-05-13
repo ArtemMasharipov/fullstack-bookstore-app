@@ -1,5 +1,5 @@
 import { createApiClient } from './apiFactory'
-import {jwtDecode} from 'jwt-decode'
+import { jwtDecode } from 'jwt-decode'
 
 export const usersApi = createApiClient('users', {
     fetchUserPermissions: () => {

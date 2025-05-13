@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { useOrdersStore } from './orders';
-import { useUiStore } from './ui';
+import { toast } from '.';
 
 /**
  * Store for managing Orders UI state and interactions
@@ -119,13 +119,12 @@ export const useOrdersUiStore = defineStore('ordersUi', {
      */
     async fetchOrders() {
       const ordersStore = useOrdersStore();
-      const uiStore = useUiStore();
         try {
         return await ordersStore.fetchOrders();
       } catch (error) {
         // Don't show auth errors since they're handled by the API interceptor
         if (error.status !== 401) {
-          uiStore.showError(error.message || "Failed to load orders");
+          toast.error(error.message || "Failed to load orders");
         }
       }
     },

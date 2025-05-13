@@ -2,7 +2,9 @@ import { defineStore } from 'pinia'
 
 /**
  * UI Store for managing common UI state and functionality
- * Centralizes management of dialogs, alerts, errors, and responsive state
+ * Centralizes management of dialogs and responsive state
+ * Note: Notifications are now managed by enhanced toast service from @/services/enhancedToast 
+ * and toastHelpers from @/services/toastHelpers
  */
 export const useUiStore = defineStore('ui', {
   state: () => ({
@@ -10,16 +12,6 @@ export const useUiStore = defineStore('ui', {
       visible: false,
       type: null,
       data: null,
-    },
-    snackbar: {
-      visible: false,
-      message: '',
-      color: 'success',
-      timeout: 3000
-    },
-    error: {
-      hasError: false,
-      message: null
     },
     windowWidth: window.innerWidth,
     searchQueries: {}
@@ -30,12 +22,6 @@ export const useUiStore = defineStore('ui', {
     dialogVisible: (state) => state.dialog.visible,
     dialogType: (state) => state.dialog.type,
     dialogData: (state) => state.dialog.data,
-    snackbarVisible: (state) => state.snackbar.visible,
-    snackbarMessage: (state) => state.snackbar.message,
-    snackbarColor: (state) => state.snackbar.color,
-    snackbarTimeout: (state) => state.snackbar.timeout,
-    errorVisible: (state) => state.error.hasError,
-    errorMessage: (state) => state.error.message,
     getSearchQuery: (state) => (moduleKey) => state.searchQueries[moduleKey] || ''
   },
 
@@ -53,33 +39,6 @@ export const useUiStore = defineStore('ui', {
         visible: false,
         type: null,
         data: null
-      }
-    },
-
-    showSnackbar({ message, color = 'success', timeout = 3000 }) {
-      this.snackbar = {
-        visible: true,
-        message,
-        color,
-        timeout
-      }
-    },
-
-    closeSnackbar() {
-      this.snackbar.visible = false
-    },
-
-    showError(message) {
-      this.error = {
-        hasError: true,
-        message
-      }
-    },
-
-    clearError() {
-      this.error = {
-        hasError: false,
-        message: null
       }
     },
 

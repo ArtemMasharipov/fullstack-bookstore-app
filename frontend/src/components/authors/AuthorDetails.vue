@@ -13,30 +13,16 @@
                     
                     <v-card-text class="text-body-1">
                         <p>{{ author.biography }}</p>
-                    </v-card-text>
-                    
-                    <v-card-actions v-if="hasPermission('update:author') || hasPermission('delete:author')">
+                    </v-card-text>                      <v-card-actions v-if="authStore.hasPermission('admin:access')">
                         <v-spacer></v-spacer>
                         
                         <v-btn 
-                            v-if="hasPermission('update:author')" 
-                            color="primary" 
+                            color="secondary" 
                             variant="outlined"
-                            prepend-icon="mdi-pencil"
-                            @click="handleEdit"
+                            prepend-icon="mdi-shield-account"
+                            :to="'/admin/authors'"
                         >
-                            Edit
-                        </v-btn>
-                        
-                        <v-btn 
-                            v-if="hasPermission('delete:author')" 
-                            color="error" 
-                            variant="outlined"
-                            prepend-icon="mdi-delete"
-                            class="ml-2"
-                            @click="confirmDelete"
-                        >
-                            Delete
+                            Manage in Admin
                         </v-btn>
                     </v-card-actions>
                 </v-card-item>
@@ -99,7 +85,7 @@
 import BookCard from '@/components/books/BookCard.vue'
 import ErrorMessage from '@/components/common/ErrorMessage.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import { useAuthorsStore, useAuthStore } from '@/stores'
+import { useAuthorsStore, useAuthStore, toast } from '@/stores'
 import { mapActions, mapGetters } from 'pinia'
 
 export default {
@@ -124,16 +110,16 @@ export default {
         return {
             showDeleteModalPage: false,
         }
-    },
-
-    computed: {
+    },    computed: {
         ...mapGetters(useAuthorsStore, {
             currentAuthor: 'currentAuthor',
             loading: 'loading',
             error: 'error'
         }),
         
-        ...mapGetters(useAuthStore, ['hasPermission']),
+        authStore() {
+            return useAuthStore();
+        },
         
         author() {
             return this.currentAuthor
@@ -166,9 +152,10 @@ export default {
         },        async handleDelete() {
             try {
                 await this.deleteAuthor(this.author.id)
+                toast.success('Author deleted successfully')
                 this.$router.push('/authors')
             } catch (error) {
-                // Error is already handled by the store
+                toast.error(error.message || 'Failed to delete author')
             }
         },
     },

@@ -1,5 +1,5 @@
 import { usersApi } from '@/api/usersApi';
-import { useNotificationStore } from './notification';
+import { toast, toastHelpers } from '.';
 import { handleAsyncAction } from './utils/stateHelpers';
 import { createBaseStore } from './utils/storeFactory';
 
@@ -36,7 +36,12 @@ export const useUsersStore = createBaseStore({
      * Fetch all users
      */
     async fetchUsers() {
-      const users = await this.fetchAll();
+      const users = await toastHelpers.handleLoad({
+        entityName: 'Пользователи',
+        operation: () => this.fetchAll(),
+        silent: true
+      });
+      
       this.list = users; // Keep list in sync with items
       return users;
     },
@@ -48,80 +53,74 @@ export const useUsersStore = createBaseStore({
     async fetchUserById(id) {
       return this.fetchById(id);
     },
-      /**
+    
+    /**
      * Create a new user
      * @param {Object} userData - User data
      */
     async createUser(userData) {
-      const notificationStore = useNotificationStore();
+      const userName = userData.name || userData.username || 'User';
       
       return handleAsyncAction(this, async () => {
-        try {
-          const user = await this.create(userData);
-          // Ensure list stays in sync with items
-          this.list = [...this.items];
-          
-          const userName = userData.name || userData.username || 'User';
-          notificationStore.success(`User "${userName}" created successfully`);
-          
-          return user;
-        } catch (error) {
-          notificationStore.error(`Failed to create user: ${error.message}`);
-          throw error;
-        }
+        return toastHelpers.handleCreate({
+          entityName: 'Пользователь',
+          displayName: userName,
+          operation: async () => {
+            const user = await this.create(userData);
+            // Ensure list stays in sync with items
+            this.list = [...this.items];
+            return user;
+          }
+        });
       });
     },
-      /**
+    
+    /**
      * Update an existing user
      * @param {Object} params - Parameters object
      * @param {string} params.id - User ID
      * @param {Object} params.userData - Updated user data
      */
     async updateUser({ id, userData }) {
-      const notificationStore = useNotificationStore();
+      const userName = userData.name || userData.username || 'User';
       
       return handleAsyncAction(this, async () => {
-        try {
-          const user = await this.update(id, userData);
-          // Ensure list stays in sync with items
-          this.list = [...this.items];
-          
-          const userName = userData.name || userData.username || user.name || user.username || 'User';
-          notificationStore.success(`User "${userName}" updated successfully`);
-          
-          return user;
-        } catch (error) {
-          notificationStore.error(`Failed to update user: ${error.message}`);
-          throw error;
-        }
+        return toastHelpers.handleUpdate({
+          entityName: 'Пользователь',
+          displayName: userName,
+          operation: async () => {
+            const user = await this.update(id, userData);
+            // Ensure list stays in sync with items
+            this.list = [...this.items];
+            return user;
+          }
+        });
       });
     },
-      /**
+    
+    /**
      * Delete a user
      * @param {string} id - User ID
      * @param {string} userName - User name for notification (optional)
      */
     async deleteUser(id, userName = 'User') {
-      const notificationStore = useNotificationStore();
-      
       return handleAsyncAction(this, async () => {
-        try {
-          // If userName wasn't provided but we have the current user details, use that
-          let displayName = userName;
-          if (displayName === 'User' && this.current && this.current.id === id) {
-            displayName = this.current.name || this.current.username || 'User';
-          }
-          
-          const result = await this.delete(id);
-          // Ensure list stays in sync with items
-          this.list = [...this.items];
-          
-          notificationStore.info(`User "${displayName}" deleted successfully`);
-          return result;
-        } catch (error) {
-          notificationStore.error(`Failed to delete user: ${error.message}`);
-          throw error;
+        // If userName wasn't provided but we have the current user details, use that
+        let displayName = userName;
+        if (displayName === 'User' && this.current && this.current.id === id) {
+          displayName = this.current.name || this.current.username || 'User';
         }
+        
+        return toastHelpers.handleDelete({
+          entityName: 'Пользователь',
+          displayName,
+          operation: async () => {
+            const result = await this.delete(id);
+            // Ensure list stays in sync with items
+            this.list = [...this.items];
+            return result;
+          }
+        });
       });
     }
   }

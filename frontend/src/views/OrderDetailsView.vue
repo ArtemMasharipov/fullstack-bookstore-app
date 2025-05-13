@@ -56,8 +56,7 @@
               </v-row>
             </v-card-text>
           </v-card>
-          
-          <div v-if="hasPermission('update:order')" class="d-flex justify-end mt-4">
+            <div v-if="authStore.hasPermission('update:order')" class="d-flex justify-end mt-4">
             <v-btn
               color="primary"
               :to="`/orders/${order._id}/status`"
@@ -92,12 +91,8 @@ export default {
     },
     error() {
       return this.ordersStore.error
-    },
-    order() {
+    },    order() {
       return this.currentOrder || {}
-    },
-    hasPermission() {
-      return this.authStore.hasPermission
     }
   },
   async created() {

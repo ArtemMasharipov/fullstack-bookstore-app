@@ -37,10 +37,39 @@ const routes = [
         component: () => import('@/views/RegisterView.vue'),
         meta: { guest: true }
     },
+    // Admin routes
+    {
+        path: '/admin',
+        name: 'AdminDashboard',
+        component: () => import('@/views/AdminDashboardView.vue'),
+        meta: {
+            requiresAuth: true,
+            requiredPermission: 'admin:access'
+        }
+    },
+    {
+        path: '/admin/books',
+        name: 'AdminBooks',
+        component: () => import('@/views/AdminBooksView.vue'),
+        meta: {
+            requiresAuth: true,
+            requiredPermission: 'admin:access'
+        }
+    },
+    {
+        path: '/admin/authors',
+        name: 'AdminAuthors',
+        component: () => import('@/views/AdminAuthorsView.vue'),
+        meta: {
+            requiresAuth: true,
+            requiredPermission: 'admin:access'
+        }
+    },
+    // Legacy routes - redirecting to admin versions
     {
         path: '/books/new',
         name: 'CreateBook',
-        component: () => import('@/components/books/BookForm.vue'),
+        redirect: '/admin/books',
         meta: { 
             requiresAuth: true,
             requiredPermission: 'create:book'
@@ -49,7 +78,7 @@ const routes = [
     {
         path: '/books/:id/edit',
         name: 'EditBook',
-        component: () => import('@/components/books/BookForm.vue'),
+        redirect: to => ({ path: '/admin/books' }),
         meta: { 
             requiresAuth: true,
             requiredPermission: 'update:book'
@@ -58,7 +87,7 @@ const routes = [
     {
         path: '/authors/new',
         name: 'CreateAuthor',
-        component: () => import('@/components/authors/AuthorForm.vue'),
+        redirect: '/admin/authors',
         meta: { 
             requiresAuth: true,
             requiredPermission: 'create:author'
@@ -67,7 +96,7 @@ const routes = [
     {
         path: '/authors/:id/edit',
         name: 'EditAuthor',
-        component: () => import('@/components/authors/AuthorForm.vue'),
+        redirect: to => ({ path: '/admin/authors' }),
         meta: { 
             requiresAuth: true,
             requiredPermission: 'update:author'

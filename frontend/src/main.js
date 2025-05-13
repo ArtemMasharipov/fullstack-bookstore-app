@@ -3,9 +3,9 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 
-// Import Toast Notification
+// Import Toast Notification library
 import ToastPlugin from 'vue-toast-notification'
-import 'vue-toast-notification/dist/theme-sugar.css'
+import 'vue-toast-notification/dist/theme-bootstrap.css'
 
 // Import Vuetify
 import '@mdi/font/css/materialdesignicons.css'
@@ -45,9 +45,10 @@ app
     .use(router)
     .use(vuetify)
     .use(ToastPlugin, {
-        position: 'top-right',
-        duration: 3000,
-        dismissible: true
+      position: 'top-right',
+      duration: 5000,
+      dismissible: true,
+      pauseOnHover: true
     })
 
 // Import authentication store and initialize application

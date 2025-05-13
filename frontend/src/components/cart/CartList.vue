@@ -74,7 +74,7 @@
 </template>
 
 <script>
-import { useAuthStore, useCartStore } from '@/stores';
+import { useAuthStore, useCartStore, toast } from '@/stores';
 import { mapGetters } from 'pinia';
 import ErrorMessage from '../common/ErrorMessage.vue';
 import LoadingSpinner from '../common/LoadingSpinner.vue';
@@ -109,21 +109,23 @@ export default {
     },
 
     watch: {
-        isAuthenticated: {            immediate: true,
+        isAuthenticated: {            
+            immediate: true,
             async handler(newVal) {
                 if (newVal) {
                     try {
                         await this.fetchCart();
                     } catch (error) {
-                        // Error is already handled by the store
+                        toast.error('Failed to load cart: ' + error.message);
                     }
                 }
             },
         },
-    },    created() {
+    },    
+    created() {
         if (this.isAuthenticated) {
-            this.fetchCart().catch(() => {
-                // Error is already handled by the store
+            this.fetchCart().catch((error) => {
+                toast.error('Failed to load cart: ' + error.message);
             });
         }
     },

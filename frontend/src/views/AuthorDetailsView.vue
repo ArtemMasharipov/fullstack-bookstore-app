@@ -5,12 +5,12 @@
 </template>
 
 <script>
-import AuthorDetails from '@/components/authors/AuthorDetails.vue';
+import AuthorDetails from '@/components/authors/AuthorDetails.vue'
 
 export default {
     name: 'AuthorDetailsView',
     components: {
         AuthorDetails,
     },
-};
+}
 </script>

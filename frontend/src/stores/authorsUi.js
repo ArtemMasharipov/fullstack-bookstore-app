@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { useAuthorsStore } from './authors'
-import { useUiStore } from './ui'
+import { toast } from '.'
 
 /**
  * Store for managing Authors UI state and interactions
@@ -25,7 +25,6 @@ export const useAuthorsUiStore = defineStore('authorsUi', {
      */
     async fetchAuthors() {
       const authorsStore = useAuthorsStore()
-      const uiStore = useUiStore()
       
       try {
         await authorsStore.fetchAuthors()
@@ -33,7 +32,7 @@ export const useAuthorsUiStore = defineStore('authorsUi', {
       } catch (error) {
         // Don't show auth errors since they're handled by the API interceptor
         if (error.status !== 401) {
-          uiStore.showError(error.message || 'Failed to fetch authors')
+          toast.error(error.message || 'Failed to fetch authors')
         }
         throw error
       }
@@ -44,14 +43,13 @@ export const useAuthorsUiStore = defineStore('authorsUi', {
      */
     async handleAction(action, ...args) {
       const authorsStore = useAuthorsStore()
-      const uiStore = useUiStore()
-        try {
+      try {
         await action(...args)
         await this.fetchAuthors()
         this.closeForm()
         return true
       } catch (error) {
-        uiStore.showError(error.message || 'Action failed')
+        toast.error(error.message || 'Action failed')
         throw error
       }
     },
@@ -85,7 +83,6 @@ export const useAuthorsUiStore = defineStore('authorsUi', {
      */
     async handleFormSubmit(formData) {
       const authorsStore = useAuthorsStore()
-      const uiStore = useUiStore()
       
       const action = formData._id 
           ? (data) => authorsStore.updateAuthor(data)
@@ -93,9 +90,7 @@ export const useAuthorsUiStore = defineStore('authorsUi', {
       
       try {
         await this.handleAction(action, formData)
-        uiStore.showSnackbar({
-          message: formData._id ? 'Author updated successfully' : 'Author created successfully'
-        })
+        toast.success(formData._id ? 'Author updated successfully' : 'Author created successfully')
         return true
       } catch (error) {
         return false
@@ -115,14 +110,13 @@ export const useAuthorsUiStore = defineStore('authorsUi', {
      */
     async confirmDelete() {
       const authorsStore = useAuthorsStore()
-      const uiStore = useUiStore()
       
       try {
         await this.handleAction(
           (id) => authorsStore.deleteAuthor(id), 
           this.authorToDelete
         )
-        uiStore.showSnackbar({ message: 'Author deleted successfully' })
+        toast.success('Author deleted successfully')
         this.showDeleteConfirm = false
         this.authorToDelete = null
         return true

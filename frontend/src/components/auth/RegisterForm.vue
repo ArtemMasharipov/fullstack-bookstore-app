@@ -1,21 +1,8 @@
 <template>
     <v-form class="auth-form" @submit.prevent="handleSubmit">
-        <v-text-field
-            id="username"
-            v-model="username"
-            label="Username"
-            variant="outlined"
-            required
-        ></v-text-field>
+        <v-text-field id="username" v-model="username" label="Username" variant="outlined" required></v-text-field>
 
-        <v-text-field
-            id="email"
-            v-model="email"
-            label="Email"
-            variant="outlined"
-            type="email"
-            required
-        ></v-text-field>
+        <v-text-field id="email" v-model="email" label="Email" variant="outlined" type="email" required></v-text-field>
 
         <v-text-field
             id="password"
@@ -35,29 +22,19 @@
             required
         ></v-text-field>
 
-        <v-btn 
-            type="submit" 
-            color="primary" 
-            block 
-            :loading="authLoading"
-            class="mt-4"
-        >
+        <v-btn type="submit" color="primary" block :loading="authLoading" class="mt-4">
             {{ authLoading ? 'Creating Account...' : 'Register' }}
         </v-btn>
 
-        <v-alert
-            v-if="authError"
-            type="error"
-            class="mt-4"
-        >
+        <v-alert v-if="authError" type="error" class="mt-4">
             {{ authError }}
         </v-alert>
     </v-form>
 </template>
 
 <script>
-import { useAuthStore, useAuthUiStore } from '@/stores';
-import { mapActions, mapGetters } from 'pinia';
+import { useAuthStore, useAuthUiStore } from '@/stores'
+import { mapActions, mapGetters } from 'pinia'
 
 export default {
     name: 'RegisterForm',
@@ -67,34 +44,34 @@ export default {
             email: '',
             password: '',
             confirmPassword: '',
-        };
+        }
     },
     computed: {
         ...mapGetters(useAuthStore, {
             authLoading: 'loading',
             authError: 'error',
-        })
+        }),
     },
     methods: {
         ...mapActions(useAuthUiStore, ['handleRegister', 'clearError']),
-        
+
         async handleSubmit() {
             // Clear any previous errors
-            this.clearError();
-            
+            this.clearError()
+
             const success = await this.handleRegister({
                 username: this.username,
                 email: this.email,
                 password: this.password,
                 confirmPassword: this.confirmPassword,
-            });
-            
+            })
+
             if (success) {
-                this.$router.push('/');
+                this.$router.push('/')
             }
-        }
-    }
-};
+        },
+    },
+}
 </script>
 
 <style scoped>

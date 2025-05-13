@@ -1,5 +1,5 @@
 import { authorsApi } from '@/api/authorsApi';
-import { useNotificationStore } from './notification';
+import { toast } from '.';
 import { handleAsyncAction } from './utils/stateHelpers';
 import { createBaseStore } from './utils/storeFactory';
 
@@ -14,7 +14,8 @@ export const useAuthorsStore = createBaseStore({
   // Custom state specific to authors store
   customState: () => ({
     // Map to maintain API compatibility with existing components
-    list: [] // This will be synced with 'items' in the base store
+    list: [], // This will be synced with 'items' in the base store
+    searchQuery: '' // For author search functionality
   }),
   
   // Custom getters specific to authors store
@@ -51,8 +52,6 @@ export const useAuthorsStore = createBaseStore({
      * @param {Object} authorData - Author data
      */
     async createAuthor(authorData) {
-      const notificationStore = useNotificationStore();
-      
       return handleAsyncAction(this, async () => {
         try {
           const author = await this.create(authorData);
@@ -60,11 +59,11 @@ export const useAuthorsStore = createBaseStore({
           this.list = [...this.items];
           
           const authorName = authorData.name || 'Author';
-          notificationStore.success(`Author "${authorName}" created successfully`);
+          toast.success(`Author "${authorName}" created successfully`);
           
           return author;
         } catch (error) {
-          notificationStore.error(`Failed to create author: ${error.message}`);
+          toast.error(`Failed to create author: ${error.message}`);
           throw error;
         }
       });
@@ -74,8 +73,6 @@ export const useAuthorsStore = createBaseStore({
      * @param {Object} authorData - Author data with ID
      */
     async updateAuthor(authorData) {
-      const notificationStore = useNotificationStore();
-      
       return handleAsyncAction(this, async () => {
         try {
           if (!authorData || (!authorData._id && !authorData.id)) {
@@ -88,11 +85,11 @@ export const useAuthorsStore = createBaseStore({
           this.list = [...this.items];
           
           const authorName = authorData.name || author.name || 'Author';
-          notificationStore.success(`Author "${authorName}" updated successfully`);
+          toast.success(`Author "${authorName}" updated successfully`);
           
           return author;
         } catch (error) {
-          notificationStore.error(`Failed to update author: ${error.message}`);
+          toast.error(`Failed to update author: ${error.message}`);
           throw error;
         }
       });
@@ -103,7 +100,6 @@ export const useAuthorsStore = createBaseStore({
      * @param {string} authorName - Author name for notification (optional)
      */
     async deleteAuthor(authorId, authorName = 'Author') {
-      const notificationStore = useNotificationStore();
       
       return handleAsyncAction(this, async () => {
         try {
@@ -118,13 +114,23 @@ export const useAuthorsStore = createBaseStore({
           // Ensure list stays in sync with items
           this.list = [...this.items];
           
-          notificationStore.info(`Author "${displayName}" deleted successfully`);
+          toast.info(`Author "${displayName}" deleted successfully`);
           return result;
         } catch (error) {
-          notificationStore.error(`Failed to delete author: ${error.message}`);
+          toast.error(`Failed to delete author: ${error.message}`);
           throw error;
         }
       });
+    },
+    
+    /**
+     * Set search query for authors
+     * @param {string} query - Search query string
+     */
+    setSearchQuery(query) {
+      this.searchQuery = query;
+      // Apply search query as a filter for the next API request
+      this.applyFilters({ search: query });
     }
   }
 });

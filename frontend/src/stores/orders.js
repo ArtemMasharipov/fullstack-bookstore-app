@@ -1,6 +1,6 @@
 import { orderApi } from '@/api/orderApi'
 import { useCartStore } from './cart'
-import { useNotificationStore } from './notification'
+import { toast } from '.'
 import { handleAsyncAction } from './utils/stateHelpers'
 import { createBaseStore } from './utils/storeFactory'
 
@@ -47,8 +47,7 @@ export const useOrdersStore = createBaseStore({
         const cartStore = useCartStore();
         await cartStore.clearCart();
           // Notify user
-        const notificationStore = useNotificationStore();
-        notificationStore.success(
+        toast.success(
           `Order #${order._id || order.id || 'New'} placed successfully!`, 
           { 
             duration: 6000,
@@ -115,8 +114,7 @@ export const useOrdersStore = createBaseStore({
           orderInOrders.status = updatedOrder.status;
         }
           // Notify user
-        const notificationStore = useNotificationStore();
-        notificationStore.success(
+        toast.success(
           `Order #${id} status updated to "${status}"`, 
           { 
             duration: 4000 
@@ -147,8 +145,7 @@ export const useOrdersStore = createBaseStore({
           orderInOrders.status = updatedOrder.status;
         }
           // Notify user
-        const notificationStore = useNotificationStore();
-        notificationStore.warning(
+        toast.warning(
           `Order #${id} has been cancelled`, 
           { 
             duration: 4000 

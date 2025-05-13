@@ -1,16 +1,16 @@
 <template>
-  <v-container>
-    <author-list />
-  </v-container>
+    <v-container>
+        <author-list />
+    </v-container>
 </template>
 
 <script>
-import AuthorList from '@/components/authors/AuthorList.vue';
+import AuthorList from '@/components/authors/AuthorList.vue'
 
 export default {
-  name: 'AuthorsView',
-  components: {
-    AuthorList,
-  },
-};
+    name: 'AuthorsView',
+    components: {
+        AuthorList,
+    },
+}
 </script>

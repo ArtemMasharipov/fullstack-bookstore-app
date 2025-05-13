@@ -61,11 +61,10 @@
                     <v-card v-if="book.description" variant="outlined" class="mb-4 bg-grey-lighten-4">
                         <v-card-text>
                             {{ book.description }}
-                        </v-card-text>
-                    </v-card>
-
+                        </v-card-text>                    </v-card>
+                    
                     <v-row>
-                        <v-col cols="12" md="6">
+                        <v-col :cols="authStore.hasPermission('admin:access') ? 6 : 12" :md="authStore.hasPermission('admin:access') ? 6 : 12">
                             <v-btn
                                 v-if="book.inStock"
                                 color="primary"
@@ -78,27 +77,14 @@
                             </v-btn>
                         </v-col>
                         
-                        <v-col v-if="hasPermission('update:book')" cols="6" md="3">
+                        <v-col v-if="authStore.hasPermission('admin:access')" cols="6" md="6">
                             <v-btn
                                 color="secondary"
-                                variant="outlined"
                                 block
-                                @click="handleEdit"
-                                prepend-icon="mdi-pencil"
+                                to="/admin/books"
+                                prepend-icon="mdi-shield-account"
                             >
-                                Edit
-                            </v-btn>
-                        </v-col>
-                        
-                        <v-col v-if="hasPermission('delete:book')" cols="6" md="3">
-                            <v-btn
-                                color="error"
-                                variant="outlined"
-                                block
-                                @click="confirmDelete"
-                                prepend-icon="mdi-delete"
-                            >
-                                Delete
+                                Manage in Admin
                             </v-btn>
                         </v-col>
                     </v-row>
@@ -128,9 +114,7 @@
                     </v-slide-group>
                 </v-col>
             </v-row>
-        </v-container>
-
-        <v-alert
+        </v-container>        <v-alert
             v-else-if="error"
             type="error"
             variant="tonal"
@@ -139,20 +123,6 @@
         >
             {{ error }}
         </v-alert>
-
-        <v-dialog v-model="showDeleteModalPage" max-width="400">
-            <v-card>
-                <v-card-title class="text-h5">Delete Book</v-card-title>
-                <v-card-text>
-                    <p>Are you sure you want to delete this book?</p>
-                </v-card-text>
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn color="grey" variant="text" @click="showDeleteModalPage = false">Cancel</v-btn>
-                    <v-btn color="error" @click="handleDelete">Delete</v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
     </div>
 </template>
 
@@ -178,11 +148,8 @@ export default {
         },
     },
 
-    emits: ['edit', 'delete', 'success', 'error'],
-
-    data() {
+    emits: ['success', 'error'],    data() {
         return {
-            showDeleteModalPage: false,
             placeholderImage: '/images/placeholder.png',
         };
     },
@@ -205,9 +172,6 @@ export default {
         },
         error() {
             return this.booksStore.error;
-        },
-        hasPermission() {
-            return this.authStore.hasPermission;
         },
         book() {
             return this.currentBook;
@@ -233,30 +197,11 @@ export default {
         this.fetchBook(this.bookId);
     },
 
-    methods: {
-        fetchBook(id) {
+    methods: {        fetchBook(id) {
             return this.booksStore.fetchBookById(id);
-        },
-        deleteBook(id) {
-            return this.booksStore.deleteBook(id);
         },
         addToCart(item) {
             return this.cartStore.addToCart(item);
-        },
-        
-        handleEdit() {
-            this.$emit('edit', this.book);
-        },
-
-        confirmDelete() {
-            this.showDeleteModalPage = true;
-        },        async handleDelete() {
-            try {
-                await this.deleteBook(this.book.id);
-                this.$router.push('/books');
-            } catch (error) {
-                // Error is already handled by the store
-            }
         },
 
         async handleAddToCart() {

@@ -1,5 +1,5 @@
 import { booksApi } from '@/api/booksApi';
-import { useNotificationStore } from './notification';
+import { toast } from '.';
 import { handleAsyncAction } from './utils/stateHelpers';
 import { createBaseStore } from './utils/storeFactory';
 
@@ -25,11 +25,10 @@ export const useBooksStore = createBaseStore({
       }
     }
   }),
-  
-  // Custom getters specific to books store
+    // Custom getters specific to books store
   customGetters: {
     booksList: (state) => state.list.books,
-    pagination: (state) => state.list.pagination,
+    booksPagination: (state) => state.list.pagination,
     currentBook: (state) => state.current,
     booksLoading: (state) => state.loading,
     booksError: (state) => state.error
@@ -68,7 +67,6 @@ export const useBooksStore = createBaseStore({
      * @returns {Promise} - Created book
      */
     async createBook(formData) {
-      const notificationStore = useNotificationStore();
       
       return handleAsyncAction(this, 
         async () => {
@@ -77,13 +75,13 @@ export const useBooksStore = createBaseStore({
           
           // Show success notification
           const title = formData instanceof FormData ? formData.get('title') || 'New book' : formData.title || 'New book';
-          notificationStore.success(`"${title}" has been created successfully`);
+          toast.success(`"${title}" has been created successfully`);
           
           return book;
         },
         {
           onError: (error) => {
-            notificationStore.error(`Failed to create book: ${error.message}`);
+            toast.error(`Failed to create book: ${error.message}`);
           }
         }
       );
@@ -96,7 +94,6 @@ export const useBooksStore = createBaseStore({
      * @returns {Promise} - Updated book
      */
     async updateBook({ id, formData }) {
-      const notificationStore = useNotificationStore();
       
       return handleAsyncAction(this, 
         async () => {
@@ -107,13 +104,13 @@ export const useBooksStore = createBaseStore({
           }
           
           // Show success notification
-          notificationStore.success(`"${updatedBook.title || 'Book'}" has been updated successfully`);
+          toast.success(`"${updatedBook.title || 'Book'}" has been updated successfully`);
           
           return updatedBook;
         },
         {
           onError: (error) => {
-            notificationStore.error(`Failed to update book: ${error.message}`);
+            toast.error(`Failed to update book: ${error.message}`);
           }
         }
       );
@@ -125,8 +122,6 @@ export const useBooksStore = createBaseStore({
      */
     async deleteBook(id, title = '') {
       if (!id) throw new Error('Book ID is required');
-      
-      const notificationStore = useNotificationStore();
       
       return handleAsyncAction(this, 
         async () => {
@@ -140,11 +135,11 @@ export const useBooksStore = createBaseStore({
           this.list.books = this.list.books.filter(book => book._id !== id);
           
           // Show notification
-          notificationStore.warning(`"${title}" has been deleted`);
+          toast.warning(`"${title}" has been deleted`);
         },
         {
           onError: (error) => {
-            notificationStore.error(`Failed to delete book: ${error.message}`);
+            toast.error(`Failed to delete book: ${error.message}`);
           }
         }
       );

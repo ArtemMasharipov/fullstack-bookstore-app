@@ -12,3 +12,10 @@ export { useUiStore } from './ui'
 export { useUsersStore } from './users'
 export { useUsersUiStore } from './usersUi'
 
+// Импорт и экспорт улучшенного toast сервиса
+import toast from '@/services/enhancedToast'
+export { toast }
+
+// Импорт и экспорт вспомогательных функций для toast
+import toastHelpers from '@/services/toastHelpers'
+export { toastHelpers }
