@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import BookDetails from '@/components/books/BookDetails.vue'
+import BookDetails from '@/components/features/books/BookDetails.vue'
 
 export default {
     name: 'BookDetailsView',

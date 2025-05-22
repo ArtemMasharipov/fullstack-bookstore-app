@@ -92,7 +92,7 @@ export { toastHelpers }
 Система предоставляет интуитивный API для основных уведомлений:
 
 ```javascript
-import { toast } from '@/stores';
+import { toast } from '@/store';
 
 // Простые уведомления
 toast.success('Операция успешно выполнена');
@@ -118,7 +118,7 @@ toast.error(toast.messages.crud.updateError('Книга'));
 ### Использование хелперов для CRUD-операций
 
 ```javascript
-import { toastHelpers } from '@/stores';
+import { toastHelpers } from '@/store';
 
 // Пример с операцией создания
 async function createUser(userData) {
@@ -164,7 +164,7 @@ async function loadOrders() {
 ### Продвинутое использование с withToast
 
 ```javascript
-import { toast } from '@/stores';
+import { toast } from '@/store';
 
 // Универсальная обертка для асинхронных операций
 async function processComplexOperation() {

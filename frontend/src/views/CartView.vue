@@ -10,7 +10,7 @@
 </template>
 
 <script>
-import CartList from '@/components/cart/CartList.vue'
+import CartList from '@/components/features/cart/CartList.vue'
 
 export default {
     name: 'CartView',

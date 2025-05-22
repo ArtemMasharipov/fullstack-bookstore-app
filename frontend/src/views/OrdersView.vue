@@ -10,7 +10,7 @@
 </template>
 
 <script>
-import OrdersList from '@/components/orders/OrdersList.vue'
+import OrdersList from '@/components/features/orders/OrdersList.vue'
 
 export default {
     name: 'OrdersView',

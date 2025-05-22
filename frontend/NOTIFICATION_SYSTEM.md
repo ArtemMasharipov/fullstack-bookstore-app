@@ -32,7 +32,7 @@ A service wrapper around the library that provides a consistent and simplified A
 
 ```javascript
 // Import and use in components
-import { toast } from '@/stores';
+import { toast } from '@/store';
 
 // Show different types of notifications
 toast.success('Operation completed successfully');
@@ -60,10 +60,10 @@ toast.info('Just FYI');
 
 ```javascript
 // In a component or store
-import { toast } from '@/stores';
+import { toast } from '@/store';
 
 export default {
-  methods: {
+  methods:{
     async saveData() {
       try {
         await this.apiCall();

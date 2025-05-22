@@ -1,4 +1,4 @@
-import { useAuthStore } from '@/stores'
+import { useAuthStore } from '@/store'
 
 const authGuard = async (to, from, next) => {
     const authStore = useAuthStore()
@@ -23,6 +23,7 @@ const authGuard = async (to, from, next) => {
         return
     }
 
+    // Check if the user has the required permission
     if (requiredPermission && !authStore.hasPermission(requiredPermission)) {
         next('/unauthorized')
         return

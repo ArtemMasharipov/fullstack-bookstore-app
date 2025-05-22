@@ -11,5 +11,18 @@ module.exports = {
     rules: {
         'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
         'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+        'no-restricted-imports': [
+            'error',
+            {
+                paths: [
+                    {
+                        name: 'pinia',
+                        importNames: ['mapGetters', 'mapActions', 'mapStores'],
+                        message:
+                            "Please don't use map* helpers from Pinia. Follow our standard approach from docs/PINIA_USAGE_GUIDELINES.md",
+                    },
+                ],
+            },
+        ],
     },
 }

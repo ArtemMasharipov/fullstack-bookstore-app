@@ -149,7 +149,7 @@ export const useMyStore = defineStore('myStore', {
 
 ```vue
 <script>
-import { useMyStore } from '@/stores'
+import { useMyStore } from '@/store'
 
 export default {
   computed: {
@@ -204,7 +204,7 @@ export default {
 
 <!-- Pinia (после) -->
 <script>
-import { useAuthStore } from '@/stores'
+import { useAuthStore } from '@/store'
 
 export default {
   computed: {

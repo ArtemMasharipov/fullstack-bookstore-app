@@ -16,43 +16,39 @@ import 'vuetify/styles'
 
 // Create Vuetify instance
 const vuetify = createVuetify({
-  components,
-  directives,
-  theme: {
-    defaultTheme: 'light',
-    themes: {
-      light: {
-        dark: false,
-        colors: {
-          primary: '#42b983',
-          secondary: '#2c3e50',
-          error: '#dc3545',
-          info: '#2196F3',
-          success: '#4CAF50',
-          warning: '#FFC107',
-        }
-      }
-    }
-  }
+    components,
+    directives,
+    theme: {
+        defaultTheme: 'light',
+        themes: {
+            light: {
+                dark: false,
+                colors: {
+                    primary: '#42b983',
+                    secondary: '#2c3e50',
+                    error: '#dc3545',
+                    info: '#2196F3',
+                    success: '#4CAF50',
+                    warning: '#FFC107',
+                },
+            },
+        },
+    },
 })
 
 const app = createApp(App)
 const pinia = createPinia()
 
 // Create application with Pinia, Router, Vuetify and Toast notifications
-app
-    .use(pinia)
-    .use(router)
-    .use(vuetify)
-    .use(ToastPlugin, {
-      position: 'top-right',
-      duration: 5000,
-      dismissible: true,
-      pauseOnHover: true
-    })
+app.use(pinia).use(router).use(vuetify).use(ToastPlugin, {
+    position: 'top-right',
+    duration: 5000,
+    dismissible: true,
+    pauseOnHover: true,
+})
 
 // Import authentication store and initialize application
-import { useAuthStore } from './stores/auth'
+import { useAuthStore } from './store'
 
 // Initialize authentication state before mounting the application
 const authStore = useAuthStore()

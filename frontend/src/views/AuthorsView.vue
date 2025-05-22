@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import AuthorList from '@/components/authors/AuthorList.vue'
+import AuthorList from '@/components/features/authors/AuthorList.vue'
 
 export default {
     name: 'AuthorsView',
