@@ -4,13 +4,6 @@
     </admin-layout>
 </template>
 
-<script>
+<script setup>
 import AdminLayout from '@/components/layout/admin/AdminLayout.vue'
-
-export default {
-    name: 'AdminWrapper',
-    components: {
-        AdminLayout,
-    },
-}
 </script>

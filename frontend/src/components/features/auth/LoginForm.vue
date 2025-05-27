@@ -48,62 +48,49 @@
     </v-container>
 </template>
 
-<script>
+<script setup>
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { useAuthStore, useAuthUiStore } from '@/store'
 
-export default {
-    name: 'LoginForm',
-    data() {
-        return {
-            email: '',
-            password: '',
+// Router
+const router = useRouter()
+
+// Stores
+const authStore = useAuthStore()
+const authUiStore = useAuthUiStore()
+
+// Extract reactive state from stores
+const { loading: authLoading, error: authError, isAuthenticated, currentUser } = storeToRefs(authStore)
+
+// Local reactive state
+const email = ref('')
+const password = ref('')
+
+// Methods
+const handleSubmit = async () => {
+    // Clear any previous errors
+    authUiStore.clearError()
+
+    // Attempt login
+    const success = await authUiStore.handleLogin({
+        email: email.value,
+        password: password.value,
+    })
+
+    // If successfully authenticated, redirect to saved path or home page
+    if (success && isAuthenticated.value) {
+        // Check for a saved redirect path
+        const redirectPath = localStorage.getItem('redirectPath')
+        if (redirectPath) {
+            // Clear the saved path before redirecting
+            localStorage.removeItem('redirectPath')
+            router.push(redirectPath)
+        } else {
+            router.push('/')
         }
-    },
-    computed: {
-        authStore() {
-            return useAuthStore()
-        },
-        authUiStore() {
-            return useAuthUiStore()
-        },
-        authLoading() {
-            return this.authStore.loading
-        },
-        authError() {
-            return this.authStore.error
-        },
-        isAuthenticated() {
-            return this.authStore.isAuthenticated
-        },
-        currentUser() {
-            return this.authStore.currentUser
-        },
-    },
-    methods: {
-        async handleSubmit() {
-            // Clear any previous errors
-            this.authUiStore.clearError()
-
-            // Attempt login
-            const success = await this.authUiStore.handleLogin({
-                email: this.email,
-                password: this.password,
-            })
-
-            // If successfully authenticated, redirect to saved path or home page
-            if (success && this.isAuthenticated) {
-                // Check for a saved redirect path
-                const redirectPath = localStorage.getItem('redirectPath')
-                if (redirectPath) {
-                    // Clear the saved path before redirecting
-                    localStorage.removeItem('redirectPath')
-                    this.$router.push(redirectPath)
-                } else {
-                    this.$router.push('/')
-                }
-            }
-        },
-    },
+    }
 }
 </script>
 

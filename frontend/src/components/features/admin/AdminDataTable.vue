@@ -86,167 +86,163 @@
     </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, watch, onMounted } from 'vue'
 import { debounce } from 'lodash-es'
 
-export default {
-    name: 'AdminDataTable',
-    props: {
-        // Main data props
-        headers: {
-            type: Array,
-            required: true,
-        },
-        items: {
-            type: Array,
-            default: () => [],
-        },
-        loading: {
-            type: Boolean,
-            default: false,
-        },
-
-        // Pagination props
-        page: {
-            type: Number,
-            default: 1,
-        },
-        itemsPerPage: {
-            type: Number,
-            default: 10,
-        },
-        totalItems: {
-            type: Number,
-            default: 0,
-        },
-        itemsPerPageOptions: {
-            type: Array,
-            default: () => [5, 10, 25, 50],
-        },
-
-        // Sort props
-        sortBy: {
-            type: Array,
-            default: () => [],
-        },
-
-        // Search props
-        search: {
-            type: String,
-            default: '',
-        },
-        searchLabel: {
-            type: String,
-            default: 'Search',
-        },
-        searchDebounce: {
-            type: Number,
-            default: 300,
-        },
-        showSearch: {
-            type: Boolean,
-            default: true,
-        },
-
-        // Filter props
-        showFilters: {
-            type: Boolean,
-            default: true,
-        },
-        showResetFilters: {
-            type: Boolean,
-            default: true,
-        },
-
-        // Display props
-        title: {
-            type: String,
-            default: '',
-        },
-        subtitle: {
-            type: String,
-            default: '',
-        },
-
-        // Empty state props
-        emptyStateTitle: {
-            type: String,
-            default: 'No data found',
-        },
-        emptyStateText: {
-            type: String,
-            default: 'No items match your current filters',
-        },
-        emptyStateIcon: {
-            type: String,
-            default: 'mdi-database-off-outline',
-        },
-        emptyStateColor: {
-            type: String,
-            default: 'grey',
-        },
-        loadingText: {
-            type: String,
-            default: 'Loading data...',
-        },
+// Props
+const props = defineProps({
+    // Main data props
+    headers: {
+        type: Array,
+        required: true,
+    },
+    items: {
+        type: Array,
+        default: () => [],
+    },
+    loading: {
+        type: Boolean,
+        default: false,
     },
 
-    emits: ['update:page', 'update:items-per-page', 'update:sort-by', 'update:search', 'reset-filters'],
-
-    data() {
-        return {
-            searchQuery: this.search,
-        }
+    // Pagination props
+    page: {
+        type: Number,
+        default: 1,
+    },
+    itemsPerPage: {
+        type: Number,
+        default: 10,
+    },
+    totalItems: {
+        type: Number,
+        default: 0,
+    },
+    itemsPerPageOptions: {
+        type: Array,
+        default: () => [5, 10, 25, 50],
     },
 
-    computed: {
-        pageSync: {
-            get() {
-                return this.page
-            },
-            set(value) {
-                this.$emit('update:page', value)
-            },
-        },
-
-        itemsPerPageSync: {
-            get() {
-                return this.itemsPerPage
-            },
-            set(value) {
-                this.$emit('update:items-per-page', value)
-            },
-        },
-
-        sortBySync: {
-            get() {
-                return this.sortBy
-            },
-            set(value) {
-                this.$emit('update:sort-by', value)
-            },
-        },
+    // Sort props
+    sortBy: {
+        type: Array,
+        default: () => [],
     },
 
-    watch: {
-        search(newValue) {
-            this.searchQuery = newValue
-        },
+    // Search props
+    search: {
+        type: String,
+        default: '',
+    },
+    searchLabel: {
+        type: String,
+        default: 'Search',
+    },
+    searchDebounce: {
+        type: Number,
+        default: 300,
+    },
+    showSearch: {
+        type: Boolean,
+        default: true,
     },
 
-    methods: {
-        onSearchChange() {
-            this.debouncedSearch()
-        },
+    // Filter props
+    showFilters: {
+        type: Boolean,
+        default: true,
+    },
+    showResetFilters: {
+        type: Boolean,
+        default: true,
     },
 
-    created() {
-        // Create the debounced function with the delay from props
-        this.debouncedSearch = debounce(() => {
-            this.$emit('update:search', this.searchQuery)
-        }, this.searchDebounce)
+    // Display props
+    title: {
+        type: String,
+        default: '',
     },
+    subtitle: {
+        type: String,
+        default: '',
+    },
+
+    // Empty state props
+    emptyStateTitle: {
+        type: String,
+        default: 'No data found',
+    },
+    emptyStateText: {
+        type: String,
+        default: 'No items match your current filters',
+    },
+    emptyStateIcon: {
+        type: String,
+        default: 'mdi-database-off-outline',
+    },
+    emptyStateColor: {
+        type: String,
+        default: 'grey',
+    },
+    loadingText: {
+        type: String,
+        default: 'Loading data...',
+    },
+})
+
+// Emits
+const emit = defineEmits(['update:page', 'update:items-per-page', 'update:sort-by', 'update:search', 'reset-filters'])
+
+// Reactive data
+const searchQuery = ref(props.search)
+let debouncedSearch
+
+// Computed properties
+const pageSync = computed({
+    get() {
+        return props.page
+    },
+    set(value) {
+        emit('update:page', value)
+    },
+})
+
+const itemsPerPageSync = computed({
+    get() {
+        return props.itemsPerPage
+    },
+    set(value) {
+        emit('update:items-per-page', value)
+    },
+})
+
+const sortBySync = computed({
+    get() {
+        return props.sortBy
+    },
+    set(value) {
+        emit('update:sort-by', value)
+    },
+})
+
+// Watchers
+watch(() => props.search, (newValue) => {
+    searchQuery.value = newValue
+})
+
+// Methods
+const onSearchChange = () => {
+    debouncedSearch()
 }
+
+// Lifecycle
+onMounted(() => {
+    // Create the debounced function with the delay from props
+    debouncedSearch = debounce(() => {
+        emit('update:search', searchQuery.value)
+    }, props.searchDebounce)
+})
 </script>
 
 <style scoped>

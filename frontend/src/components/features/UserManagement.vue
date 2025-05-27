@@ -66,63 +66,53 @@
     </v-container>
 </template>
 
-<script>
+<script setup>
+import { computed, onMounted } from 'vue'
 import { useAuthStore, useUsersStore, useUsersUiStore } from '@/store'
 
-export default {
-    name: 'UserManagement',
-    computed: {
-        authStore() {
-            return useAuthStore()
-        },
-        usersStore() {
-            return useUsersStore()
-        },
-        usersUiStore() {
-            return useUsersUiStore()
-        },
-        users() {
-            return this.usersStore.usersList
-        },
-        loading() {
-            return this.usersStore.usersLoading
-        },
-        error() {
-            return this.usersStore.usersError
-        },
-        isAuthenticated() {
-            return this.authStore.isAuthenticated
-        },
-        isAdmin() {
-            return this.authStore.isAdmin
-        },
-        showConfirmDialog() {
-            return this.usersUiStore.getShowConfirmDialog
-        },
-        userToDelete() {
-            return this.usersUiStore.getUserToDelete
-        },
-    },
+/**
+ * Store instances
+ */
+const authStore = useAuthStore()
+const usersStore = useUsersStore()
+const usersUiStore = useUsersUiStore()
 
-    created() {
-        if (this.isAdmin) {
-            this.fetchUsers()
-        }
-    },
+/**
+ * Computed properties
+ */
+const users = computed(() => usersStore.usersList)
+const loading = computed(() => usersStore.usersLoading)
+const error = computed(() => usersStore.usersError)
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+const isAdmin = computed(() => authStore.isAdmin)
+const showConfirmDialog = computed(() => usersUiStore.getShowConfirmDialog)
+const userToDelete = computed(() => usersUiStore.getUserToDelete)
 
-    methods: {
-        fetchUsers() {
-            return this.usersUiStore.fetchUsers()
-        },
-        confirmDelete(user) {
-            return this.usersUiStore.confirmDelete(user)
-        },
-        cancelDelete() {
-            return this.usersUiStore.cancelDelete()
-        },
-        performDelete() {
-            return this.usersUiStore.performDelete()
-        },
-    },
+/**
+ * Methods
+ */
+const fetchUsers = () => {
+    return usersUiStore.fetchUsers()
 }
+
+const confirmDelete = (user) => {
+    return usersUiStore.confirmDelete(user)
+}
+
+const cancelDelete = () => {
+    return usersUiStore.cancelDelete()
+}
+
+const performDelete = () => {
+    return usersUiStore.performDelete()
+}
+
+/**
+ * Lifecycle hooks
+ */
+onMounted(() => {
+    if (isAdmin.value) {
+        fetchUsers()
+    }
+})
 </script>

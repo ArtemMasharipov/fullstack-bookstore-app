@@ -1,8 +1,8 @@
 import { cartApi } from '@/services/api/cartApi'
-import { useAuthStore } from '@/store/modules/auth/auth'
-import { handleAsyncAction } from '@/store/modules/utils/stateHelpers'
-import { createBaseStore } from '@/store/modules/utils/storeFactory'
-import { syncError, syncInfo, syncSuccess } from '@/utils/toastSync'
+import { useAuthStore } from '@/store/modules/auth'
+import { handleAsyncAction } from '@/store/modules/ui'
+import { createBaseStore } from '@/store/modules/ui'
+import { syncError, syncInfo, syncSuccess } from '@/utils/helpers'
 
 /**
  * Cart store using the base store factory

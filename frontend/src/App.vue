@@ -1,6 +1,6 @@
 <template>
     <v-app>
-        <nav-bar />
+        <nav-bar-layout />
 
         <v-main>
             <v-container fluid>
@@ -11,34 +11,28 @@
         <footer-layout />
 
         <!-- Dialog system (separate from notifications for SOLID principles) -->
-        <DialogUI />
+        <dialog-layout />
     </v-app>
 </template>
 
-<script>
-import DialogUI from './components/layout/DialogUI.vue'
-import FooterLayout from './components/layout/FooterLayout.vue'
-import NavBar from './components/layout/NavBar.vue'
+<script setup>
+// Components
+import { DialogLayout, FooterLayout, NavBarLayout } from './components/layout'
+
+// Stores
 import { useAuthStore } from './store'
 
-export default {
-    name: 'App',
-    components: {
-        NavBar,
-        FooterLayout,
-        DialogUI,
-    },
-    setup() {
-        const authStore = useAuthStore()
+// Composition API imports
+import { onMounted } from 'vue'
 
-        // Restore user data from token
-        authStore.restoreUserFromToken()
+// Store instance
+const authStore = useAuthStore()
 
-        return {
-            authStore,
-        }
-    },
-}
+// Lifecycle hooks
+onMounted(() => {
+    // Initialize auth store to restore user data from localStorage and validate token
+    authStore.initialize()
+})
 </script>
 
 <style>

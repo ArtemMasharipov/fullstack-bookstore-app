@@ -32,50 +32,43 @@
     </v-form>
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { useAuthStore, useAuthUiStore } from '@/store'
 
-export default {
-    name: 'RegisterForm',
-    data() {
-        return {
-            username: '',
-            email: '',
-            password: '',
-            confirmPassword: '',
-        }
-    },
-    computed: {
-        authStore() {
-            return useAuthStore()
-        },
-        authUiStore() {
-            return useAuthUiStore()
-        },
-        authLoading() {
-            return this.authStore.loading
-        },
-        authError() {
-            return this.authStore.error
-        },
-    },
-    methods: {
-        async handleSubmit() {
-            // Clear any previous errors
-            this.authUiStore.clearError()
+// Router
+const router = useRouter()
 
-            const success = await this.authUiStore.handleRegister({
-                username: this.username,
-                email: this.email,
-                password: this.password,
-                confirmPassword: this.confirmPassword,
-            })
+// Stores
+const authStore = useAuthStore()
+const authUiStore = useAuthUiStore()
 
-            if (success) {
-                this.$router.push('/')
-            }
-        },
-    },
+// Extract reactive state from stores
+const { loading: authLoading, error: authError } = storeToRefs(authStore)
+
+// Local reactive state
+const username = ref('')
+const email = ref('')
+const password = ref('')
+const confirmPassword = ref('')
+
+// Methods
+const handleSubmit = async () => {
+    // Clear any previous errors
+    authUiStore.clearError()
+
+    const success = await authUiStore.handleRegister({
+        username: username.value,
+        email: email.value,
+        password: password.value,
+        confirmPassword: confirmPassword.value,
+    })
+
+    if (success) {
+        router.push('/')
+    }
 }
 </script>
 

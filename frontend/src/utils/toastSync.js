@@ -1,4 +1,5 @@
-import { toast } from '@/store'
+// Direct import to avoid circular dependency
+import toast from '@/services/notifications/enhancedToast'
 
 /**
  * Toast synchronization utility

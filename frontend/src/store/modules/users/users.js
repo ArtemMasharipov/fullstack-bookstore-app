@@ -1,7 +1,7 @@
 import { usersApi } from '@/services/api/usersApi'
-import { handleAsyncAction } from '@/store/modules/utils/stateHelpers'
-import { createBaseStore } from '@/store/modules/utils/storeFactory'
-import { toastHelpers } from '@/store/modules/utils/toast'
+import { handleAsyncAction } from '@/store/modules/ui'
+import { createBaseStore } from '@/store/modules/ui'
+import { toastHelpers } from '@/store/modules/ui'
 
 /**
  * Users store using the base store factory

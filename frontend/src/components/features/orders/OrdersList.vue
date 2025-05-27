@@ -167,7 +167,9 @@
     </div>
 </template>
 
-<script>
+<script setup>
+import { computed, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import ErrorMessage from '@/components/ui/ErrorMessage.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { useAuthStore, useOrdersStore, useOrdersUiStore } from '@/store'
@@ -176,115 +178,92 @@ import { formatPrice } from '@/utils'
 /**
  * Component for displaying and managing user orders
  */
-export default {
-    name: 'OrdersList',
-    components: {
-        ErrorMessage,
-        LoadingSpinner,
-    },
-    computed: {
-        authStore() {
-            return useAuthStore()
-        },
-        ordersStore() {
-            return useOrdersStore()
-        },
-        ordersUiStore() {
-            return useOrdersUiStore()
-        },
-        orders() {
-            const result = this.ordersStore.ordersList
-            // Always ensure we return an array
-            return Array.isArray(result) ? result : []
-        },
-        loading() {
-            return this.ordersStore.loading
-        },
-        error() {
-            return this.ordersStore.error
-        },
-        getStatusOptions() {
-            return this.ordersUiStore.getStatusOptions
-        },
-        getSortOptions() {
-            return this.ordersUiStore.getSortOptions
-        },
-        displayedOrders() {
-            const result = this.ordersUiStore.displayedOrders
-            // Always ensure we return an array
-            return Array.isArray(result) ? result : []
-        },
-        pageCount() {
-            return this.ordersUiStore.pageCount
-        },
 
-        // Aliases for better readability
-        statusOptions() {
-            return this.getStatusOptions
-        },
-        sortOptions() {
-            return this.getSortOptions
-        },
-        statusFilter: {
-            get() {
-                return this.ordersUiStore.getStatusFilter
-            },
-            set(value) {
-                this.ordersUiStore.applyFilter(value)
-            },
-        },
+// Store setup
+const authStore = useAuthStore()
+const ordersStore = useOrdersStore()
+const ordersUiStore = useOrdersUiStore()
 
-        sortBy: {
-            get() {
-                return this.ordersUiStore.getSortBy
-            },
-            set(value) {
-                this.ordersUiStore.applySort(value)
-            },
-        },
+// Reactive state extraction
+const { ordersList, loading, error } = storeToRefs(ordersStore)
+const { displayedOrders: displayedOrdersRef, pageCount } = storeToRefs(ordersUiStore)
 
-        currentPage: {
-            get() {
-                return this.ordersUiStore.getCurrentPage
-            },
-            set(value) {
-                this.ordersUiStore.currentPage = value
-                // Scroll to top when changing page
-                window.scrollTo(0, 0)
-            },
-        },
-    },
-    async created() {
-        await this.fetchOrders()
-    },
+// Computed properties
+const orders = computed(() => {
+    // Always ensure we return an array
+    return Array.isArray(ordersList.value) ? ordersList.value : []
+})
 
-    methods: {
-        fetchOrders() {
-            return this.ordersUiStore.fetchOrders()
-        },
-        getStatusColor(status) {
-            return this.ordersUiStore.getStatusColor(status)
-        },
-        getStatusIcon(status) {
-            return this.ordersUiStore.getStatusIcon(status)
-        },
-        formatDate(date) {
-            return this.ordersUiStore.formatDate(date)
-        },
-        formatPrice(price) {
-            return formatPrice(price)
-        },
-        clearError() {
-            return this.ordersUiStore.clearError()
-        },
-        applyFilter(status) {
-            this.ordersUiStore.applyFilter(status)
-        },
-        applySort(sortOption) {
-            this.ordersUiStore.applySort(sortOption)
-        },
+const displayedOrders = computed(() => {
+    // Always ensure we return an array
+    return Array.isArray(displayedOrdersRef.value) ? displayedOrdersRef.value : []
+})
+
+const statusOptions = computed(() => ordersUiStore.getStatusOptions)
+const sortOptions = computed(() => ordersUiStore.getSortOptions)
+
+const statusFilter = computed({
+    get() {
+        return ordersUiStore.getStatusFilter
     },
+    set(value) {
+        ordersUiStore.applyFilter(value)
+    },
+})
+
+const sortBy = computed({
+    get() {
+        return ordersUiStore.getSortBy
+    },
+    set(value) {
+        ordersUiStore.applySort(value)
+    },
+})
+
+const currentPage = computed({
+    get() {
+        return ordersUiStore.getCurrentPage
+    },
+    set(value) {
+        ordersUiStore.currentPage = value
+        // Scroll to top when changing page
+        window.scrollTo(0, 0)
+    },
+})
+
+// Methods
+const fetchOrders = () => {
+    return ordersUiStore.fetchOrders()
 }
+
+const getStatusColor = (status) => {
+    return ordersUiStore.getStatusColor(status)
+}
+
+const getStatusIcon = (status) => {
+    return ordersUiStore.getStatusIcon(status)
+}
+
+const formatDate = (date) => {
+    return ordersUiStore.formatDate(date)
+}
+
+const clearError = () => {
+    return ordersUiStore.clearError()
+}
+
+const applyFilter = (status) => {
+    ordersUiStore.applyFilter(status)
+}
+
+const applySort = (sortOption) => {
+    ordersUiStore.applySort(sortOption)
+}
+
+// Lifecycle
+onMounted(async () => {
+    await fetchOrders()
+})
 </script>
 
 <style scoped>

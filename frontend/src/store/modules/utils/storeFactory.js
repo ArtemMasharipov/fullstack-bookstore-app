@@ -135,13 +135,12 @@ export const createBaseStore = ({
 
                 this.initialized = true
                 return true
-            },
-
-            /**
+            },            /**
              * Generic fetchAll method - gets all items
              * @param {Object} params - Query parameters for the request
              * @returns {Promise} - The fetched items
-             */ async fetchAll(params = {}) {
+             */
+            async fetchAll(params = {}) {
                 if (!api || typeof api.fetchAll !== 'function') {
                     return this.items
                 }
@@ -183,7 +182,8 @@ export const createBaseStore = ({
              * Generic fetchById method - gets a single item
              * @param {string|number} id - ID of the item to fetch
              * @returns {Promise} - The fetched item
-             */ async fetchById(id) {
+             */
+            async fetchById(id) {
                 if (!api || typeof api.fetchById !== 'function') {
                     return null
                 }
@@ -199,7 +199,8 @@ export const createBaseStore = ({
              * Generic create method - creates a new item
              * @param {Object} payload - Data for the new item
              * @returns {Promise} - The created item
-             */ async create(payload) {
+             */
+            async create(payload) {
                 if (!api || typeof api.create !== 'function') {
                     return null
                 }
@@ -217,7 +218,8 @@ export const createBaseStore = ({
              * @param {string|number} id - ID of the item to update
              * @param {Object} payload - Updated data
              * @returns {Promise} - The updated item
-             */ async update(id, payload) {
+             */
+            async update(id, payload) {
                 if (!api || typeof api.update !== 'function') {
                     return null
                 }
@@ -240,7 +242,8 @@ export const createBaseStore = ({
              * Generic delete method - deletes an item
              * @param {string|number} id - ID of the item to delete
              * @returns {Promise} - Success indicator
-             */ async delete(id) {
+             */
+            async delete(id) {
                 if (!api || typeof api.delete !== 'function') {
                     return false
                 }

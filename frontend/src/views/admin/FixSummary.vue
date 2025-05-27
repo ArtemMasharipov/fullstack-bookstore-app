@@ -85,3 +85,7 @@ normalizedData = {
     </ol>
   </div>
 </template>
+
+<script setup>
+// Static documentation component - no reactive logic needed
+</script>

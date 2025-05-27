@@ -118,126 +118,117 @@
     </div>
 </template>
 
-<script>
+<script setup>
+import { ref, onMounted } from 'vue'
 import { useAuthorsStore, useBooksStore, useOrdersStore, useUsersStore } from '@/store'
 import { formatPrice } from '@/utils'
 
-export default {
-    name: 'AdminDashboardView',
+const booksStore = useBooksStore()
+const authorsStore = useAuthorsStore()
+const ordersStore = useOrdersStore()
+const usersStore = useUsersStore()
 
-    data() {
-        return {
-            // Dashboard statistics
-            stats: {
-                books: 0,
-                authors: 0,
-                orders: 0,
-                users: 0,
-            },
+// Dashboard statistics
+const stats = ref({
+    books: 0,
+    authors: 0,
+    orders: 0,
+    users: 0,
+})
 
-            // Recent orders
-            recentOrders: [],
+// Recent orders
+const recentOrders = ref([])
 
-            // Order table headers
-            orderHeaders: [
-                { title: 'Order ID', align: 'start', key: '_id' },
-                { title: 'Customer', align: 'start', key: 'customer' },
-                { title: 'Date', align: 'start', key: 'date' },
-                { title: 'Total', align: 'start', key: 'total' },
-                { title: 'Status', align: 'start', key: 'status' },
-                { title: 'Actions', align: 'center', key: 'actions', sortable: false },
-            ],
+// Order table headers
+const orderHeaders = [
+    { title: 'Order ID', align: 'start', key: '_id' },
+    { title: 'Customer', align: 'start', key: 'customer' },
+    { title: 'Date', align: 'start', key: 'date' },
+    { title: 'Total', align: 'start', key: 'total' },
+    { title: 'Status', align: 'start', key: 'status' },
+    { title: 'Actions', align: 'center', key: 'actions', sortable: false },
+]
 
-            // Recent activity
-            recentActivity: [
-                {
-                    color: 'green',
-                    icon: 'mdi-package-variant',
-                    title: 'New order #38290',
-                    description: 'A new order has been placed',
-                    time: '2 minutes ago',
-                },
-                {
-                    color: 'blue',
-                    icon: 'mdi-account',
-                    title: 'New user registration',
-                    description: 'John Doe has registered',
-                    time: '1 hour ago',
-                },
-                {
-                    color: 'amber',
-                    icon: 'mdi-book',
-                    title: 'Book inventory updated',
-                    description: 'Inventory levels have been adjusted',
-                    time: '3 hours ago',
-                },
-                {
-                    color: 'red',
-                    icon: 'mdi-alert-circle',
-                    title: 'Stock alert',
-                    description: '"To Kill a Mockingbird" is low in stock',
-                    time: '5 hours ago',
-                },
-            ],
+// Recent activity
+const recentActivity = [
+    {
+        color: 'green',
+        icon: 'mdi-package-variant',
+        title: 'New order #38290',
+        description: 'A new order has been placed',
+        time: '2 minutes ago',
+    },
+    {
+        color: 'blue',
+        icon: 'mdi-account',
+        title: 'New user registration',
+        description: 'John Doe has registered',
+        time: '1 hour ago',
+    },
+    {
+        color: 'amber',
+        icon: 'mdi-book',
+        title: 'Book inventory updated',
+        description: 'Inventory levels have been adjusted',
+        time: '3 hours ago',
+    },
+    {
+        color: 'red',
+        icon: 'mdi-alert-circle',
+        title: 'Stock alert',
+        description: '"To Kill a Mockingbird" is low in stock',
+        time: '5 hours ago',
+    },
+]
+
+// Load dashboard data
+const loadDashboardData = async () => {
+    try {
+        // Load statistics
+        await Promise.all([
+            booksStore.fetchBooks(),
+            authorsStore.fetchAuthors(),
+            ordersStore.fetchOrders(),
+            usersStore.fetchUsers(),
+        ])
+
+        stats.value = {
+            books: booksStore.booksList?.length || 0,
+            authors: authorsStore.authorsList?.length || 0,
+            orders: ordersStore.ordersList?.length || 0,
+            users: usersStore.usersList?.length || 0,
         }
-    },
 
-    mounted() {
-        this.loadDashboardData()
-    },
+        // Process recent orders
+        const processedOrders = ordersStore.ordersList
+            ? ordersStore.ordersList.slice(0, 5).map((order) => ({
+                  _id: order._id ? order._id.slice(-6) : 'N/A',
+                  customer: order.user ? order.user.name || order.user.email || 'Guest' : 'Guest',
+                  date: order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A',
+                  total: order.total !== undefined ? formatPrice(order.total) : formatPrice(0),
+                  status: order.status || 'pending',
+              }))
+            : []
 
-    methods: {
-        // Load dashboard data
-        async loadDashboardData() {
-            try {
-                const booksStore = useBooksStore()
-                const authorsStore = useAuthorsStore()
-                const ordersStore = useOrdersStore()
-                const usersStore = useUsersStore()
-
-                // Load statistics
-                await Promise.all([
-                    booksStore.fetchBooks(),
-                    authorsStore.fetchAuthors(),
-                    ordersStore.fetchOrders(),
-                    usersStore.fetchUsers(),
-                ])
-
-                this.stats = {
-                    books: booksStore.booksList?.length || 0,
-                    authors: authorsStore.authorsList?.length || 0,
-                    orders: ordersStore.ordersList?.length || 0,
-                    users: usersStore.usersList?.length || 0,
-                }
-
-                // Process recent orders
-                const processedOrders = ordersStore.ordersList
-                    ? ordersStore.ordersList.slice(0, 5).map((order) => ({
-                          _id: order._id ? order._id.slice(-6) : 'N/A',
-                          customer: order.user ? order.user.name || order.user.email || 'Guest' : 'Guest',
-                          date: order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A',
-                          total: order.total !== undefined ? formatPrice(order.total) : formatPrice(0),
-                          status: order.status || 'pending',
-                      }))
-                    : []
-
-                this.recentOrders = processedOrders
-            } catch (error) {
-                console.error('Failed to load dashboard data:', error)
-            }
-        },
-
-        // Get color for order status
-        getOrderStatusColor(status) {
-            const colors = {
-                pending: 'warning',
-                processing: 'info',
-                shipped: 'success',
-                delivered: 'primary',
-                cancelled: 'error',
-            }
-            return colors[status] || 'grey'
-        },
-    },
+        recentOrders.value = processedOrders
+    } catch (error) {
+        console.error('Failed to load dashboard data:', error)
+    }
 }
+
+// Get color for order status
+const getOrderStatusColor = (status) => {
+    const colors = {
+        pending: 'warning',
+        processing: 'info',
+        shipped: 'success',
+        delivered: 'primary',
+        cancelled: 'error',
+    }
+    return colors[status] || 'grey'
+}
+
+onMounted(() => {
+    loadDashboardData()
+})
 </script>

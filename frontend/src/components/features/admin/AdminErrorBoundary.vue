@@ -39,60 +39,63 @@
     </div>
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { toast } from '@/store'
 
-export default {
-    name: 'AdminErrorBoundary',
+// Router
+const router = useRouter()
 
-    data() {
-        return {
-            error: null,
-            errorInfo: null,
-            errorMessage: '',
-        }
-    },
+// Reactive data
+const error = ref(null)
+const errorInfo = ref(null)
+const errorMessage = ref('')
 
-    errorCaptured(err, instance, info) {
-        // Capture errors only in production
-        if (process.env.NODE_ENV === 'production') {
-            this.error = err
-            this.errorMessage = err.message || 'Unknown error'
+// Error handling hook (equivalent to errorCaptured)
+const onErrorCaptured = (err, instance, info) => {
+    // Capture errors only in production
+    if (process.env.NODE_ENV === 'production') {
+        error.value = err
+        errorMessage.value = err.message || 'Unknown error'
 
-            // Get component information
-            this.errorInfo = {
-                componentName: instance?.type?.name || 'Unknown Component',
-                info: info,
-            }
-
-            // Log error for debugging
-            console.error('Error captured in AdminErrorBoundary:', err)
-            console.info('Component:', instance?.type?.name)
-            console.info('Error Info:', info)
-
-            return false // Stop error propagation
+        // Get component information
+        errorInfo.value = {
+            componentName: instance?.type?.name || 'Unknown Component',
+            info: info,
         }
 
-        // In development, let the error propagate for better debugging
-        return true
-    },
+        // Log error for debugging
+        console.error('Error captured in AdminErrorBoundary:', err)
+        console.info('Component:', instance?.type?.name)
+        console.info('Error Info:', info)
 
-    methods: {
-        handleReset() {
-            this.error = null
-            this.errorInfo = null
-            this.errorMessage = ''
-            toast.info('View has been reset')
-        },
+        return false // Stop error propagation
+    }
 
-        navigateToDashboard() {
-            this.error = null
-            this.errorInfo = null
-            this.errorMessage = ''
-            this.$router.push('/admin')
-        },
-    },
+    // In development, let the error propagate for better debugging
+    return true
 }
+
+// Methods
+const handleReset = () => {
+    error.value = null
+    errorInfo.value = null
+    errorMessage.value = ''
+    toast.info('View has been reset')
+}
+
+const navigateToDashboard = () => {
+    error.value = null
+    errorInfo.value = null
+    errorMessage.value = ''
+    router.push('/admin')
+}
+
+// Define error captured lifecycle hook
+defineExpose({
+    onErrorCaptured
+})
 </script>
 
 <style scoped>

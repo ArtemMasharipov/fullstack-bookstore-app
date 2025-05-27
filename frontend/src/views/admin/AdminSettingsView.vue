@@ -76,26 +76,19 @@
     </div>
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue'
 import { toast } from '@/store'
 
-export default {
-    name: 'AdminSettingsView',
+// Reactive state
+const darkMode = ref(false)
+const notificationsEnabled = ref(true)
 
-    data() {
-        return {
-            darkMode: false,
-            notificationsEnabled: true,
-        }
-    },
-
-    methods: {
-        clearCache() {
-            // This would be connected to a real cache clearing function
-            setTimeout(() => {
-                toast.success('Cache cleared successfully!')
-            }, 800)
-        },
-    },
+// Methods
+const clearCache = () => {
+    // This would be connected to a real cache clearing function
+    setTimeout(() => {
+        toast.success('Cache cleared successfully!')
+    }, 800)
 }
 </script>

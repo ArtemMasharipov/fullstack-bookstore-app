@@ -23,7 +23,7 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks: {
-                    vue: ['vue', 'vue-router', 'vuex'],
+                    vue: ['vue', 'vue-router'],
                     elementPlus: ['element-plus'],
                     vendor: ['axios', 'lodash', 'jwt-decode'],
                 },

@@ -1,5 +1,5 @@
-import { useOrdersStore } from '@/store/modules/orders/orders'
-import { toast } from '@/store/modules/utils/toast'
+import { useOrdersStore } from '@/store/modules/orders'
+import { toast } from '@/store/modules/ui'
 import { defineStore } from 'pinia'
 import { formatPrice } from '@/utils'
 

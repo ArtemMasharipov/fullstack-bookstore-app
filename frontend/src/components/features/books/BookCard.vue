@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="2" height="100%" hover @click="$emit('click', book.id)">
+    <v-card elevation="2" height="100%" hover @click="emit('click', book.id)">
         <v-img
             :src="book.image || placeholderImage"
             :alt="book.title || 'No image available'"
@@ -34,11 +34,9 @@
 
             <p v-if="book.description" class="text-body-2 mt-3 text-truncate-2">
                 {{ book.description }}
-            </p>
-
-            <div class="d-flex align-center justify-space-between mt-3">
+            </p>            <div class="d-flex align-center justify-space-between mt-3">
                 <div class="text-subtitle-1 font-weight-bold">
-                    {{ formatPrice(book.price) }}
+                    {{ formatPriceMethod(book.price) }}
                 </div>
 
                 <v-chip :color="book.inStock ? 'success' : 'error'" size="small" variant="tonal">
@@ -59,7 +57,7 @@
                             block
                             density="comfortable"
                             prepend-icon="mdi-shield-account"
-                            @click.stop="$router.push('/admin/books')"
+                            @click.stop="router.push('/admin/books')"
                         >
                             Manage in Admin
                         </v-btn>
@@ -84,7 +82,10 @@
     </v-card>
 </template>
 
-<script>
+<script setup>
+import { ref, computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
 import { toast, useAuthStore, useCartStore } from '@/store'
 import { syncError, formatPrice } from '@/utils'
 
@@ -92,76 +93,77 @@ import { syncError, formatPrice } from '@/utils'
  * Book card component for displaying a single book
  * Used in book listings and search results
  */
-export default {
-    name: 'BookCard',
-    props: {
-        /**
-         * Book object with details
-         */
-        book: {
-            type: Object,
-            required: true,
-        },
-        /**
-         * Fallback image when book image is missing
-         */
-        placeholderImage: {
-            type: String,
-            default: '/images/placeholder.png',
-        },
-    },
-    emits: ['add-to-cart', 'click'],
-    data() {
-        return {
-            loading: false,
-        }
-    },
-    computed: {
-        cartStore() {
-            return useCartStore()
-        },
-        authStore() {
-            return useAuthStore()
-        },
-        /**
-         * Determines if user can add book to cart
-         */ canAddToCart() {
-            return !this.loading && this.book.inStock && this.authStore && this.authStore.hasPermission('create:cart')
-        },
-    },
-    methods: {
-        /**
-         * Format the book price with currency
-         */
-        formatPrice(price) {
-            return price ? formatPrice(price) : 'Price not available'
-        },
 
-        /**
-         * Handle adding the book to cart
-         */
-        async handleAddToCart() {
-            if (!this.book.inStock) return
-
-            this.loading = true
-            try {
-                await this.cartStore.addToCart({
-                    bookId: this.book._id,
-                    quantity: 1,
-                    price: this.book.price,
-                    title: this.book.title || 'Book',
-                })
-                // Не нужно вызывать toast тут, так как он уже вызывается в store
-                // Обновляем состояние корзины, чтобы обновить счетчик в NavBar
-                await this.cartStore.fetchCart()
-                this.$emit('add-to-cart') // Emit just the add-to-cart event
-            } catch (error) {
-                syncError(error.message)
-            } finally {
-                this.loading = false
-            }
-        },
+// Props
+const props = defineProps({
+    /**
+     * Book object with details
+     */
+    book: {
+        type: Object,
+        required: true,
     },
+    /**
+     * Fallback image when book image is missing
+     */
+    placeholderImage: {
+        type: String,
+        default: '/images/placeholder.png',
+    },
+})
+
+// Emits
+const emit = defineEmits(['add-to-cart', 'click'])
+
+// Router
+const router = useRouter()
+
+// Store setup
+const cartStore = useCartStore()
+const authStore = useAuthStore()
+
+// Reactive state
+const loading = ref(false)
+
+// Computed properties
+/**
+ * Determines if user can add book to cart
+ */
+const canAddToCart = computed(() => {
+    return !loading.value && props.book.inStock && authStore && authStore.hasPermission('create:cart')
+})
+
+// Methods
+/**
+ * Format the book price with currency
+ */
+const formatPriceMethod = (price) => {
+    return price ? formatPrice(price) : 'Price not available'
+}
+
+/**
+ * Handle adding the book to cart
+ */
+const handleAddToCart = async () => {
+    if (!props.book.inStock) return
+
+    loading.value = true
+    try {
+        await cartStore.addToCart({
+            bookId: props.book._id,
+            quantity: 1,
+            price: props.book.price,
+            title: props.book.title || 'Book',
+        })
+        // Не нужно вызывать toast тут, так как он уже вызывается в store
+        // Обновляем состояние корзины, чтобы обновить счетчик в NavBar
+        await cartStore.fetchCart()
+        emit('add-to-cart') // Emit just the add-to-cart event
+    } catch (error) {
+        syncError(error.message)
+    } finally {
+        loading.value = false
+    }
 }
 </script>
 

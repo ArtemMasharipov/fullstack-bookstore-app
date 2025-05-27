@@ -1,5 +1,6 @@
-// Re-export toast service for internal module usage
-import { toast, toastHelpers } from '@/store'
+// Direct imports to avoid circular dependencies
+import toast from '@/services/notifications/enhancedToast'
+import toastHelpers from '@/services/notifications/toastHelpers'
 
 export { toast, toastHelpers }
 

@@ -11,11 +11,10 @@ export { useOrdersUiStore } from './modules/orders/ordersUi'
 export { useUiStore } from './modules/ui/ui'
 export { useUsersStore } from './modules/users/users'
 export { useUsersUiStore } from './modules/users/usersUi'
-export { toast }
 
-// Импорт и экспорт улучшенного toast сервиса
-import toast from '@/services/enhancedToast'
+// Direct imports and exports for toast services to avoid circular dependencies
+import toast from '@/services/notifications/enhancedToast'
+import toastHelpers from '@/services/notifications/toastHelpers'
 
-// Импорт и экспорт вспомогательных функций для toast
-import toastHelpers from '@/services/toastHelpers'
-export { toastHelpers }
+export { toast, toastHelpers }
+

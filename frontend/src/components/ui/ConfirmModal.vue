@@ -26,134 +26,142 @@
     </v-dialog>
 </template>
 
-<script>
+<script setup>
+import { ref, computed } from 'vue'
+
 /**
  * Reusable confirmation dialog component
  * Used for confirming destructive actions or important decisions
  */
-export default {
-    name: 'ConfirmModal',
-    props: {
-        /**
-         * Title of the modal
-         */
-        title: {
-            type: String,
-            default: 'Confirm Action',
-        },
-        /**
-         * Message content
-         */
-        message: {
-            type: String,
-            required: true,
-        },
-        /**
-         * Text for the confirm button
-         */
-        confirmText: {
-            type: String,
-            default: 'Confirm',
-        },
-        /**
-         * Text for the cancel button
-         */
-        cancelText: {
-            type: String,
-            default: 'Cancel',
-        },
-        /**
-         * Controls modal visibility (v-model)
-         */
-        modelValue: {
-            type: Boolean,
-            default: false,
-        },
-        /**
-         * Maximum width of the modal
-         */
-        maxWidth: {
-            type: [String, Number],
-            default: '400px',
-        },
-        /**
-         * Makes the dialog stay open when clicking outside
-         */
-        persistent: {
-            type: Boolean,
-            default: false,
-        },
-        /**
-         * Icon to show in the modal title
-         */
-        icon: {
-            type: String,
-            default: 'mdi-alert',
-        },
-        /**
-         * Icon color
-         */
-        iconColor: {
-            type: String,
-            default: 'warning',
-        },
-        /**
-         * Color for the confirmation button
-         */
-        confirmColor: {
-            type: String,
-            default: 'error',
-        },
-        /**
-         * Color for the cancel button
-         */
-        cancelColor: {
-            type: String,
-            default: 'grey',
-        },
-        /**
-         * Variant for cancel button
-         */
-        cancelVariant: {
-            type: String,
-            default: 'outlined',
-        },
-    },
-    emits: ['confirm', 'cancel', 'update:modelValue'],
-    data() {
-        return {
-            loading: false,
-        }
-    },
-    computed: {
-        localDialog: {
-            get() {
-                return this.modelValue
-            },
-            set(value) {
-                if (!value) {
-                    this.handleCancel()
-                }
-                this.$emit('update:modelValue', value)
-            },
-        },
-    },
-    methods: {
-        /**
-         * Handle confirmation action
-         */
-        handleConfirm() {
-            this.$emit('confirm')
-            this.$emit('update:modelValue', false)
-        },
 
-        /**
-         * Handle cancel action
-         */
-        handleCancel() {
-            this.$emit('cancel')
-            this.$emit('update:modelValue', false)
-        },
+/**
+ * Props definition
+ */
+const props = defineProps({
+    /**
+     * Title of the modal
+     */
+    title: {
+        type: String,
+        default: 'Confirm Action',
     },
+    /**
+     * Message content
+     */
+    message: {
+        type: String,
+        required: true,
+    },
+    /**
+     * Text for the confirm button
+     */
+    confirmText: {
+        type: String,
+        default: 'Confirm',
+    },
+    /**
+     * Text for the cancel button
+     */
+    cancelText: {
+        type: String,
+        default: 'Cancel',
+    },
+    /**
+     * Controls modal visibility (v-model)
+     */
+    modelValue: {
+        type: Boolean,
+        default: false,
+    },
+    /**
+     * Maximum width of the modal
+     */
+    maxWidth: {
+        type: [String, Number],
+        default: '400px',
+    },
+    /**
+     * Makes the dialog stay open when clicking outside
+     */
+    persistent: {
+        type: Boolean,
+        default: false,
+    },
+    /**
+     * Icon to show in the modal title
+     */
+    icon: {
+        type: String,
+        default: 'mdi-alert',
+    },
+    /**
+     * Icon color
+     */
+    iconColor: {
+        type: String,
+        default: 'warning',
+    },
+    /**
+     * Color for the confirmation button
+     */
+    confirmColor: {
+        type: String,
+        default: 'error',
+    },
+    /**
+     * Color for the cancel button
+     */
+    cancelColor: {
+        type: String,
+        default: 'grey',
+    },
+    /**
+     * Variant for cancel button
+     */
+    cancelVariant: {
+        type: String,
+        default: 'outlined',
+    },
+})
+
+/**
+ * Events emitted by this component
+ */
+const emit = defineEmits(['confirm', 'cancel', 'update:modelValue'])
+
+/**
+ * Reactive data
+ */
+const loading = ref(false)
+
+/**
+ * Computed property for v-model dialog control
+ */
+const localDialog = computed({
+    get() {
+        return props.modelValue
+    },
+    set(value) {
+        if (!value) {
+            handleCancel()
+        }
+        emit('update:modelValue', value)
+    },
+})
+
+/**
+ * Handle confirmation action
+ */
+const handleConfirm = () => {
+    emit('confirm')
+    emit('update:modelValue', false)
+}
+
+/**
+ * Handle cancel action
+ */
+const handleCancel = () => {
+    emit('cancel')
+    emit('update:modelValue', false)
 }
 </script>

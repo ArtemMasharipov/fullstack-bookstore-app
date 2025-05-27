@@ -1,22 +1,22 @@
 <template>
   <div class="book-price">
-    {{ formatPrice(price) }}
+    {{ formatPriceValue(price) }}
   </div>
 </template>
 
-<script>
-import { formatPrice } from '@/utils';
+<script setup>
+import { formatPrice } from '@/utils'
 
-export default {
-  props: {
-    price: {
-      type: [Number, String],
-      default: 0
-    }
-  },  methods: {
-    formatPrice(price) {
-      return formatPrice(price);
-    }
+// Props
+const props = defineProps({
+  price: {
+    type: [Number, String],
+    default: 0
   }
+})
+
+// Methods moved to template function call
+const formatPriceValue = (price) => {
+  return formatPrice(price)
 }
 </script>

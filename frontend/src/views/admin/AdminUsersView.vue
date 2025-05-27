@@ -59,7 +59,7 @@
                 </v-card-title>
 
                 <v-card-text class="pt-4">
-                    <v-form ref="userForm" validate-on="submit">
+                    <v-form ref="userForm" validate-on="submit" @submit.prevent="saveUser">
                         <v-row>
                             <v-col cols="12" md="6">
                                 <v-text-field
@@ -68,6 +68,8 @@
                                     variant="outlined"
                                     density="comfortable"
                                     :rules="[(v) => !!v || 'Username is required']"
+                                    required
+                                    autofocus
                                 ></v-text-field>
                             </v-col>
 
@@ -95,6 +97,9 @@
                                         (v) => !isEditMode || !!v || 'Password is required for new users',
                                         (v) => !v || v.length >= 8 || 'Password must be at least 8 characters',
                                     ]"
+                                    :placeholder="
+                                        isEditMode ? 'Leave empty to keep current password' : 'Enter password'
+                                    "
                                 ></v-text-field>
                             </v-col>
 
@@ -111,13 +116,25 @@
                                 ></v-select>
                             </v-col>
                         </v-row>
+
+                        <!-- Add error alert -->
+                        <v-alert
+                            v-if="formError"
+                            type="error"
+                            variant="tonal"
+                            class="mt-4"
+                            closable
+                            @click:close="formError = null"
+                        >
+                            {{ formError }}
+                        </v-alert>
                     </v-form>
                 </v-card-text>
 
                 <v-card-actions class="pb-4 px-4">
                     <v-spacer></v-spacer>
                     <v-btn variant="text" @click="userDialogOpen = false">Cancel</v-btn>
-                    <v-btn color="primary" :loading="saving" @click="saveUser"> Save </v-btn>
+                    <v-btn color="primary" :loading="saving" type="submit" @click.prevent="saveUser"> Save </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -145,357 +162,392 @@
     </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+
+// Components
 import AdminDataTable from '@/components/features/admin/AdminDataTable.vue'
-import { useUsersStore } from '@/store'
 
-export default {
-    name: 'AdminUsersView',
-    components: {
-        AdminDataTable,
-    },
+// Stores
+import { useUsersStore } from '@/store/modules/users'
+import { toast } from '@/store/modules/ui'
 
-    data() {
-        return {
-            // Table state
-            headers: [
-                { title: 'Username', align: 'start', key: 'username' },
-                { title: 'Email', align: 'start', key: 'email' },
-                { title: 'Role', align: 'center', key: 'role' },
-                { title: 'Registered', align: 'start', key: 'createdAt' },
-                { title: 'Actions', align: 'center', key: 'actions', sortable: false },
-            ],
+// Table state
+const headers = ref([
+    { title: 'Username', align: 'start', key: 'username' },
+    { title: 'Email', align: 'start', key: 'email' },
+    { title: 'Role', align: 'center', key: 'role' },
+    { title: 'Registered', align: 'start', key: 'createdAt' },
+    { title: 'Actions', align: 'center', key: 'actions', sortable: false },
+])
 
-            page: 1,
-            itemsPerPage: 10,
-            sortBy: [{ key: 'username', order: 'asc' }],
-            search: '',
-            totalItems: 0,
+const page = ref(1)
+const itemsPerPage = ref(10)
+const sortBy = ref([{ key: 'username', order: 'asc' }])
+const search = ref('')
+const totalItems = ref(0)
 
-            // Form state
-            userDialogOpen: false,
-            deleteDialogOpen: false,
-            isEditMode: false,
-            editedUser: null,
-            saving: false,
-            deleting: false,
-            userToDelete: null,
+// Form state
+const userDialogOpen = ref(false)
+const deleteDialogOpen = ref(false)
+const isEditMode = ref(false)
+const editedUser = ref(null)
+const saving = ref(false)
+const deleting = ref(false)
+const userToDelete = ref(null)
 
-            // Default user data
-            roles: [],
-            
-            // Dynamic role mapping from API
-            dynamicRoleMap: {},
+// Default user data
+const roles = ref([])
+
+// Dynamic role mapping from API
+const dynamicRoleMap = ref({})
+
+// Form error state
+const formError = ref(null)
+
+// Form reference
+const userForm = ref(null)
+
+// Store instances
+const usersStore = useUsersStore()
+
+// Computed properties
+const users = computed(() => {
+    return usersStore.usersList || []
+})
+
+const loading = computed(() => {
+    return usersStore.loading
+})
+
+/**
+ * Format roles for display in the dropdown
+ */
+const availableRoles = computed(() => {
+    // Use roles loaded from API
+    return roles.value.map((role) => ({
+        id: role._id,
+        name: capitalizeFirst(role.name),
+    }))
+})
+
+/**
+ * Map of role IDs to their names for easy reference
+ * Based on roles loaded from API
+ */
+const roleNameMap = computed(() => {
+    // Use only the dynamic roles loaded from API
+    return dynamicRoleMap.value || {}
+})
+
+/**
+ * Initialize the component data
+ */
+const initializeComponent = async () => {
+    try {
+        // First load roles to ensure we have them for display
+        await loadRoles()
+
+        // Then load user data
+        await loadUsers()
+
+        // Component initialization completed
+    } catch (error) {
+        toast.error('Failed to initialize component')
+    }
+}
+
+// Data loading
+const loadUsers = async () => {
+    try {
+        await usersStore.fetchUsers()
+        totalItems.value = usersStore.usersList?.length || 0
+    } catch (error) {
+        toast.error('Failed to load users')
+    }
+}
+
+const loadRoles = async () => {
+    try {
+        // Load roles from API
+        const response = await fetch('/api/v1/roles')
+
+        if (!response.ok) {
+            // Initialize with empty roles if API fails
+            roles.value = []
+            return
         }
-    },
 
-    computed: {
-        // Users list with computed properties
-        users() {
-            const usersStore = useUsersStore()
-            return usersStore.usersList || []
-        },
+        const rolesData = await response.json()
 
-        // Store states
-        loading() {
-            return useUsersStore().loading
-        },
-        
-        /**
-         * Format roles for display in the dropdown
-         */
-        availableRoles() {
-            // Use roles loaded from API
-            return this.roles.map(role => ({
-                id: role._id,
-                name: this.capitalizeFirst(role.name)
-            }));
-        },
-        
-        /**
-         * Map of role IDs to their names for easy reference
-         * Based on roles loaded from API
-         */
-        roleNameMap() {
-            // Use only the dynamic roles loaded from API
-            return this.dynamicRoleMap || {};
-        },
-    },
+        // Update our data if roles were successfully loaded
+        if (rolesData && Array.isArray(rolesData.data)) {
+            // 1. Store full role objects for the dropdown
+            roles.value = rolesData.data
 
-    mounted() {
-        this.initializeComponent();
-    },
-
-    methods: {
-        /**
-         * Initialize the component data
-         */
-        async initializeComponent() {
-            try {
-                // First load roles to ensure we have them for display
-                await this.loadRoles();
-                
-                // Then load user data 
-                await this.loadUsers();
-                
-                console.log('Component initialized with roles:', 
-                    this.roles.length, 
-                    'Available role mappings:', 
-                    Object.keys(this.roleNameMap).length);
-            } catch (error) {
-                console.error('Failed to initialize component:', error);
-            }
-        },
-        
-        // Data loading
-        async loadUsers() {
-            try {
-                const usersStore = useUsersStore()
-                await usersStore.fetchUsers()
-                this.totalItems = usersStore.usersList?.length || 0
-            } catch (error) {
-                console.error('Failed to load users:', error)
-            }
-        },
-
-        async loadRoles() {
-            try {
-                // Load roles from API
-                const response = await fetch('/api/v1/roles')
-                
-                if (!response.ok) {
-                    console.warn(`API returned status ${response.status}: ${response.statusText}`);
-                    // Initialize with empty roles if API fails
-                    this.roles = [];
-                    return;
+            // 2. Create a map for role ID -> name resolution
+            const roleMap = {}
+            rolesData.data.forEach((role) => {
+                if (role._id && role.name) {
+                    roleMap[role._id] = role.name.toLowerCase()
                 }
-                
-                const rolesData = await response.json()
-                
-                // Update our data if roles were successfully loaded
-                if (rolesData && Array.isArray(rolesData.data)) {
-                    // 1. Store full role objects for the dropdown
-                    this.roles = rolesData.data;
-                    
-                    // 2. Create a map for role ID -> name resolution
-                    const roleMap = {};
-                    rolesData.data.forEach(role => {
-                        if (role._id && role.name) {
-                            roleMap[role._id] = role.name.toLowerCase();
-                        }
-                    });
-                    
-                    // Store the role information for future use
-                    this.dynamicRoleMap = roleMap;
-                    console.log('Loaded roles from API:', this.roles);
-                } else {
-                    console.warn('API returned unexpected format for roles');
-                }
-            } catch (error) {
-                console.error('Failed to load roles:', error);
-                // Initialize with empty roles if API fails
-                this.roles = [];
-            }
-        },
+            })
 
-        // Table methods
-        updatePage(page) {
-            this.page = page
-        },
+            // Store the role information for future use
+            dynamicRoleMap.value = roleMap
+        } else {
+            // API returned unexpected format for roles
+        }
+    } catch (error) {
+        // Initialize with empty roles if API fails
+        roles.value = []
+    }
+}
 
-        updateItemsPerPage(itemsPerPage) {
-            this.itemsPerPage = itemsPerPage
-        },
+// Table methods
+const updatePage = (newPage) => {
+    page.value = newPage
+}
 
-        updateSortBy(sortBy) {
-            this.sortBy = sortBy
-        },
+const updateItemsPerPage = (newItemsPerPage) => {
+    itemsPerPage.value = newItemsPerPage
+}
 
-        updateSearch(search) {
-            this.search = search
-        },
+const updateSortBy = (newSortBy) => {
+    sortBy.value = newSortBy
+}
 
-        resetFilters() {
-            this.page = 1
-            this.search = ''
-            this.sortBy = [{ key: 'username', order: 'asc' }]
-        },
+const updateSearch = (newSearch) => {
+    search.value = newSearch
+}
 
-        getRoleColor(role) {
-            // Convert role name to lowercase for case-insensitive matching
-            const roleLower = role ? role.toLowerCase() : '';
-            
-            switch (roleLower) {
-                case 'admin':
-                    return 'error'
-                case 'moderator':
-                    return 'warning'
-                case 'user':
-                    return 'primary'
-                default:
-                    return 'grey'
-            }
-        },
-        
-        /**
-         * Get role name from user item, handling different data structures
-         * @param {Object} item - User item from table
-         * @returns {String} Role name with proper capitalization
-         */
-        getRoleName(item) {
-            // The raw property may contain the data we need
-            const userData = item.raw || item;
-            
-            // Case 1: Role is an object with a name property
-            if (userData?.role && typeof userData.role === 'object' && userData.role.name) {
-                const name = userData.role.name;
-                return this.capitalizeFirst(name);
-            }
-            
-            // Case 2: Role is a string (role ID or direct role name)
-            if (userData?.role && typeof userData.role === 'string') {
-                // Look up in role map first
-                const mappedName = this.mapRoleIdToName(userData.role);
-                
-                if (mappedName && mappedName !== 'Unknown') {
-                    return this.capitalizeFirst(mappedName);
-                }
-                
-                // If not found in map, return just the role string with capitalization
-                // This handles the case where role is already a name string, not an ID
-                return this.capitalizeFirst(userData.role);
-            }
-            
-            return 'Unknown';
-        },
-        
-        /**
-         * Capitalize the first letter of a string
-         * @param {String} str - Input string
-         * @returns {String} Capitalized string
-         */
-        capitalizeFirst(str) {
-            if (!str || typeof str !== 'string') return 'Unknown';
-            return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-        },
-        
-        /**
-         * Map role ID to a human-readable name
-         * @param {String} roleId - Role ID or role name
-         * @returns {String} Human-readable role name or null if not found
-         */
-        mapRoleIdToName(roleId) {
-            // Simple lookup in our role mapping
-            return this.roleNameMap[roleId] || null;
-        },
+const resetFilters = () => {
+    page.value = 1
+    search.value = ''
+    sortBy.value = [{ key: 'username', order: 'asc' }]
+}
 
-        // User dialog methods
-        openUserDialog(user = null) {
-            // Check if roles are loaded before opening dialog
-            if (this.roles.length === 0) {
-                // Reload roles if they're not available
-                this.loadRoles().then(() => {
-                    if (this.roles.length === 0) {
-                        // Still no roles after reload attempt
-                        alert('Cannot open user dialog: Roles data is not available. Please try again later.');
-                        return;
-                    }
-                    // If roles are loaded successfully, continue opening dialog
-                    this.processUserDialogOpen(user);
-                });
-            } else {
-                // Roles are already loaded, continue opening dialog
-                this.processUserDialogOpen(user);
-            }
-        },
-        
-        /**
-         * Process user dialog opening after roles check
-         */
-        processUserDialogOpen(user = null) {
-            if (user) {
-                this.isEditMode = true
-                
-                // Handle different role data structures
-                let role = null;
-                if (user.role) {
-                    if (typeof user.role === 'object' && user.role._id) {
-                        // Role is an object with ID
-                        role = user.role._id;
-                    } else if (typeof user.role === 'string') {
-                        // Role is already an ID
-                        role = user.role;
-                    }
-                }
-                
-                this.editedUser = {
-                    ...user,
-                    password: '', // Don't show existing password
-                    role: role,
-                }
-                
-                console.log('Editing user with role:', role, 'Role name:', this.getRoleName({raw: user}));
-            } else {
-                this.isEditMode = false
-                // If there are roles available, preselect the first one as default
-                const defaultRole = this.roles.length > 0 ? this.roles[0]._id : '';
-                
-                this.editedUser = {
-                    username: '',
-                    email: '',
-                    password: '',
-                    role: defaultRole,
-                }
-            }
-            this.userDialogOpen = true
-        },
+const getRoleColor = (role) => {
+    // Convert role name to lowercase for case-insensitive matching
+    const roleLower = role ? role.toLowerCase() : ''
 
-        // Save user method
-        async saveUser() {
-            if (this.$refs.userForm && !this.$refs.userForm.validate().valid) {
+    switch (roleLower) {
+        case 'admin':
+            return 'error'
+        case 'moderator':
+            return 'warning'
+        case 'user':
+            return 'primary'
+        default:
+            return 'grey'
+    }
+}
+
+/**
+ * Get role name from user item, handling different data structures
+ * @param {Object} item - User item from table
+ * @returns {String} Role name with proper capitalization
+ */
+const getRoleName = (item) => {
+    // The raw property may contain the data we need
+    const userData = item.raw || item
+
+    // Case 1: Role is an object with a name property
+    if (userData?.role && typeof userData.role === 'object' && userData.role.name) {
+        const name = userData.role.name
+        return capitalizeFirst(name)
+    }
+
+    // Case 2: Role is a string (role ID or direct role name)
+    if (userData?.role && typeof userData.role === 'string') {
+        // Look up in role map first
+        const mappedName = mapRoleIdToName(userData.role)
+
+        if (mappedName && mappedName !== 'Unknown') {
+            return capitalizeFirst(mappedName)
+        }
+
+        // If not found in map, return just the role string with capitalization
+        // This handles the case where role is already a name string, not an ID
+        return capitalizeFirst(userData.role)
+    }
+
+    return 'Unknown'
+}
+
+/**
+ * Capitalize the first letter of a string
+ * @param {String} str - Input string
+ * @returns {String} Capitalized string
+ */
+const capitalizeFirst = (str) => {
+    if (!str || typeof str !== 'string') return 'Unknown'
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+}
+
+/**
+ * Map role ID to a human-readable name
+ * @param {String} roleId - Role ID or role name
+ * @returns {String} Human-readable role name or null if not found
+ */
+const mapRoleIdToName = (roleId) => {
+    // Simple lookup in our role mapping
+    return roleNameMap.value[roleId] || null
+}
+
+// User dialog methods
+const openUserDialog = (user = null) => {
+    // Check if roles are loaded before opening dialog
+    if (roles.value.length === 0) {
+        // Reload roles if they're not available
+        loadRoles().then(() => {
+            if (roles.value.length === 0) {
+                // Still no roles after reload attempt
+                toast.error('Cannot open user dialog: Roles data is not available. Please try again later.')
                 return
             }
-
-            this.saving = true
-            try {
-                const usersStore = useUsersStore()
-                if (this.isEditMode) {
-                    await usersStore.updateUser(this.editedUser)
-                } else {
-                    await usersStore.createUser(this.editedUser)
-                }
-                this.userDialogOpen = false
-                await this.loadUsers()
-            } catch (error) {
-                console.error('Error saving user:', error)
-            } finally {
-                this.saving = false
-            }
-        },
-
-        // Delete user methods
-        confirmDeleteUser(user) {
-            this.userToDelete = user
-            this.deleteDialogOpen = true
-        },
-
-        async deleteUser() {
-            if (!this.userToDelete) return
-
-            this.deleting = true
-            try {
-                const usersStore = useUsersStore()
-                await usersStore.deleteUser(this.userToDelete._id)
-                this.deleteDialogOpen = false
-                await this.loadUsers()
-            } catch (error) {
-                console.error('Error deleting user:', error)
-            } finally {
-                this.deleting = false
-            }
-        },
-    },
+            // If roles are loaded successfully, continue opening dialog
+            processUserDialogOpen(user)
+        })
+    } else {
+        // Roles are already loaded, continue opening dialog
+        processUserDialogOpen(user)
+    }
 }
+
+/**
+ * Process user dialog opening after roles check
+ */
+const processUserDialogOpen = (user = null) => {
+    if (user) {
+        isEditMode.value = true
+
+        // Always use raw data from table
+        const userData = user.raw
+
+        // Handle different role data structures
+        let role = null
+        if (userData.role) {
+            if (typeof userData.role === 'object' && userData.role._id) {
+                // Role is an object with ID
+                role = userData.role._id
+            } else if (typeof userData.role === 'string') {
+                // Role is already an ID
+                role = userData.role
+            }
+        }
+
+        // Create a deep copy and ensure all required fields exist
+        editedUser.value = {
+            username: '',
+            email: '',
+            password: '', // Clear password field
+            role: role, // Use processed role
+            ...JSON.parse(JSON.stringify(userData)),
+        }
+
+        // User editing mode with existing data
+    } else {
+        isEditMode.value = false
+        // If there are roles available, preselect the first one as default
+        const defaultRole = roles.value.length > 0 ? roles.value[0]._id : ''
+
+        editedUser.value = {
+            username: '',
+            email: '',
+            password: '',
+            role: defaultRole,
+        }
+    }
+    userDialogOpen.value = true
+}
+
+// Save user method
+const saveUser = async () => {
+    formError.value = null
+    let valid = true
+
+    if (userForm.value) {
+        const validation = await userForm.value.validate()
+        valid = validation.valid
+    }
+
+    if (!valid) {
+        return
+    }
+
+    saving.value = true
+    try {
+        // Validate required fields
+        if (!editedUser.value.username?.trim()) {
+            throw new Error('Username is required')
+        }
+        if (!editedUser.value.email?.trim()) {
+            throw new Error('Email is required')
+        }
+        if (!editedUser.value.role) {
+            throw new Error('Role is required')
+        }
+        if (!isEditMode.value && !editedUser.value.password) {
+            throw new Error('Password is required for new users')
+        }
+
+        // Trim whitespace from text fields
+        const userData = {
+            ...editedUser.value,
+            username: editedUser.value.username.trim(),
+            email: editedUser.value.email.trim(),
+            role: editedUser.value.role,
+            // Only include password if it's set
+            ...(editedUser.value.password ? { password: editedUser.value.password } : {}),
+        }
+
+        if (isEditMode.value) {
+            await usersStore.updateUser(userData)
+            toast.success('User updated successfully')
+        } else {
+            await usersStore.createUser(userData)
+            toast.success('User created successfully')
+        }
+
+        userDialogOpen.value = false
+        await loadUsers()
+    } catch (error) {
+        // Error saving user handled by toast notification
+        formError.value = error.message || 'Failed to save user'
+        toast.error(formError.value)
+    } finally {
+        saving.value = false
+    }
+}
+
+// Delete user methods
+const confirmDeleteUser = (user) => {
+    userToDelete.value = user
+    deleteDialogOpen.value = true
+}
+
+const deleteUser = async () => {
+    if (!userToDelete.value) return
+
+    deleting.value = true
+    try {
+        await usersStore.deleteUser(userToDelete.value._id)
+        toast.success(`User "${userToDelete.value.username || userToDelete.value.email}" deleted successfully`)
+        deleteDialogOpen.value = false
+        await loadUsers()
+    } catch (error) {
+        // Error deleting user handled by toast notification
+        toast.error(`Failed to delete user: ${error.message || 'Unknown error'}`)
+    } finally {
+        deleting.value = false
+    }
+}
+
+// Lifecycle hooks
+onMounted(() => {
+    initializeComponent()
+})
 </script>
 
 <style scoped>

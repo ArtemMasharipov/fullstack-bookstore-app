@@ -1,8 +1,8 @@
 import { orderApi } from '@/services/api/orderApi'
-import { useCartStore } from '@/store/modules/cart/cart'
-import { handleAsyncAction } from '@/store/modules/utils/stateHelpers'
-import { createBaseStore } from '@/store/modules/utils/storeFactory'
-import { toast } from '@/store/modules/utils/toast'
+import { useCartStore } from '@/store/modules/cart'
+import { handleAsyncAction } from '@/store/modules/ui'
+import { createBaseStore } from '@/store/modules/ui'
+import { toast } from '@/store/modules/ui'
 
 /**
  * Orders store using the base store factory

@@ -35,58 +35,51 @@
     </v-card>
 </template>
 
-<script>
+<script setup>
+import { computed, onMounted } from 'vue'
 import { useAuthorsStore, useAuthorsUiStore, useAuthStore } from '@/store'
 import ErrorMessage from '../../ui/ErrorMessage.vue'
 import LoadingSpinner from '../../ui/LoadingSpinner.vue'
 import AuthorListItem from './AuthorListItem.vue'
 
-export default {
-    name: 'AuthorList',
-    components: {
-        AuthorListItem,
-        LoadingSpinner,
-        ErrorMessage,
-    },
+/**
+ * Events emitted by this component
+ */
+const emit = defineEmits(['author-click'])
 
-    emits: ['author-click'],
-    computed: {
-        authorsStore() {
-            return useAuthorsStore()
-        },
-        authorsUiStore() {
-            return useAuthorsUiStore()
-        },
-        authStore() {
-            return useAuthStore()
-        },
-        authors() {
-            return this.authorsStore.authorsList
-        },
-        loading() {
-            return this.authorsStore.authorsLoading
-        },
-        error() {
-            return this.authorsStore.authorsError
-        },
-        // CRUD related getters removed - now managed in admin panel
-    },
+/**
+ * Store instances
+ */
+const authorsStore = useAuthorsStore()
+const authorsUiStore = useAuthorsUiStore()
+const authStore = useAuthStore()
 
-    created() {
-        this.fetchAuthors()
-    },
-    methods: {
-        fetchAuthors() {
-            return this.authorsUiStore.fetchAuthors()
-        },
+/**
+ * Computed properties
+ */
+const authors = computed(() => authorsStore.authorsList)
+const loading = computed(() => authorsStore.authorsLoading)
+const error = computed(() => authorsStore.authorsError)
 
-        handleAuthorClick(authorId) {
-            this.$emit('author-click', authorId)
-        },
-
-        clearError() {
-            this.authorsStore.clearError()
-        },
-    },
+/**
+ * Methods
+ */
+const fetchAuthors = () => {
+    return authorsUiStore.fetchAuthors()
 }
+
+const handleAuthorClick = (authorId) => {
+    emit('author-click', authorId)
+}
+
+const clearError = () => {
+    authorsStore.clearError()
+}
+
+/**
+ * Lifecycle hooks
+ */
+onMounted(() => {
+    fetchAuthors()
+})
 </script>

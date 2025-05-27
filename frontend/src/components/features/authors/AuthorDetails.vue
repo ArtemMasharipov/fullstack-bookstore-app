@@ -51,102 +51,98 @@
     </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import BookCard from '@/components/features/books/BookCard.vue'
 import ErrorMessage from '@/components/ui/ErrorMessage.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { useAuthorsStore, useAuthStore } from '@/store'
 import { syncError, syncSuccess } from '@/utils'
 
-export default {
-    name: 'AuthorDetails',
-
-    components: {
-        BookCard,
-        LoadingSpinner,
-        ErrorMessage,
+/**
+ * Props definition
+ */
+const props = defineProps({
+    authorId: {
+        type: String,
+        required: true,
     },
+})
 
-    props: {
-        authorId: {
-            type: String,
-            required: true,
-        },
+/**
+ * Events emitted by this component
+ */
+const emit = defineEmits(['edit', 'delete'])
+
+/**
+ * Composables
+ */
+const router = useRouter()
+
+/**
+ * Store instances
+ */
+const authorsStore = useAuthorsStore()
+const authStore = useAuthStore()
+
+/**
+ * Reactive data
+ */
+const showDeleteModalPage = ref(false)
+
+/**
+ * Computed properties
+ */
+const currentAuthor = computed(() => authorsStore.currentAuthor)
+const loading = computed(() => authorsStore.loading)
+const error = computed(() => authorsStore.error)
+const author = computed(() => currentAuthor.value)
+
+const breadcrumbItems = computed(() => [
+    {
+        title: 'Authors',
+        to: '/authors',
     },
-
-    emits: ['edit', 'delete'],
-
-    data() {
-        return {
-            showDeleteModalPage: false,
-        }
+    {
+        title: author.value?.name || 'Unknown Author',
+        disabled: true,
     },
-    computed: {
-        authorsStore() {
-            return useAuthorsStore()
-        },
+])
 
-        authStore() {
-            return useAuthStore()
-        },
-
-        currentAuthor() {
-            return this.authorsStore.currentAuthor
-        },
-
-        loading() {
-            return this.authorsStore.loading
-        },
-
-        error() {
-            return this.authorsStore.error
-        },
-
-        author() {
-            return this.currentAuthor
-        },
-        breadcrumbItems() {
-            return [
-                {
-                    title: 'Authors',
-                    to: '/authors',
-                },
-                {
-                    title: this.author?.name || 'Unknown Author',
-                    disabled: true,
-                },
-            ]
-        },
-    },
-    created() {
-        this.fetchAuthor(this.authorId)
-    },
-
-    methods: {
-        fetchAuthor(id) {
-            return this.authorsStore.fetchAuthor(id)
-        },
-
-        deleteAuthor(id) {
-            return this.authorsStore.deleteAuthor(id)
-        },
-
-        handleEdit() {
-            this.$emit('edit', this.author)
-        },
-
-        confirmDelete() {
-            this.showDeleteModalPage = true
-        },
-        async handleDelete() {
-            try {
-                await this.deleteAuthor(this.author.id)
-                syncSuccess('Author deleted successfully')
-                this.$router.push('/authors')
-            } catch (error) {
-                syncError(error.message || 'Failed to delete author')
-            }
-        },
-    },
+/**
+ * Methods
+ */
+const fetchAuthor = (id) => {
+    return authorsStore.fetchAuthor(id)
 }
+
+const deleteAuthor = (id) => {
+    return authorsStore.deleteAuthor(id)
+}
+
+const handleEdit = () => {
+    emit('edit', author.value)
+}
+
+const confirmDelete = () => {
+    showDeleteModalPage.value = true
+}
+
+const handleDelete = async () => {
+    try {
+        await deleteAuthor(author.value.id)
+        syncSuccess('Author deleted successfully')
+        router.push('/authors')
+    } catch (error) {
+        syncError(error.message || 'Failed to delete author')
+    }
+}
+
+/**
+ * Lifecycle hooks
+ */
+onMounted(() => {
+    fetchAuthor(props.authorId)
+})
 </script>

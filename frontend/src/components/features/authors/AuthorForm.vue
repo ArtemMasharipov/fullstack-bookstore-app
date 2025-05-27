@@ -48,7 +48,8 @@
     </base-modal>
 </template>
 
-<script>
+<script setup>
+import { ref, reactive, computed, watch } from 'vue'
 import { toast } from '@/store'
 import BaseModal from '../../ui/BaseModal.vue'
 import ErrorMessage from '../../ui/ErrorMessage.vue'
@@ -56,123 +57,123 @@ import ErrorMessage from '../../ui/ErrorMessage.vue'
 /**
  * Author form component for creating and editing authors
  */
-export default {
-    name: 'AuthorForm',
-    components: {
-        BaseModal,
-        ErrorMessage,
+
+/**
+ * Props definition
+ */
+const props = defineProps({
+    /**
+     * Initial author data for editing
+     */
+    initialData: {
+        type: Object,
+        default: () => ({
+            _id: null,
+            name: '',
+            biography: '',
+        }),
     },
-
-    props: {
-        /**
-         * Initial author data for editing
-         */
-        initialData: {
-            type: Object,
-            default: () => ({
-                _id: null,
-                name: '',
-                biography: '',
-            }),
-        },
-        /**
-         * Controls loading state of the form
-         */
-        loading: {
-            type: Boolean,
-            default: false,
-        },
-        /**
-         * Controls visibility of the modal
-         */
-        modelValue: {
-            type: Boolean,
-            default: false,
-        },
+    /**
+     * Controls loading state of the form
+     */
+    loading: {
+        type: Boolean,
+        default: false,
     },
+    /**
+     * Controls visibility of the modal
+     */
+    modelValue: {
+        type: Boolean,
+        default: false,
+    },
+})
 
-    emits: ['submit', 'close', 'update:modelValue'],
+/**
+ * Events emitted by this component
+ */
+const emit = defineEmits(['submit', 'close', 'update:modelValue'])
 
-    data() {
-        return {
-            form: { ...this.initialData },
-            nameRules: [
-                (v) => !!v || 'Name is required',
-                (v) => (v && v.length >= 2) || 'Name must be at least 2 characters',
-            ],
-            biographyRules: [(v) => !v || v.length <= 1000 || 'Biography must be less than 1000 characters'],
-            errorMessage: '',
+/**
+ * Template refs
+ */
+const authorForm = ref(null)
+
+/**
+ * Reactive data
+ */
+const form = reactive({ ...props.initialData })
+const errorMessage = ref('')
+
+/**
+ * Validation rules
+ */
+const nameRules = [
+    (v) => !!v || 'Name is required',
+    (v) => (v && v.length >= 2) || 'Name must be at least 2 characters',
+]
+
+const biographyRules = [(v) => !v || v.length <= 1000 || 'Biography must be less than 1000 characters']
+
+/**
+ * Computed properties
+ */
+const showModal = computed({
+    get() {
+        return props.modelValue
+    },
+    set(value) {
+        emit('update:modelValue', value)
+    },
+})
+
+const submitButtonText = computed(() => {
+    if (props.loading) return 'Saving...'
+    return form._id ? 'Update Author' : 'Create Author'
+})
+
+/**
+ * Watchers
+ */
+watch(
+    () => props.initialData,
+    (newData) => {
+        Object.assign(form, { ...newData })
+        errorMessage.value = ''
+
+        // Reset validation state when data changes
+        if (authorForm.value) {
+            authorForm.value.resetValidation()
         }
     },
+    { deep: true }
+)
 
-    computed: {
-        /**
-         * Two-way binding for modal visibility
-         */
-        showModal: {
-            get() {
-                return this.modelValue
-            },
-            set(value) {
-                this.$emit('update:modelValue', value)
-            },
-        },
+/**
+ * Methods
+ */
+const handleSubmit = async () => {
+    errorMessage.value = ''
 
-        /**
-         * Dynamic text for submit button
-         */
-        submitButtonText() {
-            if (this.loading) return 'Saving...'
-            return this.form._id ? 'Update Author' : 'Create Author'
-        },
-    },
+    const { valid } = await authorForm.value.validate()
 
-    watch: {
-        initialData: {
-            handler(newData) {
-                this.form = { ...newData }
-                this.errorMessage = ''
+    if (valid) {
+        try {
+            emit('submit', { ...form })
+        } catch (error) {
+            errorMessage.value = error.message || 'Failed to save author'
+            toast.error(errorMessage.value)
+        }
+    }
+}
 
-                // Reset validation state when data changes
-                if (this.$refs.authorForm) {
-                    this.$refs.authorForm.resetValidation()
-                }
-            },
-            deep: true,
-        },
-    },
+const handleClose = () => {
+    emit('close')
+    emit('update:modelValue', false)
 
-    methods: {
-        /**
-         * Handle form submission with validation
-         */
-        async handleSubmit() {
-            this.errorMessage = ''
-
-            const { valid } = await this.$refs.authorForm.validate()
-
-            if (valid) {
-                try {
-                    this.$emit('submit', { ...this.form })
-                } catch (error) {
-                    this.errorMessage = error.message || 'Failed to save author'
-                    toast.error(this.errorMessage)
-                }
-            }
-        },
-
-        /**
-         * Handle modal close
-         */
-        handleClose() {
-            this.$emit('close')
-            this.$emit('update:modelValue', false)
-
-            // Reset form state
-            if (this.$refs.authorForm) {
-                this.$refs.authorForm.resetValidation()
-            }
-        },
-    },
+    // Reset form state
+    if (authorForm.value) {
+        authorForm.value.resetValidation()
+    }
 }
 </script>

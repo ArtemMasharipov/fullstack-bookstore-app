@@ -108,117 +108,101 @@
     </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
 import BookCard from '@/components/features/books/BookCard.vue'
 import ErrorMessage from '@/components/ui/ErrorMessage.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { useAuthStore, useBooksStore, useCartStore } from '@/store'
 
-export default {
-    name: 'BookDetails',
-
-    components: {
-        BookCard,
-        LoadingSpinner,
-        ErrorMessage,
+// Props
+const props = defineProps({
+    bookId: {
+        type: String,
+        required: true,
     },
+})
 
-    props: {
-        bookId: {
-            type: String,
-            required: true,
-        },
+// Emits
+const emit = defineEmits(['success', 'error'])
+
+// Router
+const router = useRouter()
+
+// Store setup
+const booksStore = useBooksStore()
+const authStore = useAuthStore()
+const cartStore = useCartStore()
+
+// Reactive state extraction
+const { currentBook, loading, error } = storeToRefs(booksStore)
+
+// Reactive state
+const placeholderImage = ref('/images/placeholder.png')
+
+// Computed properties
+const book = computed(() => currentBook.value)
+
+const relatedBooks = computed(() => {
+    return book.value ? book.value.relatedBooks || [] : []
+})
+
+const breadcrumbItems = computed(() => [
+    {
+        title: 'Books',
+        to: '/books',
     },
-
-    emits: ['success', 'error'],
-    data() {
-        return {
-            placeholderImage: '/images/placeholder.png',
-        }
+    {
+        title: book.value?.title || 'Unknown Title',
+        disabled: true,
     },
+])
 
-    computed: {
-        booksStore() {
-            return useBooksStore()
-        },
-        authStore() {
-            return useAuthStore()
-        },
-        cartStore() {
-            return useCartStore()
-        },
-        currentBook() {
-            return this.booksStore.currentBook
-        },
-        loading() {
-            return this.booksStore.loading
-        },
-        error() {
-            return this.booksStore.error
-        },
-        book() {
-            return this.currentBook
-        },
-        relatedBooks() {
-            return this.book ? this.book.relatedBooks || [] : []
-        },
-        breadcrumbItems() {
-            return [
-                {
-                    title: 'Books',
-                    to: '/books',
-                },
-                {
-                    title: this.book?.title || 'Unknown Title',
-                    disabled: true,
-                },
-            ]
-        },
-    },
-
-    created() {
-        this.fetchBook(this.bookId)
-    },
-
-    methods: {
-        fetchBook(id) {
-            return this.booksStore.fetchBookById(id)
-        },
-        addToCart(item) {
-            return this.cartStore.addToCart(item)
-        },
-
-        async handleAddToCart() {
-            if (!this.book.inStock) return
-
-            try {
-                await this.addToCart({
-                    bookId: this.book._id,
-                    quantity: 1,
-                    price: this.book.price,
-                    title: this.book.title || 'Book',
-                })
-                // Обновляем состояние корзины, чтобы обновить счетчик в NavBar
-                await this.cartStore.fetchCart()
-                // this.$emit('success', 'Added to cart') // Optionally emit event only
-            } catch (error) {
-                // this.$emit('error', error.message) // Optionally emit error event only
-            }
-        },
-
-        formatPrice(price) {
-            return price ? `${price} грн` : 'Price not available'
-        },
-
-        navigateToBook(book) {
-            // Prevent navigation if we're already on this book
-            if (book.id === this.bookId) return
-
-            // Navigate to the new book and refresh the page
-            this.$router.push(`/books/${book.id}`)
-            // Fetch the new book data
-            this.fetchBook(book.id)
-        },
-    },
+// Methods
+const fetchBook = (id) => {
+    return booksStore.fetchBookById(id)
 }
+
+const addToCart = (item) => {
+    return cartStore.addToCart(item)
+}
+
+const handleAddToCart = async () => {
+    if (!book.value.inStock) return
+
+    try {
+        await addToCart({
+            bookId: book.value._id,
+            quantity: 1,
+            price: book.value.price,
+            title: book.value.title || 'Book',
+        })
+        // Обновляем состояние корзины, чтобы обновить счетчик в NavBar
+        await cartStore.fetchCart()
+        // emit('success', 'Added to cart') // Optionally emit event only
+    } catch (error) {
+        // emit('error', error.message) // Optionally emit error event only
+    }
+}
+
+const formatPrice = (price) => {
+    return price ? `${price} грн` : 'Price not available'
+}
+
+const navigateToBook = (book) => {
+    // Prevent navigation if we're already on this book
+    if (book.id === props.bookId) return
+
+    // Navigate to the new book and refresh the page
+    router.push(`/books/${book.id}`)
+    // Fetch the new book data
+    fetchBook(book.id)
+}
+
+// Lifecycle
+onMounted(() => {
+    fetchBook(props.bookId)
+})
 </script>

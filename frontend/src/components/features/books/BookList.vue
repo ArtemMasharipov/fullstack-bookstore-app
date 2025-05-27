@@ -89,7 +89,10 @@
     </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { useAuthStore, useBooksStore, useBooksUiStore, useUiStore } from '@/store'
 import { syncSuccess } from '@/utils'
 import LoadingSpinner from '../../ui/LoadingSpinner.vue'
@@ -98,202 +101,146 @@ import BookCard from './BookCard.vue'
 /**
  * Component for displaying and managing a paginated list of books
  */
-export default {
-    name: 'BookList',
-    components: {
-        BookCard,
-        LoadingSpinner,
+
+// Props
+const props = defineProps({
+    /**
+     * Optional category filter
+     */
+    category: {
+        type: String,
+        default: null,
     },
 
-    props: {
-        /**
-         * Optional category filter
-         */
-        category: {
-            type: String,
-            default: null,
-        },
-
-        /**
-         * Optional author filter
-         */
-        authorId: {
-            type: String,
-            default: null,
-        },
-
-        /**
-         * Number of items to display per page
-         */
-        itemsPerPage: {
-            type: Number,
-            default: 12,
-        },
+    /**
+     * Optional author filter
+     */
+    authorId: {
+        type: String,
+        default: null,
     },
 
-    data() {
-        return {
-            searchQuery: '',
-            windowWidth: window.innerWidth,
-        }
+    /**
+     * Number of items to display per page
+     */
+    itemsPerPage: {
+        type: Number,
+        default: 12,
     },
-    computed: {
-        booksStore() {
-            return useBooksStore()
-        },
+})
 
-        booksUiStore() {
-            return useBooksUiStore()
-        },
+// Router
+const router = useRouter()
 
-        uiStore() {
-            return useUiStore()
-        },
+// Stores
+const authStore = useAuthStore()
+const booksStore = useBooksStore()
+const booksUiStore = useBooksUiStore()
+const uiStore = useUiStore()
 
-        authStore() {
-            return useAuthStore()
-        },
+// Extract reactive state from stores
+const { booksList: books, booksLoading, booksPagination } = storeToRefs(booksStore)
+const { 
+    showForm, 
+    selectedBook, 
+    bookToDelete, 
+    formSubmitting, 
+    showDeleteDialog, 
+    filterParams,
+    currentPage: uiCurrentPage
+} = storeToRefs(booksUiStore)
 
-        books() {
-            return this.booksStore.booksList
-        },
+// Local reactive state
+const searchQuery = ref('')
+const windowWidth = ref(window.innerWidth)
 
-        booksLoading() {
-            return this.booksStore.booksLoading
-        },
+// Computed properties
+const totalPages = computed(() => booksPagination.value?.pages || 1)
 
-        showForm() {
-            return this.booksUiStore.showForm
-        },
+const isMobile = computed(() => windowWidth.value < 600)
 
-        selectedBook() {
-            return this.booksUiStore.selectedBook
-        },
-
-        bookToDelete() {
-            return this.booksUiStore.bookToDelete
-        },
-
-        formSubmitting() {
-            return this.booksUiStore.formSubmitting
-        },
-
-        showDeleteDialog() {
-            return this.booksUiStore.showDeleteDialog
-        },
-
-        filterParams() {
-            return this.booksUiStore.filterParams
-        },
-        // UI store getters removed - now using notification system
-        totalPages() {
-            return this.booksStore.booksPagination?.pages || 1
-        },
-
-        /**
-         * Check if the current viewport is mobile-sized
-         */
-        isMobile() {
-            return this.windowWidth < 600
-        },
-
-        currentPage: {
-            get() {
-                return this.booksUiStore.currentPage
-            },
-            set(value) {
-                this.booksUiStore.currentPage = value
-            },
-        },
+const currentPage = computed({
+    get() {
+        return uiCurrentPage.value
     },
+    set(value) {
+        uiCurrentPage.value = value
+    }
+})
 
-    watch: {
-        filterParams: {
-            handler() {
-                this.loadBooks()
-            },
-            deep: true,
-        },
-
-        searchQuery(val) {
-            this.booksUiStore.debouncedSearch(val)
-        },
-
-        // Watch for prop changes to update store
-        category(val) {
-            this.booksUiStore.category = val
-        },
-
-        authorId(val) {
-            this.booksUiStore.authorId = val
-        },
-
-        itemsPerPage(val) {
-            this.booksUiStore.itemsPerPage = val
-        },
-    },
-    created() {
-        try {
-            // Initialize the store with props
-            this.booksUiStore.initialize({
-                category: this.category,
-                authorId: this.authorId,
-                itemsPerPage: this.itemsPerPage,
-            })
-            // Set up search debounce
-            this.booksUiStore.setupSearchDebounce()
-
-            // Add event listener for window resizing
-            window.addEventListener('resize', this.handleResize)
-
-            // Initial data fetch - wrapped in try/catch in loadBooks method
-            this.loadBooks()
-        } catch (error) {
-            this.handleError(error.message || 'An error occurred while initializing the book list')
-        }
-    },
-
-    beforeUnmount() {
-        // Clean up event listener
-        window.removeEventListener('resize', this.handleResize)
-    },
-    methods: {
-        changePage(page) {
-            return this.booksUiStore.changePage(page)
-        },
-
-        loadBooks() {
-            return this.booksUiStore.loadBooks()
-        },
-
-        /**
-         * Check if user has the specified permission
-         * @param {string} permission - The permission to check
-         * @returns {boolean} - Whether the user has the permission
-         */
-
-        /**
-         * Track window width for responsive design
-         */
-        handleResize() {
-            this.windowWidth = window.innerWidth
-            // Also update the UI store
-            this.uiStore.handleWindowResize()
-        },
-
-        /**
-         * Navigate to book details page
-         */
-        viewDetails(bookId) {
-            this.$router.push(`/books/${bookId}`)
-        },
-
-        /**
-         * Handle successful cart addition
-         */
-        addToCartSuccess() {
-            syncSuccess('Item added to cart successfully')
-        },
-    },
+// Methods
+const changePage = (page) => {
+    return booksUiStore.changePage(page)
 }
+
+const loadBooks = () => {
+    return booksUiStore.loadBooks()
+}
+
+const handleResize = () => {
+    windowWidth.value = window.innerWidth
+    // Also update the UI store
+    uiStore.handleWindowResize()
+}
+
+const viewDetails = (bookId) => {
+    router.push(`/books/${bookId}`)
+}
+
+const addToCartSuccess = () => {
+    syncSuccess('Item added to cart successfully')
+}
+
+const handleError = (message) => {
+    console.error(message)
+}
+
+// Watchers
+watch(filterParams, () => {
+    loadBooks()
+}, { deep: true })
+
+watch(searchQuery, (val) => {
+    booksUiStore.debouncedSearch(val)
+})
+
+// Watch for prop changes to update store
+watch(() => props.category, (val) => {
+    booksUiStore.category = val
+})
+
+watch(() => props.authorId, (val) => {
+    booksUiStore.authorId = val
+})
+
+watch(() => props.itemsPerPage, (val) => {
+    booksUiStore.itemsPerPage = val
+})
+
+// Lifecycle hooks
+onMounted(() => {
+    try {
+        // Initialize the store with props
+        booksUiStore.initialize({
+            category: props.category,
+            authorId: props.authorId,
+            itemsPerPage: props.itemsPerPage,
+        })
+        // Set up search debounce
+        booksUiStore.setupSearchDebounce()
+
+        // Add event listener for window resizing
+        window.addEventListener('resize', handleResize)
+
+        // Initial data fetch - wrapped in try/catch in loadBooks method
+        loadBooks()
+    } catch (error) {
+        handleError(error.message || 'An error occurred while initializing the book list')
+    }
+})
+
+onBeforeUnmount(() => {
+    // Clean up event listener
+    window.removeEventListener('resize', handleResize)
+})
 </script>

@@ -14,40 +14,43 @@
     </v-form>
 </template>
 
-<script>
+<script setup>
+import { reactive, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useOrdersStore } from '@/store'
 
-export default {
-    name: 'OrderForm',
-    data() {
-        return {
-            form: {
-                street: '',
-                city: '',
-                country: '',
-                zipCode: '',
-            },
-        }
-    },
-    computed: {
-        ordersStore() {
-            return useOrdersStore()
-        },
-        loading() {
-            return this.ordersStore.loading
-        },
-    },
-    methods: {
-        async handleSubmit() {
-            try {
-                await this.ordersStore.createOrder({
-                    shippingAddress: { ...this.form },
-                })
-                this.$router.push('/orders')
-            } catch (error) {
-                // Notification is already handled by the store
-            }
-        },
-    },
+/**
+ * Composables
+ */
+const router = useRouter()
+const ordersStore = useOrdersStore()
+
+/**
+ * Reactive data
+ */
+const form = reactive({
+    street: '',
+    city: '',
+    country: '',
+    zipCode: '',
+})
+
+/**
+ * Computed properties
+ */
+const loading = computed(() => ordersStore.loading)
+
+/**
+ * Methods
+ */
+const handleSubmit = async () => {
+    try {
+        await ordersStore.createOrder({
+            shippingAddress: { ...form },
+        })
+        router.push('/orders')
+    } catch (error) {
+        // Notification is already handled by the store
+    }
 }
 </script>

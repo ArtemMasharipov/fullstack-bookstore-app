@@ -69,7 +69,8 @@
     </v-card>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted } from 'vue'
 import placeholderImage from '@/assets/images/placeholder.png'
 import { toast, useCartStore } from '@/store'
 import { debounce } from 'lodash'
@@ -79,110 +80,110 @@ import { formatPrice } from '@/utils'
 /**
  * Cart item component for displaying a single cart item
  */
-export default {
-    name: 'CartItem',
-    components: {
-        ConfirmModal,
+
+// Props
+const props = defineProps({
+    /**
+     * Cart item object with book details, quantity and price
+     */
+    item: {
+        type: Object,
+        required: true,
+        validator: ({ bookId, quantity, price }) => bookId && Number.isFinite(quantity) && Number.isFinite(price),
     },
-    props: {
-        /**
-         * Cart item object with book details, quantity and price
-         */
-        item: {
-            type: Object,
-            required: true,
-            validator: ({ bookId, quantity, price }) => bookId && Number.isFinite(quantity) && Number.isFinite(price),
-        },
-    },
-    emits: ['error', 'update-quantity'],
+})
 
-    data() {
-        return {
-            removing: false,
-            showDeleteConfirm: false,
-        }
-    },
+// Emits
+const emit = defineEmits(['error', 'update-quantity'])
 
-    computed: {
-        cartStore() {
-            return useCartStore()
-        },
-        bookTitle() {
-            const { title = 'Unknown Book' } = this.item.bookId || {}
-            return title
-        },
-        bookImage() {
-            return this.item?.bookId?.image || placeholderImage
-        },
-        formattedPrice() {
-            return formatPrice(this.item.price)
-        },
-    },
+// Store setup
+const cartStore = useCartStore()
 
-    created() {
-        // Initialize debounced quantity update function
-        this.updateQuantity = debounce(this.handleQuantityChange, 300)
-    },
-    methods: {
-        /**
-         * Show confirmation dialog before removing item
-         */
-        confirmRemove() {
-            this.showDeleteConfirm = true
-        },
+// Reactive state
+const removing = ref(false)
+const showDeleteConfirm = ref(false)
 
-        /**
-         * Remove item from cart
-         */
-        async remove() {
-            if (this.removing) return
+// Computed properties
+const bookTitle = computed(() => {
+    const { title = 'Unknown Book' } = props.item.bookId || {}
+    return title
+})
 
-            this.removing = true
-            try {
-                await this.cartStore.removeFromCart(this.item._id, this.bookTitle)
-                // После удаления элемента обновляем счетчик корзины
-                await this.cartStore.fetchCart()
-            } catch (error) {
-                toast.error(`Failed to remove ${this.bookTitle}: ${error.message}`)
-            } finally {
-                this.removing = false
-            }
-        },
+const bookImage = computed(() => {
+    return props.item?.bookId?.image || placeholderImage
+})
 
-        /**
-         * Handle image loading errors
-         */
-        handleImageError(e) {
-            e.target.src = placeholderImage
-        },
+const formattedPrice = computed(() => {
+    return formatPrice(props.item.price)
+})
 
-        /**
-         * Update quantity in cart (debounced)
-         */
-        handleQuantityChange(quantity) {
-            if (quantity < 1) return
-
-            this.$emit('update-quantity', {
-                bookId: this.item.bookId._id,
-                quantity,
-                title: this.bookTitle,
-            })
-
-            this.cartStore
-                .updateQuantity({
-                    itemId: this.item._id,
-                    bookId: this.item.bookId._id,
-                    quantity,
-                    title: this.bookTitle,
-                })
-                .then(() => {
-                    // После обновления количества обновляем счетчик корзины
-                    return this.cartStore.fetchCart()
-                })
-                .catch((error) => {
-                    toast.error(`Failed to update quantity: ${error.message}`)
-                })
-        },
-    },
+// Methods
+/**
+ * Show confirmation dialog before removing item
+ */
+const confirmRemove = () => {
+    showDeleteConfirm.value = true
 }
+
+/**
+ * Remove item from cart
+ */
+const remove = async () => {
+    if (removing.value) return
+
+    removing.value = true
+    try {
+        await cartStore.removeFromCart(props.item._id, bookTitle.value)
+        // После удаления элемента обновляем счетчик корзины
+        await cartStore.fetchCart()
+    } catch (error) {
+        toast.error(`Failed to remove ${bookTitle.value}: ${error.message}`)
+    } finally {
+        removing.value = false
+    }
+}
+
+/**
+ * Handle image loading errors
+ */
+const handleImageError = (e) => {
+    e.target.src = placeholderImage
+}
+
+/**
+ * Handle quantity in cart (debounced)
+ */
+const handleQuantityChange = (quantity) => {
+    if (quantity < 1) return
+
+    emit('update-quantity', {
+        bookId: props.item.bookId._id,
+        quantity,
+        title: bookTitle.value,
+    })
+
+    cartStore
+        .updateQuantity({
+            itemId: props.item._id,
+            bookId: props.item.bookId._id,
+            quantity,
+            title: bookTitle.value,
+        })
+        .then(() => {
+            // После обновления количества обновляем счетчик корзины
+            return cartStore.fetchCart()
+        })
+        .catch((error) => {
+            toast.error(`Failed to update quantity: ${error.message}`)
+        })
+}
+
+// Debounced update quantity function
+let updateQuantity
+
+// Lifecycle
+onMounted(() => {
+    // Initialize debounced quantity update function
+    updateQuantity = debounce(handleQuantityChange, 300)
+})
 </script>

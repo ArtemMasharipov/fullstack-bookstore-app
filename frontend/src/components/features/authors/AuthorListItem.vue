@@ -21,29 +21,34 @@
     </v-card>
 </template>
 
-<script>
+<script setup>
+import { computed } from 'vue'
 import { useAuthStore } from '@/store'
 
-export default {
-    name: 'AuthorListItem',
+/**
+ * Props definition
+ */
+defineProps({
+    author: {
+        type: Object,
+        required: true,
+    },
+})
 
-    props: {
-        author: {
-            type: Object,
-            required: true,
-        },
-    },
+/**
+ * Events emitted by this component
+ */
+const emit = defineEmits(['click'])
 
-    emits: ['click'],
-    computed: {
-        authStore() {
-            return useAuthStore()
-        },
-    },
-    methods: {
-        handleClick() {
-            this.$emit('click')
-        },
-    },
+/**
+ * Store instances
+ */
+const authStore = useAuthStore()
+
+/**
+ * Methods
+ */
+const handleClick = () => {
+    emit('click')
 }
 </script>

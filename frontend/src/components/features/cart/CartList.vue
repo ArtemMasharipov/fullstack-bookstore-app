@@ -60,79 +60,59 @@
     </v-container>
 </template>
 
-<script>
+<script setup>
+import { watch, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useAuthStore, useCartStore } from '@/store'
 import { syncError } from '@/utils'
 import ErrorMessage from '../../ui/ErrorMessage.vue'
 import LoadingSpinner from '../../ui/LoadingSpinner.vue'
 import CartItem from './CartItem.vue'
 
-export default {
-    name: 'CartList',
-    components: {
-        CartItem,
-        LoadingSpinner,
-        ErrorMessage,
-    },
-    computed: {
-        cartStore() {
-            return useCartStore()
-        },
-        authStore() {
-            return useAuthStore()
-        },
-        cartItems() {
-            return this.cartStore.cartItems
-        },
-        cartLoading() {
-            return this.cartStore.loading
-        },
-        cartError() {
-            return this.cartStore.error
-        },
-        cartTotal() {
-            return this.cartStore.cartTotal
-        },
-        itemCount() {
-            return this.cartStore.itemCount
-        },
-        isAuthenticated() {
-            return this.authStore.isAuthenticated
-        },
-    },
-    watch: {
-        isAuthenticated: {
-            immediate: true,
-            async handler(newVal) {
-                if (newVal) {
-                    try {
-                        await this.fetchCart()
-                    } catch (error) {
-                        syncError('Failed to load cart: ' + error.message)
-                    }
-                }
-            },
-        },
-    },
-    created() {
-        if (this.isAuthenticated) {
-            this.fetchCart().catch((error) => {
+// Store setup
+const cartStore = useCartStore()
+const authStore = useAuthStore()
+
+// Reactive state extraction
+const { cartItems, loading: cartLoading, error: cartError, cartTotal, itemCount } = storeToRefs(cartStore)
+const { isAuthenticated } = storeToRefs(authStore)
+
+// Methods
+const fetchCart = async () => {
+    return cartStore.fetchCart()
+}
+
+const handleRemoveFromCart = async (itemId) => {
+    await cartStore.removeFromCart(itemId)
+    await fetchCart()
+}
+
+const updateQuantity = async (payload) => {
+    await cartStore.updateQuantity(payload)
+    await fetchCart()
+}
+
+// Watchers
+watch(
+    isAuthenticated,
+    async (newVal) => {
+        if (newVal) {
+            try {
+                await fetchCart()
+            } catch (error) {
                 syncError('Failed to load cart: ' + error.message)
-            })
+            }
         }
     },
-    methods: {
-        async fetchCart() {
-            return this.cartStore.fetchCart()
-        },
-        async handleRemoveFromCart(itemId) {
-            await this.cartStore.removeFromCart(itemId)
-            await this.fetchCart()
-        },
-        async updateQuantity(payload) {
-            await this.cartStore.updateQuantity(payload)
-            await this.fetchCart()
-        },
-    },
-}
+    { immediate: true }
+)
+
+// Lifecycle
+onMounted(() => {
+    if (isAuthenticated.value) {
+        fetchCart().catch((error) => {
+            syncError('Failed to load cart: ' + error.message)
+        })
+    }
+})
 </script>
