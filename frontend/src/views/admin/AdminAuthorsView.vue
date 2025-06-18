@@ -1,22 +1,10 @@
 <template>
     <div class="admin-authors">
         <!-- Authors management data table -->
-        <admin-data-table
-            :headers="headers"
-            :items="authors"
-            :loading="loading"
-            :total-items="totalItems"
-            :page="page"
-            :items-per-page="itemsPerPage"
-            :sort-by="sortBy"
-            :search="search"
-            title="Authors Management"
-            @update:page="updatePage"
-            @update:items-per-page="updateItemsPerPage"
-            @update:sort-by="updateSortBy"
-            @update:search="updateSearch"
-            @reset-filters="resetFilters"
-        >
+        <admin-data-table :headers="headers" :items="authors" :loading="loading" :total-items="totalItems" :page="page"
+            :items-per-page="itemsPerPage" :sort-by="sortBy" :search="search" title="Authors Management"
+            @update:page="updatePage" @update:items-per-page="updateItemsPerPage" @update:sort-by="updateSortBy"
+            @update:search="updateSearch" @reset-filters="resetFilters">
             <!-- Table actions -->
             <template #actions>
                 <v-btn color="primary" prepend-icon="mdi-plus" @click="openAuthorDialog()"> Add New Author </v-btn>
@@ -32,14 +20,8 @@
             <!-- Actions column -->
             <template #item.actions="{ item }">
                 <div class="d-flex justify-center">
-                    <v-btn
-                        icon
-                        variant="text"
-                        size="small"
-                        color="primary"
-                        class="mr-1"
-                        @click="openAuthorDialog(item.raw)"
-                    >
+                    <v-btn icon variant="text" size="small" color="primary" class="mr-1"
+                        @click="openAuthorDialog(item.raw)">
                         <v-icon>mdi-pencil</v-icon>
                         <v-tooltip activator="parent" location="top">Edit</v-tooltip>
                     </v-btn>
@@ -62,35 +44,19 @@
                     <v-form ref="authorForm" @submit.prevent="handleSaveAuthor" validate-on="submit">
                         <v-row>
                             <v-col cols="12">
-                                <v-text-field
-                                    v-model="editedAuthor.name"
-                                    label="Author Name"
-                                    variant="outlined"
-                                    density="comfortable"
-                                    :rules="[(v) => !!v || 'Name is required']"
-                                    required
-                                ></v-text-field>
+                                <v-text-field v-model="editedAuthor.name" label="Author Name" variant="outlined"
+                                    density="comfortable" :rules="[(v) => !!v || 'Name is required']"
+                                    required></v-text-field>
                             </v-col>
 
                             <v-col cols="12">
-                                <v-textarea
-                                    v-model="editedAuthor.biography"
-                                    label="Biography"
-                                    variant="outlined"
-                                    auto-grow
-                                    rows="4"
-                                    density="comfortable"
-                                ></v-textarea>
+                                <v-textarea v-model="editedAuthor.biography" label="Biography" variant="outlined"
+                                    auto-grow rows="4" density="comfortable"></v-textarea>
                             </v-col>
 
                             <v-col cols="12">
-                                <v-text-field
-                                    v-model="editedAuthor.photoUrl"
-                                    label="Photo URL"
-                                    variant="outlined"
-                                    density="comfortable"
-                                    hint="URL to author's photo"
-                                ></v-text-field>
+                                <v-text-field v-model="editedAuthor.photoUrl" label="Photo URL" variant="outlined"
+                                    density="comfortable" hint="URL to author's photo"></v-text-field>
                             </v-col>
                         </v-row>
                     </v-form>
@@ -99,7 +65,9 @@
                 <v-card-actions class="pb-4 px-4">
                     <v-spacer></v-spacer>
                     <v-btn variant="text" @click="closeAuthorDialog">Cancel</v-btn>
-                    <v-btn color="primary" :loading="saving" type="submit" @click.prevent="handleSaveAuthor"> Save </v-btn>
+                    <v-btn color="primary" :loading="saving" type="submit" @click.prevent="handleSaveAuthor">
+                        Save
+                    </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -111,17 +79,13 @@
 
                 <v-card-text class="pt-4">
                     <p>
-                        Are you sure you want to delete <strong>{{ authorToDelete?.name }}</strong
-                        >? This action cannot be undone.
+                        Are you sure you want to delete <strong>{{ authorToDelete?.name }}</strong>? This action cannot
+                        be
+                        undone.
                     </p>
 
-                    <v-alert
-                        v-if="authorToDelete?.books?.length > 0"
-                        type="warning"
-                        variant="tonal"
-                        icon="mdi-alert"
-                        class="mt-4"
-                    >
+                    <v-alert v-if="authorToDelete?.books?.length > 0" type="warning" variant="tonal" icon="mdi-alert"
+                        class="mt-4">
                         This author has {{ authorToDelete?.books?.length }} books associated with them. Deleting this
                         author may affect these books.
                     </v-alert>
@@ -138,14 +102,16 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 // Components
 import AdminDataTable from '@/components/features/admin/AdminDataTable.vue'
 
 // Stores
 import { useAuthorsStore } from '@/store/modules/authors'
-import { toast } from '@/store/modules/ui'
+
+// Utils
+import { logger } from '@/utils/logger'
 
 // Store instance
 const authorsStore = useAuthorsStore()
@@ -215,7 +181,7 @@ const loadAuthors = async () => {
         totalItems.value = authors.value.length || 0
     } catch (error) {
         // Error loading authors
-        toast.error('Failed to load authors')
+        logger.error('Failed to load authors:', error, 'admin-authors')
     }
 }
 
@@ -243,23 +209,23 @@ const closeAuthorDialog = () => {
 const handleSaveAuthor = async () => {
     // Note: Form validation would need to be handled differently in Composition API
     // This assumes validation is done elsewhere or simplified for migration
-    
+
     saving.value = true
     try {
         const authorData = { ...editedAuthor.value }
-        
+
         if (isEditMode.value) {
             await authorsStore.updateAuthor(authorData)
-            toast.success(`Author "${authorData.name}" updated successfully`)
+            logger.info(`Author "${authorData.name}" updated successfully`, 'admin-authors')
         } else {
             await authorsStore.createAuthor(authorData)
-            toast.success(`Author "${authorData.name}" created successfully`)
+            logger.info(`Author "${authorData.name}" created successfully`, 'admin-authors')
         }
-        
+
         closeAuthorDialog()
         await loadAuthors()
     } catch (error) {
-        toast.error(`Failed to save author: ${error.message || 'Unknown error'}`)
+        logger.error(`Failed to save author: ${error.message || 'Unknown error'}`, error, 'admin-authors')
     } finally {
         saving.value = false
     }
@@ -282,12 +248,12 @@ const handleDeleteAuthor = async () => {
     deleting.value = true
     try {
         await authorsStore.deleteAuthor(authorToDelete.value._id)
-        toast.success(`Author "${authorToDelete.value.name}" deleted successfully`)
-        
+        logger.info(`Author "${authorToDelete.value.name}" deleted successfully`, 'admin-authors')
+
         closeDeleteDialog()
         await loadAuthors()
     } catch (error) {
-        toast.error(`Failed to delete author: ${error.message || 'Unknown error'}`)
+        logger.error(`Failed to delete author: ${error.message || 'Unknown error'}`, error, 'admin-authors')
     } finally {
         deleting.value = false
     }

@@ -1,5 +1,4 @@
 import { useAuthorsStore } from '@/store/modules/authors/authors'
-import { toast } from '@/store/modules/utils/toast'
 import { defineStore } from 'pinia'
 
 /**
@@ -33,7 +32,7 @@ export const useAuthorsUiStore = defineStore('authorsUi', {
             } catch (error) {
                 // Don't show auth errors since they're handled by the API interceptor
                 if (error.status !== 401) {
-                    toast.error(error.message || 'Failed to fetch authors')
+                    // Error handling without toast notifications
                 }
                 throw error
             }
@@ -50,7 +49,7 @@ export const useAuthorsUiStore = defineStore('authorsUi', {
                 this.closeForm()
                 return true
             } catch (error) {
-                toast.error(error.message || 'Action failed')
+                // Error handling without toast notifications
                 throw error
             }
         },
@@ -91,7 +90,6 @@ export const useAuthorsUiStore = defineStore('authorsUi', {
 
             try {
                 await this.handleAction(action, formData)
-                toast.success(formData._id ? 'Author updated successfully' : 'Author created successfully')
                 return true
             } catch (error) {
                 return false
@@ -114,7 +112,6 @@ export const useAuthorsUiStore = defineStore('authorsUi', {
 
             try {
                 await this.handleAction((id) => authorsStore.deleteAuthor(id), this.authorToDelete)
-                toast.success('Author deleted successfully')
                 this.showDeleteConfirm = false
                 this.authorToDelete = null
                 return true

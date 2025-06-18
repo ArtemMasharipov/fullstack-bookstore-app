@@ -1,22 +1,10 @@
 <template>
     <div class="admin-users">
         <!-- Users management data table -->
-        <admin-data-table
-            :headers="headers"
-            :items="users"
-            :loading="loading"
-            :total-items="totalItems"
-            :page="page"
-            :items-per-page="itemsPerPage"
-            :sort-by="sortBy"
-            :search="search"
-            title="Users Management"
-            @update:page="updatePage"
-            @update:items-per-page="updateItemsPerPage"
-            @update:sort-by="updateSortBy"
-            @update:search="updateSearch"
-            @reset-filters="resetFilters"
-        >
+        <admin-data-table :headers="headers" :items="users" :loading="loading" :total-items="totalItems" :page="page"
+            :items-per-page="itemsPerPage" :sort-by="sortBy" :search="search" title="Users Management"
+            @update:page="updatePage" @update:items-per-page="updateItemsPerPage" @update:sort-by="updateSortBy"
+            @update:search="updateSearch" @reset-filters="resetFilters">
             <!-- Table actions -->
             <template #actions>
                 <v-btn color="primary" prepend-icon="mdi-plus" @click="openUserDialog()"> Add New User </v-btn>
@@ -32,14 +20,8 @@
             <!-- Actions column -->
             <template #item.actions="{ item }">
                 <div class="d-flex justify-center">
-                    <v-btn
-                        icon
-                        variant="text"
-                        size="small"
-                        color="primary"
-                        class="mr-1"
-                        @click="openUserDialog(item.raw)"
-                    >
+                    <v-btn icon variant="text" size="small" color="primary" class="mr-1"
+                        @click="openUserDialog(item.raw)">
                         <v-icon>mdi-pencil</v-icon>
                         <v-tooltip activator="parent" location="top">Edit</v-tooltip>
                     </v-btn>
@@ -62,70 +44,38 @@
                     <v-form ref="userForm" validate-on="submit" @submit.prevent="saveUser">
                         <v-row>
                             <v-col cols="12" md="6">
-                                <v-text-field
-                                    v-model="editedUser.username"
-                                    label="Username"
-                                    variant="outlined"
-                                    density="comfortable"
-                                    :rules="[(v) => !!v || 'Username is required']"
-                                    required
-                                    autofocus
-                                ></v-text-field>
+                                <v-text-field v-model="editedUser.username" label="Username" variant="outlined"
+                                    density="comfortable" :rules="[(v) => !!v || 'Username is required']" required
+                                    autofocus></v-text-field>
                             </v-col>
 
                             <v-col cols="12" md="6">
-                                <v-text-field
-                                    v-model="editedUser.email"
-                                    label="Email"
-                                    variant="outlined"
-                                    density="comfortable"
-                                    :rules="[
+                                <v-text-field v-model="editedUser.email" label="Email" variant="outlined"
+                                    density="comfortable" :rules="[
                                         (v) => !!v || 'Email is required',
                                         (v) => /.+@.+\..+/.test(v) || 'Email must be valid',
-                                    ]"
-                                ></v-text-field>
+                                    ]"></v-text-field>
                             </v-col>
 
                             <v-col cols="12" md="6">
-                                <v-text-field
-                                    v-model="editedUser.password"
-                                    label="Password"
-                                    variant="outlined"
-                                    density="comfortable"
-                                    type="password"
-                                    :rules="[
+                                <v-text-field v-model="editedUser.password" label="Password" variant="outlined"
+                                    density="comfortable" type="password" :rules="[
                                         (v) => !isEditMode || !!v || 'Password is required for new users',
                                         (v) => !v || v.length >= 8 || 'Password must be at least 8 characters',
-                                    ]"
-                                    :placeholder="
-                                        isEditMode ? 'Leave empty to keep current password' : 'Enter password'
-                                    "
-                                ></v-text-field>
+                                    ]" :placeholder="isEditMode ? 'Leave empty to keep current password' : 'Enter password'
+                                        "></v-text-field>
                             </v-col>
 
                             <v-col cols="12" md="6">
-                                <v-select
-                                    v-model="editedUser.role"
-                                    :items="availableRoles"
-                                    item-title="name"
-                                    item-value="id"
-                                    label="Role"
-                                    variant="outlined"
-                                    density="comfortable"
-                                    :rules="[(v) => !!v || 'Role is required']"
-                                ></v-select>
+                                <v-select v-model="editedUser.role" :items="availableRoles" item-title="name"
+                                    item-value="id" label="Role" variant="outlined" density="comfortable"
+                                    :rules="[(v) => !!v || 'Role is required']"></v-select>
                             </v-col>
                         </v-row>
 
                         <!-- Add error alert -->
-                        <v-alert
-                            v-if="formError"
-                            type="error"
-                            variant="tonal"
-                            class="mt-4"
-                            closable
-                            @click:close="formError = null"
-                        >
+                        <v-alert v-if="formError" type="error" variant="tonal" class="mt-4" closable
+                            @click:close="formError = null">
                             {{ formError }}
                         </v-alert>
                     </v-form>
@@ -147,8 +97,8 @@
                 <v-card-text class="pt-4">
                     <p>
                         Are you sure you want to delete user
-                        <strong>{{ userToDelete?.username || userToDelete?.email }}</strong
-                        >? This action cannot be undone.
+                        <strong>{{ userToDelete?.username || userToDelete?.email }}</strong>? This action cannot be
+                        undone.
                     </p>
                 </v-card-text>
 
@@ -163,14 +113,16 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 // Components
 import AdminDataTable from '@/components/features/admin/AdminDataTable.vue'
 
 // Stores
 import { useUsersStore } from '@/store/modules/users'
-import { toast } from '@/store/modules/ui'
+
+// Utils
+import { logger } from '@/utils/logger'
 
 // Table state
 const headers = ref([
@@ -253,7 +205,7 @@ const initializeComponent = async () => {
 
         // Component initialization completed
     } catch (error) {
-        toast.error('Failed to initialize component')
+        logger.error('Failed to initialize component:', error, 'admin-users')
     }
 }
 
@@ -263,7 +215,7 @@ const loadUsers = async () => {
         await usersStore.fetchUsers()
         totalItems.value = usersStore.usersList?.length || 0
     } catch (error) {
-        toast.error('Failed to load users')
+        logger.error('Failed to load users:', error, 'admin-users')
     }
 }
 
@@ -403,7 +355,7 @@ const openUserDialog = (user = null) => {
         loadRoles().then(() => {
             if (roles.value.length === 0) {
                 // Still no roles after reload attempt
-                toast.error('Cannot open user dialog: Roles data is not available. Please try again later.')
+                logger.error('Cannot open user dialog: Roles data is not available. Please try again later.', null, 'admin-users')
                 return
             }
             // If roles are loaded successfully, continue opening dialog
@@ -504,18 +456,18 @@ const saveUser = async () => {
 
         if (isEditMode.value) {
             await usersStore.updateUser(userData)
-            toast.success('User updated successfully')
+            logger.info('User updated successfully', 'admin-users')
         } else {
             await usersStore.createUser(userData)
-            toast.success('User created successfully')
+            logger.info('User created successfully', 'admin-users')
         }
 
         userDialogOpen.value = false
         await loadUsers()
     } catch (error) {
-        // Error saving user handled by toast notification
+        // Error saving user - log to console
         formError.value = error.message || 'Failed to save user'
-        toast.error(formError.value)
+        logger.error(formError.value, error, 'admin-users')
     } finally {
         saving.value = false
     }
@@ -533,12 +485,12 @@ const deleteUser = async () => {
     deleting.value = true
     try {
         await usersStore.deleteUser(userToDelete.value._id)
-        toast.success(`User "${userToDelete.value.username || userToDelete.value.email}" deleted successfully`)
+        logger.info(`User "${userToDelete.value.username || userToDelete.value.email}" deleted successfully`, 'admin-users')
         deleteDialogOpen.value = false
         await loadUsers()
     } catch (error) {
-        // Error deleting user handled by toast notification
-        toast.error(`Failed to delete user: ${error.message || 'Unknown error'}`)
+        // Error deleting user - log to console
+        logger.error(`Failed to delete user: ${error.message || 'Unknown error'}`, error, 'admin-users')
     } finally {
         deleting.value = false
     }

@@ -13,9 +13,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { storeToRefs } from 'pinia'
 import { useUiStore } from '@/store'
+import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 
 /**
  * DialogLayout component for handling app-level dialogs
@@ -53,7 +53,7 @@ const getDialogWidth = computed(() => {
         confirm: '500px',
         form: '600px',
         info: '400px',
-        alert: '350px'
+        alert: '350px',
     }
     return widthMap[dialogType.value] || '500px'
 })
@@ -65,7 +65,7 @@ const getDialogWidth = computed(() => {
 const closeOnClickOutside = () => {
     // Allow closing by outside click only for certain dialog types
     const allowOutsideClose = ['info', 'alert']
-    
+
     if (allowOutsideClose.includes(dialogType.value)) {
         uiStore.closeDialog()
     }

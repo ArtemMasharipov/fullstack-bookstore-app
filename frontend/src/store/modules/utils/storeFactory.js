@@ -135,12 +135,12 @@ export const createBaseStore = ({
 
                 this.initialized = true
                 return true
-            },            /**
+            },
+            /**
              * Generic fetchAll method - gets all items
              * @param {Object} params - Query parameters for the request
              * @returns {Promise} - The fetched items
-             */
-            async fetchAll(params = {}) {
+             */ async fetchAll(params = {}) {
                 if (!api || typeof api.fetchAll !== 'function') {
                     return this.items
                 }

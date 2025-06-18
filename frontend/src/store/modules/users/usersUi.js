@@ -1,5 +1,4 @@
 import { useUsersStore } from '@/store/modules/users'
-import { toast } from '@/store/modules/ui'
 import { defineStore } from 'pinia'
 
 /**
@@ -14,55 +13,52 @@ export const useUsersUiStore = defineStore('usersUi', {
         showEditDialog: false,
         showDeleteDialog: false,
         showDetailsDialog: false,
-        
+
         // Selected user for operations
         selectedUser: null,
-        
+
         // Form states
         formLoading: false,
         formErrors: {},
-        
+
         // Table/List UI states
         selectedUsers: [],
         sortBy: 'name',
         sortOrder: 'asc',
         searchQuery: '',
-        
+
         // Pagination UI
         currentPage: 1,
         itemsPerPage: 10,
-        
+
         // Filters
         activeFilters: {
             role: null,
             status: null,
-            dateRange: null
-        }
+            dateRange: null,
+        },
     }),
 
     getters: {
         // Dialog state getters
         isAnyDialogOpen: (state) => {
-            return state.showCreateDialog || 
-                   state.showEditDialog || 
-                   state.showDeleteDialog || 
-                   state.showDetailsDialog
+            return state.showCreateDialog || state.showEditDialog || state.showDeleteDialog || state.showDetailsDialog
         },
-        
+
         // Selection getters
         hasSelectedUsers: (state) => state.selectedUsers.length > 0,
         selectedUserCount: (state) => state.selectedUsers.length,
-        
+
         // Form getters
         hasFormErrors: (state) => Object.keys(state.formErrors).length > 0,
-        
+
         // Filter getters
         hasActiveFilters: (state) => {
-            return Object.values(state.activeFilters).some(filter => filter !== null)
+            return Object.values(state.activeFilters).some((filter) => filter !== null)
         },
-        
+
         // Search getter
-        isSearchActive: (state) => state.searchQuery.length > 0
+        isSearchActive: (state) => state.searchQuery.length > 0,
     },
 
     actions: {
@@ -113,21 +109,21 @@ export const useUsersUiStore = defineStore('usersUi', {
 
         // Selection actions
         selectUser(user) {
-            const index = this.selectedUsers.findIndex(u => u.id === user.id)
+            const index = this.selectedUsers.findIndex((u) => u.id === user.id)
             if (index === -1) {
                 this.selectedUsers.push(user)
             }
         },
 
         deselectUser(user) {
-            const index = this.selectedUsers.findIndex(u => u.id === user.id)
+            const index = this.selectedUsers.findIndex((u) => u.id === user.id)
             if (index !== -1) {
                 this.selectedUsers.splice(index, 1)
             }
         },
 
         toggleUserSelection(user) {
-            const index = this.selectedUsers.findIndex(u => u.id === user.id)
+            const index = this.selectedUsers.findIndex((u) => u.id === user.id)
             if (index === -1) {
                 this.selectedUsers.push(user)
             } else {
@@ -187,10 +183,10 @@ export const useUsersUiStore = defineStore('usersUi', {
             this.activeFilters = {
                 role: null,
                 status: null,
-                dateRange: null
+                dateRange: null,
             }
             this.currentPage = 1
-        },        // Reset all UI state
+        }, // Reset all UI state
         resetUiState() {
             this.closeAllDialogs()
             this.clearSelection()
@@ -212,7 +208,7 @@ export const useUsersUiStore = defineStore('usersUi', {
 
         /**
          * Fetch users from the API
-         */ 
+         */
         async fetchUsers() {
             const usersStore = useUsersStore()
             try {
@@ -220,7 +216,7 @@ export const useUsersUiStore = defineStore('usersUi', {
             } catch (error) {
                 // Don't show auth errors since they're handled by the API interceptor
                 if (error.status !== 401) {
-                    toast.error(error.message || 'Failed to fetch users')
+                    console.error('Failed to fetch users:', error.message || error)
                 }
             }
         },
@@ -253,10 +249,10 @@ export const useUsersUiStore = defineStore('usersUi', {
                 await usersStore.deleteUser(this.selectedUser.id)
                 this.showDeleteDialog = false
                 this.selectedUser = null
-                toast.success('User deleted successfully')
+                console.log('User deleted successfully')
             } catch (error) {
-                toast.error(error.message || 'Failed to delete user')
+                console.error('Failed to delete user:', error.message || error)
             }
-        }
-    }
+        },
+    },
 })

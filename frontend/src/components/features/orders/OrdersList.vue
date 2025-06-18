@@ -168,12 +168,11 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
-import { storeToRefs } from 'pinia'
 import ErrorMessage from '@/components/ui/ErrorMessage.vue'
-import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { useAuthStore, useOrdersStore, useOrdersUiStore } from '@/store'
 import { formatPrice } from '@/utils'
+import { storeToRefs } from 'pinia'
+import { computed, onMounted } from 'vue'
 
 /**
  * Component for displaying and managing user orders

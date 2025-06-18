@@ -3,7 +3,7 @@
  */
 
 // Currency symbol to use throughout the application (UAH - Ukrainian Hryvnia)
-export const CURRENCY_SYMBOL = '₴';
+export const CURRENCY_SYMBOL = '₴'
 
 /**
  * Format a price with the standard currency symbol
@@ -12,9 +12,9 @@ export const CURRENCY_SYMBOL = '₴';
  * @returns {string} Formatted price
  */
 export function formatPrice(price) {
-  // Convert to number and handle invalid values
-  const numericPrice = parseFloat(price) || 0;
-  
-  // Format with 2 decimal places
-  return `${CURRENCY_SYMBOL}${numericPrice.toFixed(2)}`;
+    // Convert to number and handle invalid values
+    const numericPrice = parseFloat(price) || 0
+
+    // Format with 2 decimal places
+    return `${CURRENCY_SYMBOL}${numericPrice.toFixed(2)}`
 }

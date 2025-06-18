@@ -1,18 +1,9 @@
 <template>
-    <v-dialog
-        v-model="localVisible"
-        max-width="800"
-        persistent
-        scrollable
-    >
+    <v-dialog v-model="localVisible" max-width="800" persistent scrollable>
         <v-card>
             <v-card-title class="d-flex align-center justify-space-between">
                 <span>{{ isEdit ? 'Edit Book' : 'Add New Book' }}</span>
-                <v-btn
-                    icon="mdi-close"
-                    variant="text"
-                    @click="closeDialog"
-                ></v-btn>
+                <v-btn icon="mdi-close" variant="text" @click="closeDialog"></v-btn>
             </v-card-title>
 
             <v-divider></v-divider>
@@ -154,19 +145,8 @@
 
             <v-card-actions class="pa-6">
                 <v-spacer></v-spacer>
-                <v-btn
-                    variant="text"
-                    @click="closeDialog"
-                    :disabled="loading"
-                >
-                    Cancel
-                </v-btn>
-                <v-btn
-                    color="primary"
-                    variant="flat"
-                    @click="submitForm"
-                    :loading="loading"
-                >
+                <v-btn variant="text" @click="closeDialog" :disabled="loading"> Cancel </v-btn>
+                <v-btn color="primary" variant="flat" @click="submitForm" :loading="loading">
                     {{ isEdit ? 'Update' : 'Create' }} Book
                 </v-btn>
             </v-card-actions>
@@ -175,26 +155,26 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 // Props
 const props = defineProps({
     visible: {
         type: Boolean,
-        default: false
+        default: false,
     },
     book: {
         type: Object,
-        default: null
+        default: null,
     },
     authors: {
         type: Array,
-        default: () => []
+        default: () => [],
     },
     loading: {
         type: Boolean,
-        default: false
-    }
+        default: false,
+    },
 })
 
 // Emits
@@ -211,19 +191,19 @@ const formData = ref({
     stock: 0,
     status: 'published',
     description: '',
-    coverImage: ''
+    coverImage: '',
 })
 
 const rules = {
-    required: value => !!value || 'This field is required',
-    price: value => (value >= 0) || 'Price must be greater than or equal to 0',
-    stock: value => (value >= 0 && Number.isInteger(Number(value))) || 'Stock must be a non-negative integer'
+    required: (value) => !!value || 'This field is required',
+    price: (value) => value >= 0 || 'Price must be greater than or equal to 0',
+    stock: (value) => (value >= 0 && Number.isInteger(Number(value))) || 'Stock must be a non-negative integer',
 }
 
 const statusOptions = ref([
     { title: 'Published', value: 'published' },
     { title: 'Draft', value: 'draft' },
-    { title: 'Discontinued', value: 'discontinued' }
+    { title: 'Discontinued', value: 'discontinued' },
 ])
 
 // Form reference
@@ -236,7 +216,7 @@ const localVisible = computed({
     },
     set(value) {
         emit('update:visible', value)
-    }
+    },
 })
 
 const isEdit = computed(() => {
@@ -244,21 +224,24 @@ const isEdit = computed(() => {
 })
 
 const authorOptions = computed(() => {
-    return props.authors.map(author => ({
+    return props.authors.map((author) => ({
         title: author.name,
-        value: author.id
+        value: author.id,
     }))
 })
 
 // Watchers
-watch(() => props.visible, (newVal) => {
-    if (newVal) {
-        resetForm()
-        if (props.book) {
-            populateForm()
+watch(
+    () => props.visible,
+    (newVal) => {
+        if (newVal) {
+            resetForm()
+            if (props.book) {
+                populateForm()
+            }
         }
     }
-})
+)
 
 // Methods
 const resetForm = () => {
@@ -271,10 +254,10 @@ const resetForm = () => {
         stock: 0,
         status: 'published',
         description: '',
-        coverImage: ''
+        coverImage: '',
     }
     imageError.value = false
-    
+
     if (form.value) {
         form.value.resetValidation()
     }
@@ -291,22 +274,22 @@ const populateForm = () => {
             stock: props.book.stock || 0,
             status: props.book.status || 'published',
             description: props.book.description || '',
-            coverImage: props.book.coverImage || ''
+            coverImage: props.book.coverImage || '',
         }
     }
 }
 
 const submitForm = async () => {
     if (!form.value) return
-    
+
     const { valid } = await form.value.validate()
     if (!valid) return
-    
+
     const submitData = { ...formData.value }
     if (isEdit.value) {
         submitData.id = props.book.id
     }
-    
+
     emit('submit', submitData)
 }
 

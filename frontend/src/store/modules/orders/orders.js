@@ -1,8 +1,7 @@
+import { useNotifications } from '@/composables/useNotifications'
 import { orderApi } from '@/services/api/orderApi'
 import { useCartStore } from '@/store/modules/cart'
-import { handleAsyncAction } from '@/store/modules/ui'
-import { createBaseStore } from '@/store/modules/ui'
-import { toast } from '@/store/modules/ui'
+import { createBaseStore, handleAsyncAction } from '@/store/modules/ui'
 
 /**
  * Orders store using the base store factory
@@ -59,10 +58,12 @@ export const useOrdersStore = createBaseStore({
                 // Clear the cart after order is created
                 const cartStore = useCartStore()
                 await cartStore.clearCart()
-                // Notify user
-                toast.success(`Order #${order._id || order.id || 'New'} placed successfully!`, {
-                    duration: 6000,
-                    position: 'top-center',
+
+                // Show success notification
+                const { showSuccess } = useNotifications()
+                showSuccess(`Order #${order._id || order.id || 'New'} placed successfully!`, {
+                    sound: 'success',
+                    icon: 'mdi-check-circle',
                 })
 
                 return order
@@ -131,8 +132,10 @@ export const useOrdersStore = createBaseStore({
                     orderInOrders.status = updatedOrder.status
                 }
                 // Notify user
-                toast.success(`Order #${id} status updated to "${status}"`, {
-                    duration: 4000,
+                const { showSuccess } = useNotifications()
+                showSuccess(`Order #${id} status updated to "${status}"`, {
+                    sound: 'success',
+                    icon: 'mdi-clipboard-check',
                 })
 
                 return updatedOrder
@@ -159,8 +162,10 @@ export const useOrdersStore = createBaseStore({
                     orderInOrders.status = updatedOrder.status
                 }
                 // Notify user
-                toast.warning(`Order #${id} has been cancelled`, {
-                    duration: 4000,
+                const { showWarning } = useNotifications()
+                showWarning(`Order #${id} has been cancelled`, {
+                    sound: 'warning',
+                    icon: 'mdi-cancel',
                 })
 
                 return updatedOrder
@@ -186,7 +191,10 @@ export const useOrdersStore = createBaseStore({
                     await this.fetchOrders()
                 } catch (error) {
                     // Silently handle errors during initialization
-                    console.warn('Failed to initialize orders store:', error)
+                    const { showError } = useNotifications()
+                    showError('Failed to initialize orders store', {
+                        icon: 'mdi-alert-circle',
+                    })
                 }
 
                 this.initialized = true

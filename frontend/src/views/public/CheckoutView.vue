@@ -24,7 +24,9 @@
 
                         <v-divider class="my-2"></v-divider>
 
-                        <div class="d-flex justify-end font-weight-bold text-body-1">Total: {{ formatPrice(cartTotal) }}</div>
+                        <div class="d-flex justify-end font-weight-bold text-body-1">
+                            Total: {{ formatPrice(cartTotal) }}
+                        </div>
                     </v-sheet>
 
                     <v-form @submit.prevent="submitOrder">

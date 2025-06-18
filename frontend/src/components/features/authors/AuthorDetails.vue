@@ -52,13 +52,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import BookCard from '@/components/features/books/BookCard.vue'
-import ErrorMessage from '@/components/ui/ErrorMessage.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { useAuthorsStore, useAuthStore } from '@/store'
-import { syncError, syncSuccess } from '@/utils'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 /**
  * Props definition
@@ -132,10 +130,10 @@ const confirmDelete = () => {
 const handleDelete = async () => {
     try {
         await deleteAuthor(author.value.id)
-        syncSuccess('Author deleted successfully')
+        console.log('Author deleted successfully')
         router.push('/authors')
     } catch (error) {
-        syncError(error.message || 'Failed to delete author')
+        console.error('Failed to delete author:', error.message || error)
     }
 }
 

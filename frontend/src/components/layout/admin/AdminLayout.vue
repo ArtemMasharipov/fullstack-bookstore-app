@@ -1,10 +1,10 @@
 <template>
     <div class="admin-layout">
         <admin-sidebar />
-        
+
         <div class="admin-content">
             <admin-header />
-            
+
             <v-main class="admin-main">
                 <v-container fluid>
                     <router-view />
@@ -16,8 +16,8 @@
 
 <script setup>
 // Components
-import AdminHeader from '@/components/layout/admin/AdminHeader.vue';
-import AdminSidebar from '@/components/layout/admin/AdminSidebar.vue';
+import AdminHeader from '@/components/layout/admin/AdminHeader.vue'
+import AdminSidebar from '@/components/layout/admin/AdminSidebar.vue'
 </script>
 
 <style scoped>

@@ -1,11 +1,7 @@
 <template>
     <v-card elevation="2" height="100%" hover @click="emit('click', book.id)">
-        <v-img
-            :src="book.image || placeholderImage"
-            :alt="book.title || 'No image available'"
-            height="280"
-            cover
-        ></v-img>
+        <v-img :src="book.image || placeholderImage" :alt="book.title || 'No image available'" height="280"
+            cover></v-img>
 
         <v-card-item>
             <v-card-title class="text-truncate">
@@ -34,7 +30,8 @@
 
             <p v-if="book.description" class="text-body-2 mt-3 text-truncate-2">
                 {{ book.description }}
-            </p>            <div class="d-flex align-center justify-space-between mt-3">
+            </p>
+            <div class="d-flex align-center justify-space-between mt-3">
                 <div class="text-subtitle-1 font-weight-bold">
                     {{ formatPriceMethod(book.price) }}
                 </div>
@@ -51,29 +48,16 @@
             <v-row dense>
                 <template v-if="authStore.hasPermission('admin:access')">
                     <v-col cols="12">
-                        <v-btn
-                            variant="outlined"
-                            color="secondary"
-                            block
-                            density="comfortable"
-                            prepend-icon="mdi-shield-account"
-                            @click.stop="router.push('/admin/books')"
-                        >
+                        <v-btn variant="outlined" color="secondary" block density="comfortable"
+                            prepend-icon="mdi-shield-account" @click.stop="router.push('/admin/books')">
                             Manage in Admin
                         </v-btn>
                     </v-col>
                 </template>
 
                 <v-col cols="12" class="mt-2">
-                    <v-btn
-                        v-if="book.inStock"
-                        color="primary"
-                        block
-                        prepend-icon="mdi-cart"
-                        :disabled="!canAddToCart"
-                        :loading="loading"
-                        @click.stop="handleAddToCart"
-                    >
+                    <v-btn v-if="book.inStock" color="primary" block prepend-icon="mdi-cart" :disabled="!canAddToCart"
+                        :loading="loading" @click.stop="handleAddToCart">
                         Add to Cart
                     </v-btn>
                 </v-col>
@@ -83,11 +67,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { storeToRefs } from 'pinia'
+import { useAuthStore, useCartStore } from '@/store'
+import { formatPrice } from '@/utils'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { toast, useAuthStore, useCartStore } from '@/store'
-import { syncError, formatPrice } from '@/utils'
 
 /**
  * Book card component for displaying a single book
@@ -160,7 +143,7 @@ const handleAddToCart = async () => {
         await cartStore.fetchCart()
         emit('add-to-cart') // Emit just the add-to-cart event
     } catch (error) {
-        syncError(error.message)
+        console.error('Failed to add to cart:', error.message)
     } finally {
         loading.value = false
     }

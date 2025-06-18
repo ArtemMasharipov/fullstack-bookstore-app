@@ -1,7 +1,6 @@
 import { authorsApi } from '@/services/api/authorsApi'
 import { handleAsyncAction } from '@/store/modules/utils/stateHelpers'
 import { createBaseStore } from '@/store/modules/utils/storeFactory'
-import { toast } from '@/store/modules/utils/toast'
 
 /**
  * Authors store using the base store factory
@@ -58,12 +57,8 @@ export const useAuthorsStore = createBaseStore({
                     // Ensure list stays in sync with items
                     this.list = [...this.items]
 
-                    const authorName = authorData.name || 'Author'
-                    toast.success(`Author "${authorName}" created successfully`)
-
                     return author
                 } catch (error) {
-                    toast.error(`Failed to create author: ${error.message}`)
                     throw error
                 }
             })
@@ -84,12 +79,8 @@ export const useAuthorsStore = createBaseStore({
                     // Ensure list stays in sync with items
                     this.list = [...this.items]
 
-                    const authorName = authorData.name || author.name || 'Author'
-                    toast.success(`Author "${authorName}" updated successfully`)
-
                     return author
                 } catch (error) {
-                    toast.error(`Failed to update author: ${error.message}`)
                     throw error
                 }
             })
@@ -116,10 +107,8 @@ export const useAuthorsStore = createBaseStore({
                     // Ensure list stays in sync with items
                     this.list = [...this.items]
 
-                    toast.info(`Author "${displayName}" deleted successfully`)
                     return result
                 } catch (error) {
-                    toast.error(`Failed to delete author: ${error.message}`)
                     throw error
                 }
             })

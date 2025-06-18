@@ -70,12 +70,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
 import placeholderImage from '@/assets/images/placeholder.png'
-import { toast, useCartStore } from '@/store'
-import { debounce } from 'lodash'
-import ConfirmModal from '../../ui/ConfirmModal.vue'
+import { useCartStore } from '@/store'
 import { formatPrice } from '@/utils'
+import { debounce } from 'lodash'
+import { computed, onMounted, ref } from 'vue'
+import ConfirmModal from '../../ui/ConfirmModal.vue'
 
 /**
  * Cart item component for displaying a single cart item
@@ -137,7 +137,7 @@ const remove = async () => {
         // После удаления элемента обновляем счетчик корзины
         await cartStore.fetchCart()
     } catch (error) {
-        toast.error(`Failed to remove ${bookTitle.value}: ${error.message}`)
+        console.error(`Failed to remove ${bookTitle.value}: ${error.message}`)
     } finally {
         removing.value = false
     }
@@ -174,7 +174,7 @@ const handleQuantityChange = (quantity) => {
             return cartStore.fetchCart()
         })
         .catch((error) => {
-            toast.error(`Failed to update quantity: ${error.message}`)
+            console.error(`Failed to update quantity: ${error.message}`)
         })
 }
 

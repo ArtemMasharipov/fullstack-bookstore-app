@@ -1,7 +1,6 @@
 import { useOrdersStore } from '@/store/modules/orders'
-import { toast } from '@/store/modules/ui'
-import { defineStore } from 'pinia'
 import { formatPrice } from '@/utils'
+import { defineStore } from 'pinia'
 
 /**
  * Store for managing Orders UI state and interactions
@@ -150,13 +149,10 @@ export const useOrdersUiStore = defineStore('ordersUi', {
 
                         // Don't show error toast for expected 404 errors
                         if (!error.isExpected) {
-                            toast.info('Orders service is currently unavailable.', {
-                                duration: 3000,
-                                position: 'top-center',
-                            })
+                            console.log('Orders service is currently unavailable.')
                         }
                     } else {
-                        toast.error(error.message || 'Failed to load orders')
+                        console.error(error.message || 'Failed to load orders')
                     }
                 }
             }

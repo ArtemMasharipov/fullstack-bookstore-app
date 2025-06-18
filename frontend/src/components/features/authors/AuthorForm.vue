@@ -49,8 +49,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue'
-import { toast } from '@/store'
+import { computed, reactive, ref, watch } from 'vue'
 import BaseModal from '../../ui/BaseModal.vue'
 import ErrorMessage from '../../ui/ErrorMessage.vue'
 
@@ -162,7 +161,7 @@ const handleSubmit = async () => {
             emit('submit', { ...form })
         } catch (error) {
             errorMessage.value = error.message || 'Failed to save author'
-            toast.error(errorMessage.value)
+            console.error(errorMessage.value)
         }
     }
 }

@@ -1,8 +1,7 @@
+import { useNotifications } from '@/composables/useNotifications'
 import { cartApi } from '@/services/api/cartApi'
 import { useAuthStore } from '@/store/modules/auth'
-import { handleAsyncAction } from '@/store/modules/ui'
-import { createBaseStore } from '@/store/modules/ui'
-import { syncError, syncInfo, syncSuccess } from '@/utils/helpers'
+import { createBaseStore, handleAsyncAction } from '@/store/modules/ui'
 
 /**
  * Cart store using the base store factory
@@ -80,12 +79,17 @@ export const useCartStore = createBaseStore({
                         this.addLocalItem({ bookId, quantity, price })
                     }
 
-                    // Используем syncSuccess для надежного отображения уведомлений
-                    syncSuccess(`"${title}" added to cart`, {
-                        icon: 'shopping_cart',
+                    // Show success notification
+                    const { showSuccess } = useNotifications()
+                    showSuccess(`"${title}" added to cart`, {
+                        sound: 'success',
+                        icon: 'mdi-cart-plus',
                     })
                 } catch (error) {
-                    syncError(`Failed to add "${title}" to cart: ${error.message}`)
+                    const { showError } = useNotifications()
+                    showError(`Failed to add "${title}" to cart: ${error.message}`, {
+                        icon: 'mdi-cart-remove',
+                    })
                     throw error
                 }
             })
@@ -101,10 +105,17 @@ export const useCartStore = createBaseStore({
                     const response = await cartApi.removeFromCart(itemId)
                     this.setItems(response.items)
 
-                    // Используем syncInfo для надежного отображения уведомлений
-                    syncInfo(`"${title}" removed from cart`)
+                    // Show success notification
+                    const { showSuccess } = useNotifications()
+                    showSuccess(`"${title}" removed from cart`, {
+                        sound: 'warning',
+                        icon: 'mdi-cart-minus',
+                    })
                 } catch (error) {
-                    syncError(`Failed to remove "${title}" from cart: ${error.message}`)
+                    const { showError } = useNotifications()
+                    showError(`Failed to remove "${title}" from cart: ${error.message}`, {
+                        icon: 'mdi-alert-circle',
+                    })
                     throw error
                 }
             })
@@ -133,10 +144,17 @@ export const useCartStore = createBaseStore({
                         this.updateLocalQuantity(payload)
                     }
 
-                    // Используем syncInfo для надежного отображения уведомлений
-                    syncInfo(`"${title}" quantity updated to ${payload.quantity}`)
+                    // Show success notification
+                    const { showSuccess } = useNotifications()
+                    showSuccess(`"${title}" quantity updated to ${payload.quantity}`, {
+                        sound: 'info',
+                        icon: 'mdi-cart-outline',
+                    })
                 } catch (error) {
-                    syncError(`Failed to update quantity: ${error.message}`)
+                    const { showError } = useNotifications()
+                    showError(`Failed to update quantity: ${error.message}`, {
+                        icon: 'mdi-alert-circle',
+                    })
                     throw error
                 }
             })
@@ -151,10 +169,17 @@ export const useCartStore = createBaseStore({
                     this.items = []
                     localStorage.removeItem('cart')
 
-                    // Используем syncInfo для надежного отображения уведомлений
-                    syncInfo('Cart cleared successfully')
+                    // Show success notification
+                    const { showSuccess } = useNotifications()
+                    showSuccess('Cart cleared successfully', {
+                        sound: 'info',
+                        icon: 'mdi-cart-off',
+                    })
                 } catch (error) {
-                    syncError(`Failed to clear cart: ${error.message}`)
+                    const { showError } = useNotifications()
+                    showError(`Failed to clear cart: ${error.message}`, {
+                        icon: 'mdi-alert-circle',
+                    })
                     throw error
                 }
             })

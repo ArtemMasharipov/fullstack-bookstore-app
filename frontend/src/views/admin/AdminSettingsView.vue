@@ -38,12 +38,8 @@
                         </template>
                         <v-list-item-title>Notifications</v-list-item-title>
                         <template v-slot:append>
-                            <v-switch
-                                v-model="notificationsEnabled"
-                                color="primary"
-                                hide-details
-                                density="compact"
-                            ></v-switch>
+                            <v-switch v-model="notificationsEnabled" color="primary" hide-details
+                                density="compact"></v-switch>
                         </template>
                     </v-list-item>
                 </v-list>
@@ -77,8 +73,8 @@
 </template>
 
 <script setup>
+import { logger } from '@/utils/logger'
 import { ref } from 'vue'
-import { toast } from '@/store'
 
 // Reactive state
 const darkMode = ref(false)
@@ -88,7 +84,7 @@ const notificationsEnabled = ref(true)
 const clearCache = () => {
     // This would be connected to a real cache clearing function
     setTimeout(() => {
-        toast.success('Cache cleared successfully!')
+        logger.info('Cache cleared successfully!', 'admin-settings')
     }, 800)
 }
 </script>

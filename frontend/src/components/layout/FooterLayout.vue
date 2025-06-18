@@ -4,12 +4,8 @@
             <v-row align="center" justify="center">
                 <v-col cols="12" class="text-center">
                     <v-divider class="mb-4"></v-divider>
-                    <p class="text-body-2 mb-2">
-                        © {{ currentYear }} Bookstore App. All rights reserved.
-                    </p>
-                    <p class="text-caption">
-                        Built with Vue.js, Vuetify, and ❤️
-                    </p>
+                    <p class="text-body-2 mb-2">© {{ currentYear }} Bookstore App. All rights reserved.</p>
+                    <p class="text-caption">Built with Vue.js, Vuetify, and ❤️</p>
                 </v-col>
             </v-row>
         </v-container>

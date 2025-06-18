@@ -1,47 +1,24 @@
-<template>    <div class="admin-books">
+<template>
+    <div class="admin-books">
         <!-- Book management data table -->
-        <admin-books-table
-            :books="paginatedBooks"
-            :authors="authors"
-            :loading="loading"
-            :total-items="totalItems"
-            :page="page"
-            :items-per-page="itemsPerPage"
-            :sort-by="sortBy"
-            :search="search"
-            @update:page="updatePage"
-            @update:items-per-page="updateItemsPerPage"
-            @update:sort-by="updateSortBy"
-            @update:search="updateSearch"
-            @reset-filters="resetFilters"
-            @add-book="openBookDialog"
-            @edit-book="openBookDialog"
-            @delete-book="confirmDeleteBook"
-        />
+        <admin-books-table :books="paginatedBooks" :authors="authors" :loading="loading" :total-items="totalItems"
+            :page="page" :items-per-page="itemsPerPage" :sort-by="sortBy" :search="search" @update:page="updatePage"
+            @update:items-per-page="updateItemsPerPage" @update:sort-by="updateSortBy" @update:search="updateSearch"
+            @reset-filters="resetFilters" @add-book="openBookDialog" @edit-book="openBookDialog"
+            @delete-book="confirmDeleteBook" />
 
         <!-- Book edit/create dialog -->
-        <book-dialog
-            v-model="bookDialogOpen"
-            :book="editedBook"
-            :authors="authors"
-            :saving="saving"
-            @save="handleSaveBook"
-            @close="closeBookDialog"
-        />
+        <book-dialog v-model="bookDialogOpen" :book="editedBook" :authors="authors" :saving="saving"
+            @save="handleSaveBook" @close="closeBookDialog" />
 
         <!-- Delete confirmation dialog -->
-        <book-delete-dialog
-            v-model="deleteDialogOpen"
-            :book="bookToDelete"
-            :deleting="deleting"
-            @delete="handleDeleteBook"
-            @close="closeDeleteDialog"
-        />
+        <book-delete-dialog v-model="deleteDialogOpen" :book="bookToDelete" :deleting="deleting"
+            @delete="handleDeleteBook" @close="closeDeleteDialog" />
     </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 // Components
 import AdminBooksTable from '@/components/features/admin/AdminBooksTable.vue'
@@ -51,7 +28,9 @@ import BookDialog from '@/components/features/admin/BookDialog.vue'
 // Stores
 import { useAuthorsStore } from '@/store/modules/authors'
 import { useBooksStore } from '@/store/modules/books'
-import { toast } from '@/store/modules/ui'
+
+// Utils
+import { logger } from '@/utils/logger'
 
 // Store instances
 const booksStore = useBooksStore()
@@ -85,11 +64,12 @@ const filteredBooks = computed(() => {
     // Search filter
     if (search.value) {
         const query = search.value.toLowerCase()
-        result = result.filter(book => 
-            book.title?.toLowerCase().includes(query) ||
-            book.isbn?.toLowerCase().includes(query) ||
-            book.author?.name?.toLowerCase().includes(query) ||
-            book.category?.toLowerCase().includes(query)
+        result = result.filter(
+            (book) =>
+                book.title?.toLowerCase().includes(query) ||
+                book.isbn?.toLowerCase().includes(query) ||
+                book.author?.name?.toLowerCase().includes(query) ||
+                book.category?.toLowerCase().includes(query)
         )
     }
 
@@ -109,7 +89,7 @@ const loadBooks = async () => {
     try {
         await booksStore.fetchBooks()
     } catch (error) {
-        toast.error(`Failed to load books: ${error.message || 'Unknown error'}`)
+        logger.error('Failed to load books', error, 'admin-books')
     }
 }
 
@@ -117,7 +97,7 @@ const loadAuthors = async () => {
     try {
         await authorsStore.fetchAuthors()
     } catch (error) {
-        console.error('Error fetching authors:', error)
+        logger.error('Error fetching authors', error, 'admin-books')
     }
 }
 
@@ -152,17 +132,17 @@ const handleSaveBook = async (bookData) => {
         if (bookData.id) {
             // Update existing book
             await booksStore.updateBook(bookData.id, bookData)
-            toast.success(`Book "${bookData.title}" updated successfully`)
+            logger.info('Book updated successfully', { title: bookData.title, id: bookData.id }, 'admin-books')
         } else {
             // Create new book
             await booksStore.createBook(bookData)
-            toast.success(`Book "${bookData.title}" created successfully`)
+            logger.info('Book created successfully', { title: bookData.title }, 'admin-books')
         }
-        
+
         closeBookDialog()
         await loadBooks() // Refresh the list
     } catch (error) {
-        toast.error(`Failed to save book: ${error.message || 'Unknown error'}`)
+        logger.error('Failed to save book', error, 'admin-books')
     } finally {
         saving.value = false
     }
@@ -175,12 +155,12 @@ const handleDeleteBook = async () => {
 
     try {
         await booksStore.deleteBook(bookToDelete.value.id)
-        toast.success(`Book "${bookToDelete.value.title}" deleted successfully`)
-        
+        logger.info(`Book "${bookToDelete.value.title}" deleted successfully`, 'admin-books')
+
         closeDeleteDialog()
         await loadBooks() // Refresh the list
     } catch (error) {
-        toast.error(`Failed to delete book: ${error.message || 'Unknown error'}`)
+        logger.error(`Failed to delete book: ${error.message || 'Unknown error'}`, error, 'admin-books')
     } finally {
         deleting.value = false
     }

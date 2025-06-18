@@ -5,9 +5,7 @@
                 <!-- Logo/Brand -->
                 <v-col cols="auto">
                     <router-link to="/" class="text-decoration-none text-white">
-                        <v-btn variant="text" size="large" class="text-h6 font-weight-bold">
-                            📚 Bookstore
-                        </v-btn>
+                        <v-btn variant="text" size="large" class="text-h6 font-weight-bold"> 📚 Bookstore </v-btn>
                     </router-link>
                 </v-col>
 
@@ -69,9 +67,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { storeToRefs } from 'pinia'
 import { useAuthStore, useCartStore } from '@/store'
+import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 /**

@@ -1,20 +1,20 @@
 <template>
-  <div>
-    <h1>Fixed Bookstore Admin Panel</h1>
-    <p>The fixes for the data consistency issues include:</p>
-    <ul>
-      <li>Improved data normalization in the store with proper type conversions</li>
-      <li>Enhanced error detection with debugging logs</li>
-      <li>Consistent handling of price formats and stock status in UI components</li>
-      <li>Dedicated display components for reusability</li>
-    </ul>
-    
-    <h2>Technical Implementation Summary</h2>
-    <p>The key changes made:</p>
-    <ol>
-      <li>
-        <strong>Enhanced setBooksList method</strong> with strict type normalization:
-        <pre>
+    <div>
+        <h1>Fixed Bookstore Admin Panel</h1>
+        <p>The fixes for the data consistency issues include:</p>
+        <ul>
+            <li>Improved data normalization in the store with proper type conversions</li>
+            <li>Enhanced error detection with debugging logs</li>
+            <li>Consistent handling of price formats and stock status in UI components</li>
+            <li>Dedicated display components for reusability</li>
+        </ul>
+
+        <h2>Technical Implementation Summary</h2>
+        <p>The key changes made:</p>
+        <ol>
+            <li>
+                <strong>Enhanced setBooksList method</strong> with strict type normalization:
+                <pre>
 const normalizeBooks = (books) => {
   return books.map(book => {
     // Create a fresh object to avoid references
@@ -44,11 +44,12 @@ const normalizeBooks = (books) => {
     return normalizedBook;
   });
 };
-        </pre>
-      </li>
-      <li>
-        <strong>Enhanced createBook and updateBook methods</strong> with strict data validation:
-        <pre>
+        </pre
+                >
+            </li>
+            <li>
+                <strong>Enhanced createBook and updateBook methods</strong> with strict data validation:
+                <pre>
 // Process plain object form data with stricter type conversion
 normalizedData = {
   ...formData,
@@ -64,26 +65,27 @@ normalizedData = {
     formData.inStock === 'yes'
   )
 };
-        </pre>
-      </li>
-      <li>
-        <strong>Created dedicated display components</strong> for consistent rendering:
-        <ul>
-          <li>BookPriceDisplay.vue - handles various price formats</li>
-          <li>StockStatusDisplay.vue - handles various stock status values</li>
-        </ul>
-      </li>
-    </ol>
-    
-    <h2>Problem Fixed</h2>
-    <p>The inconsistent data display issues have been resolved by:</p>
-    <ol>
-      <li>Normalizing data at the source in the store</li>
-      <li>Implementing consistent type handling across all UI components</li>
-      <li>Adding proper data validation on form submission</li>
-      <li>Ensuring consistent formatted output in the admin panel</li>
-    </ol>
-  </div>
+        </pre
+                >
+            </li>
+            <li>
+                <strong>Created dedicated display components</strong> for consistent rendering:
+                <ul>
+                    <li>BookPriceDisplay.vue - handles various price formats</li>
+                    <li>StockStatusDisplay.vue - handles various stock status values</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h2>Problem Fixed</h2>
+        <p>The inconsistent data display issues have been resolved by:</p>
+        <ol>
+            <li>Normalizing data at the source in the store</li>
+            <li>Implementing consistent type handling across all UI components</li>
+            <li>Adding proper data validation on form submission</li>
+            <li>Ensuring consistent formatted output in the admin panel</li>
+        </ol>
+    </div>
 </template>
 
 <script setup>
