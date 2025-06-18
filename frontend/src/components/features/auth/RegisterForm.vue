@@ -33,10 +33,10 @@
 </template>
 
 <script setup>
+import { useAuthStore, useAuthUiStore } from '@/store'
+import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import { useAuthStore, useAuthUiStore } from '@/store'
 
 // Router
 const router = useRouter()

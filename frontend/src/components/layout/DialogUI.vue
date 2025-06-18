@@ -13,9 +13,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { storeToRefs } from 'pinia'
 import { useUiStore } from '@/store'
+import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 
 /**
  * GlobalUI component for handling app-level UI elements like dialogs

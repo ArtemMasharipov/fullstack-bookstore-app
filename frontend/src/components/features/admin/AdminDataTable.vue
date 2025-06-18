@@ -87,8 +87,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
 import { debounce } from 'lodash-es'
+import { computed, onMounted, ref, watch } from 'vue'
 
 // Props
 const props = defineProps({
@@ -227,9 +227,12 @@ const sortBySync = computed({
 })
 
 // Watchers
-watch(() => props.search, (newValue) => {
-    searchQuery.value = newValue
-})
+watch(
+    () => props.search,
+    (newValue) => {
+        searchQuery.value = newValue
+    }
+)
 
 // Methods
 const onSearchChange = () => {

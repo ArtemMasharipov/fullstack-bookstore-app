@@ -1,7 +1,6 @@
+import { useNotifications } from '@/composables/useNotifications'
 import { usersApi } from '@/services/api/usersApi'
-import { handleAsyncAction } from '@/store/modules/ui'
-import { createBaseStore } from '@/store/modules/ui'
-import { toastHelpers } from '@/store/modules/ui'
+import { createBaseStore, handleAsyncAction } from '@/store/modules/ui'
 
 /**
  * Users store using the base store factory
@@ -36,14 +35,90 @@ export const useUsersStore = createBaseStore({
          * Fetch all users
          */
         async fetchUsers() {
-            const users = await toastHelpers.handleLoad({
-                entityName: 'Пользователи',
-                operation: () => this.fetchAll(),
-                silent: true,
-            })
+            try {
+                const users = await this.fetchAll()
+                this.list = users // Keep list in sync with items
+                return users
+            } catch (error) {
+                const { showError } = useNotifications()
+                showError('Failed to fetch users', {
+                    icon: 'mdi-account-alert',
+                })
+                throw error
+            }
+        },
 
-            this.list = users // Keep list in sync with items
-            return users
+        /**
+         * Create a new user
+         * @param {Object} userData - Data for the new user
+         */
+        async createUser(userData) {
+            return handleAsyncAction(this, async () => {
+                const result = await usersApi.createUser(userData)
+
+                // Add the new user to the list
+                this.items.unshift(result)
+                this.list = [...this.items] // Ensure list stays in sync with items
+
+                const userName = result.name || result.username || result.email || 'New user'
+                const { showSuccess } = useNotifications()
+                showSuccess(`User "${userName}" created successfully`, {
+                    sound: 'success',
+                    icon: 'mdi-account-plus',
+                })
+                return result
+            })
+        },
+
+        /**
+         * Update an existing user
+         * @param {string} id - User ID
+         * @param {Object} userData - Updated user data
+         */
+        async updateUser(id, userData) {
+            return handleAsyncAction(this, async () => {
+                const result = await usersApi.updateUser(id, userData)
+
+                // Update the user in the list
+                const index = this.items.findIndex((user) => user.id === id)
+                if (index !== -1) {
+                    this.items[index] = result
+                    this.list = [...this.items] // Ensure list stays in sync with items
+                }
+
+                const userName = result.name || result.username || result.email || 'User'
+                const { showSuccess } = useNotifications()
+                showSuccess(`User "${userName}" updated successfully`, {
+                    sound: 'success',
+                    icon: 'mdi-account-edit',
+                })
+                return result
+            })
+        },
+
+        /**
+         * Delete a user
+         * @param {string} id - User ID
+         */
+        async deleteUser(id) {
+            return handleAsyncAction(this, async () => {
+                // Get user data before deletion for notification
+                const userToDelete = this.items.find((user) => user.id === id)
+                const userName = userToDelete?.name || userToDelete?.username || userToDelete?.email || 'User'
+
+                const result = await usersApi.deleteUser(id)
+
+                // Remove the user from the list
+                this.items = this.items.filter((user) => user.id !== id)
+                this.list = [...this.items] // Ensure list stays in sync with items
+
+                const { showWarning } = useNotifications()
+                showWarning(`User "${userName}" deleted successfully`, {
+                    sound: 'warning',
+                    icon: 'mdi-account-remove',
+                })
+                return result
+            })
         },
 
         /**
@@ -51,77 +126,47 @@ export const useUsersStore = createBaseStore({
          * @param {string} id - User ID
          */
         async fetchUserById(id) {
-            return this.fetchById(id)
-        },
-
-        /**
-         * Create a new user
-         * @param {Object} userData - User data
-         */
-        async createUser(userData) {
-            const userName = userData.name || userData.username || 'User'
-
-            return handleAsyncAction(this, async () => {
-                return toastHelpers.handleCreate({
-                    entityName: 'Пользователь',
-                    displayName: userName,
-                    operation: async () => {
-                        const user = await this.create(userData)
-                        // Ensure list stays in sync with items
-                        this.list = [...this.items]
-                        return user
-                    },
+            try {
+                const user = await this.fetchById(id)
+                return user
+            } catch (error) {
+                const { showError } = useNotifications()
+                showError('Failed to fetch user details', {
+                    icon: 'mdi-account-alert',
                 })
-            })
+                throw error
+            }
         },
 
         /**
-         * Update an existing user
-         * @param {Object} params - Parameters object
-         * @param {string} params.id - User ID
-         * @param {Object} params.userData - Updated user data
+         * Custom initialize method to ensure arrays are properly set
          */
-        async updateUser({ id, userData }) {
-            const userName = userData.name || userData.username || 'User'
+        async initializeStore() {
+            // Initialize arrays if they're not already
+            if (!Array.isArray(this.list)) {
+                this.list = []
+            }
+            if (!Array.isArray(this.items)) {
+                this.items = []
+            }
 
-            return handleAsyncAction(this, async () => {
-                return toastHelpers.handleUpdate({
-                    entityName: 'Пользователь',
-                    displayName: userName,
-                    operation: async () => {
-                        const user = await this.update(id, userData)
-                        // Ensure list stays in sync with items
-                        this.list = [...this.items]
-                        return user
-                    },
-                })
-            })
-        },
-
-        /**
-         * Delete a user
-         * @param {string} id - User ID
-         * @param {string} userName - User name for notification (optional)
-         */
-        async deleteUser(id, userName = 'User') {
-            return handleAsyncAction(this, async () => {
-                // If userName wasn't provided but we have the current user details, use that
-                let displayName = userName
-                if (displayName === 'User' && this.current && this.current.id === id) {
-                    displayName = this.current.name || this.current.username || 'User'
+            // Call the base implementation
+            if (!this.initialized) {
+                // If API is provided, fetch initial data
+                try {
+                    await this.fetchUsers()
+                } catch (error) {
+                    // Silently handle errors during initialization
+                    const { showError } = useNotifications()
+                    showError('Failed to initialize users store', {
+                        icon: 'mdi-alert-circle',
+                    })
                 }
 
-                return toastHelpers.handleDelete({
-                    entityName: 'Пользователь',
-                    displayName,
-                    operation: async () => {
-                        const result = await this.delete(id)
-                        // Ensure list stays in sync with items
-                        this.list = [...this.items]
-                        return result
-                    },
-                })
-            })
+                this.initialized = true
+            }
+
+            return true
         },
     },
 })

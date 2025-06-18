@@ -1,7 +1,6 @@
 import { booksApi } from '@/services/api/booksApi'
 import { handleAsyncAction } from '@/store/modules/utils/stateHelpers'
 import { createBaseStore } from '@/store/modules/utils/storeFactory'
-import { toast } from '@/store/modules/utils/toast'
 
 /**
  * Books store using the base store factory
@@ -44,12 +43,12 @@ export const useBooksStore = createBaseStore({
         async fetchBooks(params = { page: 1, limit: 10 }) {
             return handleAsyncAction(this, async () => {
                 try {
-                    const response = await booksApi.fetchAll(params);
-                    this.setBooksList(response);
-                    return response;
+                    const response = await booksApi.fetchAll(params)
+                    this.setBooksList(response)
+                    return response
                 } catch (error) {
-                    console.error('Error fetching books:', error);
-                    throw error;
+                    console.error('Error fetching books:', error)
+                    throw error
                 }
             })
         },
@@ -76,40 +75,33 @@ export const useBooksStore = createBaseStore({
                 this,
                 async () => {
                     // Always normalize data before sending to API
-                    let normalizedData = formData;
-                    
+                    let normalizedData = formData
+
                     if (!(formData instanceof FormData)) {
                         // Process plain object form data with simple type conversion
                         normalizedData = {
                             ...formData,
                             price: parseFloat(formData.price) || 0,
-                            inStock: Boolean(formData.inStock)
-                        };
+                            inStock: Boolean(formData.inStock),
+                        }
                     }
-                    
+
                     const book = await booksApi.create(normalizedData)
-                    
+
                     // Make sure the returned book has correct data types
                     const normalizedBook = {
                         ...book,
                         inStock: Boolean(book.inStock),
-                        price: parseFloat(book.price) || 0
-                    };
-                    
-                    this.list.books.push(normalizedBook)
+                        price: parseFloat(book.price) || 0,
+                    }
 
-                    // Show success notification
-                    const title =
-                        normalizedData instanceof FormData
-                            ? normalizedData.get('title') || 'New book'
-                            : normalizedData.title || 'New book'
-                    toast.success(`"${title}" has been created successfully`)
+                    this.list.books.push(normalizedBook)
 
                     return normalizedBook
                 },
                 {
-                    onError: (error) => {
-                        toast.error(`Failed to create book: ${error.message}`)
+                    onError: () => {
+                        // Error handling without toast notifications
                     },
                 }
             )
@@ -126,39 +118,36 @@ export const useBooksStore = createBaseStore({
                 this,
                 async () => {
                     // Always normalize data before sending to API
-                    let normalizedData = formData;
-                    
+                    let normalizedData = formData
+
                     if (!(formData instanceof FormData)) {
                         // Process plain object form data with simple type conversion
                         normalizedData = {
                             ...formData,
                             price: parseFloat(formData.price) || 0,
-                            inStock: Boolean(formData.inStock)
-                        };
+                            inStock: Boolean(formData.inStock),
+                        }
                     }
-                    
+
                     const updatedBook = await booksApi.update(id, normalizedData)
-                    
+
                     // Make sure the returned book has correct data types
                     const normalizedBook = {
                         ...updatedBook,
                         inStock: Boolean(updatedBook.inStock),
-                        price: parseFloat(updatedBook.price) || 0
-                    };
-                    
+                        price: parseFloat(updatedBook.price) || 0,
+                    }
+
                     const index = this.list.books.findIndex((book) => book._id === normalizedBook._id)
                     if (index !== -1) {
                         this.list.books.splice(index, 1, normalizedBook)
                     }
 
-                    // Show success notification
-                    toast.success(`"${normalizedBook.title || 'Book'}" has been updated successfully`)
-
                     return normalizedBook
                 },
                 {
-                    onError: (error) => {
-                        toast.error(`Failed to update book: ${error.message}`)
+                    onError: () => {
+                        // Error handling without toast notifications
                     },
                 }
             )
@@ -182,13 +171,10 @@ export const useBooksStore = createBaseStore({
 
                     await booksApi.delete(id)
                     this.list.books = this.list.books.filter((book) => book._id !== id)
-
-                    // Show notification
-                    toast.warning(`"${title}" has been deleted`)
                 },
                 {
-                    onError: (error) => {
-                        toast.error(`Failed to delete book: ${error.message}`)
+                    onError: () => {
+                        // Error handling without toast notifications
                     },
                 }
             )
@@ -201,22 +187,22 @@ export const useBooksStore = createBaseStore({
         setBooksList(response) {
             // Helper to normalize book data with simple type conversions
             const normalizeBooks = (books) => {
-                return books.map(book => {
-                    const normalizedBook = {...book};
-                    
+                return books.map((book) => {
+                    const normalizedBook = { ...book }
+
                     // Ensure price is a number
-                    normalizedBook.price = parseFloat(book.price) || 0;
-                    
+                    normalizedBook.price = parseFloat(book.price) || 0
+
                     // Ensure inStock is a boolean
-                    normalizedBook.inStock = Boolean(book.inStock);
-                    
-                    return normalizedBook;
-                });
-            };
-            
+                    normalizedBook.inStock = Boolean(book.inStock)
+
+                    return normalizedBook
+                })
+            }
+
             if (Array.isArray(response)) {
                 // If API returned just an array of books
-                this.list.books = normalizeBooks(response);
+                this.list.books = normalizeBooks(response)
                 // Set basic pagination
                 this.list.pagination = {
                     page: 1,
@@ -226,8 +212,8 @@ export const useBooksStore = createBaseStore({
                 }
             } else if (response && typeof response === 'object') {
                 // If API returned an object with books and pagination
-                const books = response.books || response.data || [];
-                this.list.books = normalizeBooks(books);
+                const books = response.books || response.data || []
+                this.list.books = normalizeBooks(books)
                 this.list.pagination = response.pagination || {
                     page: 1,
                     limit: this.list.books.length,

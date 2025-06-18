@@ -2,39 +2,39 @@ const routes = [
     {
         path: '/',
         name: 'Home',
-        component: () => import('@/views/HomeView.vue'),
+        component: () => import('@/views/public/HomeView.vue'),
     },
     {
         path: '/login',
         name: 'Login',
-        component: () => import('@/views/LoginView.vue'),
+        component: () => import('@/views/auth/LoginView.vue'),
         meta: { guest: true },
     },
     {
         path: '/books',
         name: 'Books',
-        component: () => import('@/views/BooksView.vue'),
+        component: () => import('@/views/public/BooksView.vue'),
     },
     {
         path: '/books/:id',
         name: 'BookDetails',
-        component: () => import('@/views/BookDetailsView.vue'),
+        component: () => import('@/views/public/BookDetailsView.vue'),
     },
     {
         path: '/authors',
         name: 'Authors',
-        component: () => import('@/views/AuthorsView.vue'),
+        component: () => import('@/views/public/AuthorsView.vue'),
         meta: { requiresAuth: true },
     },
     {
         path: '/authors/:id',
         name: 'AuthorDetails',
-        component: () => import('@/views/AuthorDetailsView.vue'),
+        component: () => import('@/views/public/AuthorDetailsView.vue'),
     },
     {
         path: '/register',
         name: 'Register',
-        component: () => import('@/views/RegisterView.vue'),
+        component: () => import('@/views/auth/RegisterView.vue'),
         meta: { guest: true },
     },
     // Admin routes
@@ -83,7 +83,7 @@ const routes = [
     {
         path: '/books/new',
         name: 'CreateBook',
-        component: () => import('@/views/PlaceholderView.vue'),
+        component: () => import('@/views/errors/PlaceholderView.vue'),
         meta: {
             requiresAuth: true,
             requiredPermission: 'create:book',
@@ -92,7 +92,7 @@ const routes = [
     {
         path: '/books/:id/edit',
         name: 'EditBook',
-        component: () => import('@/views/PlaceholderView.vue'),
+        component: () => import('@/views/errors/PlaceholderView.vue'),
         meta: {
             requiresAuth: true,
             requiredPermission: 'update:book',
@@ -101,7 +101,7 @@ const routes = [
     {
         path: '/authors/new',
         name: 'CreateAuthor',
-        component: () => import('@/views/PlaceholderView.vue'),
+        component: () => import('@/views/errors/PlaceholderView.vue'),
         meta: {
             requiresAuth: true,
             requiredPermission: 'create:author',
@@ -110,7 +110,7 @@ const routes = [
     {
         path: '/authors/:id/edit',
         name: 'EditAuthor',
-        component: () => import('@/views/PlaceholderView.vue'),
+        component: () => import('@/views/errors/PlaceholderView.vue'),
         meta: {
             requiresAuth: true,
             requiredPermission: 'update:author',
@@ -119,12 +119,12 @@ const routes = [
     {
         path: '/about',
         name: 'About',
-        component: () => import('@/views/AboutView.vue'),
+        component: () => import('@/views/public/AboutView.vue'),
     },
     {
         path: '/cart',
         name: 'Cart',
-        component: () => import('@/views/CartView.vue'),
+        component: () => import('@/views/public/CartView.vue'),
         meta: {
             requiresAuth: false, // Allow both authenticated and unauthenticated users
         },
@@ -132,7 +132,7 @@ const routes = [
     {
         path: '/checkout',
         name: 'Checkout',
-        component: () => import('@/views/CheckoutView.vue'),
+        component: () => import('@/views/public/CheckoutView.vue'),
         meta: {
             requiresAuth: true,
             requiredPermission: 'create:order',
@@ -141,7 +141,7 @@ const routes = [
     {
         path: '/orders',
         name: 'Orders',
-        component: () => import('@/views/OrdersView.vue'),
+        component: () => import('@/views/orders/OrdersView.vue'),
         meta: {
             requiresAuth: true,
             requiredPermission: 'read:order',
@@ -150,7 +150,7 @@ const routes = [
     {
         path: '/orders/:id',
         name: 'OrderDetails',
-        component: () => import('@/views/OrderDetailsView.vue'),
+        component: () => import('@/views/orders/OrderDetailsView.vue'),
         meta: {
             requiresAuth: true,
             requiredPermission: 'read:order',
@@ -159,7 +159,7 @@ const routes = [
     {
         path: '/orders/:id/status',
         name: 'OrderStatus',
-        component: () => import('@/views/OrderStatusView.vue'),
+        component: () => import('@/views/orders/OrderStatusView.vue'),
         meta: {
             requiresAuth: true,
             requiredPermission: 'update:order',
@@ -168,12 +168,12 @@ const routes = [
     {
         path: '/contact',
         name: 'Contact',
-        component: () => import('@/views/ContactView.vue'),
+        component: () => import('@/views/public/ContactView.vue'),
     },
     {
         path: '/privacy',
         name: 'Privacy',
-        component: () => import('@/views/PrivacyView.vue'),
+        component: () => import('@/views/public/PrivacyView.vue'),
     },
 ]
 

@@ -42,7 +42,6 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { toast } from '@/store'
 
 // Router
 const router = useRouter()
@@ -82,7 +81,7 @@ const handleReset = () => {
     error.value = null
     errorInfo.value = null
     errorMessage.value = ''
-    toast.info('View has been reset')
+    console.log('View has been reset')
 }
 
 const navigateToDashboard = () => {
@@ -94,7 +93,7 @@ const navigateToDashboard = () => {
 
 // Define error captured lifecycle hook
 defineExpose({
-    onErrorCaptured
+    onErrorCaptured,
 })
 </script>
 

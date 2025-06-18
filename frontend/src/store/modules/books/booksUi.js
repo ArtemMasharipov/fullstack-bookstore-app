@@ -1,6 +1,5 @@
 import { useBooksStore } from '@/store/modules/books/books'
 import { useUiStore } from '@/store/modules/ui/ui'
-import { toast } from '@/store/modules/utils/toast'
 import { debounce } from 'lodash'
 import { defineStore } from 'pinia'
 
@@ -113,16 +112,14 @@ export const useBooksUiStore = defineStore('booksUi', {
 
                 if (bookData._id) {
                     await booksStore.updateBook({ id: bookData._id, formData: bookData.formData })
-                    toast.success('Book updated successfully')
                 } else {
                     await booksStore.createBook(bookData.formData)
-                    toast.success('Book created successfully')
                 }
 
                 await this.loadBooks()
                 this.closeForm()
             } catch (error) {
-                toast.error(error.message || 'Failed to save book')
+                // Error handling without toast notifications
             } finally {
                 this.formSubmitting = false
             }
@@ -138,11 +135,10 @@ export const useBooksUiStore = defineStore('booksUi', {
 
             try {
                 await booksStore.deleteBook(this.bookToDelete._id)
-                toast.success(`'${this.bookToDelete.title}' was deleted successfully`)
                 this.bookToDelete = null
                 await this.loadBooks()
             } catch (error) {
-                toast.error(error?.message || 'Failed to delete book')
+                // Error handling without toast notifications
             }
         },
 
@@ -175,7 +171,7 @@ export const useBooksUiStore = defineStore('booksUi', {
             } catch (error) {
                 // Don't show auth errors since they're handled by the API interceptor
                 if (error.status !== 401) {
-                    toast.error(error.message || 'Failed to load books')
+                    // Error handling without toast notifications
                 }
             }
         },

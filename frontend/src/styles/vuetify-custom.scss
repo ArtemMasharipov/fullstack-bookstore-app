@@ -1,0 +1,37 @@
+// Custom Vuetify SCSS imports for reduced bundle size
+// Only import the styles we actually need
+
+// Core Vuetify styles (required)
+@import 'vuetify/lib/styles/main.sass';
+
+// Import only component styles we use based on our analysis
+// Layout components (most used)
+@import 'vuetify/lib/components/VGrid/VCol.sass';
+@import 'vuetify/lib/components/VGrid/VRow.sass';
+@import 'vuetify/lib/components/VGrid/VContainer.sass';
+@import 'vuetify/lib/components/VBtn/VBtn.sass';
+
+// Card components
+@import 'vuetify/lib/components/VCard/VCard.sass';
+
+// Form components
+@import 'vuetify/lib/components/VTextField/VTextField.sass';
+@import 'vuetify/lib/components/VSelect/VSelect.sass';
+
+// List components
+@import 'vuetify/lib/components/VList/VList.sass';
+
+// Navigation components
+@import 'vuetify/lib/components/VAppBar/VAppBar.sass';
+@import 'vuetify/lib/components/VNavigationDrawer/VNavigationDrawer.sass';
+
+// Feedback components
+@import 'vuetify/lib/components/VAlert/VAlert.sass';
+@import 'vuetify/lib/components/VDialog/VDialog.sass';
+
+// Data components
+@import 'vuetify/lib/components/VDataTable/VDataTable.sass';
+
+// Theme and utilities
+@import 'vuetify/lib/styles/generic/_elevations.scss';
+@import 'vuetify/lib/styles/generic/_transitions.scss';

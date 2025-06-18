@@ -3,8 +3,6 @@ import { defineStore } from 'pinia'
 /**
  * UI Store for managing common UI state and functionality
  * Centralizes management of dialogs and responsive state
- * Note: Notifications are now managed by enhanced toast service from @/services/enhancedToast
- * and toastHelpers from @/services/toastHelpers
  */
 export const useUiStore = defineStore('ui', {
     state: () => ({

@@ -16,20 +16,20 @@ export function useAdminBooks() {
     // Reactive state
     const loading = ref(false)
     const error = ref(null)
-      // Dialog states
+    // Dialog states
     const bookDialogOpen = ref(false)
     const deleteDialogOpen = ref(false)
     const editedBook = ref(null)
     const bookToDelete = ref(null)
-    
+
     // Loading states
     const saving = ref(false)
     const deleting = ref(false)
-    
+
     // Filters
     const search = ref('')
     const sortBy = ref('title')
-    
+
     // Pagination
     const page = ref(1)
     const itemsPerPage = ref(10)
@@ -37,18 +37,19 @@ export function useAdminBooks() {
     // Computed properties
     const books = computed(() => booksStore.getAllBooks)
     const authors = computed(() => authorsStore.getAllAuthors)
-    const totalItems = computed(() => filteredBooks.value.length)    // Filtered books based on current filters
+    const totalItems = computed(() => filteredBooks.value.length) // Filtered books based on current filters
     const filteredBooks = computed(() => {
         let result = books.value
 
         // Search filter
         if (search.value) {
             const query = search.value.toLowerCase()
-            result = result.filter(book => 
-                book.title?.toLowerCase().includes(query) ||
-                book.isbn?.toLowerCase().includes(query) ||
-                book.author?.name?.toLowerCase().includes(query) ||
-                book.category?.toLowerCase().includes(query)
+            result = result.filter(
+                (book) =>
+                    book.title?.toLowerCase().includes(query) ||
+                    book.isbn?.toLowerCase().includes(query) ||
+                    book.author?.name?.toLowerCase().includes(query) ||
+                    book.category?.toLowerCase().includes(query)
             )
         }
 
@@ -60,11 +61,11 @@ export function useAdminBooks() {
         const start = (page.value - 1) * itemsPerPage.value
         const end = start + itemsPerPage.value
         return filteredBooks.value.slice(start, end)
-    })    // Methods
+    }) // Methods
     async function loadBooks() {
         loading.value = true
         error.value = null
-        
+
         try {
             await booksStore.fetchBooks()
         } catch (err) {
@@ -115,7 +116,7 @@ export function useAdminBooks() {
                 // Create new book
                 await booksStore.createBook(bookData)
             }
-            
+
             closeBookDialog()
             await loadBooks() // Refresh the list
         } catch (err) {
@@ -144,7 +145,7 @@ export function useAdminBooks() {
         } finally {
             deleting.value = false
         }
-    }    // Filter and pagination methods
+    } // Filter and pagination methods
     function updateSearch(query) {
         search.value = query
         page.value = 1 // Reset to first page
@@ -171,26 +172,24 @@ export function useAdminBooks() {
 
     // Initialize data
     async function initialize() {
-        await Promise.all([
-            fetchBooks(),
-            fetchAuthors()
-        ])
-    }    return {
+        await Promise.all([fetchBooks(), fetchAuthors()])
+    }
+    return {
         // State
         books: paginatedBooks,
         authors,
         loading,
         error,
         totalItems,
-        
+
         // Pagination
         page,
         itemsPerPage,
-        
+
         // Filters
         search,
         sortBy,
-        
+
         // Dialogs
         bookDialogOpen,
         deleteDialogOpen,
@@ -198,28 +197,28 @@ export function useAdminBooks() {
         bookToDelete,
         saving,
         deleting,
-        
+
         // Methods
         loadBooks,
         loadAuthors,
-        
+
         // Dialog methods
         openBookDialog,
         closeBookDialog,
         confirmDeleteBook,
         closeDeleteDialog,
-        
+
         // CRUD methods
         handleSaveBook,
         handleDeleteBook,
-        
+
         // Filter methods
         updateSearch,
         updateSortBy,
         resetFilters,
-        
+
         // Pagination methods
         updatePage,
-        updateItemsPerPage
+        updateItemsPerPage,
     }
 }

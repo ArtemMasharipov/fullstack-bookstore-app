@@ -67,8 +67,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
 import { useAuthStore, useUsersStore, useUsersUiStore } from '@/store'
+import { computed, onMounted } from 'vue'
 
 /**
  * Store instances

@@ -36,8 +36,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
 import { useAuthorsStore, useAuthorsUiStore, useAuthStore } from '@/store'
+import { computed, onMounted } from 'vue'
 import ErrorMessage from '../../ui/ErrorMessage.vue'
 import LoadingSpinner from '../../ui/LoadingSpinner.vue'
 import AuthorListItem from './AuthorListItem.vue'

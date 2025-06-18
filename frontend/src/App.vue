@@ -12,12 +12,16 @@
 
         <!-- Dialog system (separate from notifications for SOLID principles) -->
         <dialog-layout />
+
+        <!-- Global notifications system -->
+        <notification-container />
     </v-app>
 </template>
 
 <script setup>
 // Components
 import { DialogLayout, FooterLayout, NavBarLayout } from './components/layout'
+import NotificationContainer from './components/notifications/NotificationContainer.vue'
 
 // Stores
 import { useAuthStore } from './store'

@@ -192,8 +192,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthorsStore } from '@/store/modules/authors'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import BaseModal from '../../ui/BaseModal.vue'
 
 /**

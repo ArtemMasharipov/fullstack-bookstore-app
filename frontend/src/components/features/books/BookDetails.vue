@@ -109,13 +109,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useRouter } from 'vue-router'
 import BookCard from '@/components/features/books/BookCard.vue'
-import ErrorMessage from '@/components/ui/ErrorMessage.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { useAuthStore, useBooksStore, useCartStore } from '@/store'
+import { storeToRefs } from 'pinia'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 // Props
 const props = defineProps({

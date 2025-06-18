@@ -86,36 +86,37 @@ baseApi.interceptors.response.use(
 
 export const apiRequest = async (method, url, data = null, config = {}) => {
     try {
-        console.log(`API ${method.toUpperCase()} request to ${url}`);
+        console.log(`API ${method.toUpperCase()} request to ${url}`)
         if (data) {
-            console.log('Request data:', data);
+            console.log('Request data:', data)
         }
-        
+
         const response = await baseApi({
             method,
             url,
             ...(data && { data }),
             ...config,
-        });
-        
-        console.log(`API response from ${url}:`, response.data);
-        
+        })
+
+        console.log(`API response from ${url}:`, response.data)
+
         // Deep check for inStock values in the data (if it's books endpoint)
         if (url.includes('/books')) {
-            const books = Array.isArray(response.data) ? response.data :
-                         response.data?.books || response.data?.data || [];
-            
+            const books = Array.isArray(response.data)
+                ? response.data
+                : response.data?.books || response.data?.data || []
+
             if (books.length > 0) {
-                console.log('Sample book from API:', books[0]);
-                console.log('inStock value:', books[0].inStock, 'type:', typeof books[0].inStock);
-                console.log('price value:', books[0].price, 'type:', typeof books[0].price);
+                console.log('Sample book from API:', books[0])
+                console.log('inStock value:', books[0].inStock, 'type:', typeof books[0].inStock)
+                console.log('price value:', books[0].price, 'type:', typeof books[0].price)
             }
         }
 
-        return response.data;
+        return response.data
     } catch (error) {
-        console.error(`API error in ${method.toUpperCase()} ${url}:`, error);
-        throw error;
+        console.error(`API error in ${method.toUpperCase()} ${url}:`, error)
+        throw error
     }
 }
 

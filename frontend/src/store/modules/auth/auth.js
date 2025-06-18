@@ -1,8 +1,8 @@
+import { useNotifications } from '@/composables/useNotifications'
 import { authApi } from '@/services/api/authService'
 import { useCartStore } from '@/store/modules/cart/cart'
 import { handleAsyncAction } from '@/store/modules/utils/stateHelpers'
 import { createBaseStore } from '@/store/modules/utils/storeFactory'
-import { toast } from '@/store/modules/utils/toast'
 import { jwtDecode } from 'jwt-decode'
 
 /**
@@ -51,6 +51,8 @@ export const useAuthStore = createBaseStore({
             this.loading = true
             this.error = null
 
+            const { showSuccess, showError } = useNotifications()
+
             try {
                 const response = await authApi.login(credentials)
 
@@ -72,9 +74,10 @@ export const useAuthStore = createBaseStore({
                 const cartStore = useCartStore()
                 await cartStore.syncCart()
 
-                // Show success notification
-                toast.success(`Welcome back, ${user.name || user.email || 'User'}!`, {
-                    duration: 4000,
+                // User login success - show toast notification
+                showSuccess(`Welcome back, ${user.name || user.email || 'User'}!`, {
+                    sound: 'success',
+                    icon: 'mdi-account-check',
                 })
 
                 return response
@@ -86,9 +89,9 @@ export const useAuthStore = createBaseStore({
                 localStorage.removeItem('token')
                 localStorage.removeItem('userData')
 
-                // Show error notification
-                toast.error(`Login failed: ${error.message || 'Invalid credentials'}`, {
-                    duration: 5000,
+                // Login failed - show error notification
+                showError(`Login failed: ${error.message || 'Invalid credentials'}`, {
+                    icon: 'mdi-account-alert',
                 })
 
                 throw error
@@ -101,6 +104,8 @@ export const useAuthStore = createBaseStore({
          * @param {Object} userData - User registration data
          */
         async register(userData) {
+            const { showSuccess, showError } = useNotifications()
+
             return handleAsyncAction(
                 this,
                 async () => {
@@ -111,17 +116,19 @@ export const useAuthStore = createBaseStore({
                     localStorage.setItem('token', token)
                     localStorage.setItem('userData', JSON.stringify(user))
 
-                    // Show success notification
-                    toast.success(`Welcome to Bookstore, ${user.name || user.email || 'User'}!`, {
-                        duration: 5000,
+                    // Registration success - show toast notification
+                    showSuccess(`Welcome to Bookstore, ${user.name || user.email || 'User'}!`, {
+                        sound: 'success',
+                        icon: 'mdi-account-plus',
                     })
 
                     return { user, token }
                 },
                 {
                     onError: (error) => {
-                        toast.error(`Registration failed: ${error.message || 'Please try again'}`, {
-                            duration: 5000,
+                        // Registration failed - show error notification
+                        showError(`Registration failed: ${error.message || 'Please try again'}`, {
+                            icon: 'mdi-account-remove',
                         })
                     },
                 }
@@ -132,6 +139,7 @@ export const useAuthStore = createBaseStore({
          */
         async logout() {
             const userName = this.user?.name || this.user?.email || 'User'
+            const { showSuccess, showError } = useNotifications()
 
             return handleAsyncAction(
                 this,
@@ -143,15 +151,17 @@ export const useAuthStore = createBaseStore({
                     localStorage.removeItem('token')
                     localStorage.removeItem('userData')
 
-                    // Show logout notification
-                    toast.info(`${userName} has been logged out`, {
-                        duration: 3000,
+                    // Logout success - show toast notification
+                    showSuccess(`${userName} has been logged out`, {
+                        sound: 'info',
+                        icon: 'mdi-logout',
                     })
                 },
                 {
                     onError: (error) => {
-                        toast.error(`Logout failed: ${error.message}`, {
-                            duration: 5000,
+                        // Logout failed - show error notification
+                        showError(`Logout failed: ${error.message}`, {
+                            icon: 'mdi-logout-variant',
                         })
                     },
                 }

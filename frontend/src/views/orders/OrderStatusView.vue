@@ -106,11 +106,15 @@ const getStatusColor = (status) => {
 }
 
 // Watch for order changes to set initial status
-watch(order, (newOrder) => {
-    if (newOrder && newOrder.status) {
-        newStatus.value = newOrder.status
-    }
-}, { immediate: true })
+watch(
+    order,
+    (newOrder) => {
+        if (newOrder && newOrder.status) {
+            newStatus.value = newOrder.status
+        }
+    },
+    { immediate: true }
+)
 
 onMounted(async () => {
     await fetchOrderById(route.params.id)
