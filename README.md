@@ -295,10 +295,7 @@ npm run dev
 
 This project showcases modern full-stack development skills and is ready for code review and team collaboration.
 
-**Developer**: [Your Name]  
-**Email**: [your.email@example.com]  
-**LinkedIn**: [Your LinkedIn Profile]  
-**Portfolio**: [Your Portfolio URL]
+**Developer**: Artem Masharipov  
 
 ---
 
