@@ -40,10 +40,7 @@ onMounted(() => {
 </script>
 
 <style>
-/* Импортируем общие стили, но только те, которые не конфликтуют с Vuetify */
 @import './assets/styles/common-variables.css';
-
-/* Базовые стили для интеграции с Vuetify */
 html,
 body {
     margin: 0;

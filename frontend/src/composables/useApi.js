@@ -2,17 +2,7 @@ import { logger } from '@/utils/logger'
 import { computed, ref } from 'vue'
 
 /**
- * Universal composable for handling API calls with loading and error states
- * Provides a consistent interface for async operations across the application
- * 
- * @param {Function} apiCall - The API function to call
- * @param {Object} options - Configuration options
- * @param {boolean} options.autoExecute - Whether to execute immediately (default: false)
- * @param {Function} options.onSuccess - Success callback
- * @param {Function} options.onError - Error callback
- * @param {boolean} options.showErrorToast - Whether to show error notifications (default: true)
- * @param {string} options.context - Context for logging (default: 'api')
- * @returns {Object} API composable interface
+ * API composable - handles async operations with loading and error states
  */
 export function useApi(apiCall, options = {}) {
     const {
@@ -122,12 +112,7 @@ export function useApi(apiCall, options = {}) {
 }
 
 /**
- * Specialized composable for CRUD operations
- * Provides common patterns for create, read, update, delete operations
- * 
- * @param {Object} api - API service object with CRUD methods
- * @param {Object} options - Configuration options
- * @returns {Object} CRUD composable interface
+ * CRUD API composable - handles CRUD operations
  */
 export function useCrudApi(api, options = {}) {
     const {

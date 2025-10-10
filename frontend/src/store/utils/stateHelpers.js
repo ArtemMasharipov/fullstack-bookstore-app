@@ -1,14 +1,11 @@
-// Define mutation types directly since we're using Pinia
+// Pinia mutation types
 const UI = {
     SET_LOADING: 'setLoading',
     SET_ERROR: 'setError',
 }
 
 /**
- * Format a number value as a currency
- * @param {number} amount - Amount to format
- * @param {string} currencyCode - ISO 4217 currency code
- * @returns {string} Formatted currency string
+ * Format currency value
  */
 export const formatCurrency = (amount, currencyCode = 'USD') => {
     return new Intl.NumberFormat('en-US', {
@@ -21,10 +18,6 @@ export const formatCurrency = (amount, currencyCode = 'USD') => {
 
 /**
  * Handle async actions with loading and error states
- * @param {Object} store - Pinia store instance
- * @param {Function} action - Async action to execute
- * @param {Object} options - Configuration options
- * @returns {Promise} Result of the action
  */
 export const handleAsyncAction = async (store, action, options = {}) => {
     const {

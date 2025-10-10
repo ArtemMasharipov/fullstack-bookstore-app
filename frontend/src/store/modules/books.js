@@ -7,8 +7,7 @@ import { debounce } from 'lodash'
 import { defineStore } from 'pinia'
 
 /**
- * Unified Books store - combines data and UI state
- * Simplified architecture following KISS principle
+ * Books store - manages books data and UI state
  */
 export const useBooksStore = defineStore('books', {
     state: () => ({
@@ -117,10 +116,7 @@ export const useBooksStore = defineStore('books', {
             return handleAsyncAction(
                 this,
                 async () => {
-                    // Отправляем данные на API
                     const response = await booksApi.create(formData)
-                    
-                    // Нормализуем ответ
                     const normalizedResponse = normalizeApiResponse(response)
                     const book = normalizeBook(normalizedResponse.data)
 
@@ -149,10 +145,7 @@ export const useBooksStore = defineStore('books', {
             return handleAsyncAction(
                 this,
                 async () => {
-                    // Отправляем данные на API
                     const response = await booksApi.update(id, formData)
-                    
-                    // Нормализуем ответ
                     const normalizedResponse = normalizeApiResponse(response)
                     const updatedBook = normalizeBook(normalizedResponse.data)
 
@@ -206,18 +199,15 @@ export const useBooksStore = defineStore('books', {
          * @param {Array|Object} response - API response
          */
         setBooksList(response) {
-            // Нормализуем ответ от API
             const normalizedResponse = normalizeApiResponse(response)
             
             if (Array.isArray(normalizedResponse.data)) {
-                // Если API вернул массив книг
                 this.books = normalizeBooks(normalizedResponse.data)
                 this.page = 1
                 this.limit = this.books.length
                 this.total = this.books.length
                 this.pages = 1
             } else if (normalizedResponse.data && typeof normalizedResponse.data === 'object') {
-                // Если API вернул объект с книгами и пагинацией
                 const books = normalizedResponse.data.books || normalizedResponse.data.data || []
                 this.books = normalizeBooks(books)
                 
@@ -233,7 +223,6 @@ export const useBooksStore = defineStore('books', {
                     this.pages = 1
                 }
             } else {
-                // Если ответ в неожиданном формате, устанавливаем пустой список
                 this.books = []
                 this.page = 1
                 this.limit = 10

@@ -1,6 +1,5 @@
 /**
- * Composable for handling books-related logic
- * Provides reactive books state, filtering, sorting, and CRUD operations
+ * Books composable - handles books data and operations
  */
 import { useBooksStore } from '@/store'
 import { logger } from '@/utils/logger'

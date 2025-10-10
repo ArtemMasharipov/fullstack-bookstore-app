@@ -3,16 +3,7 @@ import { handleAsyncAction } from './stateHelpers'
 import { createLoadingActions, createLoadingState, createPaginationActions, createPaginationGetters, createPaginationState } from './storeHelpers'
 
 /**
- * Factory function to create a base store with common state, actions, and getters
- * This eliminates code duplication across stores while allowing for customization
- *
- * @param {Object} options - Configuration options for the store
- * @param {string} options.id - Unique ID for the store
- * @param {Object} options.api - API service for CRUD operations (optional)
- * @param {Function} options.customState - Custom state factory function to extend base state
- * @param {Object} options.customGetters - Custom getters to extend base getters
- * @param {Object} options.customActions - Custom actions to extend base actions
- * @returns {Object} A Pinia store with merged base and custom functionality
+ * Base store factory - creates stores with common functionality
  */
 export const createBaseStore = ({
     id,

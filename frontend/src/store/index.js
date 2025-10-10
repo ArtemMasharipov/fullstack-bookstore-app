@@ -1,4 +1,4 @@
-// Экспортируем все хранилища из одной точки для удобства использования
+// Central store exports
 export { useAuthStore } from './modules/auth/auth'
 export { useAuthUiStore } from './modules/auth/authUi'
 export { useAuthorsStore } from './modules/authors/authors'

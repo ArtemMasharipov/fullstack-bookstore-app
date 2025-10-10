@@ -1,11 +1,9 @@
 /**
- * Store helper functions for common state patterns
- * Provides composable helpers instead of complex factory pattern
+ * Store helper functions
  */
 
 /**
- * Creates loading state (loading, error)
- * @returns {Object} Loading state object
+ * Create loading state
  */
 export function createLoadingState() {
     return {
@@ -15,8 +13,7 @@ export function createLoadingState() {
 }
 
 /**
- * Creates pagination state
- * @returns {Object} Pagination state object
+ * Create pagination state
  */
 export function createPaginationState() {
     return {
@@ -28,8 +25,7 @@ export function createPaginationState() {
 }
 
 /**
- * Creates loading actions
- * @returns {Object} Loading actions object
+ * Create loading actions
  */
 export function createLoadingActions() {
     return {
@@ -46,8 +42,7 @@ export function createLoadingActions() {
 }
 
 /**
- * Creates pagination actions
- * @returns {Object} Pagination actions object
+ * Create pagination actions
  */
 export function createPaginationActions() {
     return {
@@ -65,8 +60,7 @@ export function createPaginationActions() {
 }
 
 /**
- * Creates pagination getters
- * @returns {Object} Pagination getters object
+ * Create pagination getters
  */
 export function createPaginationGetters() {
     return {

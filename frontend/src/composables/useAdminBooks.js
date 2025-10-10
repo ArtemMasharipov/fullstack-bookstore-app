@@ -5,8 +5,7 @@ import { computed, ref } from 'vue'
 import { useApi } from './useApi'
 
 /**
- * Composable for admin books management
- * Handles books CRUD operations, filtering, pagination, and UI state
+ * Admin books composable - handles admin book operations
  */
 export function useAdminBooks() {
     // Stores
