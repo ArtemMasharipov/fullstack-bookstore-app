@@ -3,6 +3,7 @@
  * Provides reactive cart state and methods for cart management
  */
 import { useCartStore } from '@/store'
+import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 import { useAuth } from './useAuth'
@@ -40,14 +41,14 @@ export function useCart() {
     async function addToCart(item) {
         try {
             await cartStore.addToCart(item)
-            console.log(`Added "${item.title || item.bookId?.title || 'item'}" to cart`)
+            logger.info(`Added "${item.title || item.bookId?.title || 'item'}" to cart`, null, 'cart')
 
             // Sync with server if authenticated
             if (isAuthenticated.value) {
                 await syncWithServer()
             }
         } catch (error) {
-            console.error('Failed to add item to cart')
+            logger.error('Failed to add item to cart', error, 'cart')
             throw error
         }
     }
@@ -56,14 +57,14 @@ export function useCart() {
         try {
             const item = cartItems.value.find((item) => item._id === itemId)
             await cartStore.removeFromCart(itemId)
-            console.log(`Removed "${item?.bookId?.title || 'item'}" from cart`)
+            logger.info(`Removed "${item?.bookId?.title || 'item'}" from cart`, null, 'cart')
 
             // Sync with server if authenticated
             if (isAuthenticated.value) {
                 await syncWithServer()
             }
         } catch (error) {
-            console.error('Failed to remove item from cart')
+            logger.error('Failed to remove item from cart', error, 'cart')
             throw error
         }
     }
@@ -104,14 +105,14 @@ export function useCart() {
     async function clearCart() {
         try {
             await cartStore.clearCart()
-            console.log('Cart cleared')
+            logger.info('Cart cleared', null, 'cart')
 
             // Sync with server if authenticated
             if (isAuthenticated.value) {
                 await syncWithServer()
             }
         } catch (error) {
-            console.error('Failed to clear cart')
+            logger.error('Failed to clear cart', error, 'cart')
             throw error
         }
     }
@@ -123,8 +124,7 @@ export function useCart() {
         try {
             await cartStore.fetchCart()
         } catch (error) {
-            console.error('Failed to fetch cart:', error)
-            console.error('Failed to load cart from server')
+            logger.error('Failed to load cart from server', error, 'cart')
             throw error
         }
     }
@@ -135,7 +135,7 @@ export function useCart() {
         try {
             await cartStore.syncCart()
         } catch (error) {
-            console.error('Failed to sync cart:', error)
+            logger.error('Failed to sync cart', error, 'cart')
             // Don't show error toast for sync failures as they're background operations
         }
     }
@@ -211,7 +211,7 @@ export function useCart() {
                 await fetchCart()
             } else if (!newAuth && oldAuth) {
                 // User just logged out, cart will be maintained locally
-                console.log('User logged out, cart maintained locally')
+                logger.info('User logged out, cart maintained locally', null, 'cart')
             }
         },
         { immediate: true }

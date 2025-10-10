@@ -46,6 +46,7 @@
 
 <script setup>
 import { useAuthStore, useCartStore } from '@/store'
+import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { onMounted, watch } from 'vue'
 import ErrorMessage from '../../ui/ErrorMessage.vue'
@@ -83,7 +84,7 @@ watch(
             try {
                 await fetchCart()
             } catch (error) {
-                console.error('Failed to load cart:', error.message)
+                logger.error('Failed to load cart', error, 'cart-list')
             }
         }
     },

@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { createLoadingActions, createLoadingState, createPaginationActions, createPaginationGetters, createPaginationState } from '../utils/storeHelpers'
 import { handleAsyncAction } from './stateHelpers'
 
 /**
@@ -25,19 +26,13 @@ export const createBaseStore = ({
         // Merge base state with custom state
         state: () => ({
             // Common state properties
-            loading: false,
-            error: null,
             items: [],
             current: null,
             initialized: false,
             meta: {},
-            pagination: {
-                page: 1,
-                limit: 10,
-                total: 0,
-                pages: 0,
-            },
             filters: {},
+            ...createLoadingState(),
+            ...createPaginationState(),
 
             // Merge with custom state
             ...customState(),
@@ -52,16 +47,8 @@ export const createBaseStore = ({
             itemCount: (state) => state.items.length,
             isInitialized: (state) => state.initialized,
 
-            // Paginated items getter
-            paginatedItems: (state) => {
-                if (!state.pagination || state.pagination.page <= 1) {
-                    return state.items
-                }
-
-                const { page, limit } = state.pagination
-                const startIndex = (page - 1) * limit
-                return state.items.slice(startIndex, startIndex + limit)
-            },
+            // Merge pagination getters
+            ...createPaginationGetters(),
 
             // Merge with custom getters
             ...customGetters,
@@ -69,21 +56,11 @@ export const createBaseStore = ({
 
         // Merge base actions with custom actions
         actions: {
-            /**
-             * Set the loading state
-             * @param {boolean} status - New loading status
-             */
-            setLoading(status) {
-                this.loading = status
-            },
-
-            /**
-             * Set the error state
-             * @param {string|null} error - Error message or null to clear
-             */
-            setError(error) {
-                this.error = error
-            },
+            // Loading actions
+            ...createLoadingActions(),
+            
+            // Pagination actions
+            ...createPaginationActions(),
 
             /**
              * Set the items array
@@ -91,13 +68,6 @@ export const createBaseStore = ({
              */
             setItems(items) {
                 this.items = Array.isArray(items) ? items : []
-            },
-
-            /**
-             * Clear any error state
-             */
-            clearError() {
-                this.error = null
             },
 
             /**
@@ -274,10 +244,6 @@ export const createBaseStore = ({
                 this.filters = {}
             },
 
-            // Update pagination
-            updatePagination(paginationData) {
-                this.pagination = { ...this.pagination, ...paginationData }
-            },
 
             // Merge with custom actions
             ...customActions,

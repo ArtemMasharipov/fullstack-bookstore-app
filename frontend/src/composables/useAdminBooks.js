@@ -1,6 +1,6 @@
+import { useBooksStore } from '@/store'
 import { useAuthorsStore } from '@/store/modules/authors/authors'
-import { useBooksStore } from '@/store/modules/books/books'
-import { useBooksUiStore } from '@/store/modules/books/booksUi'
+import { logger } from '@/utils/logger'
 import { computed, ref } from 'vue'
 
 /**
@@ -11,7 +11,6 @@ export function useAdminBooks() {
     // Stores
     const booksStore = useBooksStore()
     const authorsStore = useAuthorsStore()
-    const booksUiStore = useBooksUiStore()
 
     // Reactive state
     const loading = ref(false)
@@ -80,7 +79,7 @@ export function useAdminBooks() {
         try {
             await authorsStore.fetchAuthors()
         } catch (err) {
-            console.error('Error fetching authors:', err)
+            logger.error('Error fetching authors', err, 'admin-books')
         }
     }
 

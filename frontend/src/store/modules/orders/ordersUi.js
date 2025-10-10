@@ -1,5 +1,6 @@
 import { useOrdersStore } from '@/store/modules/orders'
 import { formatPrice } from '@/utils'
+import { logger } from '@/utils/logger'
 import { defineStore } from 'pinia'
 
 /**
@@ -142,17 +143,17 @@ export const useOrdersUiStore = defineStore('ordersUi', {
                 if (error.status !== 401) {
                     // Special handling for 404 errors since orders endpoint might not be ready
                     if (error.status === 404) {
-                        console.warn('Orders API endpoint not found. Using empty array as fallback.')
+                        logger.warn('Orders API endpoint not found. Using empty array as fallback.', null, 'orders-ui')
                         // Set empty orders array to avoid UI errors
                         ordersStore.orders = []
                         ordersStore.items = []
 
                         // Don't show error toast for expected 404 errors
                         if (!error.isExpected) {
-                            console.log('Orders service is currently unavailable.')
+                            logger.info('Orders service is currently unavailable.', null, 'orders-ui')
                         }
                     } else {
-                        console.error(error.message || 'Failed to load orders')
+                        logger.error('Failed to load orders', error, 'orders-ui')
                     }
                 }
             }

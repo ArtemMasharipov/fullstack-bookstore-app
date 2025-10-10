@@ -47,7 +47,8 @@
 </template>
 
 <script setup>
-import { useAuthStore, useBooksStore, useBooksUiStore, useUiStore } from '@/store'
+import { useAuthStore, useBooksStore, useUiStore } from '@/store'
+import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -90,20 +91,10 @@ const router = useRouter()
 // Stores
 const authStore = useAuthStore()
 const booksStore = useBooksStore()
-const booksUiStore = useBooksUiStore()
 const uiStore = useUiStore()
 
 // Extract reactive state from stores
-const { booksList: books, booksLoading, booksPagination } = storeToRefs(booksStore)
-const {
-    showForm,
-    selectedBook,
-    bookToDelete,
-    formSubmitting,
-    showDeleteDialog,
-    filterParams,
-    currentPage: uiCurrentPage,
-} = storeToRefs(booksUiStore)
+const { booksList: books, booksLoading, booksPagination, showForm, selectedBook, bookToDelete, formSubmitting, showDeleteDialog, filterParams, page: uiCurrentPage } = storeToRefs(booksStore)
 
 // Local reactive state
 const searchQuery = ref('')
@@ -125,11 +116,11 @@ const currentPage = computed({
 
 // Methods
 const changePage = (page) => {
-    return booksUiStore.changePage(page)
+    return booksStore.changePage(page)
 }
 
 const loadBooks = () => {
-    return booksUiStore.loadBooks()
+    return booksStore.loadBooks()
 }
 
 const handleResize = () => {
@@ -143,11 +134,11 @@ const viewDetails = (bookId) => {
 }
 
 const addToCartSuccess = () => {
-    console.log('Item added to cart successfully')
+    logger.info('Item added to cart successfully', null, 'book-list')
 }
 
 const handleError = (message) => {
-    console.error(message)
+    logger.error(message, null, 'book-list')
 }
 
 // Watchers
@@ -160,28 +151,28 @@ watch(
 )
 
 watch(searchQuery, (val) => {
-    booksUiStore.debouncedSearch(val)
+    booksStore.debouncedSearch(val)
 })
 
 // Watch for prop changes to update store
 watch(
     () => props.category,
     (val) => {
-        booksUiStore.category = val
+        booksStore.category = val
     }
 )
 
 watch(
     () => props.authorId,
     (val) => {
-        booksUiStore.authorId = val
+        booksStore.authorId = val
     }
 )
 
 watch(
     () => props.itemsPerPage,
     (val) => {
-        booksUiStore.itemsPerPage = val
+        booksStore.limit = val
     }
 )
 
@@ -189,13 +180,13 @@ watch(
 onMounted(() => {
     try {
         // Initialize the store with props
-        booksUiStore.initialize({
+        booksStore.initialize({
             category: props.category,
             authorId: props.authorId,
             itemsPerPage: props.itemsPerPage,
         })
         // Set up search debounce
-        booksUiStore.setupSearchDebounce()
+        booksStore.setupSearchDebounce()
 
         // Add event listener for window resizing
         window.addEventListener('resize', handleResize)

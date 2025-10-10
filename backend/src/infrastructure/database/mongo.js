@@ -1,5 +1,6 @@
 import dotenv from 'dotenv'
 import mongoose from 'mongoose'
+import logger from '../../utils/logger.js'
 
 dotenv.config()
 
@@ -10,13 +11,13 @@ export const connectDatabase = async () => {
 
     await mongoose.connect(mongoURI)
 
-    console.log('MongoDB connected successfully')
+    logger.info('MongoDB connected successfully', { uri: mongoURI })
 
     // Initialize default roles and admin user
     const { initializeDefaultData } = await import('./initialization.js')
     await initializeDefaultData()
   } catch (error) {
-    console.error('Database connection failed:', error)
+    logger.error('Database connection failed', error)
     process.exit(1)
   }
 }
@@ -24,8 +25,8 @@ export const connectDatabase = async () => {
 export const disconnectDatabase = async () => {
   try {
     await mongoose.disconnect()
-    console.log('MongoDB disconnected successfully')
+    logger.info('MongoDB disconnected successfully')
   } catch (error) {
-    console.error('Error disconnecting from database:', error)
+    logger.error('Error disconnecting from database', error)
   }
 }

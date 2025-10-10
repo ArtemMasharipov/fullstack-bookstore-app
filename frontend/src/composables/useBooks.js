@@ -3,6 +3,7 @@
  * Provides reactive books state, filtering, sorting, and CRUD operations
  */
 import { useBooksStore } from '@/store'
+import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 import { usePagination } from './usePagination'
@@ -99,7 +100,7 @@ export function useBooks(options = {}) {
         try {
             await booksStore.fetchBooks()
         } catch (error) {
-            console.error('Failed to fetch books')
+            logger.error('Failed to fetch books', error, 'books')
             throw error
         }
     }
@@ -108,7 +109,7 @@ export function useBooks(options = {}) {
         try {
             await booksStore.fetchBookById(id)
         } catch (error) {
-            console.error('Failed to fetch book details')
+            logger.error('Failed to fetch book details', error, 'books')
             throw error
         }
     }
@@ -159,10 +160,10 @@ export function useBooks(options = {}) {
     async function createBook(bookData) {
         try {
             await booksStore.createBook(bookData)
-            console.log('Book created successfully')
+            logger.info('Book created successfully', null, 'books')
             await fetchBooks() // Refresh list
         } catch (error) {
-            console.error('Failed to create book')
+            logger.error('Failed to create book', error, 'books')
             throw error
         }
     }
@@ -170,10 +171,10 @@ export function useBooks(options = {}) {
     async function updateBook(id, bookData) {
         try {
             await booksStore.updateBook(id, bookData)
-            console.log('Book updated successfully')
+            logger.info('Book updated successfully', null, 'books')
             await fetchBooks() // Refresh list
         } catch (error) {
-            console.error('Failed to update book')
+            logger.error('Failed to update book', error, 'books')
             throw error
         }
     }
@@ -181,10 +182,10 @@ export function useBooks(options = {}) {
     async function deleteBook(id) {
         try {
             await booksStore.deleteBook(id)
-            console.log('Book deleted successfully')
+            logger.info('Book deleted successfully', null, 'books')
             await fetchBooks() // Refresh list
         } catch (error) {
-            console.error('Failed to delete book')
+            logger.error('Failed to delete book', error, 'books')
             throw error
         }
     }
