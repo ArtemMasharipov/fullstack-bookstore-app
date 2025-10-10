@@ -1,7 +1,8 @@
+import { logger } from '@/utils/logger'
 import axios from 'axios'
 
 const API_CONFIG = {
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1',
+    baseURL: import.meta.env.VITE_API_URL || '/api/v1',
     timeout: 15000, // Increased timeout for better reliability
     validateStatus: (status) => status < 500,
 }
@@ -55,13 +56,22 @@ const handleError = (error) => {
 baseApi.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token')
-        const isPublic = ['/auth/login', '/auth/register'].some((ep) => config.url.endsWith(ep))
 
-        if (!isPublic) {
-            if (!token) {
-                throw new Error('Authorization required')
-            }
+        // Define public endpoints that don't require authentication
+        const publicEndpoints = ['/auth/login', '/auth/register', '/api/v1/books', '/api/v1/authors']
+
+        // Check if the URL matches any public endpoint
+        const isPublic = publicEndpoints.some((ep) => {
+            // Handle both exact matches and GET requests to these resources
+            return config.url.includes(ep) && (config.method === 'get' || config.url.endsWith(ep))
+        })
+
+        // Add token if available and not a public endpoint
+        if (token && !isPublic) {
             config.headers.Authorization = `Bearer ${token}`
+        } else if (!token && !isPublic) {
+            // Only throw error for non-public endpoints when token is missing
+            throw new Error('Authorization required')
         }
 
         if (!config.headers['Content-Type'] && !(config.data instanceof FormData)) {
@@ -86,10 +96,7 @@ baseApi.interceptors.response.use(
 
 export const apiRequest = async (method, url, data = null, config = {}) => {
     try {
-        console.log(`API ${method.toUpperCase()} request to ${url}`)
-        if (data) {
-            console.log('Request data:', data)
-        }
+        logger.debug(`API ${method.toUpperCase()} request to ${url}`, { data }, 'api')
 
         const response = await baseApi({
             method,
@@ -98,24 +105,11 @@ export const apiRequest = async (method, url, data = null, config = {}) => {
             ...config,
         })
 
-        console.log(`API response from ${url}:`, response.data)
-
-        // Deep check for inStock values in the data (if it's books endpoint)
-        if (url.includes('/books')) {
-            const books = Array.isArray(response.data)
-                ? response.data
-                : response.data?.books || response.data?.data || []
-
-            if (books.length > 0) {
-                console.log('Sample book from API:', books[0])
-                console.log('inStock value:', books[0].inStock, 'type:', typeof books[0].inStock)
-                console.log('price value:', books[0].price, 'type:', typeof books[0].price)
-            }
-        }
+        logger.debug(`API response from ${url}`, { response: response.data }, 'api')
 
         return response.data
     } catch (error) {
-        console.error(`API error in ${method.toUpperCase()} ${url}:`, error)
+        logger.error(`API error in ${method.toUpperCase()} ${url}`, error, 'api')
         throw error
     }
 }

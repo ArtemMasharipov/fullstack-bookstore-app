@@ -8,15 +8,16 @@ import { vuetify } from '@/config/vuetify'
 import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
 
-// Import performance monitoring and logging
+// Import logging
+import { setupGlobalErrorHandling } from '@/utils/errorHandler'
 import { logger, setupGlobalErrorLogging } from '@/utils/logger'
-import './utils/performanceMonitor.js'
 
 const app = createApp(App)
 const pinia = createPinia()
 
-// Setup global error logging
+// Setup global error logging and handling
 setupGlobalErrorLogging(app)
+setupGlobalErrorHandling()
 
 // Setup application plugins
 app.use(pinia)
@@ -35,4 +36,8 @@ const authStore = useAuthStore()
 authStore.initialize().then(() => {
     app.mount('#app')
     logger.info('Application initialized successfully', { version: '2.0' }, 'app-init')
+}).catch((error) => {
+    console.error('Failed to initialize application:', error)
+    // Mount app anyway to show error page
+    app.mount('#app')
 })

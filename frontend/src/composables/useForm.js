@@ -123,7 +123,6 @@ export function useForm(initialData = {}, validationRules = {}, options = {}) {
 
             // Show success message
             if (showSuccessMessage && successMessage) {
-                console.log(successMessage)
             }
 
             // Reset form if configured

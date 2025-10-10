@@ -49,8 +49,8 @@ const initializeRole = async (roleName, permissions) => {
 
 const createAdminUser = async () => {
   try {
-    const adminEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@bookstore.com'
-    const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admin123'
+    const adminEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@example.com'
+    const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'change-me'
     const adminUsername = process.env.DEFAULT_ADMIN_USERNAME || 'admin'
 
     const existingAdminByEmail = await userRepository.findByEmail(adminEmail)

@@ -63,7 +63,6 @@ export const useUsersStore = createBaseStore({
                 const userName = result.name || result.username || result.email || 'New user'
                 const { showSuccess } = useNotifications()
                 showSuccess(`User "${userName}" created successfully`, {
-                    sound: 'success',
                     icon: 'mdi-account-plus',
                 })
                 return result
@@ -89,7 +88,6 @@ export const useUsersStore = createBaseStore({
                 const userName = result.name || result.username || result.email || 'User'
                 const { showSuccess } = useNotifications()
                 showSuccess(`User "${userName}" updated successfully`, {
-                    sound: 'success',
                     icon: 'mdi-account-edit',
                 })
                 return result
@@ -114,7 +112,6 @@ export const useUsersStore = createBaseStore({
 
                 const { showWarning } = useNotifications()
                 showWarning(`User "${userName}" deleted successfully`, {
-                    sound: 'warning',
                     icon: 'mdi-account-remove',
                 })
                 return result

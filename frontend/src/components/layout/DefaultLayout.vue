@@ -10,14 +10,12 @@
 
         <footer-layout />
 
-        <!-- Global Dialog System -->
-        <dialog-ui />
+        <!-- Global Dialog System removed - DialogUI component not found -->
     </v-app>
 </template>
 
 <script setup>
 // Components
-import DialogUI from '@/components/layout/DialogUI.vue'
 import FooterLayout from '@/components/layout/FooterLayout.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 </script>

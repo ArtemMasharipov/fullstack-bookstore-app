@@ -5,9 +5,15 @@ import { connectDatabase } from './src/infrastructure/database/mongo.js'
 import { setupErrorHandling } from './src/presentation/middleware/errorHandling.js'
 import { setupMiddleware } from './src/presentation/middleware/setupMiddleware.js'
 import { setupRoutes } from './src/presentation/routes/setupRoutes.js'
+import { initializeContainer } from './src/shared/container/containerConfig.js'
+import { ErrorHandler } from './src/shared/errors/ErrorHandler.js'
+import logger, { errorLogger, requestLogger } from './src/utils/logger.js'
 
 // Load environment variables
 dotenv.config()
+
+// Initialize error handlers
+ErrorHandler.initialize()
 
 const app = express()
 
@@ -24,8 +30,14 @@ app.use(
 // Setup middleware
 setupMiddleware(app)
 
+// Add request logging
+app.use(requestLogger)
+
 // Setup routes
 setupRoutes(app)
+
+// Add error logging
+app.use(errorLogger)
 
 // Setup error handling
 setupErrorHandling(app)
@@ -33,14 +45,17 @@ setupErrorHandling(app)
 // Setup database connection
 connectDatabase()
   .then(() => {
+    // Initialize DI Container after database connection
+    initializeContainer()
+    
     // Start the server
     const PORT = process.env.PORT || 3000
     app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`)
+      logger.info(`Server is running on port ${PORT}`, { port: PORT, env: process.env.NODE_ENV })
     })
   })
   .catch(error => {
-    console.error('Failed to start server:', error)
+    logger.error('Failed to start server', error)
     process.exit(1)
   })
 

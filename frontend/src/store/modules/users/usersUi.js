@@ -249,7 +249,6 @@ export const useUsersUiStore = defineStore('usersUi', {
                 await usersStore.deleteUser(this.selectedUser.id)
                 this.showDeleteDialog = false
                 this.selectedUser = null
-                console.log('User deleted successfully')
             } catch (error) {
                 console.error('Failed to delete user:', error.message || error)
             }

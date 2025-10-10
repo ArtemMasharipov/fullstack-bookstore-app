@@ -1,11 +1,11 @@
 <template>
-    <v-app-bar app color="primary" dark>
+    <v-app-bar app color="primary" class="text-white">
         <v-container class="py-0 px-2">
             <v-row align="center" no-gutters>
                 <!-- Logo/Brand -->
                 <v-col cols="auto">
                     <router-link to="/" class="text-decoration-none text-white">
-                        <v-btn variant="text" size="large" class="text-h6 font-weight-bold"> 📚 Bookstore </v-btn>
+                        <v-btn variant="text" size="large" class="text-h6 font-weight-bold text-white"> 📚 Bookstore </v-btn>
                     </router-link>
                 </v-col>
 
@@ -13,16 +13,16 @@
 
                 <!-- Navigation Links -->
                 <v-col cols="auto">
-                    <v-btn variant="text" to="/books">Books</v-btn>
-                    <v-btn variant="text" to="/authors">Authors</v-btn>
-                    <v-btn variant="text" to="/contact">Contact</v-btn>
+                    <v-btn variant="text" to="/books" class="text-white">Books</v-btn>
+                    <v-btn variant="text" to="/authors" class="text-white">Authors</v-btn>
+                    <v-btn variant="text" to="/contact" class="text-white">Contact</v-btn>
                 </v-col>
 
                 <!-- Auth Section -->
                 <v-col cols="auto">
                     <template v-if="isAuthenticated">
                         <!-- Cart Icon -->
-                        <v-btn variant="text" to="/cart" icon>
+                        <v-btn variant="text" to="/cart" icon class="text-white">
                             <v-badge :content="cartItemsCount" color="red" v-if="cartItemsCount > 0">
                                 <v-icon>mdi-cart</v-icon>
                             </v-badge>
@@ -32,7 +32,7 @@
                         <!-- User Menu -->
                         <v-menu>
                             <template v-slot:activator="{ props }">
-                                <v-btn variant="text" v-bind="props">
+                                <v-btn variant="text" v-bind="props" class="text-white">
                                     <v-icon left>mdi-account</v-icon>
                                     {{ user.name }}
                                     <v-icon right>mdi-chevron-down</v-icon>
@@ -57,8 +57,8 @@
                     </template>
 
                     <template v-else>
-                        <v-btn variant="text" to="/login">Login</v-btn>
-                        <v-btn variant="outlined" to="/register">Register</v-btn>
+                        <v-btn variant="text" to="/login" class="text-white">Login</v-btn>
+                        <v-btn variant="outlined" to="/register" class="text-white">Register</v-btn>
                     </template>
                 </v-col>
             </v-row>
@@ -97,3 +97,33 @@ const logout = async () => {
     router.push('/')
 }
 </script>
+
+<style scoped>
+/* Обеспечиваем видимость белого текста на primary фоне */
+.v-app-bar {
+    color: white !important;
+}
+
+.v-app-bar .v-btn {
+    color: white !important;
+}
+
+.v-app-bar .v-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.v-app-bar .v-icon {
+    color: white !important;
+}
+
+/* Стили для outlined кнопки Register */
+.v-app-bar .v-btn--variant-outlined {
+    border-color: white !important;
+    color: white !important;
+}
+
+.v-app-bar .v-btn--variant-outlined:hover {
+    background-color: white !important;
+    color: var(--primary-color) !important;
+}
+</style>

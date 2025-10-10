@@ -1,88 +1,68 @@
-import { validationResult } from 'express-validator'
+import { container } from '../../../shared/container/DIContainer.js'
 import {
-  AddToCartUseCase,
-  GetCartUseCase,
-  RemoveFromCartUseCase,
-  SyncCartUseCase,
-  UpdateCartItemUseCase,
-} from '../../../application/use-cases/CartUseCases.js'
-import { MongoBookRepository } from '../../../infrastructure/repositories/MongoBookRepository.js'
-import { MongoCartRepository } from '../../../infrastructure/repositories/MongoCartRepository.js'
+    createController
+} from '../../../shared/helpers/controllerHelpers.js'
 
-const cartRepository = new MongoCartRepository()
-const bookRepository = new MongoBookRepository()
+/**
+ * Cart Controllers using DI Container
+ * 
+ * Преимущества:
+ * - Устранено дублирование кода
+ * - Автоматическая обработка ошибок
+ * - Консистентные ответы API
+ * - Легкое тестирование
+ */
 
-const handleErrors = (res, error, status = 500) => {
-  res.status(status).json({ error: error.message || error })
-}
-
-const validateRequest = (req, res) => {
-  const errors = validationResult(req)
-  if (!errors.isEmpty()) {
-    res.status(400).json({ errors: errors.array() })
-    return false
+// Получение корзины пользователя
+export const getCart = createController(
+  () => container.get('getCartUseCase'),
+  {
+    transformRequest: (req) => req.user.id
   }
-  return true
-}
+)
 
-export const getCart = async (req, res) => {
-  try {
-    const getCartUseCase = new GetCartUseCase(cartRepository)
-    const cart = await getCartUseCase.execute(req.user.id)
-    res.json(cart)
-  } catch (error) {
-    handleErrors(res, error)
+// Добавление товара в корзину
+export const addToCart = createController(
+  () => container.get('addToCartUseCase'),
+  {
+    transformRequest: (req) => ({
+      userId: req.user.id,
+      bookId: req.body.bookId,
+      quantity: req.body.quantity
+    })
   }
-}
+)
 
-export const addToCart = async (req, res) => {
-  try {
-    if (!validateRequest(req, res)) return
-
-    const addToCartUseCase = new AddToCartUseCase(
-      cartRepository,
-      bookRepository
-    )
-    const { bookId, quantity } = req.body
-    const cart = await addToCartUseCase.execute(req.user.id, bookId, quantity)
-    res.json(cart)
-  } catch (error) {
-    handleErrors(res, error)
+// Обновление количества товара в корзине
+export const updateCartItem = createController(
+  () => container.get('updateCartItemUseCase'),
+  {
+    transformRequest: (req) => ({
+      userId: req.user.id,
+      itemId: req.params.id,
+      quantity: req.body.quantity
+    })
   }
-}
+)
 
-export const updateCartItem = async (req, res) => {
-  try {
-    const updateCartItemUseCase = new UpdateCartItemUseCase(cartRepository)
-    const { quantity } = req.body
-    const cart = await updateCartItemUseCase.execute(
-      req.user.id,
-      req.params.id,
-      quantity
-    )
-    res.json(cart)
-  } catch (error) {
-    handleErrors(res, error)
+// Удаление товара из корзины
+export const removeCartItem = createController(
+  () => container.get('removeFromCartUseCase'),
+  {
+    transformRequest: (req) => ({
+      userId: req.user.id,
+      itemId: req.params.id
+    })
   }
-}
+)
 
-export const removeCartItem = async (req, res) => {
-  try {
-    const removeFromCartUseCase = new RemoveFromCartUseCase(cartRepository)
-    const cart = await removeFromCartUseCase.execute(req.user.id, req.params.id)
-    res.json(cart)
-  } catch (error) {
-    handleErrors(res, error)
+// Синхронизация корзины
+export const syncCart = createController(
+  () => container.get('syncCartUseCase'),
+  {
+    transformRequest: (req) => ({
+      userId: req.user.id,
+      items: req.body.items
+    })
   }
-}
-
-export const syncCart = async (req, res) => {
-  try {
-    const syncCartUseCase = new SyncCartUseCase(cartRepository, bookRepository)
-    const { items } = req.body
-    const cart = await syncCartUseCase.execute(req.user.id, items)
-    res.json(cart)
-  } catch (error) {
-    handleErrors(res, error)
-  }
-}
+)

@@ -81,7 +81,6 @@ const handleReset = () => {
     error.value = null
     errorInfo.value = null
     errorMessage.value = ''
-    console.log('View has been reset')
 }
 
 const navigateToDashboard = () => {
