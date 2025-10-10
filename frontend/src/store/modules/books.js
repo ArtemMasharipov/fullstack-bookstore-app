@@ -1,5 +1,5 @@
 import { booksApi } from '@/services/api/booksApi'
-import { handleAsyncAction } from '@/store/modules/utils/stateHelpers'
+import { handleAsyncAction } from '@/store/utils/stateHelpers'
 import { createLoadingActions, createLoadingState, createPaginationActions, createPaginationGetters, createPaginationState } from '@/store/utils/storeHelpers'
 import { normalizeApiResponse, normalizeBook, normalizeBooks } from '@/utils/dataNormalizers'
 import { logger } from '@/utils/logger'

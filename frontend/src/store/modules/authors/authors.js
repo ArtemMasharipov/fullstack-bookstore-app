@@ -1,6 +1,6 @@
 import { authorsApi } from '@/services/api/authorsApi'
-import { handleAsyncAction } from '@/store/modules/utils/stateHelpers'
-import { createBaseStore } from '@/store/modules/utils/storeFactory'
+import { handleAsyncAction } from '@/store/utils/stateHelpers'
+import { createBaseStore } from '@/store/utils/storeFactory'
 
 /**
  * Authors store using the base store factory

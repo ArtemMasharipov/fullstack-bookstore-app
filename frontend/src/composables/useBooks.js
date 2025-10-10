@@ -6,6 +6,7 @@ import { useBooksStore } from '@/store'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
+import { useApi } from './useApi'
 import { usePagination } from './usePagination'
 
 export function useBooks(options = {}) {
@@ -95,10 +96,36 @@ export function useBooks(options = {}) {
     const pagination = enablePagination ? usePagination(filteredBooks, itemsPerPage) : null
     const displayedBooks = enablePagination ? pagination.paginatedItems : filteredBooks
 
+    // API composables for individual operations
+    const fetchBooksApi = useApi(booksStore.fetchBooks.bind(booksStore), {
+        context: 'books-fetch',
+        showErrorToast: false // Let the store handle notifications
+    })
+
+    const fetchBookByIdApi = useApi(booksStore.fetchBookById.bind(booksStore), {
+        context: 'books-fetch-by-id',
+        showErrorToast: false
+    })
+
+    const createBookApi = useApi(booksStore.createBook.bind(booksStore), {
+        context: 'books-create',
+        showErrorToast: false
+    })
+
+    const updateBookApi = useApi(booksStore.updateBook.bind(booksStore), {
+        context: 'books-update',
+        showErrorToast: false
+    })
+
+    const deleteBookApi = useApi(booksStore.deleteBook.bind(booksStore), {
+        context: 'books-delete',
+        showErrorToast: false
+    })
+
     // Methods
     async function fetchBooks() {
         try {
-            await booksStore.fetchBooks()
+            await fetchBooksApi.execute()
         } catch (error) {
             logger.error('Failed to fetch books', error, 'books')
             throw error
@@ -107,7 +134,7 @@ export function useBooks(options = {}) {
 
     async function fetchBookById(id) {
         try {
-            await booksStore.fetchBookById(id)
+            await fetchBookByIdApi.execute(id)
         } catch (error) {
             logger.error('Failed to fetch book details', error, 'books')
             throw error
@@ -159,7 +186,7 @@ export function useBooks(options = {}) {
     // Admin methods (if user has permissions)
     async function createBook(bookData) {
         try {
-            await booksStore.createBook(bookData)
+            await createBookApi.execute(bookData)
             logger.info('Book created successfully', null, 'books')
             await fetchBooks() // Refresh list
         } catch (error) {
@@ -170,7 +197,7 @@ export function useBooks(options = {}) {
 
     async function updateBook(id, bookData) {
         try {
-            await booksStore.updateBook(id, bookData)
+            await updateBookApi.execute({ id, formData: bookData })
             logger.info('Book updated successfully', null, 'books')
             await fetchBooks() // Refresh list
         } catch (error) {
@@ -181,7 +208,7 @@ export function useBooks(options = {}) {
 
     async function deleteBook(id) {
         try {
-            await booksStore.deleteBook(id)
+            await deleteBookApi.execute(id)
             logger.info('Book deleted successfully', null, 'books')
             await fetchBooks() // Refresh list
         } catch (error) {
@@ -245,6 +272,15 @@ export function useBooks(options = {}) {
         createBook,
         updateBook,
         deleteBook,
+
+        // API states (for fine-grained control)
+        apiStates: {
+            fetchBooks: fetchBooksApi,
+            fetchBookById: fetchBookByIdApi,
+            createBook: createBookApi,
+            updateBook: updateBookApi,
+            deleteBook: deleteBookApi,
+        },
 
         // Store methods
         clearError: booksStore.clearError,

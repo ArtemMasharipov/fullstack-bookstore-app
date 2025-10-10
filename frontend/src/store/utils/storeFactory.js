@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { createLoadingActions, createLoadingState, createPaginationActions, createPaginationGetters, createPaginationState } from '../utils/storeHelpers'
 import { handleAsyncAction } from './stateHelpers'
+import { createLoadingActions, createLoadingState, createPaginationActions, createPaginationGetters, createPaginationState } from './storeHelpers'
 
 /**
  * Factory function to create a base store with common state, actions, and getters

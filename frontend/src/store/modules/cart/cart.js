@@ -1,7 +1,7 @@
 import { useNotifications } from '@/composables/useNotifications'
 import { cartApi } from '@/services/api/cartApi'
 import { useAuthStore } from '@/store/modules/auth'
-import { createBaseStore, handleAsyncAction } from '@/store/modules/ui'
+import { createBaseStore, handleAsyncAction } from '@/store/utils'
 
 /**
  * Cart store using the base store factory

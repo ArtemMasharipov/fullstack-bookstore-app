@@ -1,8 +1,8 @@
 import { useNotifications } from '@/composables/useNotifications'
 import { authApi } from '@/services/api/authService'
 import { useCartStore } from '@/store/modules/cart/cart'
-import { handleAsyncAction } from '@/store/modules/utils/stateHelpers'
-import { createBaseStore } from '@/store/modules/utils/storeFactory'
+import { handleAsyncAction } from '@/store/utils/stateHelpers'
+import { createBaseStore } from '@/store/utils/storeFactory'
 import { jwtDecode } from 'jwt-decode'
 
 /**

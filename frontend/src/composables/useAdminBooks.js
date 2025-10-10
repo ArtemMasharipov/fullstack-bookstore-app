@@ -2,6 +2,7 @@ import { useBooksStore } from '@/store'
 import { useAuthorsStore } from '@/store/modules/authors/authors'
 import { logger } from '@/utils/logger'
 import { computed, ref } from 'vue'
+import { useApi } from './useApi'
 
 /**
  * Composable for admin books management
@@ -12,18 +13,38 @@ export function useAdminBooks() {
     const booksStore = useBooksStore()
     const authorsStore = useAuthorsStore()
 
-    // Reactive state
-    const loading = ref(false)
-    const error = ref(null)
+    // API composables for individual operations
+    const loadBooksApi = useApi(booksStore.fetchBooks.bind(booksStore), {
+        context: 'admin-books-load',
+        showErrorToast: false
+    })
+
+    const loadAuthorsApi = useApi(authorsStore.fetchAuthors.bind(authorsStore), {
+        context: 'admin-authors-load',
+        showErrorToast: false
+    })
+
+    const saveBookApi = useApi(async (bookData) => {
+        if (bookData.id) {
+            return await booksStore.updateBook(bookData.id, bookData)
+        } else {
+            return await booksStore.createBook(bookData)
+        }
+    }, {
+        context: 'admin-books-save',
+        showErrorToast: false
+    })
+
+    const deleteBookApi = useApi(booksStore.deleteBook.bind(booksStore), {
+        context: 'admin-books-delete',
+        showErrorToast: false
+    })
+
     // Dialog states
     const bookDialogOpen = ref(false)
     const deleteDialogOpen = ref(false)
     const editedBook = ref(null)
     const bookToDelete = ref(null)
-
-    // Loading states
-    const saving = ref(false)
-    const deleting = ref(false)
 
     // Filters
     const search = ref('')
@@ -60,26 +81,22 @@ export function useAdminBooks() {
         const start = (page.value - 1) * itemsPerPage.value
         const end = start + itemsPerPage.value
         return filteredBooks.value.slice(start, end)
-    }) // Methods
+    })     // Methods
     async function loadBooks() {
-        loading.value = true
-        error.value = null
-
         try {
-            await booksStore.fetchBooks()
+            await loadBooksApi.execute()
         } catch (err) {
-            error.value = err.message || 'Failed to fetch books'
             console.error('Error fetching books:', err)
-        } finally {
-            loading.value = false
+            throw err
         }
     }
 
     async function loadAuthors() {
         try {
-            await authorsStore.fetchAuthors()
+            await loadAuthorsApi.execute()
         } catch (err) {
             logger.error('Error fetching authors', err, 'admin-books')
+            throw err
         }
     }
 
@@ -104,45 +121,26 @@ export function useAdminBooks() {
     }
 
     async function handleSaveBook(bookData) {
-        saving.value = true
-        error.value = null
-
         try {
-            if (bookData.id) {
-                // Update existing book
-                await booksStore.updateBook(bookData.id, bookData)
-            } else {
-                // Create new book
-                await booksStore.createBook(bookData)
-            }
-
+            await saveBookApi.execute(bookData)
             closeBookDialog()
             await loadBooks() // Refresh the list
         } catch (err) {
-            error.value = err.message || 'Failed to save book'
             console.error('Error saving book:', err)
             throw err // Re-throw so the dialog can handle it
-        } finally {
-            saving.value = false
         }
     }
 
     async function handleDeleteBook() {
         if (!bookToDelete.value) return
 
-        deleting.value = true
-        error.value = null
-
         try {
-            await booksStore.deleteBook(bookToDelete.value.id)
+            await deleteBookApi.execute(bookToDelete.value.id)
             closeDeleteDialog()
             await loadBooks() // Refresh the list
         } catch (err) {
-            error.value = err.message || 'Failed to delete book'
             console.error('Error deleting book:', err)
             throw err // Re-throw so the dialog can handle it
-        } finally {
-            deleting.value = false
         }
     } // Filter and pagination methods
     function updateSearch(query) {
@@ -171,14 +169,12 @@ export function useAdminBooks() {
 
     // Initialize data
     async function initialize() {
-        await Promise.all([fetchBooks(), fetchAuthors()])
+        await Promise.all([loadBooks(), loadAuthors()])
     }
     return {
         // State
         books: paginatedBooks,
         authors,
-        loading,
-        error,
         totalItems,
 
         // Pagination
@@ -194,8 +190,6 @@ export function useAdminBooks() {
         deleteDialogOpen,
         editedBook,
         bookToDelete,
-        saving,
-        deleting,
 
         // Methods
         loadBooks,
@@ -219,5 +213,29 @@ export function useAdminBooks() {
         // Pagination methods
         updatePage,
         updateItemsPerPage,
+
+        // API states (for fine-grained control)
+        apiStates: {
+            loadBooks: loadBooksApi,
+            loadAuthors: loadAuthorsApi,
+            saveBook: saveBookApi,
+            deleteBook: deleteBookApi,
+        },
+
+        // Computed loading/error states
+        loading: computed(() => 
+            loadBooksApi.isLoading.value || 
+            loadAuthorsApi.isLoading.value || 
+            saveBookApi.isLoading.value || 
+            deleteBookApi.isLoading.value
+        ),
+        error: computed(() => 
+            loadBooksApi.error.value || 
+            loadAuthorsApi.error.value || 
+            saveBookApi.error.value || 
+            deleteBookApi.error.value
+        ),
+        saving: saveBookApi.isLoading,
+        deleting: deleteBookApi.isLoading,
     }
 }

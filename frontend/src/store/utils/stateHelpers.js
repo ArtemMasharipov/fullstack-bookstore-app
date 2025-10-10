@@ -19,6 +19,13 @@ export const formatCurrency = (amount, currencyCode = 'USD') => {
     }).format(amount || 0)
 }
 
+/**
+ * Handle async actions with loading and error states
+ * @param {Object} store - Pinia store instance
+ * @param {Function} action - Async action to execute
+ * @param {Object} options - Configuration options
+ * @returns {Promise} Result of the action
+ */
 export const handleAsyncAction = async (store, action, options = {}) => {
     const {
         onSuccess,
