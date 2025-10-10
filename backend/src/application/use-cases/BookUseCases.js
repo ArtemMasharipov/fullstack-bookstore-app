@@ -5,13 +5,13 @@ export class CreateBookUseCase {
   }
 
   async execute(bookData) {
-
+    // Валидация автора
     const author = await this.authorRepository.findById(bookData.authorId)
     if (!author) {
       throw new Error('Author not found')
     }
 
-
+    // Создание книги
     const book = await this.bookRepository.create({
       ...bookData,
       author: bookData.authorId,
@@ -51,7 +51,7 @@ export class UpdateBookUseCase {
     this.authorRepository = authorRepository
   }
 
-  async execute(id, updateData) {
+  async execute({ id, data: updateData }) {
     // If authorId is being updated, validate new author
     if (updateData.authorId) {
       const author = await this.authorRepository.findById(updateData.authorId)

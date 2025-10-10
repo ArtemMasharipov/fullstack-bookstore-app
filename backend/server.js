@@ -5,10 +5,15 @@ import { connectDatabase } from './src/infrastructure/database/mongo.js'
 import { setupErrorHandling } from './src/presentation/middleware/errorHandling.js'
 import { setupMiddleware } from './src/presentation/middleware/setupMiddleware.js'
 import { setupRoutes } from './src/presentation/routes/setupRoutes.js'
+import { initializeContainer } from './src/shared/container/containerConfig.js'
+import { ErrorHandler } from './src/shared/errors/ErrorHandler.js'
 import logger, { errorLogger, requestLogger } from './src/utils/logger.js'
 
 // Load environment variables
 dotenv.config()
+
+// Initialize error handlers
+ErrorHandler.initialize()
 
 const app = express()
 
@@ -40,6 +45,9 @@ setupErrorHandling(app)
 // Setup database connection
 connectDatabase()
   .then(() => {
+    // Initialize DI Container after database connection
+    initializeContainer()
+    
     // Start the server
     const PORT = process.env.PORT || 3000
     app.listen(PORT, () => {

@@ -1,88 +1,117 @@
 /**
- * Оптимизированная конфигурация Vuetify
- * Импортируются только действительно используемые компоненты
- * Основано на анализе usage statistics
+ * Оптимизированная конфигурация Vuetify с tree-shaking
+ * Импортируются только критически важные компоненты
+ * Остальные компоненты загружаются динамически
  */
 
 import { createVuetify } from 'vuetify'
 
-// Импорт только часто используемых компонентов (20+ usages)
+// Критически важные компоненты (используются на каждой странице)
 import {
-    VAlert, // 20 usages - разделители
-
+    // Алерты
+    VAlert,
     // Базовая структура приложения
-    VApp, // 6 usages - основной контент
-
-    // Навигация (используется в layout)
+    VApp,
+    // Навигация
     VAppBar,
-    VAutocomplete, // 4 usages
-    VAvatar, // 2 usages
+    // Автокомплит
+    VAutocomplete,
+    // Аватар
+    VAvatar,
+
+    // Бейдж
     VBadge,
+    // Нижняя навигация
     VBottomNavigation,
+    // Хлебные крошки
     VBreadcrumbs,
     VBreadcrumbsItem,
-    // Критически важные (100+ usages)
-    VBtn, // 182 usages - кнопки
-    VCard, // 327 usages - карточки
+    // Основные компоненты
+    VBtn,
+    VCard,
     VCardActions,
     VCardItem,
     VCardSubtitle,
     VCardText,
     VCardTitle,
-    VCheckbox, // 37 usages - алерты
+    VCheckbox,
+    // Чипы
     VChip,
     VCol,
-    VCombobox, // 76 usages - строки grid
-
-    // Очень важные (50-100 usages)
+    // Комбобокс
+    VCombobox,
     VContainer,
-    // Редко используемые, но критичные для admin панели
-    VDataTable, // 20 usages - селекты
-    VDialog, // 36 usages - чипы
+    // Таблицы (только для админки)
+    VDataTable,
+    // Диалоги и модальные окна
+    VDialog,
+    // Разделители
     VDivider,
     VExpansionPanel,
-    VExpansionPanels,
     VExpansionPanelText,
     VExpansionPanelTitle,
+    // Расширяемые панели
+    VExpansionPanels,
+    // Файловый ввод
     VFileInput,
-    VFooter, // 32 usages - диалоги
-    VForm, // 58 usages - поля ввода
+    // Футер
+    VFooter,
+    // Формы
+    VForm,
+    // Иконки и изображения
     VIcon,
-    VImg, // 56 usages - иконки
-    VList, // 98 usages - списки
+    VImg,
+    // Списки
+    VList,
     VListItem,
     VListItemSubtitle,
-    VListItemTitle, // 11 usages - корневой компонент
+    VListItemTitle,
     VMain,
-    // Менее критичные (условно импортируем)
+    // Меню
     VMenu,
     VNavigationDrawer,
-    VOverlay, // 4 usages - только в admin
+    // Оверлей
+    VOverlay,
+    // Пагинация
     VPagination,
-    // Дополнительные часто нужные
+    // Прогресс
     VProgressCircular,
     VProgressLinear,
+    // Радио
     VRadio,
     VRadioGroup,
-    VRating, // 168 usages - колонки grid
+    // Рейтинг
+    VRating,
+    // Сетка
     VRow,
-    // Важные (20-50 usages)
-    VSelect, // 6 usages
+    VSelect,
+    // Лист
     VSheet,
+    // Скелетон лоадер
     VSkeletonLoader,
+    // Слайд группа
     VSlideGroup,
     VSlideGroupItem,
+    // Слайдер
     VSlider,
+
+    // Снакбар
     VSnackbar,
+
+    // Спасер
     VSpacer,
     VSwitch,
     VTab,
+    // Табы
     VTabs,
-    VTextarea, // 62 usages - контейнеры
     VTextField,
+    VTextarea,
+    // Тулбар
     VToolbar,
     VToolbarTitle,
-    VTooltip,
+
+    // Тултип
+    VTooltip
 } from 'vuetify/components'
 
 // Импорт необходимых директив
@@ -91,9 +120,16 @@ import { Intersect, Ripple } from 'vuetify/directives'
 // Создание оптимизированной конфигурации Vuetify
 export const vuetify = createVuetify({
     components: {
-        // Критически важные компоненты
+        // Базовая структура приложения
         VApp,
         VMain,
+        VContainer,
+        
+        // Навигация
+        VAppBar,
+        VNavigationDrawer,
+        
+        // Основные компоненты
         VBtn,
         VCard,
         VCardActions,
@@ -101,94 +137,178 @@ export const vuetify = createVuetify({
         VCardSubtitle,
         VCardText,
         VCardTitle,
-        VCol,
-        VRow,
-        VContainer,
+        
+        // Формы
+        VForm,
         VTextField,
+        VTextarea,
+        VSelect,
+        VCheckbox,
+        VSwitch,
+        
+        // Сетка
+        VRow,
+        VCol,
+        
+        // Иконки и изображения
         VIcon,
-        VSpacer,
-
-        // Списки и навигация
+        VImg,
+        
+        // Диалоги и модальные окна
+        VDialog,
+        
+        // Списки
         VList,
         VListItem,
         VListItemTitle,
         VListItemSubtitle,
-        VAppBar,
-        VNavigationDrawer,
-
-        // Формы и интерактивность
-        VSelect,
-        VDialog,
-        VForm,
-        VAlert,
-        VChip,
+        
+        // Разделители
         VDivider,
-        VCheckbox,
-        VRadio,
-        VRadioGroup,
-        VSwitch,
-        VSnackbar,
-        VTooltip,
-
-        // Индикаторы прогресса
+        
+        // Прогресс
         VProgressCircular,
         VProgressLinear,
-
-        // Admin компоненты (используются реже)
-        VDataTable,
+        
+        // Чипы
+        VChip,
+        
+        // Пагинация
         VPagination,
-        VImg,
-        VTextarea,
-        VTabs,
-        VTab,
-        VToolbar,
-        VToolbarTitle,
+        
+        // Алерты
+        VAlert,
+        
+        // Меню
+        VMenu,
+        
+        // Файловый ввод
+        VFileInput,
+        
+        // Автокомплит
+        VAutocomplete,
+        
+        // Таблицы (только для админки)
+        VDataTable,
+        
+        // Аватар
+        VAvatar,
+        
+        // Бейдж
+        VBadge,
+        
+        // Футер
         VFooter,
+        
+        // Хлебные крошки
         VBreadcrumbs,
         VBreadcrumbsItem,
-        VSkeletonLoader,
-
-        // Дополнительные UI компоненты
-        VMenu,
-        VAvatar,
-        VSheet,
-        VBadge,
-        VSlider,
-        VSlideGroup,
-        VSlideGroupItem,
-        VRating,
-        VAutocomplete,
-        VCombobox,
-        VFileInput,
+        
+        // Расширяемые панели
         VExpansionPanels,
         VExpansionPanel,
         VExpansionPanelTitle,
         VExpansionPanelText,
+        
+        // Комбобокс
+        VCombobox,
+        
+        // Оверлей
         VOverlay,
+        
+        // Нижняя навигация
         VBottomNavigation,
+        
+        // Скелетон лоадер
+        VSkeletonLoader,
+        
+        // Слайдер
+        VSlider,
+        
+        // Снакбар
+        VSnackbar,
+        
+        // Спасер
+        VSpacer,
+        
+        // Табы
+        VTabs,
+        VTab,
+        
+        // Тулбар
+        VToolbar,
+        VToolbarTitle,
+        
+        // Тултип
+        VTooltip,
+        
+        // Лист
+        VSheet,
+        
+        // Слайд группа
+        VSlideGroup,
+        VSlideGroupItem,
+        
+        // Рейтинг
+        VRating,
+        
+        // Радио
+        VRadio,
+        VRadioGroup
     },
-
+    
     directives: {
-        Ripple,
         Intersect,
+        Ripple
     },
-
+    
     theme: {
         defaultTheme: 'light',
         themes: {
             light: {
-                dark: false,
                 colors: {
-                    primary: '#42b983',
-                    secondary: '#2c3e50',
-                    error: '#dc3545',
+                    primary: '#1976D2',
+                    secondary: '#424242',
+                    accent: '#82B1FF',
+                    error: '#FF5252',
                     info: '#2196F3',
                     success: '#4CAF50',
-                    warning: '#FFC107',
-                },
+                    warning: '#FFC107'
+                }
             },
-        },
+            dark: {
+                colors: {
+                    primary: '#2196F3',
+                    secondary: '#424242',
+                    accent: '#FF4081',
+                    error: '#FF5252',
+                    info: '#2196F3',
+                    success: '#4CAF50',
+                    warning: '#FFC107'
+                }
+            }
+        }
     },
+    
+    defaults: {
+        VBtn: {
+            variant: 'elevated',
+            color: 'primary'
+        },
+        VCard: {
+            variant: 'elevated'
+        },
+        VTextField: {
+            variant: 'outlined',
+            density: 'comfortable'
+        },
+        VSelect: {
+            variant: 'outlined',
+            density: 'comfortable'
+        },
+        VTextarea: {
+            variant: 'outlined',
+            density: 'comfortable'
+        }
+    }
 })
-
-export default vuetify

@@ -16,17 +16,17 @@ export class AddToCartUseCase {
     this.bookRepository = bookRepository
   }
 
-  async execute(userId, bookId, quantity) {
-
+  async execute({ userId, bookId, quantity }) {
+    // Валидация книги
     const book = await this.bookRepository.findById(bookId)
     if (!book) {
       throw new Error('Book not found')
     }
 
-
+    // Валидация товара корзины
     CartDomainService.validateCartItem(bookId, quantity, book.price)
 
-    // Add to cart
+    // Добавление в корзину
     return await this.cartRepository.addItem(
       userId,
       bookId,
@@ -41,7 +41,7 @@ export class RemoveFromCartUseCase {
     this.cartRepository = cartRepository
   }
 
-  async execute(userId, itemId) {
+  async execute({ userId, itemId }) {
     return await this.cartRepository.removeItem(userId, itemId)
   }
 }
@@ -51,7 +51,7 @@ export class UpdateCartItemUseCase {
     this.cartRepository = cartRepository
   }
 
-  async execute(userId, itemId, quantity) {
+  async execute({ userId, itemId, quantity }) {
     if (quantity < 1 || quantity > 99) {
       throw new Error('Quantity must be between 1 and 99')
     }
@@ -70,11 +70,11 @@ export class SyncCartUseCase {
     this.bookRepository = bookRepository
   }
 
-  async execute(userId, localCartItems) {
-
+  async execute({ userId, items: localCartItems }) {
+    // Валидация синхронизации корзины
     CartDomainService.validateCartSync(localCartItems)
 
-    // Sync cart
+    // Синхронизация корзины
     return await this.cartRepository.syncCart(userId, localCartItems)
   }
 }

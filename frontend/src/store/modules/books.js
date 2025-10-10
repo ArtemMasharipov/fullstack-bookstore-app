@@ -1,6 +1,7 @@
 import { booksApi } from '@/services/api/booksApi'
 import { handleAsyncAction } from '@/store/modules/utils/stateHelpers'
 import { createLoadingActions, createLoadingState, createPaginationActions, createPaginationGetters, createPaginationState } from '@/store/utils/storeHelpers'
+import { normalizeApiResponse, normalizeBook, normalizeBooks } from '@/utils/dataNormalizers'
 import { logger } from '@/utils/logger'
 import { debounce } from 'lodash'
 import { defineStore } from 'pinia'
@@ -116,30 +117,18 @@ export const useBooksStore = defineStore('books', {
             return handleAsyncAction(
                 this,
                 async () => {
-                    // Always normalize data before sending to API
-                    let normalizedData = formData
+                    // Отправляем данные на API
+                    const response = await booksApi.create(formData)
+                    
+                    // Нормализуем ответ
+                    const normalizedResponse = normalizeApiResponse(response)
+                    const book = normalizeBook(normalizedResponse.data)
 
-                    if (!(formData instanceof FormData)) {
-                        // Process plain object form data with simple type conversion
-                        normalizedData = {
-                            ...formData,
-                            price: parseFloat(formData.price) || 0,
-                            inStock: Boolean(formData.inStock),
-                        }
+                    if (book) {
+                        this.books.push(book)
                     }
 
-                    const book = await booksApi.create(normalizedData)
-
-                    // Make sure the returned book has correct data types
-                    const normalizedBook = {
-                        ...book,
-                        inStock: Boolean(book.inStock),
-                        price: parseFloat(book.price) || 0,
-                    }
-
-                    this.books.push(normalizedBook)
-
-                    return normalizedBook
+                    return book
                 },
                 {
                     onError: () => {
@@ -160,33 +149,21 @@ export const useBooksStore = defineStore('books', {
             return handleAsyncAction(
                 this,
                 async () => {
-                    // Always normalize data before sending to API
-                    let normalizedData = formData
+                    // Отправляем данные на API
+                    const response = await booksApi.update(id, formData)
+                    
+                    // Нормализуем ответ
+                    const normalizedResponse = normalizeApiResponse(response)
+                    const updatedBook = normalizeBook(normalizedResponse.data)
 
-                    if (!(formData instanceof FormData)) {
-                        // Process plain object form data with simple type conversion
-                        normalizedData = {
-                            ...formData,
-                            price: parseFloat(formData.price) || 0,
-                            inStock: Boolean(formData.inStock),
+                    if (updatedBook) {
+                        const index = this.books.findIndex((book) => book._id === updatedBook._id)
+                        if (index !== -1) {
+                            this.books.splice(index, 1, updatedBook)
                         }
                     }
 
-                    const updatedBook = await booksApi.update(id, normalizedData)
-
-                    // Make sure the returned book has correct data types
-                    const normalizedBook = {
-                        ...updatedBook,
-                        inStock: Boolean(updatedBook.inStock),
-                        price: parseFloat(updatedBook.price) || 0,
-                    }
-
-                    const index = this.books.findIndex((book) => book._id === normalizedBook._id)
-                    if (index !== -1) {
-                        this.books.splice(index, 1, normalizedBook)
-                    }
-
-                    return normalizedBook
+                    return updatedBook
                 },
                 {
                     onError: () => {
@@ -229,39 +206,34 @@ export const useBooksStore = defineStore('books', {
          * @param {Array|Object} response - API response
          */
         setBooksList(response) {
-            // Helper to normalize book data with simple type conversions
-            const normalizeBooks = (books) => {
-                return books.map((book) => {
-                    const normalizedBook = { ...book }
-
-                    // Ensure price is a number
-                    normalizedBook.price = parseFloat(book.price) || 0
-
-                    // Ensure inStock is a boolean
-                    normalizedBook.inStock = Boolean(book.inStock)
-
-                    return normalizedBook
-                })
-            }
-
-            if (Array.isArray(response)) {
-                // If API returned just an array of books
-                this.books = normalizeBooks(response)
-                // Set basic pagination
+            // Нормализуем ответ от API
+            const normalizedResponse = normalizeApiResponse(response)
+            
+            if (Array.isArray(normalizedResponse.data)) {
+                // Если API вернул массив книг
+                this.books = normalizeBooks(normalizedResponse.data)
                 this.page = 1
-                this.limit = response.length
-                this.total = response.length
+                this.limit = this.books.length
+                this.total = this.books.length
                 this.pages = 1
-            } else if (response && typeof response === 'object') {
-                // If API returned an object with books and pagination
-                const books = response.books || response.data || []
+            } else if (normalizedResponse.data && typeof normalizedResponse.data === 'object') {
+                // Если API вернул объект с книгами и пагинацией
+                const books = normalizedResponse.data.books || normalizedResponse.data.data || []
                 this.books = normalizeBooks(books)
-                this.page = response.pagination?.page || 1
-                this.limit = response.pagination?.limit || this.books.length
-                this.total = response.pagination?.total || this.books.length
-                this.pages = response.pagination?.pages || 1
+                
+                if (normalizedResponse.pagination) {
+                    this.page = normalizedResponse.pagination.page
+                    this.limit = normalizedResponse.pagination.limit
+                    this.total = normalizedResponse.pagination.total
+                    this.pages = normalizedResponse.pagination.pages
+                } else {
+                    this.page = 1
+                    this.limit = this.books.length
+                    this.total = this.books.length
+                    this.pages = 1
+                }
             } else {
-                // If response is unexpected format, set empty list
+                // Если ответ в неожиданном формате, устанавливаем пустой список
                 this.books = []
                 this.page = 1
                 this.limit = 10

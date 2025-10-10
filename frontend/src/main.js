@@ -9,14 +9,16 @@ import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
 
 // Import performance monitoring and logging
+import { setupGlobalErrorHandling } from '@/utils/errorHandler'
 import { logger, setupGlobalErrorLogging } from '@/utils/logger'
 import './utils/performanceMonitor.js'
 
 const app = createApp(App)
 const pinia = createPinia()
 
-// Setup global error logging
+// Setup global error logging and handling
 setupGlobalErrorLogging(app)
+setupGlobalErrorHandling()
 
 // Setup application plugins
 app.use(pinia)
