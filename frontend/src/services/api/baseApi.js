@@ -10,7 +10,7 @@ const API_CONFIG = {
 const baseApi = axios.create(API_CONFIG)
 
 const handleError = (error) => {
-    // Improved network error detection
+    // Handle network errors
     if (error.message === 'Network Error' || !error.response || error.code === 'ECONNABORTED') {
         console.error('Network connection error:', error)
         let errorMessage = 'Network connection error. Please check your connection and try again.'
@@ -19,7 +19,17 @@ const handleError = (error) => {
             errorMessage = 'Request timed out. Please try again later.'
         }
 
-        throw new Error(errorMessage)
+        const networkError = new Error(errorMessage)
+        networkError.isNetworkError = true
+        throw networkError
+    }
+
+    // Handle authorization errors
+    if (error.message === 'Authorization required') {
+        const authError = new Error('Please log in to access this feature')
+        authError.status = 401
+        authError.isAuthError = true
+        throw authError
     }
 
     const { status, data, config } = error.response
@@ -42,6 +52,7 @@ const handleError = (error) => {
         const currentPath = window.location.pathname
         if (currentPath !== '/login' && currentPath !== '/register') {
             localStorage.removeItem('token')
+            localStorage.removeItem('userData')
             window.location.href = '/login'
         }
     }
@@ -56,12 +67,11 @@ const handleError = (error) => {
 baseApi.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token')
-        const isPublic = ['/auth/login', '/auth/register'].some((ep) => config.url.endsWith(ep))
+        const isPublic = ['/auth/login', '/auth/register', '/books', '/authors'].some(
+            (ep) => config.url.endsWith(ep) || config.url.includes(ep)
+        )
 
-        if (!isPublic) {
-            if (!token) {
-                throw new Error('Authorization required')
-            }
+        if (!isPublic && token) {
             config.headers.Authorization = `Bearer ${token}`
         }
 
@@ -88,7 +98,7 @@ baseApi.interceptors.response.use(
 export const apiRequest = async (method, url, data = null, config = {}) => {
     try {
         logger.debug(`API ${method.toUpperCase()} request to ${url}`, { data }, 'api')
-        
+
         const response = await baseApi({
             method,
             url,

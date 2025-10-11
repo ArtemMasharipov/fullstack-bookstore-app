@@ -7,5 +7,5 @@ export const cartApi = createApiClient('cart', {
     removeFromCart: (itemId) => apiRequest('delete', `/cart/items/${itemId}`),
     updateQuantity: (itemId, quantity) => apiRequest('put', `/cart/items/${itemId}`, { quantity }),
     clearCart: () => apiRequest('delete', '/cart'),
-    syncCart: (cart) => apiRequest('post', '/cart/sync', { cart }),
+    syncCart: (cart) => apiRequest('post', '/cart/sync', { items: cart }),
 })

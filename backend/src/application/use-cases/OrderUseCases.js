@@ -97,6 +97,16 @@ export class GetOrderByIdUseCase {
   }
 }
 
+export class GetOrdersByUserIdUseCase {
+  constructor(orderRepository) {
+    this.orderRepository = orderRepository
+  }
+
+  async execute(userId) {
+    return await this.orderRepository.findByUserId(userId)
+  }
+}
+
 export class UpdateOrderStatusUseCase {
   constructor(orderRepository) {
     this.orderRepository = orderRepository

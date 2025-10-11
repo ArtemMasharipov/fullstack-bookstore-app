@@ -36,4 +36,8 @@ const authStore = useAuthStore()
 authStore.initialize().then(() => {
     app.mount('#app')
     logger.info('Application initialized successfully', { version: '2.0' }, 'app-init')
+}).catch((error) => {
+    console.error('Failed to initialize application:', error)
+    // Mount app anyway to show error page
+    app.mount('#app')
 })

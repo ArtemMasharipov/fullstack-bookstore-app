@@ -88,7 +88,10 @@ export const useBooksStore = defineStore('books', {
                     this.setBooksList(response)
                     return response
                 } catch (error) {
-                    logger.error('Error fetching books', error, 'books-store')
+                    // Don't log auth errors as they're handled by the interceptor
+                    if (!error.isAuthError && !error.isNetworkError) {
+                        logger.error('Error fetching books', error, 'books-store')
+                    }
                     throw error
                 }
             })
@@ -342,8 +345,9 @@ export const useBooksStore = defineStore('books', {
                 await this.fetchBooks(this.filterParams)
             } catch (error) {
                 // Don't show auth errors since they're handled by the API interceptor
-                if (error.status !== 401) {
+                if (!error.isAuthError && !error.isNetworkError) {
                     // Error handling without toast notifications
+                    console.warn('Failed to load books:', error.message)
                 }
             }
         },

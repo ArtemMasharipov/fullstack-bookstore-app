@@ -15,7 +15,6 @@ const MAX_VISIBLE = 5
  */
 const notificationQueue = ref([])
 
-
 /**
  * Composable for managing Vuetify-based toast notifications
  * Professional, laconic, and elegant notification system
@@ -71,7 +70,6 @@ export function useNotifications() {
             group,
             show: true,
         }
-
 
         // If too many notifications, queue this one
         if (notifications.value.length >= MAX_VISIBLE) {
@@ -150,7 +148,6 @@ export function useNotifications() {
             }
         }
     )
-
 
     return {
         notifications: computed(() => notifications.value),

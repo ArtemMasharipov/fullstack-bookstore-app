@@ -37,10 +37,20 @@ export const useAuthStore = createBaseStore({
          * Initialize the auth store
          */
         async initialize() {
-            const token = localStorage.getItem('token')
-            if (token) {
-                this.token = token
-                this.restoreUserFromToken()
+            try {
+                const token = localStorage.getItem('token')
+                if (token) {
+                    this.token = token
+                    this.restoreUserFromToken()
+                }
+            } catch (error) {
+                console.warn('Auth initialization failed:', error.message)
+                // Clear invalid token
+                localStorage.removeItem('token')
+                localStorage.removeItem('userData')
+                this.token = null
+                this.user = null
+                this.permissions = []
             }
         },
         /**
@@ -76,7 +86,6 @@ export const useAuthStore = createBaseStore({
 
                 // User login success - show toast notification
                 showSuccess(`Welcome back, ${user.name || user.email || 'User'}!`, {
-                    sound: 'success',
                     icon: 'mdi-account-check',
                 })
 
@@ -118,7 +127,6 @@ export const useAuthStore = createBaseStore({
 
                     // Registration success - show toast notification
                     showSuccess(`Welcome to Bookstore, ${user.name || user.email || 'User'}!`, {
-                        sound: 'success',
                         icon: 'mdi-account-plus',
                     })
 
@@ -153,7 +161,6 @@ export const useAuthStore = createBaseStore({
 
                     // Logout success - show toast notification
                     showSuccess(`${userName} has been logged out`, {
-                        sound: 'info',
                         icon: 'mdi-logout',
                     })
                 },
@@ -218,7 +225,8 @@ export const useAuthStore = createBaseStore({
                 if (userData) {
                     this.user = userData
                     this.permissions = userData.permissions || []
-                    // Save full data in localStorage for later reloads          localStorage.setItem('userData', JSON.stringify(userData));
+                    // Save full data in localStorage for later reloads
+                    localStorage.setItem('userData', JSON.stringify(userData))
                 }
             } catch (error) {
                 // Failed to fetch user data, continue with existing data

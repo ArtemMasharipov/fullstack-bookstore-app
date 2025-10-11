@@ -9,7 +9,7 @@
  * - Security: не раскрываем внутренние детали
  */
 
-import { logger } from '../../utils/logger.js'
+import logger from '../../utils/logger.js'
 
 /**
  * Базовый класс для всех ошибок приложения

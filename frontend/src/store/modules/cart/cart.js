@@ -82,7 +82,6 @@ export const useCartStore = createBaseStore({
                     // Show success notification
                     const { showSuccess } = useNotifications()
                     showSuccess(`"${title}" added to cart`, {
-                        sound: 'success',
                         icon: 'mdi-cart-plus',
                     })
                 } catch (error) {
@@ -108,7 +107,6 @@ export const useCartStore = createBaseStore({
                     // Show success notification
                     const { showSuccess } = useNotifications()
                     showSuccess(`"${title}" removed from cart`, {
-                        sound: 'warning',
                         icon: 'mdi-cart-minus',
                     })
                 } catch (error) {
@@ -147,7 +145,6 @@ export const useCartStore = createBaseStore({
                     // Show success notification
                     const { showSuccess } = useNotifications()
                     showSuccess(`"${title}" quantity updated to ${payload.quantity}`, {
-                        sound: 'info',
                         icon: 'mdi-cart-outline',
                     })
                 } catch (error) {
@@ -172,7 +169,6 @@ export const useCartStore = createBaseStore({
                     // Show success notification
                     const { showSuccess } = useNotifications()
                     showSuccess('Cart cleared successfully', {
-                        sound: 'info',
                         icon: 'mdi-cart-off',
                     })
                 } catch (error) {
@@ -190,14 +186,27 @@ export const useCartStore = createBaseStore({
          */
         async syncCart() {
             return handleAsyncAction(this, async () => {
-                const localCart = JSON.parse(localStorage.getItem('cart')) || []
-                const response = await cartApi.syncCart(localCart)
+                try {
+                    const localCart = JSON.parse(localStorage.getItem('cart')) || []
+                    
+                    // Don't sync if cart is empty
+                    if (localCart.length === 0) {
+                        return
+                    }
+                    
+                    const response = await cartApi.syncCart(localCart)
 
-                if (response?.items) {
-                    this.setItems(response.items)
-                    localStorage.removeItem('cart')
-                } else {
-                    throw new Error('Failed to sync cart')
+                    if (response?.items) {
+                        this.setItems(response.items)
+                        localStorage.removeItem('cart')
+                    } else {
+                        throw new Error('Failed to sync cart')
+                    }
+                } catch (error) {
+                    // Don't show error notifications for sync failures
+                    // Just log the error and continue
+                    console.warn('Cart sync failed:', error.message)
+                    throw error
                 }
             })
         },

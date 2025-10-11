@@ -111,7 +111,7 @@ import {
     VToolbarTitle,
 
     // Тултип
-    VTooltip
+    VTooltip,
 } from 'vuetify/components'
 
 // Импорт необходимых директив
@@ -124,11 +124,11 @@ export const vuetify = createVuetify({
         VApp,
         VMain,
         VContainer,
-        
+
         // Навигация
         VAppBar,
         VNavigationDrawer,
-        
+
         // Основные компоненты
         VBtn,
         VCard,
@@ -137,7 +137,7 @@ export const vuetify = createVuetify({
         VCardSubtitle,
         VCardText,
         VCardTitle,
-        
+
         // Формы
         VForm,
         VTextField,
@@ -145,170 +145,179 @@ export const vuetify = createVuetify({
         VSelect,
         VCheckbox,
         VSwitch,
-        
+
         // Сетка
         VRow,
         VCol,
-        
+
         // Иконки и изображения
         VIcon,
         VImg,
-        
+
         // Диалоги и модальные окна
         VDialog,
-        
+
         // Списки
         VList,
         VListItem,
         VListItemTitle,
         VListItemSubtitle,
-        
+
         // Разделители
         VDivider,
-        
+
         // Прогресс
         VProgressCircular,
         VProgressLinear,
-        
+
         // Чипы
         VChip,
-        
+
         // Пагинация
         VPagination,
-        
+
         // Алерты
         VAlert,
-        
+
         // Меню
         VMenu,
-        
+
         // Файловый ввод
         VFileInput,
-        
+
         // Автокомплит
         VAutocomplete,
-        
+
         // Таблицы (только для админки)
         VDataTable,
-        
+
         // Аватар
         VAvatar,
-        
+
         // Бейдж
         VBadge,
-        
+
         // Футер
         VFooter,
-        
+
         // Хлебные крошки
         VBreadcrumbs,
         VBreadcrumbsItem,
-        
+
         // Расширяемые панели
         VExpansionPanels,
         VExpansionPanel,
         VExpansionPanelTitle,
         VExpansionPanelText,
-        
+
         // Комбобокс
         VCombobox,
-        
+
         // Оверлей
         VOverlay,
-        
+
         // Нижняя навигация
         VBottomNavigation,
-        
+
         // Скелетон лоадер
         VSkeletonLoader,
-        
+
         // Слайдер
         VSlider,
-        
+
         // Снакбар
         VSnackbar,
-        
+
         // Спасер
         VSpacer,
-        
+
         // Табы
         VTabs,
         VTab,
-        
+
         // Тулбар
         VToolbar,
         VToolbarTitle,
-        
+
         // Тултип
         VTooltip,
-        
+
         // Лист
         VSheet,
-        
+
         // Слайд группа
         VSlideGroup,
         VSlideGroupItem,
-        
+
         // Рейтинг
         VRating,
-        
+
         // Радио
         VRadio,
-        VRadioGroup
+        VRadioGroup,
     },
-    
+
     directives: {
         Intersect,
-        Ripple
+        Ripple,
     },
-    
+
     theme: {
         defaultTheme: 'light',
         themes: {
             light: {
                 colors: {
-                    primary: '#1976D2',
+                    primary: '#42b983',
                     secondary: '#424242',
-                    accent: '#82B1FF',
-                    error: '#FF5252',
+                    accent: '#8dedc9',
+                    error: '#dc3545',
                     info: '#2196F3',
                     success: '#4CAF50',
-                    warning: '#FFC107'
-                }
+                    warning: '#FFC107',
+                    surface: '#ffffff',
+                    'on-primary': '#ffffff',
+                    'on-surface': '#2c3e50',
+                },
             },
             dark: {
                 colors: {
-                    primary: '#2196F3',
+                    primary: '#3a9e77',
                     secondary: '#424242',
-                    accent: '#FF4081',
-                    error: '#FF5252',
+                    accent: '#8dedc9',
+                    error: '#dc3545',
                     info: '#2196F3',
                     success: '#4CAF50',
-                    warning: '#FFC107'
-                }
-            }
-        }
+                    warning: '#FFC107',
+                    surface: '#121212',
+                    'on-primary': '#ffffff',
+                    'on-surface': '#ffffff',
+                },
+            },
+        },
     },
-    
+
     defaults: {
         VBtn: {
             variant: 'elevated',
-            color: 'primary'
+            color: 'primary',
         },
         VCard: {
-            variant: 'elevated'
+            variant: 'elevated',
         },
         VTextField: {
             variant: 'outlined',
-            density: 'comfortable'
+            density: 'comfortable',
         },
         VSelect: {
             variant: 'outlined',
-            density: 'comfortable'
+            density: 'comfortable',
         },
         VTextarea: {
             variant: 'outlined',
-            density: 'comfortable'
-        }
-    }
+            density: 'comfortable',
+        },
+        VAppBar: {
+            color: 'primary',
+        },
+    },
 })

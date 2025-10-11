@@ -20,25 +20,25 @@ import { MongoUserRepository } from "../../infrastructure/repositories/MongoUser
 
 // Импорты use cases
 import {
-  CreateBookUseCase,
-  DeleteBookUseCase,
-  GetAllBooksUseCase,
-  GetBookByIdUseCase,
-  UpdateBookUseCase,
+    CreateBookUseCase,
+    DeleteBookUseCase,
+    GetAllBooksUseCase,
+    GetBookByIdUseCase,
+    UpdateBookUseCase,
 } from "../../application/use-cases/BookUseCases.js";
 
 import {
-  AddToCartUseCase,
-  GetCartUseCase,
-  RemoveFromCartUseCase,
-  SyncCartUseCase,
-  UpdateCartItemUseCase,
+    AddToCartUseCase,
+    GetCartUseCase,
+    RemoveFromCartUseCase,
+    SyncCartUseCase,
+    UpdateCartItemUseCase,
 } from "../../application/use-cases/CartUseCases.js";
 
 import {
-  CreateOrderUseCase,
-  GetOrderByIdUseCase,
-  GetOrdersByUserIdUseCase,
+    CreateOrderUseCase,
+    GetOrderByIdUseCase,
+    GetOrdersByUserIdUseCase,
 } from "../../application/use-cases/OrderUseCases.js";
 
 import { UserUseCases } from "../../application/use-cases/UserUseCases.js";
@@ -146,7 +146,8 @@ function registerUseCases() {
 
   container.registerTransient("syncCartUseCase", () => {
     const cartRepository = container.get("cartRepository");
-    return new SyncCartUseCase(cartRepository);
+    const bookRepository = container.get("bookRepository");
+    return new SyncCartUseCase(cartRepository, bookRepository);
   });
 
   // Order Use Cases
