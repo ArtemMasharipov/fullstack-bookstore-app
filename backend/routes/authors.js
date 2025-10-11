@@ -3,12 +3,12 @@
  * Defines all routes for author-related operations
  */
 
-import express from 'express';
-import * as authorController from '../controllers/authorController.js';
-import { protect, authorize } from '../middleware/auth.js';
-import { asyncHandler } from '../middleware/asyncHandler.js';
+import express from 'express'
+import * as authorController from '../controllers/authorController.js'
+import { asyncHandler } from '../middleware/asyncHandler.js'
+import { authorize, protect } from '../middleware/auth.js'
 
-const router = express.Router();
+const router = express.Router()
 
 // =============================================================================
 // PUBLIC ROUTES
@@ -20,10 +20,7 @@ const router = express.Router();
  * @params  ?page=1&limit=20&country=USA&search=query&sortBy=-createdAt
  * @access  Public
  */
-router.get(
-  '/',
-  asyncHandler(authorController.getAuthors)
-);
+router.get('/', asyncHandler(authorController.getAuthors))
 
 /**
  * @route   GET /api/v1/authors/country/:country
@@ -34,7 +31,7 @@ router.get(
 router.get(
   '/country/:country',
   asyncHandler(authorController.getAuthorsByCountry)
-);
+)
 
 /**
  * @route   GET /api/v1/authors/:id
@@ -42,10 +39,7 @@ router.get(
  * @params  :id (required), ?includeBooks=true
  * @access  Public
  */
-router.get(
-  '/:id',
-  asyncHandler(authorController.getAuthor)
-);
+router.get('/:id', asyncHandler(authorController.getAuthor))
 
 /**
  * @route   GET /api/v1/authors/:id/books
@@ -53,10 +47,7 @@ router.get(
  * @params  :id (required), ?limit=50&sortBy=-publicationYear&inStock=true
  * @access  Public
  */
-router.get(
-  '/:id/books',
-  asyncHandler(authorController.getAuthorBooks)
-);
+router.get('/:id/books', asyncHandler(authorController.getAuthorBooks))
 
 /**
  * @route   GET /api/v1/authors/:id/stats
@@ -64,10 +55,7 @@ router.get(
  * @params  :id (required)
  * @access  Public
  */
-router.get(
-  '/:id/stats',
-  asyncHandler(authorController.getAuthorStats)
-);
+router.get('/:id/stats', asyncHandler(authorController.getAuthorStats))
 
 // =============================================================================
 // PROTECTED ROUTES (Admin Only)
@@ -84,7 +72,7 @@ router.post(
   protect,
   authorize('admin'),
   asyncHandler(authorController.createAuthor)
-);
+)
 
 /**
  * @route   PUT /api/v1/authors/:id
@@ -98,7 +86,7 @@ router.put(
   protect,
   authorize('admin'),
   asyncHandler(authorController.updateAuthor)
-);
+)
 
 /**
  * @route   DELETE /api/v1/authors/:id
@@ -111,6 +99,6 @@ router.delete(
   protect,
   authorize('admin'),
   asyncHandler(authorController.deleteAuthor)
-);
+)
 
-export default router;
+export default router

@@ -3,32 +3,32 @@
  * Central place to import and configure all routes
  */
 
-import express from 'express';
-import bookRoutes from './books.js';
-import authorRoutes from './authors.js';
-import authRoutes from './auth.js';
-import userRoutes from './users.js';
-import cartRoutes from './cart.js';
-import orderRoutes from './orders.js';
+import express from 'express'
+import authRoutes from './auth.js'
+import authorRoutes from './authors.js'
+import bookRoutes from './books.js'
+import cartRoutes from './cart.js'
+import orderRoutes from './orders.js'
+import userRoutes from './users.js'
 
-const router = express.Router();
+const router = express.Router()
 
 // API v1 routes
-router.use('/books', bookRoutes);
-router.use('/authors', authorRoutes);
-router.use('/auth', authRoutes);
-router.use('/users', userRoutes);
-router.use('/cart', cartRoutes);
-router.use('/orders', orderRoutes);
+router.use('/books', bookRoutes)
+router.use('/authors', authorRoutes)
+router.use('/auth', authRoutes)
+router.use('/users', userRoutes)
+router.use('/cart', cartRoutes)
+router.use('/orders', orderRoutes)
 
 // Health check route
 router.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'API is running',
-    timestamp: new Date().toISOString()
-  });
-});
+    timestamp: new Date().toISOString(),
+  })
+})
 
 // API info route
 router.get('/', (req, res) => {
@@ -43,9 +43,9 @@ router.get('/', (req, res) => {
       users: '/api/v1/users',
       cart: '/api/v1/cart',
       orders: '/api/v1/orders',
-      health: '/api/v1/health'
-    }
-  });
-});
+      health: '/api/v1/health',
+    },
+  })
+})
 
-export default router;
+export default router

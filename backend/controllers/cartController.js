@@ -3,7 +3,7 @@
  * Handles HTTP requests/responses for shopping cart
  */
 
-import * as cartService from '../services/cartService.js';
+import * as cartService from '../services/cartService.js'
 
 /**
  * @route   GET /api/v1/cart
@@ -11,12 +11,12 @@ import * as cartService from '../services/cartService.js';
  * @access  Private
  */
 export async function getCart(req, res) {
-  const cart = await cartService.getCart(req.user.id);
+  const cart = await cartService.getCart(req.user.id)
 
   res.status(200).json({
     success: true,
-    data: cart
-  });
+    data: cart,
+  })
 }
 
 /**
@@ -25,13 +25,13 @@ export async function getCart(req, res) {
  * @access  Private
  */
 export async function addToCart(req, res) {
-  const cart = await cartService.addToCart(req.user.id, req.body);
+  const cart = await cartService.addToCart(req.user.id, req.body)
 
   res.status(200).json({
     success: true,
     data: cart,
-    message: 'Item added to cart'
-  });
+    message: 'Item added to cart',
+  })
 }
 
 /**
@@ -40,26 +40,26 @@ export async function addToCart(req, res) {
  * @access  Private
  */
 export async function updateCartItem(req, res) {
-  const { quantity } = req.body;
+  const { quantity } = req.body
 
   if (!quantity || typeof quantity !== 'number') {
     return res.status(400).json({
       success: false,
-      error: 'Quantity must be a number'
-    });
+      error: 'Quantity must be a number',
+    })
   }
 
   const cart = await cartService.updateCartItem(
     req.user.id,
     req.params.bookId,
     quantity
-  );
+  )
 
   res.status(200).json({
     success: true,
     data: cart,
-    message: 'Cart updated'
-  });
+    message: 'Cart updated',
+  })
 }
 
 /**
@@ -68,16 +68,13 @@ export async function updateCartItem(req, res) {
  * @access  Private
  */
 export async function removeFromCart(req, res) {
-  const cart = await cartService.removeFromCart(
-    req.user.id,
-    req.params.bookId
-  );
+  const cart = await cartService.removeFromCart(req.user.id, req.params.bookId)
 
   res.status(200).json({
     success: true,
     data: cart,
-    message: 'Item removed from cart'
-  });
+    message: 'Item removed from cart',
+  })
 }
 
 /**
@@ -86,13 +83,13 @@ export async function removeFromCart(req, res) {
  * @access  Private
  */
 export async function clearCart(req, res) {
-  const cart = await cartService.clearCart(req.user.id);
+  const cart = await cartService.clearCart(req.user.id)
 
   res.status(200).json({
     success: true,
     data: cart,
-    message: 'Cart cleared'
-  });
+    message: 'Cart cleared',
+  })
 }
 
 /**
@@ -101,14 +98,14 @@ export async function clearCart(req, res) {
  * @access  Private
  */
 export async function syncCart(req, res) {
-  const result = await cartService.syncCart(req.user.id);
+  const result = await cartService.syncCart(req.user.id)
 
   res.status(200).json({
     success: true,
     data: result.cart,
     updates: result.updates,
-    message: 'Cart synced successfully'
-  });
+    message: 'Cart synced successfully',
+  })
 }
 
 /**
@@ -117,12 +114,12 @@ export async function syncCart(req, res) {
  * @access  Private
  */
 export async function validateCart(req, res) {
-  const result = await cartService.validateCart(req.user.id);
+  const result = await cartService.validateCart(req.user.id)
 
   res.status(200).json({
     success: result.valid,
     data: result.cart,
     issues: result.issues,
-    message: result.valid ? 'Cart is valid' : 'Cart has issues'
-  });
+    message: result.valid ? 'Cart is valid' : 'Cart has issues',
+  })
 }

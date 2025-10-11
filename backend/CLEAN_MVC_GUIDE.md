@@ -37,6 +37,7 @@ REQUEST → ROUTE → MIDDLEWARE → CONTROLLER → SERVICE → MODEL → DATABA
 ### Layer Responsibilities
 
 #### 1️⃣ **Model** (`models/Book.js`)
+
 - Schema definition
 - Field validation
 - Indexes for performance
@@ -45,6 +46,7 @@ REQUEST → ROUTE → MIDDLEWARE → CONTROLLER → SERVICE → MODEL → DATABA
 - **NO** business logic
 
 #### 2️⃣ **Service** (`services/bookService.js`)
+
 - **ALL** business logic
 - Data validation (beyond schema)
 - Database operations
@@ -52,12 +54,14 @@ REQUEST → ROUTE → MIDDLEWARE → CONTROLLER → SERVICE → MODEL → DATABA
 - **NO** HTTP handling
 
 #### 3️⃣ **Controller** (`controllers/bookController.js`)
+
 - HTTP request/response handling
 - Call service methods
 - Format responses
 - **MINIMAL** logic
 
 #### 4️⃣ **Routes** (`routes/books.js`)
+
 - Route definitions
 - Middleware application
 - asyncHandler wrapping
@@ -125,16 +129,18 @@ curl -X POST http://localhost:5000/api/v1/books \
 ## 🎯 Key Features
 
 ### ✅ Service Layer Benefits
+
 - ✨ Business logic centralized
 - ♻️ Reusable across controllers
 - 🧪 Easy to test (no HTTP dependencies)
 - 📝 Clear error handling
 
 ### ✅ Error Handling
+
 ```javascript
 // Service throws errors
 if (!book) {
-  throw new NotFoundError('Book not found');
+  throw new NotFoundError('Book not found')
 }
 
 // errorHandler middleware catches everything
@@ -142,6 +148,7 @@ if (!book) {
 ```
 
 ### ✅ Consistent Response Format
+
 ```json
 {
   "success": true,
@@ -151,11 +158,13 @@ if (!book) {
 ```
 
 ### ✅ Pagination
+
 ```javascript
 GET /api/v1/books?page=1&limit=20&category=fiction&sortBy=-createdAt
 ```
 
 ### ✅ Search
+
 ```javascript
 GET /api/v1/books?search=harry+potter
 ```
@@ -165,6 +174,7 @@ GET /api/v1/books?search=harry+potter
 ## 📊 Code Quality Checklist
 
 ### ✅ Model
+
 - [x] Schema defined with validation
 - [x] Indexes added for performance
 - [x] Virtual fields for computed properties
@@ -172,6 +182,7 @@ GET /api/v1/books?search=harry+potter
 - [x] Minimal middleware (only basic checks)
 
 ### ✅ Service
+
 - [x] All CRUD operations
 - [x] Business logic isolated
 - [x] Proper error throwing
@@ -179,6 +190,7 @@ GET /api/v1/books?search=harry+potter
 - [x] No HTTP/request handling
 
 ### ✅ Controller
+
 - [x] Only HTTP handling
 - [x] Service calls
 - [x] Response formatting
@@ -186,6 +198,7 @@ GET /api/v1/books?search=harry+potter
 - [x] No database access
 
 ### ✅ Routes
+
 - [x] Routes defined
 - [x] Middleware applied
 - [x] asyncHandler wrapped
@@ -199,6 +212,7 @@ GET /api/v1/books?search=harry+potter
 Apply the same pattern to other modules:
 
 ### 1. **Author Module**
+
 ```bash
 ✅ models/Author.js (already exists)
 📝 services/authorService.js
@@ -207,6 +221,7 @@ Apply the same pattern to other modules:
 ```
 
 ### 2. **User/Auth Module**
+
 ```bash
 📝 models/User.js
 📝 services/userService.js
@@ -218,6 +233,7 @@ Apply the same pattern to other modules:
 ```
 
 ### 3. **Cart Module**
+
 ```bash
 📝 models/Cart.js
 📝 services/cartService.js
@@ -226,6 +242,7 @@ Apply the same pattern to other modules:
 ```
 
 ### 4. **Order Module**
+
 ```bash
 📝 models/Order.js
 📝 services/orderService.js
@@ -238,6 +255,7 @@ Apply the same pattern to other modules:
 ## 🎨 Code Style Rules
 
 ### Service Functions
+
 ```javascript
 // Use verbs
 export async function getBooks() {}
@@ -246,6 +264,7 @@ export async function updateBook() {}
 ```
 
 ### Controller Functions
+
 ```javascript
 // Match HTTP method names
 export async function getBooks(req, res) {}
@@ -253,20 +272,22 @@ export async function createBook(req, res) {}
 ```
 
 ### Error Handling
+
 ```javascript
 // Always throw, never return errors
-throw new NotFoundError('Book not found');
-throw new ValidationError('Invalid data');
+throw new NotFoundError('Book not found')
+throw new ValidationError('Invalid data')
 ```
 
 ### Response Format
+
 ```javascript
 // Always consistent structure
 res.status(200).json({
   success: true,
   data: result,
-  message: 'optional message'
-});
+  message: 'optional message',
+})
 ```
 
 ---
@@ -274,6 +295,7 @@ res.status(200).json({
 ## 🚫 Common Mistakes to Avoid
 
 ### ❌ DON'T:
+
 - Put business logic in controllers
 - Make direct DB queries in controllers
 - Handle HTTP in services
@@ -281,6 +303,7 @@ res.status(200).json({
 - Over-complicate with abstractions
 
 ### ✅ DO:
+
 - Follow the layer pattern strictly
 - Use .lean() for read operations
 - Validate at multiple levels
@@ -295,28 +318,33 @@ res.status(200).json({
 // 1. MODEL (models/Author.js)
 const authorSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
-  lastName: { type: String, required: true }
-});
+  lastName: { type: String, required: true },
+})
 
 // 2. SERVICE (services/authorService.js)
 export async function getAuthors() {
-  return await Author.find().lean();
+  return await Author.find().lean()
 }
 
 export async function createAuthor(data) {
-  const author = new Author(data);
-  return await author.save();
+  const author = new Author(data)
+  return await author.save()
 }
 
 // 3. CONTROLLER (controllers/authorController.js)
 export async function getAuthors(req, res) {
-  const authors = await authorService.getAuthors();
-  res.json({ success: true, data: authors });
+  const authors = await authorService.getAuthors()
+  res.json({ success: true, data: authors })
 }
 
 // 4. ROUTES (routes/authors.js)
-router.get('/', asyncHandler(authorController.getAuthors));
-router.post('/', protect, authorize('admin'), asyncHandler(authorController.createAuthors));
+router.get('/', asyncHandler(authorController.getAuthors))
+router.post(
+  '/',
+  protect,
+  authorize('admin'),
+  asyncHandler(authorController.createAuthors)
+)
 ```
 
 ---
@@ -326,6 +354,7 @@ router.post('/', protect, authorize('admin'), asyncHandler(authorController.crea
 You now have a **clean, maintainable, testable** Book module!
 
 ### Benefits:
+
 - ✅ Clear separation of concerns
 - ✅ Easy to test each layer
 - ✅ Scalable architecture
@@ -333,10 +362,11 @@ You now have a **clean, maintainable, testable** Book module!
 - ✅ Production-ready error handling
 
 ### Ready to continue?
+
 Apply this pattern to the remaining modules (Author, User, Cart, Order)!
 
 ---
 
-**Architecture:** Clean MVC  
-**Status:** ✅ Book Module Complete  
-**Next:** Replicate for other modules  
+**Architecture:** Clean MVC
+**Status:** ✅ Book Module Complete
+**Next:** Replicate for other modules
