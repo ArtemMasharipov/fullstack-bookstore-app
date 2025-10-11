@@ -2,7 +2,7 @@ import { logger } from '@/utils/logger'
 import axios from 'axios'
 
 const API_CONFIG = {
-    baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1',
     timeout: 15000, // Increased timeout for better reliability
     validateStatus: (status) => status < 500,
 }
@@ -56,22 +56,18 @@ const handleError = (error) => {
 baseApi.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token')
+        // Публичные эндпоинты, которые не требуют авторизации
+        const publicEndpoints = ['/auth/login', '/auth/register', '/books', '/authors']
+        const isPublic = publicEndpoints.some((ep) => config.url.includes(ep))
 
-        // Define public endpoints that don't require authentication
-        const publicEndpoints = ['/auth/login', '/auth/register', '/api/v1/books', '/api/v1/authors']
-
-        // Check if the URL matches any public endpoint
-        const isPublic = publicEndpoints.some((ep) => {
-            // Handle both exact matches and GET requests to these resources
-            return config.url.includes(ep) && (config.method === 'get' || config.url.endsWith(ep))
-        })
-
-        // Add token if available and not a public endpoint
-        if (token && !isPublic) {
+        if (!isPublic) {
+            if (!token) {
+                throw new Error('Authorization required')
+            }
             config.headers.Authorization = `Bearer ${token}`
-        } else if (!token && !isPublic) {
-            // Only throw error for non-public endpoints when token is missing
-            throw new Error('Authorization required')
+        } else if (token) {
+            // Если токен есть, добавляем его даже для публичных эндпоинтов
+            config.headers.Authorization = `Bearer ${token}`
         }
 
         if (!config.headers['Content-Type'] && !(config.data instanceof FormData)) {
