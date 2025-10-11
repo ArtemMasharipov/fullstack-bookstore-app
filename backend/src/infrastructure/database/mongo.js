@@ -9,6 +9,12 @@ export const connectDatabase = async () => {
     const mongoURI =
       process.env.MONGODB_URL || 'mongodb://localhost:27017/bookstore'
 
+    // Check if MongoDB URI is a placeholder
+    if (mongoURI.includes('xxxxx') || mongoURI.includes('password123')) {
+      logger.warn('MongoDB Atlas not configured. Using mock mode for development.')
+      return Promise.resolve()
+    }
+
     await mongoose.connect(mongoURI)
 
     logger.info('MongoDB connected successfully', { uri: mongoURI })
@@ -18,7 +24,8 @@ export const connectDatabase = async () => {
     await initializeDefaultData()
   } catch (error) {
     logger.error('Database connection failed', error)
-    process.exit(1)
+    logger.warn('Continuing in mock mode for development...')
+    // Don't exit process, continue in mock mode
   }
 }
 

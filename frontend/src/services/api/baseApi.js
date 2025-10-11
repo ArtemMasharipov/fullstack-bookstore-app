@@ -2,7 +2,7 @@ import { logger } from '@/utils/logger'
 import axios from 'axios'
 
 const API_CONFIG = {
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1',
+    baseURL: import.meta.env.VITE_API_URL || '/api/v1',
     timeout: 15000, // Increased timeout for better reliability
     validateStatus: (status) => status < 500,
 }
@@ -10,7 +10,7 @@ const API_CONFIG = {
 const baseApi = axios.create(API_CONFIG)
 
 const handleError = (error) => {
-    // Handle network errors
+    // Improved network error detection
     if (error.message === 'Network Error' || !error.response || error.code === 'ECONNABORTED') {
         console.error('Network connection error:', error)
         let errorMessage = 'Network connection error. Please check your connection and try again.'
@@ -19,17 +19,7 @@ const handleError = (error) => {
             errorMessage = 'Request timed out. Please try again later.'
         }
 
-        const networkError = new Error(errorMessage)
-        networkError.isNetworkError = true
-        throw networkError
-    }
-
-    // Handle authorization errors
-    if (error.message === 'Authorization required') {
-        const authError = new Error('Please log in to access this feature')
-        authError.status = 401
-        authError.isAuthError = true
-        throw authError
+        throw new Error(errorMessage)
     }
 
     const { status, data, config } = error.response
@@ -52,7 +42,6 @@ const handleError = (error) => {
         const currentPath = window.location.pathname
         if (currentPath !== '/login' && currentPath !== '/register') {
             localStorage.removeItem('token')
-            localStorage.removeItem('userData')
             window.location.href = '/login'
         }
     }
@@ -67,12 +56,22 @@ const handleError = (error) => {
 baseApi.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token')
-        const isPublic = ['/auth/login', '/auth/register', '/books', '/authors'].some(
-            (ep) => config.url.endsWith(ep) || config.url.includes(ep)
-        )
 
-        if (!isPublic && token) {
+        // Define public endpoints that don't require authentication
+        const publicEndpoints = ['/auth/login', '/auth/register', '/api/v1/books', '/api/v1/authors']
+
+        // Check if the URL matches any public endpoint
+        const isPublic = publicEndpoints.some((ep) => {
+            // Handle both exact matches and GET requests to these resources
+            return config.url.includes(ep) && (config.method === 'get' || config.url.endsWith(ep))
+        })
+
+        // Add token if available and not a public endpoint
+        if (token && !isPublic) {
             config.headers.Authorization = `Bearer ${token}`
+        } else if (!token && !isPublic) {
+            // Only throw error for non-public endpoints when token is missing
+            throw new Error('Authorization required')
         }
 
         if (!config.headers['Content-Type'] && !(config.data instanceof FormData)) {

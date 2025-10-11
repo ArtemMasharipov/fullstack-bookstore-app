@@ -188,12 +188,12 @@ export const useCartStore = createBaseStore({
             return handleAsyncAction(this, async () => {
                 try {
                     const localCart = JSON.parse(localStorage.getItem('cart')) || []
-                    
+
                     // Don't sync if cart is empty
                     if (localCart.length === 0) {
                         return
                     }
-                    
+
                     const response = await cartApi.syncCart(localCart)
 
                     if (response?.items) {

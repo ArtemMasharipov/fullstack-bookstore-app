@@ -124,7 +124,7 @@ export const normalizeBook = (book) => {
   }
 
   return {
-    _id: normalizeId(book._id),
+    _id: normalizeId(book._id || book.id),
     title: normalizeString(book.title),
     author: book.author, // Может быть объектом или ID
     publicationYear: normalizeQuantity(book.publicationYear),

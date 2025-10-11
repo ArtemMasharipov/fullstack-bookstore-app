@@ -1,6 +1,12 @@
 import { booksApi } from '@/services/api/booksApi'
 import { handleAsyncAction } from '@/store/utils/stateHelpers'
-import { createLoadingActions, createLoadingState, createPaginationActions, createPaginationGetters, createPaginationState } from '@/store/utils/storeHelpers'
+import {
+    createLoadingActions,
+    createLoadingState,
+    createPaginationActions,
+    createPaginationGetters,
+    createPaginationState,
+} from '@/store/utils/storeHelpers'
 import { normalizeApiResponse, normalizeBook, normalizeBooks } from '@/utils/dataNormalizers'
 import { debounce } from '@/utils/helpers/debounce'
 import { logger } from '@/utils/logger'
@@ -14,7 +20,7 @@ export const useBooksStore = defineStore('books', {
         // Data state
         books: [],
         currentBook: null,
-        
+
         // UI state (simple)
         showForm: false,
         selectedBook: null,
@@ -23,7 +29,7 @@ export const useBooksStore = defineStore('books', {
         searchQuery: '',
         category: null,
         authorId: null,
-        
+
         // Loading and pagination
         ...createLoadingState(),
         ...createPaginationState(),
@@ -38,10 +44,9 @@ export const useBooksStore = defineStore('books', {
             total: state.total,
             pages: state.pages,
         }),
-        currentBook: (state) => state.currentBook,
         booksLoading: (state) => state.loading,
         booksError: (state) => state.error,
-        
+
         // UI getters
         showDeleteDialog: (state) => !!state.bookToDelete,
         filterParams: (state) => {
@@ -64,7 +69,7 @@ export const useBooksStore = defineStore('books', {
 
             return params
         },
-        
+
         // Pagination getters
         ...createPaginationGetters(),
     },
@@ -72,7 +77,7 @@ export const useBooksStore = defineStore('books', {
     actions: {
         // Loading actions
         ...createLoadingActions(),
-        
+
         // Pagination actions
         ...createPaginationActions(),
 
@@ -203,7 +208,7 @@ export const useBooksStore = defineStore('books', {
          */
         setBooksList(response) {
             const normalizedResponse = normalizeApiResponse(response)
-            
+
             if (Array.isArray(normalizedResponse.data)) {
                 this.books = normalizeBooks(normalizedResponse.data)
                 this.page = 1
@@ -213,7 +218,7 @@ export const useBooksStore = defineStore('books', {
             } else if (normalizedResponse.data && typeof normalizedResponse.data === 'object') {
                 const books = normalizedResponse.data.books || normalizedResponse.data.data || []
                 this.books = normalizeBooks(books)
-                
+
                 if (normalizedResponse.pagination) {
                     this.page = normalizedResponse.pagination.page
                     this.limit = normalizedResponse.pagination.limit

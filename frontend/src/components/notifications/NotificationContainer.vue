@@ -15,43 +15,47 @@
         </div>
 
         <transition-group name="notification-slide" tag="div">
-            <v-snackbar
-                v-for="notification in (notifications || [])"
+            <div
+                v-for="notification in notifications || []"
                 :key="notification.id"
-                v-model="notification.show"
-                :color="getColor(notification.type)"
-                :timeout="-1"
-                location="top right"
-                :multi-line="isMultiLine(notification.message)"
-                :vertical="notification.actions?.length > 0"
-                class="notification-snackbar"
-                @update:model-value="(value) => !value && hide(notification.id)"
+                class="notification-wrapper"
             >
-                <div class="d-flex align-center">
-                    <v-icon :icon="getIcon(notification.type)" class="me-2" size="20" />
-                    <span class="notification-message" v-if="!notification.html">
-                        {{ notification.message }}
-                    </span>
-                    <span class="notification-message" v-else v-html="notification.message"></span>
-                </div>
+                <v-snackbar
+                    v-model="notification.show"
+                    :color="getColor(notification.type)"
+                    :timeout="-1"
+                    location="top right"
+                    :multi-line="isMultiLine(notification.message)"
+                    :vertical="notification.actions?.length > 0"
+                    class="notification-snackbar"
+                    @update:model-value="(value) => !value && hide(notification.id)"
+                >
+                    <div class="d-flex align-center">
+                        <v-icon :icon="getIcon(notification.type)" class="me-2" size="20" />
+                        <span class="notification-message" v-if="!notification.html">
+                            {{ notification.message }}
+                        </span>
+                        <span class="notification-message" v-else v-html="notification.message"></span>
+                    </div>
 
-                <template v-if="notification.actions?.length > 0" #action>
-                    <v-btn
-                        v-for="action in notification.actions"
-                        :key="action.label"
-                        :color="action.color || 'white'"
-                        variant="text"
-                        size="small"
-                        @click="() => handleAction(action, notification)"
-                    >
-                        {{ action.label }}
-                    </v-btn>
-                </template>
+                    <template v-if="notification.actions?.length > 0" #action>
+                        <v-btn
+                            v-for="action in notification.actions"
+                            :key="action.label"
+                            :color="action.color || 'white'"
+                            variant="text"
+                            size="small"
+                            @click="() => handleAction(action, notification)"
+                        >
+                            {{ action.label }}
+                        </v-btn>
+                    </template>
 
-                <template v-else #action>
-                    <v-btn color="white" variant="text" size="small" icon="mdi-close" @click="hide(notification.id)" />
-                </template>
-            </v-snackbar>
+                    <template v-else #action>
+                        <v-btn color="white" variant="text" size="small" icon="mdi-close" @click="hide(notification.id)" />
+                    </template>
+                </v-snackbar>
+            </div>
         </transition-group>
     </div>
 </template>
@@ -127,9 +131,12 @@ const handleAction = (action, notification) => {
     pointer-events: auto;
 }
 
+.notification-wrapper {
+    margin-bottom: 8px;
+}
+
 .notification-snackbar {
     pointer-events: auto;
-    margin-bottom: 8px;
     max-width: 400px;
     border-radius: 8px;
 }
