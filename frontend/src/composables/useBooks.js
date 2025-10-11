@@ -98,27 +98,27 @@ export function useBooks(options = {}) {
     // API composables for individual operations
     const fetchBooksApi = useApi(booksStore.fetchBooks.bind(booksStore), {
         context: 'books-fetch',
-        showErrorToast: false // Let the store handle notifications
+        showErrorToast: false, // Let the store handle notifications
     })
 
     const fetchBookByIdApi = useApi(booksStore.fetchBookById.bind(booksStore), {
         context: 'books-fetch-by-id',
-        showErrorToast: false
+        showErrorToast: false,
     })
 
     const createBookApi = useApi(booksStore.createBook.bind(booksStore), {
         context: 'books-create',
-        showErrorToast: false
+        showErrorToast: false,
     })
 
     const updateBookApi = useApi(booksStore.updateBook.bind(booksStore), {
         context: 'books-update',
-        showErrorToast: false
+        showErrorToast: false,
     })
 
     const deleteBookApi = useApi(booksStore.deleteBook.bind(booksStore), {
         context: 'books-delete',
-        showErrorToast: false
+        showErrorToast: false,
     })
 
     // Methods

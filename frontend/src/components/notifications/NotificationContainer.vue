@@ -15,11 +15,7 @@
         </div>
 
         <transition-group name="notification-slide" tag="div">
-            <div
-                v-for="notification in notifications || []"
-                :key="notification.id"
-                class="notification-wrapper"
-            >
+            <div v-for="notification in notifications || []" :key="notification.id" class="notification-wrapper">
                 <v-snackbar
                     v-model="notification.show"
                     :color="getColor(notification.type)"
@@ -52,7 +48,13 @@
                     </template>
 
                     <template v-else #action>
-                        <v-btn color="white" variant="text" size="small" icon="mdi-close" @click="hide(notification.id)" />
+                        <v-btn
+                            color="white"
+                            variant="text"
+                            size="small"
+                            icon="mdi-close"
+                            @click="hide(notification.id)"
+                        />
                     </template>
                 </v-snackbar>
             </div>

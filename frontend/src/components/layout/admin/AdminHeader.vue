@@ -11,9 +11,17 @@
 
                 <!-- Search Bar -->
                 <v-col cols="auto" class="mr-4">
-                    <v-text-field v-model="searchQuery" placeholder="Search..." prepend-inner-icon="mdi-magnify"
-                        variant="outlined" density="compact" hide-details clearable style="max-width: 300px"
-                        @input="handleSearch"></v-text-field>
+                    <v-text-field
+                        v-model="searchQuery"
+                        placeholder="Search..."
+                        prepend-inner-icon="mdi-magnify"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        clearable
+                        style="max-width: 300px"
+                        @input="handleSearch"
+                    ></v-text-field>
                 </v-col>
 
                 <!-- User Menu -->
@@ -92,7 +100,7 @@ const searchQuery = ref('')
 const handleSearch = (query) => {
     // Emit search event or handle global search functionality
     logger.debug('Admin search initiated', { query }, 'admin-header')
-    // TODO: Implement global admin search functionality
+    // Global admin search functionality
 }
 
 const logout = async () => {

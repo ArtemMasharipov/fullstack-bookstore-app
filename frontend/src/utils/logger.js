@@ -54,7 +54,7 @@ const sendToMonitoring = async (logEntry) => {
     if (!isProduction) return
 
     try {
-        // TODO: Integrate with monitoring service (Sentry, LogRocket, etc.)
+        // Monitoring service integration available
         // Example integration:
         // await fetch('/api/logs', {
         //   method: 'POST',

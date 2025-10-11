@@ -5,7 +5,9 @@
                 <!-- Logo/Brand -->
                 <v-col cols="auto">
                     <router-link to="/" class="text-decoration-none text-white">
-                        <v-btn variant="text" size="large" class="text-h6 font-weight-bold text-white"> 📚 Bookstore </v-btn>
+                        <v-btn variant="text" size="large" class="text-h6 font-weight-bold text-white">
+                            📚 Bookstore
+                        </v-btn>
                     </router-link>
                 </v-col>
 

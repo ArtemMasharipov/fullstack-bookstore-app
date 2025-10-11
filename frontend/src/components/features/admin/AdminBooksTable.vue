@@ -1,9 +1,22 @@
 <template>
-    <AdminDataTable title="Books Management" :subtitle="`${totalItems} books total`" :headers="headers" :items="books"
-        :loading="loading" :total-items="totalItems" :page="page" :items-per-page="itemsPerPage" show-search
-        search-label="Search books..." show-filters show-reset-filters @update:page="$emit('update:page', $event)"
-        @update:items-per-page="$emit('update:items-per-page', $event)" @update:search="$emit('update:search', $event)"
-        @reset-filters="$emit('reset-filters')">
+    <AdminDataTable
+        title="Books Management"
+        :subtitle="`${totalItems} books total`"
+        :headers="headers"
+        :items="books"
+        :loading="loading"
+        :total-items="totalItems"
+        :page="page"
+        :items-per-page="itemsPerPage"
+        show-search
+        search-label="Search books..."
+        show-filters
+        show-reset-filters
+        @update:page="$emit('update:page', $event)"
+        @update:items-per-page="$emit('update:items-per-page', $event)"
+        @update:search="$emit('update:search', $event)"
+        @reset-filters="$emit('reset-filters')"
+    >
         <!-- Actions in header -->
         <template #actions>
             <v-btn color="primary" prepend-icon="mdi-plus" @click="$emit('add-book')"> Add Book </v-btn>
@@ -11,15 +24,30 @@
         <!-- Custom filters -->
         <template #filters>
             <v-col cols="12" sm="6" md="3">
-                <v-select :value="selectedAuthor" :items="authorOptions" label="Filter by Author" density="comfortable"
-                    variant="outlined" hide-details clearable @update:model-value="$emit('filter:author', $event)">
+                <v-select
+                    :value="selectedAuthor"
+                    :items="authorOptions"
+                    label="Filter by Author"
+                    density="comfortable"
+                    variant="outlined"
+                    hide-details
+                    clearable
+                    @update:model-value="$emit('filter:author', $event)"
+                >
                 </v-select>
             </v-col>
 
             <v-col cols="12" sm="6" md="3">
-                <v-select :value="selectedCategory" :items="categoryOptions" label="Filter by Category"
-                    density="comfortable" variant="outlined" hide-details clearable
-                    @update:model-value="$emit('filter:category', $event)">
+                <v-select
+                    :value="selectedCategory"
+                    :items="categoryOptions"
+                    label="Filter by Category"
+                    density="comfortable"
+                    variant="outlined"
+                    hide-details
+                    clearable
+                    @update:model-value="$emit('filter:category', $event)"
+                >
                 </v-select>
             </v-col>
         </template>
@@ -28,8 +56,13 @@
         <template #item="{ item }">
             <v-btn icon="mdi-eye" size="small" variant="text" @click="$emit('view-book', item)" class="me-1"></v-btn>
             <v-btn icon="mdi-pencil" size="small" variant="text" @click="$emit('edit-book', item)" class="me-1"></v-btn>
-            <v-btn icon="mdi-delete" size="small" variant="text" color="error"
-                @click="$emit('delete-book', item)"></v-btn>
+            <v-btn
+                icon="mdi-delete"
+                size="small"
+                variant="text"
+                color="error"
+                @click="$emit('delete-book', item)"
+            ></v-btn>
         </template>
 
         <!-- Custom title column -->

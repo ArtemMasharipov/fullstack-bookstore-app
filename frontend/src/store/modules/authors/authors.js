@@ -1,127 +1,189 @@
 import { authorsApi } from '@/services/api/authorsApi'
-import { handleAsyncAction } from '@/store/utils/stateHelpers'
-import { createBaseStore } from '@/store/utils/storeFactory'
+import { defineStore } from 'pinia'
 
 /**
- * Authors store using the base store factory
- * - Uses shared logic from the factory to eliminate code duplication
+ * Authors Store
+ * Manages authors data and CRUD operations
+ *
+ * Simplified version without factory - direct Pinia implementation
  */
-export const useAuthorsStore = createBaseStore({
-    id: 'authors',
-    api: authorsApi,
+export const useAuthorsStore = defineStore('authors', {
+    state: () => ({
+        // Authors list
+        list: [],
+        current: null,
 
-    // Custom state specific to authors store
-    customState: () => ({
-        // Map to maintain API compatibility with existing components
-        list: [], // This will be synced with 'items' in the base store
-        searchQuery: '', // For author search functionality
+        // Search
+        searchQuery: '',
+
+        // Pagination
+        page: 1,
+        limit: 10,
+        total: 0,
+        pages: 0,
+
+        // Loading & error states
+        loading: false,
+        error: null,
     }),
 
-    // Custom getters specific to authors store
-    customGetters: {
-        // Map base store getters to author-specific names for API compatibility
-        authorsList: (state) => state.list || state.items,
+    getters: {
+        /**
+         * Get authors list
+         */
+        authorsList: (state) => state.list,
+
+        /**
+         * Get current author
+         */
         currentAuthor: (state) => state.current,
+
+        /**
+         * Check loading state
+         */
         authorsLoading: (state) => state.loading,
+
+        /**
+         * Get error message
+         */
         authorsError: (state) => state.error,
+
+        /**
+         * Get all authors (alias for admin)
+         */
+        getAllAuthors: (state) => state.list,
     },
 
-    // Custom actions specific to authors store
-    customActions: {
+    actions: {
         /**
          * Fetch all authors
          */
         async fetchAuthors() {
-            // Use the base fetchAll method but update our list property
-            const authors = await this.fetchAll()
-            this.list = authors // Keep list in sync with items
-            return authors
+            this.loading = true
+            this.error = null
+
+            try {
+                const authors = await authorsApi.fetchAll()
+                this.list = Array.isArray(authors) ? authors : []
+                return authors
+            } catch (error) {
+                this.error = error.message
+                throw error
+            } finally {
+                this.loading = false
+            }
         },
 
         /**
          * Fetch author by ID
-         * @param {string} id - Author ID
          */
         async fetchAuthorById(id) {
-            const author = await this.fetchById(id)
-            return author
+            this.loading = true
+            this.error = null
+
+            try {
+                const author = await authorsApi.fetchById(id)
+                this.current = author
+                return author
+            } catch (error) {
+                this.error = error.message
+                throw error
+            } finally {
+                this.loading = false
+            }
         },
+
         /**
          * Create a new author
-         * @param {Object} authorData - Author data
          */
         async createAuthor(authorData) {
-            return handleAsyncAction(this, async () => {
-                try {
-                    const author = await this.create(authorData)
-                    // Ensure list stays in sync with items
-                    this.list = [...this.items]
+            this.loading = true
+            this.error = null
 
-                    return author
-                } catch (error) {
-                    throw error
-                }
-            })
+            try {
+                const author = await authorsApi.create(authorData)
+                this.list.push(author)
+                this.total += 1
+                return author
+            } catch (error) {
+                this.error = error.message
+                throw error
+            } finally {
+                this.loading = false
+            }
         },
+
         /**
          * Update an existing author
-         * @param {Object} authorData - Author data with ID
          */
         async updateAuthor(authorData) {
-            return handleAsyncAction(this, async () => {
-                try {
-                    if (!authorData || (!authorData._id && !authorData.id)) {
-                        throw new Error('Author ID is required for update')
-                    }
+            if (!authorData || (!authorData._id && !authorData.id)) {
+                throw new Error('Author ID is required for update')
+            }
 
-                    const id = authorData._id || authorData.id
-                    const author = await this.update(id, authorData)
-                    // Ensure list stays in sync with items
-                    this.list = [...this.items]
+            this.loading = true
+            this.error = null
 
-                    return author
-                } catch (error) {
-                    throw error
+            try {
+                const id = authorData._id || authorData.id
+                const author = await authorsApi.update(id, authorData)
+
+                const index = this.list.findIndex((a) => a._id === id || a.id === id)
+                if (index !== -1) {
+                    this.list.splice(index, 1, author)
                 }
-            })
+
+                return author
+            } catch (error) {
+                this.error = error.message
+                throw error
+            } finally {
+                this.loading = false
+            }
         },
+
         /**
          * Delete an author
-         * @param {string} authorId - Author ID
-         * @param {string} authorName - Author name for notification (optional)
          */
-        async deleteAuthor(authorId, authorName = 'Author') {
-            return handleAsyncAction(this, async () => {
-                try {
-                    // If authorName wasn't provided but we have the current author details, use that
-                    let displayName = authorName
-                    if (
-                        displayName === 'Author' &&
-                        this.current &&
-                        (this.current.id === authorId || this.current._id === authorId)
-                    ) {
-                        displayName = this.current.name || 'Author'
-                    }
+        async deleteAuthor(authorId) {
+            this.loading = true
+            this.error = null
 
-                    const result = await this.delete(authorId)
-                    // Ensure list stays in sync with items
-                    this.list = [...this.items]
+            try {
+                await authorsApi.delete(authorId)
+                this.list = this.list.filter((a) => a._id !== authorId && a.id !== authorId)
+                this.total = Math.max(0, this.total - 1)
 
-                    return result
-                } catch (error) {
-                    throw error
+                if (this.current && (this.current._id === authorId || this.current.id === authorId)) {
+                    this.current = null
                 }
-            })
+            } catch (error) {
+                this.error = error.message
+                throw error
+            } finally {
+                this.loading = false
+            }
         },
 
         /**
-         * Set search query for authors
-         * @param {string} query - Search query string
+         * Set search query
          */
         setSearchQuery(query) {
             this.searchQuery = query
-            // Apply search query as a filter for the next API request
-            this.applyFilters({ search: query })
+        },
+
+        /**
+         * Set error message
+         */
+        setError(message) {
+            this.error = message
+        },
+
+        /**
+         * Clear error message
+         */
+        clearError() {
+            this.error = null
         },
     },
 })

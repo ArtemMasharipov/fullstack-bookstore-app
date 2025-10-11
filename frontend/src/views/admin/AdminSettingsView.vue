@@ -38,8 +38,12 @@
                         </template>
                         <v-list-item-title>Notifications</v-list-item-title>
                         <template v-slot:append>
-                            <v-switch v-model="notificationsEnabled" color="primary" hide-details
-                                density="compact"></v-switch>
+                            <v-switch
+                                v-model="notificationsEnabled"
+                                color="primary"
+                                hide-details
+                                density="compact"
+                            ></v-switch>
                         </template>
                     </v-list-item>
                 </v-list>

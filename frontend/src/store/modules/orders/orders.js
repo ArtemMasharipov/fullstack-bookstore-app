@@ -1,59 +1,61 @@
 import { useNotifications } from '@/composables/useNotifications'
 import { orderApi } from '@/services/api/orderApi'
 import { useCartStore } from '@/store/modules/cart'
-import { createBaseStore, handleAsyncAction } from '@/store/modules/ui'
+import { defineStore } from 'pinia'
 
 /**
- * Orders store using the base store factory
- * - Uses shared logic from the factory to eliminate code duplication
- * - Preserves order-specific business logic and actions
+ * Orders Store
+ * Manages orders data and operations
+ *
+ * Simplified version without factory - direct Pinia implementation
  */
-export const useOrdersStore = createBaseStore({
-    id: 'orders',
-    api: orderApi,
+export const useOrdersStore = defineStore('orders', {
+    state: () => ({
+        // Orders list
+        orders: [],
+        currentOrder: null,
 
-    // Custom state specific to orders store
-    customState: () => ({
-        // Map to maintain API compatibility with existing components
-        orders: [], // This will be synced with 'items' in the base store
-        _currentOrder: null, // This will be synced with 'current' in the base store, renamed to avoid conflict
+        // Loading & error states
+        loading: false,
+        error: null,
     }),
 
-    // Custom getters specific to orders store
-    customGetters: {
-        // Map base store getters to order-specific names for API compatibility
-        ordersList: (state) => {
-            // Make absolutely sure we return an array
-            if (Array.isArray(state.orders)) return state.orders
-            if (Array.isArray(state.items)) return state.items
-            return [] // Return empty array as fallback
-        },
-        getOrder: (state) => state._currentOrder || state.current, // Renamed from currentOrder to avoid conflict
-        // loading and error are provided by base store
+    getters: {
+        /**
+         * Get orders list
+         */
+        ordersList: (state) => state.orders,
+
+        /**
+         * Get current order
+         */
+        getOrder: (state) => state.currentOrder,
+
+        /**
+         * Check loading state
+         */
+        ordersLoading: (state) => state.loading,
+
+        /**
+         * Get error message
+         */
+        ordersError: (state) => state.error,
     },
 
-    // Custom actions specific to orders store
-    customActions: {
+    actions: {
         /**
          * Create a new order and clear the cart after success
          * @param {Object} orderData - Data for the new order
          */
         async createOrder(orderData) {
-            return handleAsyncAction(this, async () => {
-                // The API endpoint is different from the standard CRUD pattern
-                const order = await orderApi.createOrder(orderData)
+            this.loading = true
+            this.error = null
 
-                // Ensure arrays exist before trying to unshift
-                if (!Array.isArray(this.orders)) {
-                    this.orders = []
-                }
-                if (!Array.isArray(this.items)) {
-                    this.items = []
-                }
+            try {
+                const order = await orderApi.createOrder(orderData)
 
                 // Add to the beginning of the list
                 this.orders.unshift(order)
-                this.items.unshift(order) // Keep base store items in sync
 
                 // Clear the cart after order is created
                 const cartStore = useCartStore()
@@ -67,30 +69,32 @@ export const useOrdersStore = createBaseStore({
                 })
 
                 return order
-            })
+            } catch (error) {
+                this.error = error.message
+                throw error
+            } finally {
+                this.loading = false
+            }
         },
 
         /**
          * Fetch all orders
          */
         async fetchOrders() {
-            return handleAsyncAction(this, async () => {
-                try {
-                    // API call is different from standard CRUD
-                    const orders = await orderApi.getOrders()
+            this.loading = true
+            this.error = null
 
-                    // Ensure we always set arrays, even if API returns null/undefined
-                    this.orders = Array.isArray(orders) ? orders : []
-                    this.items = Array.isArray(orders) ? orders : [] // Keep base store items in sync
-
-                    return orders
-                } catch (error) {
-                    // Initialize empty arrays on error to prevent unshift issues
-                    this.orders = []
-                    this.items = []
-                    throw error
-                }
-            })
+            try {
+                const orders = await orderApi.getOrders()
+                this.orders = Array.isArray(orders) ? orders : []
+                return orders
+            } catch (error) {
+                this.error = error.message
+                this.orders = []
+                throw error
+            } finally {
+                this.loading = false
+            }
         },
 
         /**
@@ -98,16 +102,19 @@ export const useOrdersStore = createBaseStore({
          * @param {string} id - Order ID
          */
         async fetchOrderById(id) {
-            return handleAsyncAction(this, async () => {
-                // API call is different from standard CRUD
+            this.loading = true
+            this.error = null
+
+            try {
                 const order = await orderApi.getOrderById(id)
-
-                // Update both our custom property and base store property
-                this._currentOrder = order
-                this.current = order // Keep base store current in sync
-
+                this.currentOrder = order
                 return order
-            })
+            } catch (error) {
+                this.error = error.message
+                throw error
+            } finally {
+                this.loading = false
+            }
         },
 
         /**
@@ -117,20 +124,23 @@ export const useOrdersStore = createBaseStore({
          * @param {string} params.status - New status
          */
         async updateOrderStatus({ id, status }) {
-            return handleAsyncAction(this, async () => {
-                // This is a domain-specific action
+            this.loading = true
+            this.error = null
+
+            try {
                 const updatedOrder = await orderApi.updateOrderStatus(id, status)
 
                 // Update the order in our list
-                const orderInItems = this.items.find((o) => o._id === id)
-                if (orderInItems) {
-                    orderInItems.status = updatedOrder.status
+                const orderIndex = this.orders.findIndex((o) => o._id === id)
+                if (orderIndex !== -1) {
+                    this.orders[orderIndex].status = updatedOrder.status
                 }
 
-                const orderInOrders = this.orders.find((o) => o._id === id)
-                if (orderInOrders) {
-                    orderInOrders.status = updatedOrder.status
+                // Update current order if it's the same
+                if (this.currentOrder && this.currentOrder._id === id) {
+                    this.currentOrder.status = updatedOrder.status
                 }
+
                 // Notify user
                 const { showSuccess } = useNotifications()
                 showSuccess(`Order #${id} status updated to "${status}"`, {
@@ -139,7 +149,12 @@ export const useOrdersStore = createBaseStore({
                 })
 
                 return updatedOrder
-            })
+            } catch (error) {
+                this.error = error.message
+                throw error
+            } finally {
+                this.loading = false
+            }
         },
 
         /**
@@ -147,20 +162,23 @@ export const useOrdersStore = createBaseStore({
          * @param {string} id - Order ID
          */
         async cancelOrder(id) {
-            return handleAsyncAction(this, async () => {
-                // This is a domain-specific action
+            this.loading = true
+            this.error = null
+
+            try {
                 const updatedOrder = await orderApi.cancelOrder(id)
 
-                // Update the order in our lists
-                const orderInItems = this.items.find((o) => o._id === id)
-                if (orderInItems) {
-                    orderInItems.status = updatedOrder.status
+                // Update the order in our list
+                const orderIndex = this.orders.findIndex((o) => o._id === id)
+                if (orderIndex !== -1) {
+                    this.orders[orderIndex].status = updatedOrder.status
                 }
 
-                const orderInOrders = this.orders.find((o) => o._id === id)
-                if (orderInOrders) {
-                    orderInOrders.status = updatedOrder.status
+                // Update current order if it's the same
+                if (this.currentOrder && this.currentOrder._id === id) {
+                    this.currentOrder.status = updatedOrder.status
                 }
+
                 // Notify user
                 const { showWarning } = useNotifications()
                 showWarning(`Order #${id} has been cancelled`, {
@@ -169,38 +187,26 @@ export const useOrdersStore = createBaseStore({
                 })
 
                 return updatedOrder
-            })
+            } catch (error) {
+                this.error = error.message
+                throw error
+            } finally {
+                this.loading = false
+            }
         },
 
         /**
-         * Custom initialize method to ensure arrays are properly set
+         * Set error message
          */
-        async initializeStore() {
-            // Initialize arrays if they're not already
-            if (!Array.isArray(this.orders)) {
-                this.orders = []
-            }
-            if (!Array.isArray(this.items)) {
-                this.items = []
-            }
+        setError(message) {
+            this.error = message
+        },
 
-            // Call the base implementation
-            if (!this.initialized) {
-                // If API is provided, fetch initial data
-                try {
-                    await this.fetchOrders()
-                } catch (error) {
-                    // Silently handle errors during initialization
-                    const { showError } = useNotifications()
-                    showError('Failed to initialize orders store', {
-                        icon: 'mdi-alert-circle',
-                    })
-                }
-
-                this.initialized = true
-            }
-
-            return true
+        /**
+         * Clear error message
+         */
+        clearError() {
+            this.error = null
         },
     },
 })

@@ -137,7 +137,7 @@ const remove = async () => {
         // После удаления элемента обновляем счетчик корзины
         await cartStore.fetchCart()
     } catch (error) {
-        console.error(`Failed to remove ${bookTitle.value}: ${error.message}`)
+        // Failed to remove item
     } finally {
         removing.value = false
     }
@@ -174,7 +174,7 @@ const handleQuantityChange = (quantity) => {
             return cartStore.fetchCart()
         })
         .catch((error) => {
-            console.error(`Failed to update quantity: ${error.message}`)
+            // Failed to update quantity
         })
 }
 

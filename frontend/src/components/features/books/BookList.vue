@@ -47,7 +47,7 @@
 </template>
 
 <script setup>
-import { useAuthStore, useBooksStore, useUiStore } from '@/store'
+import { useAuthStore, useBooksStore } from '@/store'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -91,10 +91,9 @@ const router = useRouter()
 // Stores
 const authStore = useAuthStore()
 const booksStore = useBooksStore()
-const uiStore = useUiStore()
 
 // Extract reactive state from stores
-const { booksList: books, booksLoading, booksPagination, showForm, selectedBook, bookToDelete, formSubmitting, showDeleteDialog, filterParams, page: uiCurrentPage } = storeToRefs(booksStore)
+const { booksList: books, booksLoading, booksPagination, page: uiCurrentPage } = storeToRefs(booksStore)
 
 // Local reactive state
 const searchQuery = ref('')
@@ -120,13 +119,16 @@ const changePage = (page) => {
 }
 
 const loadBooks = () => {
+    // Sync props to store before loading
+    booksStore.category = props.category
+    booksStore.authorId = props.authorId
+    booksStore.limit = props.itemsPerPage
+
     return booksStore.loadBooks()
 }
 
 const handleResize = () => {
     windowWidth.value = window.innerWidth
-    // Also update the UI store
-    uiStore.handleWindowResize()
 }
 
 const viewDetails = (bookId) => {
@@ -142,56 +144,26 @@ const handleError = (message) => {
 }
 
 // Watchers
-watch(
-    filterParams,
-    () => {
-        loadBooks()
-    },
-    { deep: true }
-)
-
+// Watch for search query changes with debounce
 watch(searchQuery, (val) => {
     booksStore.debouncedSearch(val)
 })
 
-// Watch for prop changes to update store
+// Watch for prop changes to reload books
 watch(
-    () => props.category,
-    (val) => {
-        booksStore.category = val
-    }
-)
-
-watch(
-    () => props.authorId,
-    (val) => {
-        booksStore.authorId = val
-    }
-)
-
-watch(
-    () => props.itemsPerPage,
-    (val) => {
-        booksStore.limit = val
+    () => [props.category, props.authorId, props.itemsPerPage],
+    () => {
+        loadBooks()
     }
 )
 
 // Lifecycle hooks
 onMounted(() => {
     try {
-        // Initialize the store with props
-        booksStore.initialize({
-            category: props.category,
-            authorId: props.authorId,
-            itemsPerPage: props.itemsPerPage,
-        })
-        // Set up search debounce
-        booksStore.setupSearchDebounce()
-
         // Add event listener for window resizing
         window.addEventListener('resize', handleResize)
 
-        // Initial data fetch - wrapped in try/catch in loadBooks method
+        // Initial data fetch
         loadBooks()
     } catch (error) {
         handleError(error.message || 'An error occurred while initializing the book list')

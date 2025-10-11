@@ -1,19 +1,43 @@
 <template>
     <div class="admin-books">
         <!-- Book management data table -->
-        <admin-books-table :books="paginatedBooks" :authors="authors" :loading="loading" :total-items="totalItems"
-            :page="page" :items-per-page="itemsPerPage" :sort-by="sortBy" :search="search" @update:page="updatePage"
-            @update:items-per-page="updateItemsPerPage" @update:sort-by="updateSortBy" @update:search="updateSearch"
-            @reset-filters="resetFilters" @add-book="openBookDialog" @edit-book="openBookDialog"
-            @delete-book="confirmDeleteBook" />
+        <admin-books-table
+            :books="paginatedBooks"
+            :authors="authors"
+            :loading="loading"
+            :total-items="totalItems"
+            :page="page"
+            :items-per-page="itemsPerPage"
+            :sort-by="sortBy"
+            :search="search"
+            @update:page="updatePage"
+            @update:items-per-page="updateItemsPerPage"
+            @update:sort-by="updateSortBy"
+            @update:search="updateSearch"
+            @reset-filters="resetFilters"
+            @add-book="openBookDialog"
+            @edit-book="openBookDialog"
+            @delete-book="confirmDeleteBook"
+        />
 
         <!-- Book edit/create dialog -->
-        <book-dialog v-model="bookDialogOpen" :book="editedBook" :authors="authors" :saving="saving"
-            @save="handleSaveBook" @close="closeBookDialog" />
+        <book-dialog
+            v-model="bookDialogOpen"
+            :book="editedBook"
+            :authors="authors"
+            :saving="saving"
+            @save="handleSaveBook"
+            @close="closeBookDialog"
+        />
 
         <!-- Delete confirmation dialog -->
-        <book-delete-dialog v-model="deleteDialogOpen" :book="bookToDelete" :deleting="deleting"
-            @delete="handleDeleteBook" @close="closeDeleteDialog" />
+        <book-delete-dialog
+            v-model="deleteDialogOpen"
+            :book="bookToDelete"
+            :deleting="deleting"
+            @delete="handleDeleteBook"
+            @close="closeDeleteDialog"
+        />
     </div>
 </template>
 
@@ -53,8 +77,8 @@ const sortBy = ref([{ key: 'title', order: 'asc' }])
 const search = ref('')
 
 // Data from stores
-const books = computed(() => booksStore.getAllBooks || [])
-const authors = computed(() => authorsStore.getAllAuthors || [])
+const books = computed(() => booksStore.booksList || [])
+const authors = computed(() => authorsStore.authorsList || [])
 const loading = computed(() => booksStore.loading)
 
 // Filtered and paginated data
@@ -87,7 +111,7 @@ const paginatedBooks = computed(() => {
 // Data loading methods
 const loadBooks = async () => {
     try {
-        await booksStore.fetchBooks()
+        await booksStore.fetchBooks({ page: page.value, limit: itemsPerPage.value })
     } catch (error) {
         logger.error('Failed to load books', error, 'admin-books')
     }
@@ -131,7 +155,7 @@ const handleSaveBook = async (bookData) => {
     try {
         if (bookData.id) {
             // Update existing book
-            await booksStore.updateBook(bookData.id, bookData)
+            await booksStore.updateBook({ id: bookData.id, formData: bookData })
             logger.info('Book updated successfully', { title: bookData.title, id: bookData.id }, 'admin-books')
         } else {
             // Create new book
@@ -154,7 +178,7 @@ const handleDeleteBook = async () => {
     deleting.value = true
 
     try {
-        await booksStore.deleteBook(bookToDelete.value.id)
+        await booksStore.deleteBook(bookToDelete.value.id, bookToDelete.value.title)
         logger.info(`Book "${bookToDelete.value.title}" deleted successfully`, 'admin-books')
 
         closeDeleteDialog()
