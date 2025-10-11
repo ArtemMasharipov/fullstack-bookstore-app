@@ -60,28 +60,4 @@ export const publicRoutes = [
             title: 'Оформление заказа',
         },
     },
-    {
-        path: '/contact',
-        name: 'Contact',
-        component: () => import('@/views/public/ContactView.vue'),
-        meta: {
-            title: 'Контакты',
-        },
-    },
-    {
-        path: '/about',
-        name: 'About',
-        component: () => import('@/views/public/AboutView.vue'),
-        meta: {
-            title: 'О нас',
-        },
-    },
-    {
-        path: '/privacy',
-        name: 'Privacy',
-        component: () => import('@/views/public/PrivacyView.vue'),
-        meta: {
-            title: 'Политика конфиденциальности',
-        },
-    },
 ]

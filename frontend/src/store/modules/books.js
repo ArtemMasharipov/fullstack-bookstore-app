@@ -3,7 +3,7 @@ import { handleAsyncAction } from '@/store/utils/stateHelpers'
 import { createLoadingActions, createLoadingState, createPaginationActions, createPaginationGetters, createPaginationState } from '@/store/utils/storeHelpers'
 import { normalizeApiResponse, normalizeBook, normalizeBooks } from '@/utils/dataNormalizers'
 import { logger } from '@/utils/logger'
-import { debounce } from 'lodash'
+import { debounce } from '@/utils/helpers/debounce'
 import { defineStore } from 'pinia'
 
 /**

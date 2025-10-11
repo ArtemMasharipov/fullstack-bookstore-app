@@ -8,10 +8,9 @@ import { vuetify } from '@/config/vuetify'
 import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
 
-// Import performance monitoring and logging
+// Import logging
 import { setupGlobalErrorHandling } from '@/utils/errorHandler'
 import { logger, setupGlobalErrorLogging } from '@/utils/logger'
-import './utils/performanceMonitor.js'
 
 const app = createApp(App)
 const pinia = createPinia()

@@ -1,4 +1,3 @@
-import { isSoundSupported, playNotificationSound } from '@/utils/soundUtils'
 import { computed, ref, watch } from 'vue'
 
 /**
@@ -16,10 +15,6 @@ const MAX_VISIBLE = 5
  */
 const notificationQueue = ref([])
 
-/**
- * Global sound settings
- */
-const soundEnabled = ref(localStorage.getItem('notification_sound') !== 'false')
 
 /**
  * Composable for managing Vuetify-based toast notifications
@@ -59,7 +54,6 @@ export function useNotifications() {
         actions = [],
         html = false,
         group = null,
-        sound = true,
     }) => {
         // If group is specified, clear other notifications in this group
         if (group) {
@@ -78,10 +72,6 @@ export function useNotifications() {
             show: true,
         }
 
-        // Play sound if enabled
-        if (sound && soundEnabled.value && isSoundSupported()) {
-            playNotificationSound(type, soundEnabled.value)
-        }
 
         // If too many notifications, queue this one
         if (notifications.value.length >= MAX_VISIBLE) {
@@ -161,19 +151,6 @@ export function useNotifications() {
         }
     )
 
-    /**
-     * Toggle sound notifications
-     */
-    const toggleSound = () => {
-        soundEnabled.value = !soundEnabled.value
-        localStorage.setItem('notification_sound', soundEnabled.value.toString())
-        return soundEnabled.value
-    }
-
-    /**
-     * Get sound enabled status
-     */
-    const getSoundEnabled = () => soundEnabled.value
 
     return {
         notifications: computed(() => notifications.value),
@@ -190,7 +167,5 @@ export function useNotifications() {
         showError: error,
         showWarning: warning,
         showInfo: info,
-        toggleSound,
-        getSoundEnabled,
     }
 }

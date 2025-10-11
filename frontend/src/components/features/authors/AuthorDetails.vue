@@ -130,7 +130,6 @@ const confirmDelete = () => {
 const handleDelete = async () => {
     try {
         await deleteAuthor(author.value.id)
-        console.log('Author deleted successfully')
         router.push('/authors')
     } catch (error) {
         console.error('Failed to delete author:', error.message || error)

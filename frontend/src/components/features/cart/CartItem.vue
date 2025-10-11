@@ -73,7 +73,7 @@
 import placeholderImage from '@/assets/images/placeholder.png'
 import { useCartStore } from '@/store'
 import { formatPrice } from '@/utils'
-import { debounce } from 'lodash'
+import { debounce } from '@/utils/helpers/debounce'
 import { computed, onMounted, ref } from 'vue'
 import ConfirmModal from '../../ui/ConfirmModal.vue'
 

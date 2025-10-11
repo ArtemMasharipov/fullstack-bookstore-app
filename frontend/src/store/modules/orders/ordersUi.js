@@ -72,7 +72,6 @@ export const useOrdersUiStore = defineStore('ordersUi', {
                 if (Array.isArray(ordersStore.ordersList)) {
                     result = [...ordersStore.ordersList]
                 } else {
-                    console.warn('ordersList is not an array:', ordersStore.ordersList)
                 }
             }
 
@@ -237,7 +236,6 @@ export const useOrdersUiStore = defineStore('ordersUi', {
                     minute: '2-digit',
                 })
             } catch (err) {
-                console.warn('Date formatting error:', err)
                 return String(date)
             }
         },
