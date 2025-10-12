@@ -49,7 +49,8 @@
 </template>
 
 <script setup>
-import { useAuthStore, useAuthUiStore } from '@/store'
+import { useAuthStore } from '@/store'
+import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -59,7 +60,6 @@ const router = useRouter()
 
 // Stores
 const authStore = useAuthStore()
-const authUiStore = useAuthUiStore()
 
 // Extract reactive state from stores
 const { loading: authLoading, error: authError, isAuthenticated, currentUser } = storeToRefs(authStore)
@@ -70,26 +70,27 @@ const password = ref('')
 
 // Methods
 const handleSubmit = async () => {
-    // Clear any previous errors
-    authUiStore.clearError()
+    try {
+        // Attempt login
+        await authStore.login({
+            email: email.value,
+            password: password.value,
+        })
 
-    // Attempt login
-    const success = await authUiStore.handleLogin({
-        email: email.value,
-        password: password.value,
-    })
-
-    // If successfully authenticated, redirect to saved path or home page
-    if (success && isAuthenticated.value) {
-        // Check for a saved redirect path
-        const redirectPath = localStorage.getItem('redirectPath')
-        if (redirectPath) {
-            // Clear the saved path before redirecting
-            localStorage.removeItem('redirectPath')
-            router.push(redirectPath)
-        } else {
-            router.push('/')
+        // If successfully authenticated, redirect to saved path or home page
+        if (isAuthenticated.value) {
+            // Check for a saved redirect path
+            const redirectPath = localStorage.getItem('redirectPath')
+            if (redirectPath) {
+                // Clear the saved path before redirecting
+                localStorage.removeItem('redirectPath')
+                router.push(redirectPath)
+            } else {
+                router.push('/')
+            }
         }
+    } catch (error) {
+        logger.error('Login failed', error, 'LoginForm')
     }
 }
 </script>

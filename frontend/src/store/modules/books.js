@@ -1,41 +1,31 @@
 import { booksApi } from '@/services/api/booksApi'
-import { handleAsyncAction } from '@/store/utils/stateHelpers'
-import {
-    createLoadingActions,
-    createLoadingState,
-    createPaginationActions,
-    createPaginationGetters,
-    createPaginationState,
-} from '@/store/utils/storeHelpers'
+import { createBaseStore } from '@/store/utils/storeFactory'
 import { normalizeApiResponse, normalizeBook, normalizeBooks } from '@/utils/dataNormalizers'
-import { debounce } from '@/utils/helpers/debounce'
 import { logger } from '@/utils/logger'
-import { defineStore } from 'pinia'
 
 /**
- * Books store - manages books data and UI state
+ * Books store - manages books data only (UI state moved to components)
+ * Uses storeFactory with TTL caching for better performance
  */
-export const useBooksStore = defineStore('books', {
-    state: () => ({
-        // Data state
+export const useBooksStore = createBaseStore({
+    id: 'books',
+    api: booksApi,
+    cacheTTL: 60000, // 60 seconds cache
+
+    // Custom state specific to books store
+    customState: () => ({
+        // Data state only
         books: [],
         currentBook: null,
 
-        // UI state (simple)
-        showForm: false,
-        selectedBook: null,
-        bookToDelete: null,
-        formSubmitting: false,
+        // Filter parameters (not UI state, but query parameters)
         searchQuery: '',
         category: null,
         authorId: null,
-
-        // Loading and pagination
-        ...createLoadingState(),
-        ...createPaginationState(),
     }),
 
-    getters: {
+    // Custom getters specific to books store
+    customGetters: {
         // Data getters
         booksList: (state) => state.books,
         booksPagination: (state) => ({
@@ -47,8 +37,7 @@ export const useBooksStore = defineStore('books', {
         booksLoading: (state) => state.loading,
         booksError: (state) => state.error,
 
-        // UI getters
-        showDeleteDialog: (state) => !!state.bookToDelete,
+        // Filter parameters getter
         filterParams: (state) => {
             const params = {
                 page: state.page,
@@ -69,37 +58,27 @@ export const useBooksStore = defineStore('books', {
 
             return params
         },
-
-        // Pagination getters
-        ...createPaginationGetters(),
     },
 
-    actions: {
-        // Loading actions
-        ...createLoadingActions(),
-
-        // Pagination actions
-        ...createPaginationActions(),
-
+    // Custom actions specific to books store
+    customActions: {
         /**
-         * Fetch books with pagination
+         * Fetch books with pagination and caching
          * @param {Object} params - Query parameters
          * @returns {Promise} - Fetched books
          */
         async fetchBooks(params = { page: 1, limit: 10 }) {
-            return handleAsyncAction(this, async () => {
-                try {
-                    const response = await booksApi.fetchAll(params)
-                    this.setBooksList(response)
-                    return response
-                } catch (error) {
-                    // Don't log auth errors as they're handled by the interceptor
-                    if (!error.isAuthError && !error.isNetworkError) {
-                        logger.error('Error fetching books', error, 'books-store')
-                    }
-                    throw error
+            try {
+                const response = await this.fetchAll(params)
+                this.setBooksList(response)
+                return response
+            } catch (error) {
+                // Don't log auth errors as they're handled by the interceptor
+                if (!error.isAuthError && !error.isNetworkError) {
+                    logger.error('Error fetching books', error, 'books-store')
                 }
-            })
+                throw error
+            }
         },
 
         /**
@@ -108,11 +87,14 @@ export const useBooksStore = defineStore('books', {
          * @returns {Promise} - Book object
          */
         async fetchBookById(id) {
-            return handleAsyncAction(this, async () => {
-                const book = await booksApi.fetchById(id)
+            try {
+                const book = await this.fetchById(id)
                 this.currentBook = book
                 return book
-            })
+            } catch (error) {
+                logger.error('Error fetching book by ID', error, 'books-store')
+                throw error
+            }
         },
 
         /**
@@ -121,25 +103,22 @@ export const useBooksStore = defineStore('books', {
          * @returns {Promise} - Created book
          */
         async createBook(formData) {
-            return handleAsyncAction(
-                this,
-                async () => {
-                    const response = await booksApi.create(formData)
-                    const normalizedResponse = normalizeApiResponse(response)
-                    const book = normalizeBook(normalizedResponse.data)
+            try {
+                const response = await booksApi.create(formData)
+                const normalizedResponse = normalizeApiResponse(response)
+                const book = normalizeBook(normalizedResponse.data)
 
-                    if (book) {
-                        this.books.push(book)
-                    }
-
-                    return book
-                },
-                {
-                    onError: () => {
-                        // Error handling without toast notifications
-                    },
+                if (book) {
+                    this.books.push(book)
                 }
-            )
+
+                // Invalidate cache after creating
+                this.invalidateCache()
+                return book
+            } catch (error) {
+                logger.error('Error creating book', error, 'books-store')
+                throw error
+            }
         },
 
         /**
@@ -150,28 +129,25 @@ export const useBooksStore = defineStore('books', {
          * @returns {Promise} - Updated book
          */
         async updateBook({ id, formData }) {
-            return handleAsyncAction(
-                this,
-                async () => {
-                    const response = await booksApi.update(id, formData)
-                    const normalizedResponse = normalizeApiResponse(response)
-                    const updatedBook = normalizeBook(normalizedResponse.data)
+            try {
+                const response = await booksApi.update(id, formData)
+                const normalizedResponse = normalizeApiResponse(response)
+                const updatedBook = normalizeBook(normalizedResponse.data)
 
-                    if (updatedBook) {
-                        const index = this.books.findIndex((book) => book._id === updatedBook._id)
-                        if (index !== -1) {
-                            this.books.splice(index, 1, updatedBook)
-                        }
+                if (updatedBook) {
+                    const index = this.books.findIndex((book) => book._id === updatedBook._id)
+                    if (index !== -1) {
+                        this.books.splice(index, 1, updatedBook)
                     }
-
-                    return updatedBook
-                },
-                {
-                    onError: () => {
-                        // Error handling without toast notifications
-                    },
                 }
-            )
+
+                // Invalidate cache after updating
+                this.invalidateCache()
+                return updatedBook
+            } catch (error) {
+                logger.error('Error updating book', error, 'books-store')
+                throw error
+            }
         },
 
         /**
@@ -182,24 +158,22 @@ export const useBooksStore = defineStore('books', {
         async deleteBook(id, title = '') {
             if (!id) throw new Error('Book ID is required')
 
-            return handleAsyncAction(
-                this,
-                async () => {
-                    // Find book title if not provided
-                    if (!title) {
-                        const book = this.books.find((b) => b._id === id)
-                        title = book?.title || 'Book'
-                    }
-
-                    await booksApi.delete(id)
-                    this.books = this.books.filter((book) => book._id !== id)
-                },
-                {
-                    onError: () => {
-                        // Error handling without toast notifications
-                    },
+            try {
+                // Find book title if not provided
+                if (!title) {
+                    const book = this.books.find((b) => b._id === id)
+                    title = book?.title || 'Book'
                 }
-            )
+
+                await booksApi.delete(id)
+                this.books = this.books.filter((book) => book._id !== id)
+
+                // Invalidate cache after deleting
+                this.invalidateCache()
+            } catch (error) {
+                logger.error('Error deleting book', error, 'books-store')
+                throw error
+            }
         },
 
         /**
@@ -239,7 +213,6 @@ export const useBooksStore = defineStore('books', {
             }
         },
 
-        // UI Actions
         /**
          * Initialize with filter options
          */
@@ -250,96 +223,27 @@ export const useBooksStore = defineStore('books', {
         },
 
         /**
-         * Open create book form
+         * Set search query
          */
-        openCreateForm() {
-            this.selectedBook = {}
-            this.showForm = true
-        },
-
-        /**
-         * Open edit book form
-         */
-        openEditForm(book) {
-            this.selectedBook = { ...book }
-            this.showForm = true
-        },
-
-        /**
-         * Close form modal
-         */
-        closeForm() {
-            this.selectedBook = null
-            this.showForm = false
-        },
-
-        /**
-         * Show delete confirmation
-         */
-        confirmDeleteBook(book) {
-            this.bookToDelete = book
-        },
-
-        /**
-         * Cancel book deletion
-         */
-        cancelDeleteBook() {
-            this.bookToDelete = null
-        },
-
-        /**
-         * Handle form submission
-         */
-        async handleFormSubmit(bookData) {
-            try {
-                this.formSubmitting = true
-
-                if (bookData._id) {
-                    await this.updateBook({ id: bookData._id, formData: bookData.formData })
-                } else {
-                    await this.createBook(bookData.formData)
-                }
-
-                await this.loadBooks()
-                this.closeForm()
-            } catch (error) {
-                // Error handling without toast notifications
-            } finally {
-                this.formSubmitting = false
-            }
-        },
-
-        /**
-         * Handle book deletion
-         */
-        async deleteBookFromUI() {
-            if (!this.bookToDelete?._id) return
-
-            try {
-                await this.deleteBook(this.bookToDelete._id)
-                this.bookToDelete = null
-                await this.loadBooks()
-            } catch (error) {
-                // Error handling without toast notifications
-            }
-        },
-
-        /**
-         * Handle page change
-         */
-        changePage(page) {
-            this.page = page
-            this.loadBooks()
-        },
-
-        /**
-         * Set search query with debounce
-         */
-        setSearchQueryDebounced(query) {
+        setSearchQuery(query) {
             this.searchQuery = query
-            // Reset to page 1 on search
-            this.page = 1
-            this.loadBooks()
+            this.page = 1 // Reset to page 1 on search
+        },
+
+        /**
+         * Set category filter
+         */
+        setCategory(category) {
+            this.category = category
+            this.page = 1 // Reset to page 1 on filter change
+        },
+
+        /**
+         * Set author filter
+         */
+        setAuthorId(authorId) {
+            this.authorId = authorId
+            this.page = 1 // Reset to page 1 on filter change
         },
 
         /**
@@ -351,20 +255,9 @@ export const useBooksStore = defineStore('books', {
             } catch (error) {
                 // Don't show auth errors since they're handled by the API interceptor
                 if (!error.isAuthError && !error.isNetworkError) {
-                    // Error handling without toast notifications
                     console.warn('Failed to load books:', error.message)
                 }
             }
-        },
-
-        /**
-         * Initialize search with debounce
-         */
-        setupSearchDebounce() {
-            // Create a debounced function that waits 500ms before triggering search
-            this.debouncedSearch = debounce((query) => {
-                this.setSearchQueryDebounced(query)
-            }, 500)
         },
     },
 })

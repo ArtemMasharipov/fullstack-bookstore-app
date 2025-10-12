@@ -53,8 +53,8 @@ const sortBy = ref([{ key: 'title', order: 'asc' }])
 const search = ref('')
 
 // Data from stores
-const books = computed(() => booksStore.getAllBooks || [])
-const authors = computed(() => authorsStore.getAllAuthors || [])
+const books = computed(() => booksStore.booksList || [])
+const authors = computed(() => authorsStore.authorsList || [])
 const loading = computed(() => booksStore.loading)
 
 // Filtered and paginated data
@@ -87,7 +87,7 @@ const paginatedBooks = computed(() => {
 // Data loading methods
 const loadBooks = async () => {
     try {
-        await booksStore.fetchBooks()
+        await booksStore.fetchBooks({ page: page.value, limit: itemsPerPage.value })
     } catch (error) {
         logger.error('Failed to load books', error, 'admin-books')
     }
@@ -131,7 +131,7 @@ const handleSaveBook = async (bookData) => {
     try {
         if (bookData.id) {
             // Update existing book
-            await booksStore.updateBook(bookData.id, bookData)
+            await booksStore.updateBook({ id: bookData.id, formData: bookData })
             logger.info('Book updated successfully', { title: bookData.title, id: bookData.id }, 'admin-books')
         } else {
             // Create new book
@@ -154,7 +154,7 @@ const handleDeleteBook = async () => {
     deleting.value = true
 
     try {
-        await booksStore.deleteBook(bookToDelete.value.id)
+        await booksStore.deleteBook(bookToDelete.value.id, bookToDelete.value.title)
         logger.info(`Book "${bookToDelete.value.title}" deleted successfully`, 'admin-books')
 
         closeDeleteDialog()

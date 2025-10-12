@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { useAuthorsStore, useAuthorsUiStore, useAuthStore } from '@/store'
+import { useAuthorsStore, useAuthStore } from '@/store'
 import { computed, onMounted } from 'vue'
 import ErrorMessage from '../../ui/ErrorMessage.vue'
 import LoadingSpinner from '../../ui/LoadingSpinner.vue'
@@ -51,7 +51,6 @@ const emit = defineEmits(['author-click'])
  * Store instances
  */
 const authorsStore = useAuthorsStore()
-const authorsUiStore = useAuthorsUiStore()
 const authStore = useAuthStore()
 
 /**
@@ -64,8 +63,12 @@ const error = computed(() => authorsStore.authorsError)
 /**
  * Methods
  */
-const fetchAuthors = () => {
-    return authorsUiStore.fetchAuthors()
+const fetchAuthors = async () => {
+    try {
+        await authorsStore.fetchAuthors()
+    } catch (error) {
+        console.error('Failed to fetch authors:', error)
+    }
 }
 
 const handleAuthorClick = (authorId) => {

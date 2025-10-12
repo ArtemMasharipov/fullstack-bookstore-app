@@ -33,7 +33,8 @@
 </template>
 
 <script setup>
-import { useAuthStore, useAuthUiStore } from '@/store'
+import { useAuthStore } from '@/store'
+import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -43,7 +44,6 @@ const router = useRouter()
 
 // Stores
 const authStore = useAuthStore()
-const authUiStore = useAuthUiStore()
 
 // Extract reactive state from stores
 const { loading: authLoading, error: authError } = storeToRefs(authStore)
@@ -56,18 +56,18 @@ const confirmPassword = ref('')
 
 // Methods
 const handleSubmit = async () => {
-    // Clear any previous errors
-    authUiStore.clearError()
+    try {
+        await authStore.register({
+            username: username.value,
+            email: email.value,
+            password: password.value,
+            confirmPassword: confirmPassword.value,
+        })
 
-    const success = await authUiStore.handleRegister({
-        username: username.value,
-        email: email.value,
-        password: password.value,
-        confirmPassword: confirmPassword.value,
-    })
-
-    if (success) {
+        // If registration successful, redirect to home
         router.push('/')
+    } catch (error) {
+        logger.error('Registration failed', error, 'RegisterForm')
     }
 }
 </script>

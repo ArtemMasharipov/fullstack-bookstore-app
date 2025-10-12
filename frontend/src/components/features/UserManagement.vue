@@ -67,7 +67,9 @@
 </template>
 
 <script setup>
-import { useAuthStore, useUsersStore, useUsersUiStore } from '@/store'
+import { useEntityDialog } from '@/composables/useEntityDialog'
+import { useAuthStore, useUsersStore } from '@/store'
+import { logger } from '@/utils/logger'
 import { computed, onMounted } from 'vue'
 
 /**
@@ -75,7 +77,11 @@ import { computed, onMounted } from 'vue'
  */
 const authStore = useAuthStore()
 const usersStore = useUsersStore()
-const usersUiStore = useUsersUiStore()
+
+/**
+ * Dialog management
+ */
+const { dialogs, selectedItem, openDialog, closeDialogs } = useEntityDialog({ entityName: 'user' })
 
 /**
  * Computed properties
@@ -85,26 +91,39 @@ const loading = computed(() => usersStore.usersLoading)
 const error = computed(() => usersStore.usersError)
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
-const showConfirmDialog = computed(() => usersUiStore.getShowConfirmDialog)
-const userToDelete = computed(() => usersUiStore.getUserToDelete)
+const showConfirmDialog = computed(() => dialogs.delete)
+const userToDelete = computed(() => selectedItem.value)
 
 /**
  * Methods
  */
-const fetchUsers = () => {
-    return usersUiStore.fetchUsers()
+const fetchUsers = async () => {
+    try {
+        await usersStore.fetchUsers()
+    } catch (error) {
+        logger.error('Failed to fetch users', error, 'UserManagement')
+    }
 }
 
 const confirmDelete = (user) => {
-    return usersUiStore.confirmDelete(user)
+    openDialog('delete', user)
 }
 
 const cancelDelete = () => {
-    return usersUiStore.cancelDelete()
+    closeDialogs()
 }
 
-const performDelete = () => {
-    return usersUiStore.performDelete()
+const performDelete = async () => {
+    if (!userToDelete.value) return
+    
+    try {
+        await usersStore.deleteUser(userToDelete.value.id)
+        logger.info(`User "${userToDelete.value.username}" deleted successfully`, 'UserManagement')
+        closeDialogs()
+        await fetchUsers() // Refresh the list
+    } catch (error) {
+        logger.error('Failed to delete user', error, 'UserManagement')
+    }
 }
 
 /**

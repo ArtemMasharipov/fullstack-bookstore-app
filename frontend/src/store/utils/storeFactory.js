@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia'
 import { handleAsyncAction } from './stateHelpers'
-import { createLoadingActions, createLoadingState, createPaginationActions, createPaginationGetters, createPaginationState } from './storeHelpers'
+import {
+    createLoadingActions,
+    createLoadingState,
+    createPaginationActions,
+    createPaginationGetters,
+    createPaginationState,
+} from './storeHelpers'
 
 /**
  * Base store factory - creates stores with common functionality
@@ -11,6 +17,7 @@ export const createBaseStore = ({
     customState = () => ({}),
     customGetters = {},
     customActions = {},
+    cacheTTL = 60000, // Default 60 seconds
 }) => {
     // Create the store using Pinia's defineStore
     return defineStore(id, {
@@ -22,6 +29,12 @@ export const createBaseStore = ({
             initialized: false,
             meta: {},
             filters: {},
+
+            // Cache properties
+            lastFetch: null,
+            cacheValid: false,
+            cacheTTL: cacheTTL,
+
             ...createLoadingState(),
             ...createPaginationState(),
 
@@ -38,6 +51,12 @@ export const createBaseStore = ({
             itemCount: (state) => state.items.length,
             isInitialized: (state) => state.initialized,
 
+            // Cache getters
+            isCacheValid: (state) => {
+                if (!state.lastFetch) return false
+                return Date.now() - state.lastFetch < state.cacheTTL
+            },
+
             // Merge pagination getters
             ...createPaginationGetters(),
 
@@ -49,7 +68,7 @@ export const createBaseStore = ({
         actions: {
             // Loading actions
             ...createLoadingActions(),
-            
+
             // Pagination actions
             ...createPaginationActions(),
 
@@ -98,11 +117,22 @@ export const createBaseStore = ({
                 return true
             },
             /**
-             * Generic fetchAll method - gets all items
+             * Generic fetchAll method - gets all items with caching
              * @param {Object} params - Query parameters for the request
+             * @param {Object} options - Options for the request
+             * @param {boolean} options.forceRefresh - Force refresh from server
              * @returns {Promise} - The fetched items
-             */ async fetchAll(params = {}) {
+             */
+            async fetchAll(params = {}, options = {}) {
+                const { forceRefresh = false } = options
+
                 if (!api || typeof api.fetchAll !== 'function') {
+                    return this.items
+                }
+
+                // Check cache validity
+                if (!forceRefresh && this.isCacheValid && this.items.length > 0) {
+                    console.log(`[${id}] Using cached data`)
                     return this.items
                 }
 
@@ -134,6 +164,10 @@ export const createBaseStore = ({
                             this.meta = response.meta
                         }
                     }
+
+                    // Update cache timestamp
+                    this.lastFetch = Date.now()
+                    this.cacheValid = true
 
                     return this.items
                 })
@@ -170,6 +204,8 @@ export const createBaseStore = ({
                     const item = await api.create(payload)
                     this.items.push(item)
                     this.current = item
+                    // Invalidate cache after creating new item
+                    this.invalidateCache()
                     return item
                 })
             },
@@ -195,6 +231,8 @@ export const createBaseStore = ({
                     }
 
                     this.current = item
+                    // Invalidate cache after updating item
+                    this.invalidateCache()
                     return item
                 })
             },
@@ -220,6 +258,8 @@ export const createBaseStore = ({
                         this.current = null
                     }
 
+                    // Invalidate cache after deleting item
+                    this.invalidateCache()
                     return true
                 })
             },
@@ -235,6 +275,22 @@ export const createBaseStore = ({
                 this.filters = {}
             },
 
+            /**
+             * Invalidate cache - forces next fetch to go to server
+             */
+            invalidateCache() {
+                this.lastFetch = null
+                this.cacheValid = false
+            },
+
+            /**
+             * Refresh data from server (force refresh)
+             * @param {Object} params - Query parameters
+             * @returns {Promise} - Fresh data from server
+             */
+            async refresh(params = {}) {
+                return this.fetchAll(params, { forceRefresh: true })
+            },
 
             // Merge with custom actions
             ...customActions,
