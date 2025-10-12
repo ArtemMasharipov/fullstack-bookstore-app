@@ -4,6 +4,7 @@
  */
 
 import jwt from 'jsonwebtoken'
+import { config } from '../config/index.js'
 import { ForbiddenError, UnauthorizedError } from '../utils/errors.js'
 
 /**
@@ -27,7 +28,7 @@ export const protect = async (req, res, next) => {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    const decoded = jwt.verify(token, config.jwt.secret)
 
     // Add user to request object
     req.user = decoded

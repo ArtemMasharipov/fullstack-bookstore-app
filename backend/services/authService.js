@@ -4,6 +4,7 @@
  */
 
 import jwt from 'jsonwebtoken'
+import { config } from '../config/index.js'
 import User from '../models/User.js'
 import {
   ConflictError,
@@ -17,8 +18,8 @@ import {
  * @returns {string} JWT token
  */
 function generateToken(payload) {
-  return jwt.sign(payload, process.env.JWT_SECRET || 'your-secret-key', {
-    expiresIn: process.env.JWT_EXPIRE || '7d',
+  return jwt.sign(payload, config.jwt.secret, {
+    expiresIn: config.jwt.expiresIn,
   })
 }
 
@@ -252,7 +253,7 @@ export async function updateProfile(userId, updates) {
  */
 export function verifyToken(token) {
   try {
-    return jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key')
+    return jwt.verify(token, config.jwt.secret)
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
       throw new UnauthorizedError('Token expired')

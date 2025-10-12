@@ -170,7 +170,6 @@ const orderSchema = new mongoose.Schema(
 // Indexes for performance
 orderSchema.index({ user: 1, createdAt: -1 })
 orderSchema.index({ status: 1, createdAt: -1 })
-orderSchema.index({ orderNumber: 1 })
 orderSchema.index({ isPaid: 1, isDelivered: 1 })
 
 // Virtual - total items count

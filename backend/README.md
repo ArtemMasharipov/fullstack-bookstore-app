@@ -6,12 +6,16 @@ Clean MVC architecture для fullstack приложения книжного м
 
 ```
 backend/
-├── controllers/       # HTTP обработчики (тонкий слой)
-├── services/         # Бизнес-логика
-├── models/           # Mongoose схемы
-├── routes/           # Определения маршрутов
-├── middleware/       # Middleware (auth, errors, async)
-├── utils/            # Утилиты (ошибки)
+├── config/           # Конфигурация приложения
+│   ├── default.js    # Централизованная конфигурация
+│   ├── database.js   # Подключение к БД
+│   └── index.js      # Экспорты
+├── controllers/      # HTTP обработчики (тонкий слой)
+├── services/        # Бизнес-логика
+├── models/          # Mongoose схемы
+├── routes/          # Определения маршрутов
+├── middleware/      # Middleware (auth, errors, async)
+├── utils/           # Утилиты (ошибки)
 └── server-clean-mvc.js  # Точка входа
 ```
 
@@ -19,6 +23,7 @@ backend/
 
 **Model** → **Service** → **Controller** → **Routes**
 
+- **Config**: Централизованная конфигурация, переменные окружения
 - **Models**: Схемы данных, валидация, виртуальные поля
 - **Services**: Вся бизнес-логика, выбрасывает ошибки
 - **Controllers**: HTTP request/response, вызывает сервисы
@@ -34,20 +39,41 @@ npm install
 
 ### 2. Настройка переменных окружения
 
-Создайте `.env` файл:
+Скопируйте `.env.example` в `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Отредактируйте `.env` файл:
 
 ```env
-# Server
-PORT=5000
+# Server Configuration
+PORT=3000
 NODE_ENV=development
 
-# Database
-MONGODB_URI=mongodb://localhost:27017/bookstore
+# Database Configuration (выберите один из вариантов)
 
-# JWT
-JWT_SECRET=your-super-secret-jwt-key-here
-JWT_EXPIRE=7d
+# Вариант 1: Полный URI (рекомендуется для облачных БД)
+MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/bookstore
+
+# Вариант 2: Локальная MongoDB
+# MONGODB_URL=mongodb://localhost:27017
+# DATABASE_NAME=bookstore
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+JWT_EXPIRATION=7d
+
+# CORS Configuration
+CORS_ORIGIN=http://localhost:8080
+CORS_METHODS=GET,POST,PUT,PATCH,DELETE
+CORS_CREDENTIALS=true
 ```
+
+> **⚠️ Важно:** Измените `JWT_SECRET` на случайную строку в production!
+
+> 📖 **Подробнее:** См. `config/README.md` для полной документации по конфигурации.
 
 ### 3. Запуск сервера
 
@@ -64,28 +90,33 @@ npm run dev
 ## 📦 Модули
 
 ### 1. Books (Книги)
+
 - ✅ CRUD операции
 - ✅ Поиск и фильтрация
 - ✅ Управление категориями
 - ✅ Связь с авторами
 
 ### 2. Authors (Авторы)
+
 - ✅ CRUD операции
 - ✅ Статистика по авторам
 - ✅ Список книг автора
 
 ### 3. Users/Auth (Пользователи/Авторизация)
+
 - ✅ Регистрация и логин
 - ✅ JWT токены
 - ✅ Управление профилем
 - ✅ Роли: user, admin, moderator
 
 ### 4. Cart (Корзина)
+
 - ✅ Добавление/удаление товаров
 - ✅ Синхронизация цен
 - ✅ Валидация перед оформлением
 
 ### 5. Orders (Заказы)
+
 - ✅ Создание заказов
 - ✅ Статусы заказов
 - ✅ История заказов
@@ -94,6 +125,7 @@ npm run dev
 ## 🔌 API Endpoints
 
 ### Auth (Авторизация)
+
 ```
 POST   /api/v1/auth/register      - Регистрация
 POST   /api/v1/auth/login         - Вход
@@ -104,6 +136,7 @@ POST   /api/v1/auth/logout        - Выход (🔒)
 ```
 
 ### Books (Книги)
+
 ```
 GET    /api/v1/books              - Список книг
 GET    /api/v1/books/:id          - Книга по ID
@@ -116,6 +149,7 @@ DELETE /api/v1/books/:id          - Удалить книгу (🔒 Admin)
 ```
 
 ### Authors (Авторы)
+
 ```
 GET    /api/v1/authors            - Список авторов
 GET    /api/v1/authors/:id        - Автор по ID
@@ -127,6 +161,7 @@ DELETE /api/v1/authors/:id        - Удалить автора (🔒 Admin)
 ```
 
 ### Cart (Корзина)
+
 ```
 GET    /api/v1/cart               - Получить корзину (🔒)
 POST   /api/v1/cart               - Добавить в корзину (🔒)
@@ -138,6 +173,7 @@ POST   /api/v1/cart/sync          - Синхронизация цен (🔒)
 ```
 
 ### Orders (Заказы)
+
 ```
 # Пользовательские
 POST   /api/v1/orders             - Создать заказ (🔒)
@@ -153,6 +189,7 @@ PATCH  /api/v1/orders/:id/pay     - Пометить оплаченным (🔒 
 ```
 
 ### Users (Пользователи - Admin)
+
 ```
 GET    /api/v1/users              - Список пользователей (🔒 Admin)
 GET    /api/v1/users/:id          - Пользователь по ID (🔒 Admin)
@@ -171,6 +208,7 @@ DELETE /api/v1/users/:id/permanent - Полное удаление (🔒 Admin)
 ## 🧪 Тестирование API
 
 ### 1. Регистрация
+
 ```bash
 curl -X POST http://localhost:5000/api/v1/auth/register \
   -H "Content-Type: application/json" \
@@ -184,6 +222,7 @@ curl -X POST http://localhost:5000/api/v1/auth/register \
 ```
 
 ### 2. Логин
+
 ```bash
 curl -X POST http://localhost:5000/api/v1/auth/login \
   -H "Content-Type: application/json" \
@@ -196,6 +235,7 @@ curl -X POST http://localhost:5000/api/v1/auth/login \
 Сохраните полученный `token` для дальнейших запросов.
 
 ### 3. Создание автора (Admin)
+
 ```bash
 curl -X POST http://localhost:5000/api/v1/authors \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -209,6 +249,7 @@ curl -X POST http://localhost:5000/api/v1/authors \
 ```
 
 ### 4. Создание книги (Admin)
+
 ```bash
 curl -X POST http://localhost:5000/api/v1/books \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -225,6 +266,7 @@ curl -X POST http://localhost:5000/api/v1/books \
 ```
 
 ### 5. Добавить в корзину
+
 ```bash
 curl -X POST http://localhost:5000/api/v1/cart \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -236,6 +278,7 @@ curl -X POST http://localhost:5000/api/v1/cart \
 ```
 
 ### 6. Оформить заказ
+
 ```bash
 curl -X POST http://localhost:5000/api/v1/orders \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -287,6 +330,7 @@ Authorization: Bearer YOUR_TOKEN_HERE
 ## 📊 Формат ответов
 
 ### Успешный ответ
+
 ```json
 {
   "success": true,
@@ -295,6 +339,7 @@ Authorization: Bearer YOUR_TOKEN_HERE
 ```
 
 ### Ответ с пагинацией
+
 ```json
 {
   "success": true,
@@ -311,6 +356,7 @@ Authorization: Bearer YOUR_TOKEN_HERE
 ```
 
 ### Ошибка
+
 ```json
 {
   "success": false,
@@ -352,45 +398,67 @@ Authorization: Bearer YOUR_TOKEN_HERE
 ## 📝 Зависимости
 
 ### Production
+
 ```json
 {
-  "bcrypt": "^5.1.1",           // Хеширование паролей
-  "cors": "^2.8.5",             // CORS
-  "dotenv": "^16.4.7",          // Переменные окружения
-  "express": "^4.21.2",         // Web фреймворк
-  "helmet": "^8.0.0",           // Безопасность
-  "jsonwebtoken": "^9.0.2",     // JWT токены
-  "mongoose": "^8.9.2",         // MongoDB ODM
-  "morgan": "^1.10.0"           // HTTP логирование
+  "bcrypt": "^5.1.1", // Хеширование паролей
+  "cors": "^2.8.5", // CORS
+  "dotenv": "^16.4.7", // Переменные окружения
+  "express": "^4.21.2", // Web фреймворк
+  "helmet": "^8.0.0", // Безопасность
+  "jsonwebtoken": "^9.0.2", // JWT токены
+  "mongoose": "^8.9.2", // MongoDB ODM
+  "morgan": "^1.10.0" // HTTP логирование
 }
 ```
 
 ### Development
+
 ```json
 {
-  "nodemon": "^3.1.9"           // Автоперезагрузка
+  "nodemon": "^3.1.9" // Автоперезагрузка
 }
 ```
 
 ## 📖 Документация
 
-- **CLEAN_MVC_GUIDE.md** - Руководство по архитектуре
-- **PROGRESS.md** - История разработки
-- **REFACTORING_COMPLETE.md** - Итоги рефакторинга
+### Основная документация
+
+- **README.md** (этот файл) - Общий обзор и API
+- **config/README.md** - Документация по конфигурации
+- **config/QUICK_REFERENCE.md** - Быстрая справка по config
+
+### Архивная документация
+
+- **docs/CONFIG_REFACTORING.md** - История рефакторинга конфигурации
+- **docs/REFACTORING_SUMMARY.md** - Общая сводка по рефакторингу
+- **docs/archive/** - Старые документы разработки
 
 ## 🎯 Особенности
 
+### Архитектура
+
 - ✅ Clean MVC архитектура
-- ✅ Полное разделение слоёв
+- ✅ Полное разделение слоёв (Model-Service-Controller)
+- ✅ Централизованная конфигурация
 - ✅ Централизованная обработка ошибок
+
+### Безопасность
+
 - ✅ JWT авторизация
 - ✅ Ролевой доступ (RBAC)
+- ✅ Хеширование паролей (bcrypt)
+- ✅ Helmet security headers
+- ✅ CORS настройка
+
+### Функциональность
+
 - ✅ Пагинация
 - ✅ Полнотекстовый поиск
 - ✅ Валидация данных
-- ✅ Безопасность (helmet, CORS)
 - ✅ HTTP логирование (morgan)
 - ✅ Асинхронная обработка
+- ✅ Graceful shutdown
 
 ## 🧹 Структура кода
 
@@ -401,23 +469,23 @@ Authorization: Bearer YOUR_TOKEN_HERE
 const bookSchema = new Schema({
   title: String,
   // ...
-});
+})
 
 // Service (services/bookService.js)
 export async function getBooks(filters) {
   // Бизнес-логика
-  const books = await Book.find(filters);
-  return books;
+  const books = await Book.find(filters)
+  return books
 }
 
 // Controller (controllers/bookController.js)
 export async function getBooks(req, res) {
-  const books = await bookService.getBooks(req.query);
-  res.json({ success: true, data: books });
+  const books = await bookService.getBooks(req.query)
+  res.json({ success: true, data: books })
 }
 
 // Routes (routes/books.js)
-router.get('/', asyncHandler(bookController.getBooks));
+router.get('/', asyncHandler(bookController.getBooks))
 ```
 
 ## 🚦 Status Codes
