@@ -7,7 +7,7 @@ import { computed, ref } from 'vue'
 /**
  * Composable for managing user operations in admin panel
  * Provides centralized user management logic with roles and dialog handling
- * 
+ *
  * @param {Object} options - Configuration options
  * @returns {Object} User management state and methods
  */
@@ -16,10 +16,20 @@ export function useUserManagement(options = {}) {
 
     // Stores
     const usersStore = useUsersStore()
-    const { roles, loading: rolesLoading, loadRoles, getRoleName, getRoleColor } = useRoles({ autoLoad })
+    const { roles, loading: rolesLoading, getRoleName, getRoleColor } = useRoles({ autoLoad })
 
     // Dialog management
-    const { dialogs, selectedItem, formLoading, formErrors, openDialog, closeDialogs, setFormLoading, setFormErrors, clearFormErrors } = useEntityDialog({ entityName: 'user' })
+    const {
+        dialogs,
+        selectedItem,
+        formLoading,
+        formErrors,
+        openDialog,
+        closeDialogs,
+        setFormLoading,
+        setFormErrors,
+        clearFormErrors,
+    } = useEntityDialog({ entityName: 'user' })
 
     // Local state
     const page = ref(1)
@@ -33,7 +43,7 @@ export function useUserManagement(options = {}) {
         email: '',
         password: '',
         confirmPassword: '',
-        role: 'user'
+        role: 'user',
     })
 
     // Computed properties
@@ -53,10 +63,11 @@ export function useUserManagement(options = {}) {
         // Search filter
         if (search.value) {
             const query = search.value.toLowerCase()
-            result = result.filter(user =>
-                user.username?.toLowerCase().includes(query) ||
-                user.email?.toLowerCase().includes(query) ||
-                user.name?.toLowerCase().includes(query)
+            result = result.filter(
+                (user) =>
+                    user.username?.toLowerCase().includes(query) ||
+                    user.email?.toLowerCase().includes(query) ||
+                    user.name?.toLowerCase().includes(query)
             )
         }
 
@@ -87,7 +98,7 @@ export function useUserManagement(options = {}) {
                 email: user.email || '',
                 password: '',
                 confirmPassword: '',
-                role: user.role || 'user'
+                role: user.role || 'user',
             }
             openDialog('edit', user)
         } else {
@@ -97,7 +108,7 @@ export function useUserManagement(options = {}) {
                 email: '',
                 password: '',
                 confirmPassword: '',
-                role: 'user'
+                role: 'user',
             }
             openDialog('create')
         }
@@ -111,7 +122,7 @@ export function useUserManagement(options = {}) {
             email: '',
             password: '',
             confirmPassword: '',
-            role: 'user'
+            role: 'user',
         }
         clearFormErrors()
     }
@@ -147,7 +158,7 @@ export function useUserManagement(options = {}) {
             const userData = {
                 username: editedUser.value.username,
                 email: editedUser.value.email,
-                role: editedUser.value.role
+                role: editedUser.value.role,
             }
 
             if (!isEditMode.value) {
@@ -226,7 +237,7 @@ export function useUserManagement(options = {}) {
         error,
         roles,
         rolesLoading,
-        
+
         // Dialog state
         userDialogOpen,
         deleteDialogOpen,
@@ -235,14 +246,14 @@ export function useUserManagement(options = {}) {
         selectedUser: selectedItem,
         formLoading,
         formErrors,
-        
+
         // Table state
         page,
         itemsPerPage,
         sortBy,
         search,
         totalItems,
-        
+
         // Methods
         loadUsers,
         openUserDialog,
@@ -251,16 +262,16 @@ export function useUserManagement(options = {}) {
         closeDeleteDialog,
         saveUser,
         deleteUser,
-        
+
         // Table handlers
         updatePage,
         updateItemsPerPage,
         updateSortBy,
         updateSearch,
         resetFilters,
-        
+
         // Role helpers
         getRoleName,
-        getRoleColor
+        getRoleColor,
     }
 }

@@ -1,10 +1,22 @@
 <template>
     <div class="admin-orders">
         <!-- Orders management data table -->
-        <admin-data-table :headers="headers" :items="orders" :loading="loading" :total-items="totalItems" :page="page"
-            :items-per-page="itemsPerPage" :sort-by="sortBy" :search="search" title="Orders Management"
-            @update:page="updatePage" @update:items-per-page="updateItemsPerPage" @update:sort-by="updateSortBy"
-            @update:search="updateSearch" @reset-filters="resetFilters">
+        <admin-data-table
+            :headers="headers"
+            :items="orders"
+            :loading="loading"
+            :total-items="totalItems"
+            :page="page"
+            :items-per-page="itemsPerPage"
+            :sort-by="sortBy"
+            :search="search"
+            title="Orders Management"
+            @update:page="updatePage"
+            @update:items-per-page="updateItemsPerPage"
+            @update:sort-by="updateSortBy"
+            @update:search="updateSearch"
+            @reset-filters="resetFilters"
+        >
             <!-- Table actions -->
             <template #actions>
                 <v-btn color="primary" prepend-icon="mdi-reload" @click="loadOrders"> Refresh Orders </v-btn>
@@ -25,13 +37,25 @@
             <!-- Actions column -->
             <template #item.actions="{ item }">
                 <div class="d-flex justify-center">
-                    <v-btn icon variant="text" size="small" color="primary" class="mr-1"
-                        @click="viewOrderDetails(item.raw)">
+                    <v-btn
+                        icon
+                        variant="text"
+                        size="small"
+                        color="primary"
+                        class="mr-1"
+                        @click="viewOrderDetails(item.raw)"
+                    >
                         <v-icon>mdi-eye</v-icon>
                         <v-tooltip activator="parent" location="top">View Details</v-tooltip>
                     </v-btn>
-                    <v-btn icon variant="text" size="small" color="warning" class="mr-1"
-                        @click="updateOrderStatus(item.raw)">
+                    <v-btn
+                        icon
+                        variant="text"
+                        size="small"
+                        color="warning"
+                        class="mr-1"
+                        @click="updateOrderStatus(item.raw)"
+                    >
                         <v-icon>mdi-pencil</v-icon>
                         <v-tooltip activator="parent" location="top">Update Status</v-tooltip>
                     </v-btn>
@@ -53,8 +77,11 @@
                             <p><strong>Date:</strong> {{ new Date(detailsOrder.createdAt).toLocaleString() }}</p>
                             <p>
                                 <strong>Status:</strong>
-                                <v-chip size="small" :color="getStatusColor(detailsOrder.status)"
-                                    class="text-uppercase">
+                                <v-chip
+                                    size="small"
+                                    :color="getStatusColor(detailsOrder.status)"
+                                    class="text-uppercase"
+                                >
                                     {{ detailsOrder.status }}
                                 </v-chip>
                             </p>
@@ -110,9 +137,14 @@
 
                 <v-card-text class="pt-4">
                     <v-form ref="statusForm" validate-on="submit" @submit.prevent="handleSaveOrderStatus">
-                        <v-select v-model="editedStatus"
-                            :items="['pending', 'processing', 'shipped', 'delivered', 'cancelled']" label="Status"
-                            variant="outlined" :rules="[(v) => !!v || 'Status is required']" required></v-select>
+                        <v-select
+                            v-model="editedStatus"
+                            :items="['pending', 'processing', 'shipped', 'delivered', 'cancelled']"
+                            label="Status"
+                            variant="outlined"
+                            :rules="[(v) => !!v || 'Status is required']"
+                            required
+                        ></v-select>
                     </v-form>
                 </v-card-text>
 

@@ -11,9 +11,17 @@
 
                 <!-- Search Bar -->
                 <v-col cols="auto" class="mr-4">
-                    <v-text-field v-model="searchQuery" placeholder="Search..." prepend-inner-icon="mdi-magnify"
-                        variant="outlined" density="compact" hide-details clearable style="max-width: 300px"
-                        @input="handleSearch"></v-text-field>
+                    <v-text-field
+                        v-model="searchQuery"
+                        placeholder="Search..."
+                        prepend-inner-icon="mdi-magnify"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        clearable
+                        style="max-width: 300px"
+                        @input="handleSearch"
+                    ></v-text-field>
                 </v-col>
 
                 <!-- User Menu -->

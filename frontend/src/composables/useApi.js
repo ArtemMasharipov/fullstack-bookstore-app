@@ -5,13 +5,7 @@ import { computed, ref } from 'vue'
  * API composable - handles async operations with loading and error states
  */
 export function useApi(apiCall, options = {}) {
-    const {
-        autoExecute = false,
-        onSuccess,
-        onError,
-        showErrorToast = true,
-        context = 'api'
-    } = options
+    const { autoExecute = false, onSuccess, onError, showErrorToast = true, context = 'api' } = options
 
     // Reactive state
     const loading = ref(false)
@@ -35,7 +29,7 @@ export function useApi(apiCall, options = {}) {
         try {
             const result = await apiCall(params)
             data.value = result
-            
+
             // Call success callback if provided
             if (onSuccess) {
                 onSuccess(result)
@@ -46,24 +40,26 @@ export function useApi(apiCall, options = {}) {
         } catch (err) {
             const errorMessage = err?.response?.data?.message || err.message || 'An error occurred'
             error.value = errorMessage
-            
+
             // Call error callback if provided
             if (onError) {
                 onError(err)
             }
 
             logger.error(`API call failed: ${errorMessage}`, err, context)
-            
+
             // Show error toast if enabled
             if (showErrorToast) {
                 // Import useNotifications dynamically to avoid circular dependencies
-                import('@/composables/useNotifications').then(({ useNotifications }) => {
-                    const { showError } = useNotifications()
-                    showError(errorMessage, { icon: 'mdi-alert-circle' })
-                }).catch(() => {
-                    // Fallback to console if notifications are not available
-                    console.error('Error:', errorMessage)
-                })
+                import('@/composables/useNotifications')
+                    .then(({ useNotifications }) => {
+                        const { showError } = useNotifications()
+                        showError(errorMessage, { icon: 'mdi-alert-circle' })
+                    })
+                    .catch(() => {
+                        // Fallback to console if notifications are not available
+                        console.error('Error:', errorMessage)
+                    })
             }
 
             throw err
@@ -98,16 +94,16 @@ export function useApi(apiCall, options = {}) {
         loading: isLoading,
         error: computed(() => error.value),
         data: computed(() => data.value),
-        
+
         // Computed
         isLoading,
         hasError,
         isSuccess,
-        
+
         // Methods
         execute,
         reset,
-        clearError
+        clearError,
     }
 }
 
@@ -115,35 +111,32 @@ export function useApi(apiCall, options = {}) {
  * CRUD API composable - handles CRUD operations
  */
 export function useCrudApi(api, options = {}) {
-    const {
-        context = 'crud',
-        showErrorToast = true
-    } = options
+    const { context = 'crud', showErrorToast = true } = options
 
     // Individual API composables for each operation
-    const fetchAll = useApi(api.fetchAll || api.getAll, { 
-        context: `${context}-fetch`, 
-        showErrorToast 
+    const fetchAll = useApi(api.fetchAll || api.getAll, {
+        context: `${context}-fetch`,
+        showErrorToast,
     })
-    
-    const fetchById = useApi(api.fetchById || api.getById, { 
-        context: `${context}-fetch-by-id`, 
-        showErrorToast 
+
+    const fetchById = useApi(api.fetchById || api.getById, {
+        context: `${context}-fetch-by-id`,
+        showErrorToast,
     })
-    
-    const create = useApi(api.create, { 
-        context: `${context}-create`, 
-        showErrorToast 
+
+    const create = useApi(api.create, {
+        context: `${context}-create`,
+        showErrorToast,
     })
-    
-    const update = useApi(api.update, { 
-        context: `${context}-update`, 
-        showErrorToast 
+
+    const update = useApi(api.update, {
+        context: `${context}-update`,
+        showErrorToast,
     })
-    
-    const remove = useApi(api.delete || api.remove, { 
-        context: `${context}-delete`, 
-        showErrorToast 
+
+    const remove = useApi(api.delete || api.remove, {
+        context: `${context}-delete`,
+        showErrorToast,
     })
 
     return {
@@ -153,24 +146,26 @@ export function useCrudApi(api, options = {}) {
         create,
         update,
         remove,
-        
+
         // Combined state
-        loading: computed(() => 
-            fetchAll.isLoading.value || 
-            fetchById.isLoading.value || 
-            create.isLoading.value || 
-            update.isLoading.value || 
-            remove.isLoading.value
+        loading: computed(
+            () =>
+                fetchAll.isLoading.value ||
+                fetchById.isLoading.value ||
+                create.isLoading.value ||
+                update.isLoading.value ||
+                remove.isLoading.value
         ),
-        
-        error: computed(() => 
-            fetchAll.error.value || 
-            fetchById.error.value || 
-            create.error.value || 
-            update.error.value || 
-            remove.error.value
+
+        error: computed(
+            () =>
+                fetchAll.error.value ||
+                fetchById.error.value ||
+                create.error.value ||
+                update.error.value ||
+                remove.error.value
         ),
-        
+
         // Combined methods
         resetAll: () => {
             fetchAll.reset()
@@ -179,13 +174,13 @@ export function useCrudApi(api, options = {}) {
             update.reset()
             remove.reset()
         },
-        
+
         clearAllErrors: () => {
             fetchAll.clearError()
             fetchById.clearError()
             create.clearError()
             update.clearError()
             remove.clearError()
-        }
+        },
     }
 }

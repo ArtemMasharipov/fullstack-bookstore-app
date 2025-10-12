@@ -4,15 +4,31 @@
             <LoadingSpinner />
         </div>
         <template v-else>
-            <v-alert v-if="!cartItems.length" text="Your cart is empty" type="info" class="text-center py-8"
-                variant="tonal" icon="mdi-cart-off"></v-alert>
+            <v-alert
+                v-if="!cartItems.length"
+                text="Your cart is empty"
+                type="info"
+                class="text-center py-8"
+                variant="tonal"
+                icon="mdi-cart-off"
+            ></v-alert>
             <template v-else>
                 <div>
-                    <CartItem v-for="item in cartItems" :key="item.bookId._id" :item="item"
-                        @remove="handleRemoveFromCart" @update-quantity="updateQuantity" />
+                    <CartItem
+                        v-for="item in cartItems"
+                        :key="item.bookId._id"
+                        :item="item"
+                        @remove="handleRemoveFromCart"
+                        @update-quantity="updateQuantity"
+                    />
                     <div class="d-flex justify-end mt-6">
-                        <v-btn v-if="isAuthenticated" color="primary" to="/checkout" size="large"
-                            prepend-icon="mdi-cart-check">
+                        <v-btn
+                            v-if="isAuthenticated"
+                            color="primary"
+                            to="/checkout"
+                            size="large"
+                            prepend-icon="mdi-cart-check"
+                        >
                             Proceed to Checkout
                         </v-btn>
                         <v-btn v-else color="primary" to="/login" size="large" prepend-icon="mdi-login">

@@ -62,7 +62,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 // Extract reactive state from stores
-const { loading: authLoading, error: authError, isAuthenticated, currentUser } = storeToRefs(authStore)
+const { loading: authLoading, error: authError, isAuthenticated } = storeToRefs(authStore)
 
 // Local reactive state
 const email = ref('')

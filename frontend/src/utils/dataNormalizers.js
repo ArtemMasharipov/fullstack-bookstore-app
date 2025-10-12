@@ -1,7 +1,7 @@
 /**
  * Data Normalizers
  * Централизованная нормализация данных для устранения дублирования
- * 
+ *
  * Принципы:
  * - DRY: единая логика нормализации
  * - Type Safety: гарантированные типы данных
@@ -15,18 +15,18 @@
  * @returns {number} - нормализованная цена
  */
 export const normalizePrice = (price) => {
-  if (typeof price === 'number') {
-    return price
-  }
-  
-  if (typeof price === 'string') {
-    // Удаляем все символы кроме цифр и точки
-    const cleanPrice = price.replace(/[^0-9.]/g, '')
-    const parsed = parseFloat(cleanPrice)
-    return isNaN(parsed) ? 0 : parsed
-  }
-  
-  return 0
+    if (typeof price === 'number') {
+        return price
+    }
+
+    if (typeof price === 'string') {
+        // Удаляем все символы кроме цифр и точки
+        const cleanPrice = price.replace(/[^0-9.]/g, '')
+        const parsed = parseFloat(cleanPrice)
+        return isNaN(parsed) ? 0 : parsed
+    }
+
+    return 0
 }
 
 /**
@@ -35,19 +35,19 @@ export const normalizePrice = (price) => {
  * @returns {boolean} - нормализованное булево значение
  */
 export const normalizeBoolean = (value) => {
-  if (typeof value === 'boolean') {
-    return value
-  }
-  
-  if (typeof value === 'string') {
-    return value.toLowerCase() === 'true' || value === '1' || value.toLowerCase() === 'yes'
-  }
-  
-  if (typeof value === 'number') {
-    return value === 1
-  }
-  
-  return Boolean(value)
+    if (typeof value === 'boolean') {
+        return value
+    }
+
+    if (typeof value === 'string') {
+        return value.toLowerCase() === 'true' || value === '1' || value.toLowerCase() === 'yes'
+    }
+
+    if (typeof value === 'number') {
+        return value === 1
+    }
+
+    return Boolean(value)
 }
 
 /**
@@ -56,8 +56,8 @@ export const normalizeBoolean = (value) => {
  * @returns {number} - нормализованное количество
  */
 export const normalizeQuantity = (quantity) => {
-  const num = normalizePrice(quantity)
-  return Math.max(0, Math.floor(num))
+    const num = normalizePrice(quantity)
+    return Math.max(0, Math.floor(num))
 }
 
 /**
@@ -66,17 +66,17 @@ export const normalizeQuantity = (quantity) => {
  * @returns {string|null} - нормализованный ID
  */
 export const normalizeId = (id) => {
-  if (!id) return null
-  
-  if (typeof id === 'string') {
-    return id.trim()
-  }
-  
-  if (typeof id === 'object' && id.toString) {
-    return id.toString()
-  }
-  
-  return String(id)
+    if (!id) return null
+
+    if (typeof id === 'string') {
+        return id.trim()
+    }
+
+    if (typeof id === 'object' && id.toString) {
+        return id.toString()
+    }
+
+    return String(id)
 }
 
 /**
@@ -86,15 +86,15 @@ export const normalizeId = (id) => {
  * @returns {string} - нормализованная строка
  */
 export const normalizeString = (str, defaultValue = '') => {
-  if (typeof str === 'string') {
-    return str.trim()
-  }
-  
-  if (str === null || str === undefined) {
-    return defaultValue
-  }
-  
-  return String(str).trim()
+    if (typeof str === 'string') {
+        return str.trim()
+    }
+
+    if (str === null || str === undefined) {
+        return defaultValue
+    }
+
+    return String(str).trim()
 }
 
 /**
@@ -103,14 +103,14 @@ export const normalizeString = (str, defaultValue = '') => {
  * @returns {Date|null} - нормализованная дата
  */
 export const normalizeDate = (date) => {
-  if (!date) return null
-  
-  if (date instanceof Date) {
-    return date
-  }
-  
-  const parsed = new Date(date)
-  return isNaN(parsed.getTime()) ? null : parsed
+    if (!date) return null
+
+    if (date instanceof Date) {
+        return date
+    }
+
+    const parsed = new Date(date)
+    return isNaN(parsed.getTime()) ? null : parsed
 }
 
 /**
@@ -119,23 +119,23 @@ export const normalizeDate = (date) => {
  * @returns {Object} - нормализованная книга
  */
 export const normalizeBook = (book) => {
-  if (!book || typeof book !== 'object') {
-    return null
-  }
+    if (!book || typeof book !== 'object') {
+        return null
+    }
 
-  return {
-    _id: normalizeId(book._id || book.id),
-    title: normalizeString(book.title),
-    author: book.author, // Может быть объектом или ID
-    publicationYear: normalizeQuantity(book.publicationYear),
-    category: normalizeString(book.category),
-    description: normalizeString(book.description),
-    price: normalizePrice(book.price),
-    image: normalizeString(book.image),
-    inStock: normalizeBoolean(book.inStock),
-    createdAt: normalizeDate(book.createdAt),
-    updatedAt: normalizeDate(book.updatedAt),
-  }
+    return {
+        _id: normalizeId(book._id || book.id),
+        title: normalizeString(book.title),
+        author: book.author, // Может быть объектом или ID
+        publicationYear: normalizeQuantity(book.publicationYear),
+        category: normalizeString(book.category),
+        description: normalizeString(book.description),
+        price: normalizePrice(book.price),
+        image: normalizeString(book.image),
+        inStock: normalizeBoolean(book.inStock),
+        createdAt: normalizeDate(book.createdAt),
+        updatedAt: normalizeDate(book.updatedAt),
+    }
 }
 
 /**
@@ -144,13 +144,11 @@ export const normalizeBook = (book) => {
  * @returns {Array} - массив нормализованных книг
  */
 export const normalizeBooks = (books) => {
-  if (!Array.isArray(books)) {
-    return []
-  }
+    if (!Array.isArray(books)) {
+        return []
+    }
 
-  return books
-    .map(normalizeBook)
-    .filter(book => book !== null)
+    return books.map(normalizeBook).filter((book) => book !== null)
 }
 
 /**
@@ -159,20 +157,20 @@ export const normalizeBooks = (books) => {
  * @returns {Object} - нормализованный автор
  */
 export const normalizeAuthor = (author) => {
-  if (!author || typeof author !== 'object') {
-    return null
-  }
+    if (!author || typeof author !== 'object') {
+        return null
+    }
 
-  return {
-    _id: normalizeId(author._id),
-    name: normalizeString(author.name),
-    biography: normalizeString(author.biography),
-    birthYear: normalizeQuantity(author.birthYear),
-    deathYear: author.deathYear ? normalizeQuantity(author.deathYear) : null,
-    nationality: normalizeString(author.nationality),
-    createdAt: normalizeDate(author.createdAt),
-    updatedAt: normalizeDate(author.updatedAt),
-  }
+    return {
+        _id: normalizeId(author._id),
+        name: normalizeString(author.name),
+        biography: normalizeString(author.biography),
+        birthYear: normalizeQuantity(author.birthYear),
+        deathYear: author.deathYear ? normalizeQuantity(author.deathYear) : null,
+        nationality: normalizeString(author.nationality),
+        createdAt: normalizeDate(author.createdAt),
+        updatedAt: normalizeDate(author.updatedAt),
+    }
 }
 
 /**
@@ -181,18 +179,18 @@ export const normalizeAuthor = (author) => {
  * @returns {Object} - нормализованный пользователь
  */
 export const normalizeUser = (user) => {
-  if (!user || typeof user !== 'object') {
-    return null
-  }
+    if (!user || typeof user !== 'object') {
+        return null
+    }
 
-  return {
-    _id: normalizeId(user._id),
-    username: normalizeString(user.username),
-    email: normalizeString(user.email),
-    role: user.role, // Может быть объектом или строкой
-    createdAt: normalizeDate(user.createdAt),
-    updatedAt: normalizeDate(user.updatedAt),
-  }
+    return {
+        _id: normalizeId(user._id),
+        username: normalizeString(user.username),
+        email: normalizeString(user.email),
+        role: user.role, // Может быть объектом или строкой
+        createdAt: normalizeDate(user.createdAt),
+        updatedAt: normalizeDate(user.updatedAt),
+    }
 }
 
 /**
@@ -201,18 +199,18 @@ export const normalizeUser = (user) => {
  * @returns {Object} - нормализованный товар корзины
  */
 export const normalizeCartItem = (item) => {
-  if (!item || typeof item !== 'object') {
-    return null
-  }
+    if (!item || typeof item !== 'object') {
+        return null
+    }
 
-  return {
-    _id: normalizeId(item._id),
-    book: item.book ? normalizeBook(item.book) : null,
-    bookId: normalizeId(item.bookId),
-    quantity: normalizeQuantity(item.quantity),
-    price: normalizePrice(item.price),
-    total: normalizePrice(item.total),
-  }
+    return {
+        _id: normalizeId(item._id),
+        book: item.book ? normalizeBook(item.book) : null,
+        bookId: normalizeId(item.bookId),
+        quantity: normalizeQuantity(item.quantity),
+        price: normalizePrice(item.price),
+        total: normalizePrice(item.total),
+    }
 }
 
 /**
@@ -221,27 +219,25 @@ export const normalizeCartItem = (item) => {
  * @returns {Object} - нормализованная корзина
  */
 export const normalizeCart = (cart) => {
-  if (!cart || typeof cart !== 'object') {
-    return {
-      items: [],
-      total: 0,
-      itemCount: 0
+    if (!cart || typeof cart !== 'object') {
+        return {
+            items: [],
+            total: 0,
+            itemCount: 0,
+        }
     }
-  }
 
-  const items = Array.isArray(cart.items) 
-    ? cart.items.map(normalizeCartItem).filter(item => item !== null)
-    : []
+    const items = Array.isArray(cart.items) ? cart.items.map(normalizeCartItem).filter((item) => item !== null) : []
 
-  return {
-    _id: normalizeId(cart._id),
-    userId: normalizeId(cart.userId),
-    items,
-    total: normalizePrice(cart.total),
-    itemCount: items.length,
-    createdAt: normalizeDate(cart.createdAt),
-    updatedAt: normalizeDate(cart.updatedAt),
-  }
+    return {
+        _id: normalizeId(cart._id),
+        userId: normalizeId(cart.userId),
+        items,
+        total: normalizePrice(cart.total),
+        itemCount: items.length,
+        createdAt: normalizeDate(cart.createdAt),
+        updatedAt: normalizeDate(cart.updatedAt),
+    }
 }
 
 /**
@@ -250,22 +246,20 @@ export const normalizeCart = (cart) => {
  * @returns {Object} - нормализованный заказ
  */
 export const normalizeOrder = (order) => {
-  if (!order || typeof order !== 'object') {
-    return null
-  }
+    if (!order || typeof order !== 'object') {
+        return null
+    }
 
-  return {
-    _id: normalizeId(order._id),
-    userId: normalizeId(order.userId),
-    items: Array.isArray(order.items) 
-      ? order.items.map(normalizeCartItem).filter(item => item !== null)
-      : [],
-    total: normalizePrice(order.total),
-    status: normalizeString(order.status, 'pending'),
-    shippingAddress: order.shippingAddress || {},
-    createdAt: normalizeDate(order.createdAt),
-    updatedAt: normalizeDate(order.updatedAt),
-  }
+    return {
+        _id: normalizeId(order._id),
+        userId: normalizeId(order.userId),
+        items: Array.isArray(order.items) ? order.items.map(normalizeCartItem).filter((item) => item !== null) : [],
+        total: normalizePrice(order.total),
+        status: normalizeString(order.status, 'pending'),
+        shippingAddress: order.shippingAddress || {},
+        createdAt: normalizeDate(order.createdAt),
+        updatedAt: normalizeDate(order.updatedAt),
+    }
 }
 
 /**
@@ -274,21 +268,21 @@ export const normalizeOrder = (order) => {
  * @returns {Object} - нормализованная пагинация
  */
 export const normalizePagination = (pagination) => {
-  if (!pagination || typeof pagination !== 'object') {
-    return {
-      page: 1,
-      limit: 10,
-      total: 0,
-      pages: 0
+    if (!pagination || typeof pagination !== 'object') {
+        return {
+            page: 1,
+            limit: 10,
+            total: 0,
+            pages: 0,
+        }
     }
-  }
 
-  return {
-    page: Math.max(1, normalizeQuantity(pagination.page)),
-    limit: Math.max(1, normalizeQuantity(pagination.limit)),
-    total: Math.max(0, normalizeQuantity(pagination.total)),
-    pages: Math.max(0, normalizeQuantity(pagination.pages)),
-  }
+    return {
+        page: Math.max(1, normalizeQuantity(pagination.page)),
+        limit: Math.max(1, normalizeQuantity(pagination.limit)),
+        total: Math.max(0, normalizeQuantity(pagination.total)),
+        pages: Math.max(0, normalizeQuantity(pagination.pages)),
+    }
 }
 
 /**
@@ -297,74 +291,68 @@ export const normalizePagination = (pagination) => {
  * @returns {Object} - нормализованный ответ
  */
 export const normalizeApiResponse = (response) => {
-  if (!response) {
-    return {
-      success: false,
-      data: null,
-      error: 'No response received'
+    if (!response) {
+        return {
+            success: false,
+            data: null,
+            error: 'No response received',
+        }
     }
-  }
 
-  if (typeof response === 'object') {
-    return {
-      success: normalizeBoolean(response.success),
-      data: response.data || null,
-      error: normalizeString(response.error),
-      status: normalizeQuantity(response.status),
-      pagination: response.pagination ? normalizePagination(response.pagination) : null,
+    if (typeof response === 'object') {
+        return {
+            success: normalizeBoolean(response.success),
+            data: response.data || null,
+            error: normalizeString(response.error),
+            status: normalizeQuantity(response.status),
+            pagination: response.pagination ? normalizePagination(response.pagination) : null,
+        }
     }
-  }
 
-  return {
-    success: true,
-    data: response,
-    error: null
-  }
+    return {
+        success: true,
+        data: response,
+        error: null,
+    }
 }
 
 /**
  * Утилиты для работы с нормализованными данными
  */
 export const dataUtils = {
-  /**
-   * Проверка валидности книги
-   */
-  isValidBook: (book) => {
-    return book && 
-           book._id && 
-           book.title && 
-           book.price >= 0 && 
-           typeof book.inStock === 'boolean'
-  },
+    /**
+     * Проверка валидности книги
+     */
+    isValidBook: (book) => {
+        return book && book._id && book.title && book.price >= 0 && typeof book.inStock === 'boolean'
+    },
 
-  /**
-   * Проверка валидности корзины
-   */
-  isValidCart: (cart) => {
-    return cart && 
-           Array.isArray(cart.items) && 
-           cart.total >= 0
-  },
+    /**
+     * Проверка валидности корзины
+     */
+    isValidCart: (cart) => {
+        return cart && Array.isArray(cart.items) && cart.total >= 0
+    },
 
-  /**
-   * Получение общей стоимости корзины
-   */
-  calculateCartTotal: (items) => {
-    if (!Array.isArray(items)) return 0
-    
-    return items.reduce((total, item) => {
-      return total + (normalizePrice(item.price) * normalizeQuantity(item.quantity))
-    }, 0)
-  },
+    /**
+     * Получение общей стоимости корзины
+     */
+    calculateCartTotal: (items) => {
+        if (!Array.isArray(items)) return 0
 
-  /**
-   * Получение количества товаров в корзине
-   */
-  getCartItemCount: (items) => {
-    if (!Array.isArray(items)) return 0
-    
-    return items.reduce((count, item) => {
-      return count + normalizeQuantity(item.quantity)
-    }, 0)
-  }
+        return items.reduce((total, item) => {
+            return total + normalizePrice(item.price) * normalizeQuantity(item.quantity)
+        }, 0)
+    },
+
+    /**
+     * Получение количества товаров в корзине
+     */
+    getCartItemCount: (items) => {
+        if (!Array.isArray(items)) return 0
+
+        return items.reduce((count, item) => {
+            return count + normalizeQuantity(item.quantity)
+        }, 0)
+    },
 }

@@ -27,7 +27,10 @@
                                 type="email"
                                 variant="outlined"
                                 density="comfortable"
-                                :rules="[(v) => !!v || 'Email is required', (v) => /.+@.+\..+/.test(v) || 'Email must be valid']"
+                                :rules="[
+                                    (v) => !!v || 'Email is required',
+                                    (v) => /.+@.+\..+/.test(v) || 'Email must be valid',
+                                ]"
                                 :error-messages="formErrors.email"
                                 required
                             />
@@ -42,7 +45,10 @@
                                 type="password"
                                 variant="outlined"
                                 density="comfortable"
-                                :rules="[(v) => !!v || 'Password is required', (v) => v.length >= 6 || 'Password must be at least 6 characters']"
+                                :rules="[
+                                    (v) => !!v || 'Password is required',
+                                    (v) => v.length >= 6 || 'Password must be at least 6 characters',
+                                ]"
                                 :error-messages="formErrors.password"
                                 required
                             />
@@ -54,7 +60,10 @@
                                 type="password"
                                 variant="outlined"
                                 density="comfortable"
-                                :rules="[(v) => !!v || 'Please confirm password', (v) => v === userData.password || 'Passwords do not match']"
+                                :rules="[
+                                    (v) => !!v || 'Please confirm password',
+                                    (v) => v === userData.password || 'Passwords do not match',
+                                ]"
                                 :error-messages="formErrors.confirmPassword"
                                 required
                             />
@@ -84,14 +93,8 @@
 
             <v-card-actions class="pa-4">
                 <v-spacer />
-                <v-btn color="grey" variant="text" @click="handleClose">
-                    Cancel
-                </v-btn>
-                <v-btn
-                    color="primary"
-                    :loading="formLoading"
-                    @click="handleSave"
-                >
+                <v-btn color="grey" variant="text" @click="handleClose"> Cancel </v-btn>
+                <v-btn color="primary" :loading="formLoading" @click="handleSave">
                     {{ isEditMode ? 'Update' : 'Create' }}
                 </v-btn>
             </v-card-actions>
@@ -106,28 +109,28 @@ import { computed, ref, watch } from 'vue'
 const props = defineProps({
     modelValue: {
         type: Boolean,
-        default: false
+        default: false,
     },
     user: {
         type: Object,
-        default: null
+        default: null,
     },
     isEditMode: {
         type: Boolean,
-        default: false
+        default: false,
     },
     formLoading: {
         type: Boolean,
-        default: false
+        default: false,
     },
     formErrors: {
         type: Object,
-        default: () => ({})
+        default: () => ({}),
     },
     roleOptions: {
         type: Array,
-        default: () => []
-    }
+        default: () => [],
+    },
 })
 
 // Emits
@@ -136,7 +139,7 @@ const emit = defineEmits(['update:modelValue', 'save', 'close'])
 // Computed
 const dialogOpen = computed({
     get: () => props.modelValue,
-    set: (value) => emit('update:modelValue', value)
+    set: (value) => emit('update:modelValue', value),
 })
 
 // Local state
@@ -145,30 +148,34 @@ const userData = ref({
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'user'
+    role: 'user',
 })
 
 // Watch for user changes
-watch(() => props.user, (newUser) => {
-    if (newUser) {
-        userData.value = {
-            id: newUser.id,
-            username: newUser.username || '',
-            email: newUser.email || '',
-            password: '',
-            confirmPassword: '',
-            role: newUser.role || 'user'
+watch(
+    () => props.user,
+    (newUser) => {
+        if (newUser) {
+            userData.value = {
+                id: newUser.id,
+                username: newUser.username || '',
+                email: newUser.email || '',
+                password: '',
+                confirmPassword: '',
+                role: newUser.role || 'user',
+            }
+        } else {
+            userData.value = {
+                username: '',
+                email: '',
+                password: '',
+                confirmPassword: '',
+                role: 'user',
+            }
         }
-    } else {
-        userData.value = {
-            username: '',
-            email: '',
-            password: '',
-            confirmPassword: '',
-            role: 'user'
-        }
-    }
-}, { immediate: true })
+    },
+    { immediate: true }
+)
 
 // Methods
 const handleSave = () => {

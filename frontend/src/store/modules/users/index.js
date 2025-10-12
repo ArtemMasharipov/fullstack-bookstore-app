@@ -1,3 +1,2 @@
 // Users module exports - Export Pinia stores
-export { useUsersStore } from './users.js';
-
+export { useUsersStore } from './users.js'

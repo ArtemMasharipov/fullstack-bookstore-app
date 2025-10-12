@@ -67,15 +67,22 @@
         <v-card>
             <v-data-table :headers="orderHeaders" :items="recentOrders" class="elevation-0" density="comfortable">
                 <template v-slot:item.status="{ item }">
-                    <v-chip :color="item.raw && item.raw.status ? getOrderStatusColor(item.raw.status) : 'grey'"
-                        size="small" class="text-uppercase">
+                    <v-chip
+                        :color="item.raw && item.raw.status ? getOrderStatusColor(item.raw.status) : 'grey'"
+                        size="small"
+                        class="text-uppercase"
+                    >
                         {{ item.raw && item.raw.status ? item.raw.status : 'Unknown' }}
                     </v-chip>
                 </template>
                 <template v-slot:item.actions="{ item }">
-                    <v-btn density="compact" icon variant="text"
+                    <v-btn
+                        density="compact"
+                        icon
+                        variant="text"
                         :to="{ path: item.raw && item.raw._id ? `/admin/orders/${item.raw._id}` : '/admin/orders' }"
-                        :disabled="!item.raw || !item.raw._id">
+                        :disabled="!item.raw || !item.raw._id"
+                    >
                         <v-icon>mdi-eye</v-icon>
                     </v-btn>
                 </template>
@@ -87,8 +94,12 @@
         </div>
 
         <v-timeline density="compact" align="start">
-            <v-timeline-item v-for="(activity, i) in recentActivity" :key="i" :dot-color="activity.color || 'grey'"
-                :icon="activity.icon || 'mdi-information'">
+            <v-timeline-item
+                v-for="(activity, i) in recentActivity"
+                :key="i"
+                :dot-color="activity.color || 'grey'"
+                :icon="activity.icon || 'mdi-information'"
+            >
                 <div class="d-flex justify-space-between">
                     <div>
                         <div class="text-subtitle-2 font-weight-medium">
@@ -192,12 +203,12 @@ const loadDashboardData = async () => {
         // Process recent orders
         const processedOrders = ordersStore.ordersList
             ? ordersStore.ordersList.slice(0, 5).map((order) => ({
-                _id: order._id ? order._id.slice(-6) : 'N/A',
-                customer: order.user ? order.user.name || order.user.email || 'Guest' : 'Guest',
-                date: order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A',
-                total: order.total !== undefined ? formatPrice(order.total) : formatPrice(0),
-                status: order.status || 'pending',
-            }))
+                  _id: order._id ? order._id.slice(-6) : 'N/A',
+                  customer: order.user ? order.user.name || order.user.email || 'Guest' : 'Guest',
+                  date: order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A',
+                  total: order.total !== undefined ? formatPrice(order.total) : formatPrice(0),
+                  status: order.status || 'pending',
+              }))
             : []
 
         recentOrders.value = processedOrders

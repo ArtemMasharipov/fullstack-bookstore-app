@@ -15,28 +15,31 @@ export function useAdminBooks() {
     // API composables for individual operations
     const loadBooksApi = useApi(booksStore.fetchBooks.bind(booksStore), {
         context: 'admin-books-load',
-        showErrorToast: false
+        showErrorToast: false,
     })
 
     const loadAuthorsApi = useApi(authorsStore.fetchAuthors.bind(authorsStore), {
         context: 'admin-authors-load',
-        showErrorToast: false
+        showErrorToast: false,
     })
 
-    const saveBookApi = useApi(async (bookData) => {
-        if (bookData.id) {
-            return await booksStore.updateBook(bookData.id, bookData)
-        } else {
-            return await booksStore.createBook(bookData)
+    const saveBookApi = useApi(
+        async (bookData) => {
+            if (bookData.id) {
+                return await booksStore.updateBook(bookData.id, bookData)
+            } else {
+                return await booksStore.createBook(bookData)
+            }
+        },
+        {
+            context: 'admin-books-save',
+            showErrorToast: false,
         }
-    }, {
-        context: 'admin-books-save',
-        showErrorToast: false
-    })
+    )
 
     const deleteBookApi = useApi(booksStore.deleteBook.bind(booksStore), {
         context: 'admin-books-delete',
-        showErrorToast: false
+        showErrorToast: false,
     })
 
     // Dialog states
@@ -80,7 +83,7 @@ export function useAdminBooks() {
         const start = (page.value - 1) * itemsPerPage.value
         const end = start + itemsPerPage.value
         return filteredBooks.value.slice(start, end)
-    })     // Methods
+    }) // Methods
     async function loadBooks() {
         try {
             await loadBooksApi.execute()
@@ -222,17 +225,19 @@ export function useAdminBooks() {
         },
 
         // Computed loading/error states
-        loading: computed(() => 
-            loadBooksApi.isLoading.value || 
-            loadAuthorsApi.isLoading.value || 
-            saveBookApi.isLoading.value || 
-            deleteBookApi.isLoading.value
+        loading: computed(
+            () =>
+                loadBooksApi.isLoading.value ||
+                loadAuthorsApi.isLoading.value ||
+                saveBookApi.isLoading.value ||
+                deleteBookApi.isLoading.value
         ),
-        error: computed(() => 
-            loadBooksApi.error.value || 
-            loadAuthorsApi.error.value || 
-            saveBookApi.error.value || 
-            deleteBookApi.error.value
+        error: computed(
+            () =>
+                loadBooksApi.error.value ||
+                loadAuthorsApi.error.value ||
+                saveBookApi.error.value ||
+                deleteBookApi.error.value
         ),
         saving: saveBookApi.isLoading,
         deleting: deleteBookApi.isLoading,

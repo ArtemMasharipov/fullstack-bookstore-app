@@ -89,7 +89,7 @@ const { dialogs, selectedItem, openDialog, closeDialogs } = useEntityDialog({ en
 const users = computed(() => usersStore.usersList)
 const loading = computed(() => usersStore.usersLoading)
 const error = computed(() => usersStore.usersError)
-const isAuthenticated = computed(() => authStore.isAuthenticated)
+// const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
 const showConfirmDialog = computed(() => dialogs.delete)
 const userToDelete = computed(() => selectedItem.value)
@@ -115,7 +115,7 @@ const cancelDelete = () => {
 
 const performDelete = async () => {
     if (!userToDelete.value) return
-    
+
     try {
         await usersStore.deleteUser(userToDelete.value.id)
         logger.info(`User "${userToDelete.value.username}" deleted successfully`, 'UserManagement')

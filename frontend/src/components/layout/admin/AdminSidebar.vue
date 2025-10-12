@@ -12,8 +12,16 @@
 
         <!-- Navigation Menu -->
         <v-list density="compact" nav>
-            <v-list-item v-for="item in menuItems" :key="item.title" :to="item.to" :prepend-icon="item.icon"
-                :title="item.title" :subtitle="item.subtitle" class="mb-1" rounded="xl">
+            <v-list-item
+                v-for="item in menuItems"
+                :key="item.title"
+                :to="item.to"
+                :prepend-icon="item.icon"
+                :title="item.title"
+                :subtitle="item.subtitle"
+                class="mb-1"
+                rounded="xl"
+            >
                 <template v-slot:append v-if="item.badge">
                     <v-badge :content="item.badge" color="error" inline></v-badge>
                 </template>
@@ -26,8 +34,15 @@
         <v-list density="compact" nav>
             <v-list-subheader>System</v-list-subheader>
 
-            <v-list-item v-for="item in systemItems" :key="item.title" :to="item.to" :prepend-icon="item.icon"
-                :title="item.title" class="mb-1" rounded="xl"></v-list-item>
+            <v-list-item
+                v-for="item in systemItems"
+                :key="item.title"
+                :to="item.to"
+                :prepend-icon="item.icon"
+                :title="item.title"
+                class="mb-1"
+                rounded="xl"
+            ></v-list-item>
         </v-list>
 
         <!-- Footer -->

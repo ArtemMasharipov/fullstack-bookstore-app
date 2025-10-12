@@ -1,19 +1,43 @@
 <template>
     <div class="admin-books">
         <!-- Book management data table -->
-        <admin-books-table :books="paginatedBooks" :authors="authors" :loading="loading" :total-items="totalItems"
-            :page="page" :items-per-page="itemsPerPage" :sort-by="sortBy" :search="search" @update:page="updatePage"
-            @update:items-per-page="updateItemsPerPage" @update:sort-by="updateSortBy" @update:search="updateSearch"
-            @reset-filters="resetFilters" @add-book="openBookDialog" @edit-book="openBookDialog"
-            @delete-book="confirmDeleteBook" />
+        <admin-books-table
+            :books="paginatedBooks"
+            :authors="authors"
+            :loading="loading"
+            :total-items="totalItems"
+            :page="page"
+            :items-per-page="itemsPerPage"
+            :sort-by="sortBy"
+            :search="search"
+            @update:page="updatePage"
+            @update:items-per-page="updateItemsPerPage"
+            @update:sort-by="updateSortBy"
+            @update:search="updateSearch"
+            @reset-filters="resetFilters"
+            @add-book="openBookDialog"
+            @edit-book="openBookDialog"
+            @delete-book="confirmDeleteBook"
+        />
 
         <!-- Book edit/create dialog -->
-        <book-dialog v-model="bookDialogOpen" :book="editedBook" :authors="authors" :saving="saving"
-            @save="handleSaveBook" @close="closeBookDialog" />
+        <book-dialog
+            v-model="bookDialogOpen"
+            :book="editedBook"
+            :authors="authors"
+            :saving="saving"
+            @save="handleSaveBook"
+            @close="closeBookDialog"
+        />
 
         <!-- Delete confirmation dialog -->
-        <book-delete-dialog v-model="deleteDialogOpen" :book="bookToDelete" :deleting="deleting"
-            @delete="handleDeleteBook" @close="closeDeleteDialog" />
+        <book-delete-dialog
+            v-model="deleteDialogOpen"
+            :book="bookToDelete"
+            :deleting="deleting"
+            @delete="handleDeleteBook"
+            @close="closeDeleteDialog"
+        />
     </div>
 </template>
 

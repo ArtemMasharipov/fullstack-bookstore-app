@@ -33,11 +33,14 @@ if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
 import { useAuthStore } from './store'
 
 const authStore = useAuthStore()
-authStore.initialize().then(() => {
-    app.mount('#app')
-    logger.info('Application initialized successfully', { version: '2.0' }, 'app-init')
-}).catch((error) => {
-    console.error('Failed to initialize application:', error)
-    // Mount app anyway to show error page
-    app.mount('#app')
-})
+authStore
+    .initialize()
+    .then(() => {
+        app.mount('#app')
+        logger.info('Application initialized successfully', { version: '2.0' }, 'app-init')
+    })
+    .catch((error) => {
+        console.error('Failed to initialize application:', error)
+        // Mount app anyway to show error page
+        app.mount('#app')
+    })
