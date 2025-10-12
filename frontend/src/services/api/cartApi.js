@@ -1,11 +1,25 @@
-import { createApiClient } from './apiFactory'
-import { apiRequest } from './baseApi'
+import baseApi from './baseApi'
 
-export const cartApi = createApiClient('cart', {
-    fetchCart: () => apiRequest('get', '/cart'),
-    addToCart: (item) => apiRequest('post', '/cart/add', item),
-    removeFromCart: (itemId) => apiRequest('delete', `/cart/items/${itemId}`),
-    updateQuantity: (itemId, quantity) => apiRequest('put', `/cart/items/${itemId}`, { quantity }),
-    clearCart: () => apiRequest('delete', '/cart'),
-    syncCart: (cart) => apiRequest('post', '/cart/sync', { items: cart }),
-})
+/**
+ * Cart API - direct axios implementation
+ * No factory abstractions (ЭТАП 3)
+ */
+export const cartApi = {
+    fetchCart: () => baseApi.get('/cart').then((res) => res.data),
+    
+    addToCart: (item) => baseApi.post('/cart/add', item).then((res) => res.data),
+    
+    removeFromCart: (itemId) => {
+        if (!itemId) throw new Error('Item ID is required')
+        return baseApi.delete(`/cart/items/${itemId}`).then((res) => res.data)
+    },
+    
+    updateQuantity: (itemId, quantity) => {
+        if (!itemId) throw new Error('Item ID is required')
+        return baseApi.put(`/cart/items/${itemId}`, { quantity }).then((res) => res.data)
+    },
+    
+    clearCart: () => baseApi.delete('/cart').then((res) => res.data),
+    
+    syncCart: (cart) => baseApi.post('/cart/sync', { items: cart }).then((res) => res.data),
+}

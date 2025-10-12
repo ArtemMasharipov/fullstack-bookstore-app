@@ -1,4 +1,3 @@
-import { useEntityDialog } from '@/composables/useEntityDialog'
 import { useRoles } from '@/composables/useRoles'
 import { useUsersStore } from '@/store'
 import { logger } from '@/utils/logger'
@@ -6,10 +5,7 @@ import { computed, ref } from 'vue'
 
 /**
  * Composable for managing user operations in admin panel
- * Provides centralized user management logic with roles and dialog handling
- *
- * @param {Object} options - Configuration options
- * @returns {Object} User management state and methods
+ * Simplified - no useEntityDialog (ЭТАП 4)
  */
 export function useUserManagement(options = {}) {
     const { autoLoad = true } = options
@@ -18,18 +14,12 @@ export function useUserManagement(options = {}) {
     const usersStore = useUsersStore()
     const { roles, loading: rolesLoading, getRoleName, getRoleColor } = useRoles({ autoLoad })
 
-    // Dialog management
-    const {
-        dialogs,
-        selectedItem,
-        formLoading,
-        formErrors,
-        openDialog,
-        closeDialogs,
-        setFormLoading,
-        setFormErrors,
-        clearFormErrors,
-    } = useEntityDialog({ entityName: 'user' })
+    // Local dialog state (instead of useEntityDialog)
+    const userDialogOpen = ref(false)
+    const deleteDialogOpen = ref(false)
+    const selectedUser = ref(null)
+    const formLoading = ref(false)
+    const formErrors = ref({})
 
     // Local state
     const page = ref(1)
@@ -51,16 +41,13 @@ export function useUserManagement(options = {}) {
     const loading = computed(() => usersStore.usersLoading)
     const error = computed(() => usersStore.usersError)
 
-    const isEditMode = computed(() => !!selectedItem.value?.id)
-    const userDialogOpen = computed(() => dialogs.create || dialogs.edit)
-    const deleteDialogOpen = computed(() => dialogs.delete)
+    const isEditMode = computed(() => !!selectedUser.value?.id)
 
     const totalItems = computed(() => users.value.length)
 
     const filteredUsers = computed(() => {
         let result = users.value
 
-        // Search filter
         if (search.value) {
             const query = search.value.toLowerCase()
             result = result.filter(
@@ -91,7 +78,6 @@ export function useUserManagement(options = {}) {
 
     const openUserDialog = (user = null) => {
         if (user) {
-            // Edit mode
             editedUser.value = {
                 id: user.id,
                 username: user.username || '',
@@ -100,9 +86,8 @@ export function useUserManagement(options = {}) {
                 confirmPassword: '',
                 role: user.role || 'user',
             }
-            openDialog('edit', user)
+            selectedUser.value = user
         } else {
-            // Create mode
             editedUser.value = {
                 username: '',
                 email: '',
@@ -110,13 +95,15 @@ export function useUserManagement(options = {}) {
                 confirmPassword: '',
                 role: 'user',
             }
-            openDialog('create')
+            selectedUser.value = null
         }
-        clearFormErrors()
+        formErrors.value = {}
+        userDialogOpen.value = true
     }
 
     const closeUserDialog = () => {
-        closeDialogs()
+        userDialogOpen.value = false
+        selectedUser.value = null
         editedUser.value = {
             username: '',
             email: '',
@@ -124,20 +111,22 @@ export function useUserManagement(options = {}) {
             confirmPassword: '',
             role: 'user',
         }
-        clearFormErrors()
+        formErrors.value = {}
     }
 
     const confirmDeleteUser = (user) => {
-        openDialog('delete', user)
+        selectedUser.value = user
+        deleteDialogOpen.value = true
     }
 
     const closeDeleteDialog = () => {
-        closeDialogs()
+        deleteDialogOpen.value = false
+        selectedUser.value = null
     }
 
     const saveUser = async () => {
-        setFormLoading(true)
-        setFormErrors({})
+        formLoading.value = true
+        formErrors.value = {}
 
         try {
             // Basic validation
@@ -150,11 +139,10 @@ export function useUserManagement(options = {}) {
             }
 
             if (Object.keys(errors).length > 0) {
-                setFormErrors(errors)
+                formErrors.value = errors
                 return
             }
 
-            // Prepare user data
             const userData = {
                 username: editedUser.value.username,
                 email: editedUser.value.email,
@@ -165,7 +153,6 @@ export function useUserManagement(options = {}) {
                 userData.password = editedUser.value.password
             }
 
-            // Save user
             if (isEditMode.value) {
                 await usersStore.updateUser(editedUser.value.id, userData)
                 logger.info(`User "${editedUser.value.username}" updated successfully`, 'useUserManagement')
@@ -175,39 +162,38 @@ export function useUserManagement(options = {}) {
             }
 
             closeUserDialog()
-            await loadUsers() // Refresh the list
+            await loadUsers()
         } catch (error) {
             logger.error('Failed to save user', error, 'useUserManagement')
-            setFormErrors({ general: error.message || 'Failed to save user' })
+            formErrors.value = { general: error.message || 'Failed to save user' }
         } finally {
-            setFormLoading(false)
+            formLoading.value = false
         }
     }
 
     const deleteUser = async () => {
-        if (!selectedItem.value) return
+        if (!selectedUser.value) return
 
-        setFormLoading(true)
+        formLoading.value = true
         try {
-            await usersStore.deleteUser(selectedItem.value.id)
-            logger.info(`User "${selectedItem.value.username}" deleted successfully`, 'useUserManagement')
+            await usersStore.deleteUser(selectedUser.value.id)
+            logger.info(`User "${selectedUser.value.username}" deleted successfully`, 'useUserManagement')
             closeDeleteDialog()
-            await loadUsers() // Refresh the list
+            await loadUsers()
         } catch (error) {
             logger.error('Failed to delete user', error, 'useUserManagement')
         } finally {
-            setFormLoading(false)
+            formLoading.value = false
         }
     }
 
-    // Table event handlers
     const updatePage = (newPage) => {
         page.value = newPage
     }
 
     const updateItemsPerPage = (newItemsPerPage) => {
         itemsPerPage.value = newItemsPerPage
-        page.value = 1 // Reset to first page
+        page.value = 1
     }
 
     const updateSortBy = (sortField) => {
@@ -216,7 +202,7 @@ export function useUserManagement(options = {}) {
 
     const updateSearch = (query) => {
         search.value = query
-        page.value = 1 // Reset to first page
+        page.value = 1
     }
 
     const resetFilters = () => {
@@ -224,7 +210,6 @@ export function useUserManagement(options = {}) {
         page.value = 1
     }
 
-    // Auto-load users if requested
     if (autoLoad) {
         loadUsers()
     }
@@ -243,7 +228,7 @@ export function useUserManagement(options = {}) {
         deleteDialogOpen,
         isEditMode,
         editedUser,
-        selectedUser: selectedItem,
+        selectedUser,
         formLoading,
         formErrors,
 

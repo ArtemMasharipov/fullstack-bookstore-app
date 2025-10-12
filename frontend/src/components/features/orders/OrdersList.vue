@@ -169,94 +169,164 @@
 
 <script setup>
 import ErrorMessage from '@/components/ui/ErrorMessage.vue'
-import { useAuthStore, useOrdersStore, useOrdersUiStore } from '@/store'
+import { useAuthStore, useOrdersStore } from '@/store'
 import { formatPrice } from '@/utils'
+import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 /**
  * Component for displaying and managing user orders
+ * All UI logic moved from ordersUi store to component level (ЭТАП 2)
  */
 
 // Store setup
 const authStore = useAuthStore()
 const ordersStore = useOrdersStore()
-const ordersUiStore = useOrdersUiStore()
 
-// Reactive state extraction
+// Reactive state extraction from store
 const { ordersList, loading, error } = storeToRefs(ordersStore)
-const { displayedOrders: displayedOrdersRef, pageCount } = storeToRefs(ordersUiStore)
+
+// Local component state (moved from ordersUi store)
+const statusFilter = ref(null)
+const sortBy = ref('newest')
+const currentPage = ref(1)
+const itemsPerPage = ref(5)
+
+// Static options (no need to be reactive)
+const statusOptions = [
+    { title: 'All Orders', value: null },
+    { title: 'Pending', value: 'pending' },
+    { title: 'Processing', value: 'processing' },
+    { title: 'Shipped', value: 'shipped' },
+    { title: 'Delivered', value: 'delivered' },
+    { title: 'Cancelled', value: 'cancelled' },
+]
+
+const sortOptions = [
+    { title: 'Newest First', value: 'newest' },
+    { title: 'Oldest First', value: 'oldest' },
+    { title: 'Highest Total', value: 'total-desc' },
+    { title: 'Lowest Total', value: 'total-asc' },
+]
 
 // Computed properties
 const orders = computed(() => {
-    // Always ensure we return an array
     return Array.isArray(ordersList.value) ? ordersList.value : []
 })
 
+/**
+ * Filter and sort orders based on selected criteria
+ */
+const filteredOrders = computed(() => {
+    let result = [...orders.value]
+
+    // Apply status filter
+    if (statusFilter.value) {
+        result = result.filter((order) => order.status === statusFilter.value)
+    }
+
+    // Apply sort
+    switch (sortBy.value) {
+        case 'newest':
+            result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            break
+        case 'oldest':
+            result.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+            break
+        case 'total-desc':
+            result.sort((a, b) => parseFloat(b.total) - parseFloat(a.total))
+            break
+        case 'total-asc':
+            result.sort((a, b) => parseFloat(a.total) - parseFloat(b.total))
+            break
+    }
+
+    return result
+})
+
+/**
+ * Get orders for current page
+ */
 const displayedOrders = computed(() => {
-    // Always ensure we return an array
-    return Array.isArray(displayedOrdersRef.value) ? displayedOrdersRef.value : []
+    const start = (currentPage.value - 1) * itemsPerPage.value
+    const end = start + itemsPerPage.value
+    return filteredOrders.value.slice(start, end)
 })
 
-const statusOptions = computed(() => ordersUiStore.getStatusOptions)
-const sortOptions = computed(() => ordersUiStore.getSortOptions)
-
-const statusFilter = computed({
-    get() {
-        return ordersUiStore.getStatusFilter
-    },
-    set(value) {
-        ordersUiStore.applyFilter(value)
-    },
-})
-
-const sortBy = computed({
-    get() {
-        return ordersUiStore.getSortBy
-    },
-    set(value) {
-        ordersUiStore.applySort(value)
-    },
-})
-
-const currentPage = computed({
-    get() {
-        return ordersUiStore.getCurrentPage
-    },
-    set(value) {
-        ordersUiStore.currentPage = value
-        // Scroll to top when changing page
-        window.scrollTo(0, 0)
-    },
+/**
+ * Calculate total page count
+ */
+const pageCount = computed(() => {
+    return Math.max(1, Math.ceil(filteredOrders.value.length / itemsPerPage.value))
 })
 
 // Methods
-const fetchOrders = () => {
-    return ordersUiStore.fetchOrders()
+const fetchOrders = async () => {
+    try {
+        await ordersStore.fetchOrders()
+    } catch (error) {
+        if (error.status !== 401) {
+            if (error.status === 404) {
+                logger.warn('Orders API endpoint not found', null, 'orders-list')
+            } else {
+                logger.error('Failed to load orders', error, 'orders-list')
+            }
+        }
+    }
 }
 
 const getStatusColor = (status) => {
-    return ordersUiStore.getStatusColor(status)
+    if (!status) return 'grey'
+    const statusColors = {
+        pending: 'orange',
+        processing: 'blue',
+        shipped: 'cyan',
+        delivered: 'success',
+        cancelled: 'error',
+    }
+    return statusColors[status] || 'grey'
 }
 
 const getStatusIcon = (status) => {
-    return ordersUiStore.getStatusIcon(status)
+    if (!status) return 'mdi-help-circle'
+    const statusIcons = {
+        pending: 'mdi-clock-outline',
+        processing: 'mdi-cog-outline',
+        shipped: 'mdi-truck-delivery-outline',
+        delivered: 'mdi-check-circle-outline',
+        cancelled: 'mdi-close-circle-outline',
+    }
+    return statusIcons[status] || 'mdi-help-circle'
 }
 
 const formatDate = (date) => {
-    return ordersUiStore.formatDate(date)
+    if (!date) return 'Unknown date'
+    try {
+        return new Date(date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        })
+    } catch (err) {
+        return String(date)
+    }
 }
 
 const clearError = () => {
-    return ordersUiStore.clearError()
+    ordersStore.clearError()
 }
 
-const applyFilter = (status) => {
-    ordersUiStore.applyFilter(status)
+const applyFilter = (value) => {
+    statusFilter.value = value
+    currentPage.value = 1 // Reset to first page
 }
 
-const applySort = (sortOption) => {
-    ordersUiStore.applySort(sortOption)
+const applySort = (value) => {
+    sortBy.value = value
+    currentPage.value = 1 // Reset to first page
 }
 
 // Lifecycle

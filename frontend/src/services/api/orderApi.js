@@ -1,12 +1,56 @@
-import { createApiClient } from './apiFactory'
-import { apiRequest } from './baseApi'
+import baseApi from './baseApi'
 
-export const orderApi = createApiClient('orders', {
-    createOrder: (orderData) => apiRequest('post', '/orders', orderData),
-    getOrders: () => apiRequest('get', '/orders'),
-    getOrderById: (id) => apiRequest('get', `/orders/${id}`),
-    updateOrderStatus: (id, status) => apiRequest('put', `/orders/${id}/status`, { status }),
-    getOrderStatus: (id) => apiRequest('get', `/orders/${id}/status`),
-    updateTracking: (id, trackingNumber) => apiRequest('put', `/orders/${id}/tracking`, { trackingNumber }),
-    getOrderHistory: (id) => apiRequest('get', `/orders/${id}/history`),
-})
+/**
+ * Orders API - direct axios implementation
+ * No factory abstractions (ЭТАП 3)
+ */
+export const orderApi = {
+    fetchAll: (params) => baseApi.get('/orders', { params }).then((res) => res.data),
+    
+    fetchById: (id) => {
+        if (!id) throw new Error('Order ID is required')
+        return baseApi.get(`/orders/${id}`).then((res) => res.data)
+    },
+    
+    create: (data) => baseApi.post('/orders', data).then((res) => res.data),
+    
+    update: (id, data) => {
+        if (!id) throw new Error('Order ID is required')
+        return baseApi.put(`/orders/${id}`, data).then((res) => res.data)
+    },
+    
+    delete: (id) => {
+        if (!id) throw new Error('Order ID is required')
+        return baseApi.delete(`/orders/${id}`).then((res) => res.data)
+    },
+    
+    // Custom methods
+    createOrder: (orderData) => baseApi.post('/orders', orderData).then((res) => res.data),
+    
+    getOrders: () => baseApi.get('/orders').then((res) => res.data),
+    
+    getOrderById: (id) => {
+        if (!id) throw new Error('Order ID is required')
+        return baseApi.get(`/orders/${id}`).then((res) => res.data)
+    },
+    
+    updateOrderStatus: (id, status) => {
+        if (!id) throw new Error('Order ID is required')
+        return baseApi.put(`/orders/${id}/status`, { status }).then((res) => res.data)
+    },
+    
+    getOrderStatus: (id) => {
+        if (!id) throw new Error('Order ID is required')
+        return baseApi.get(`/orders/${id}/status`).then((res) => res.data)
+    },
+    
+    updateTracking: (id, trackingNumber) => {
+        if (!id) throw new Error('Order ID is required')
+        return baseApi.put(`/orders/${id}/tracking`, { trackingNumber }).then((res) => res.data)
+    },
+    
+    getOrderHistory: (id) => {
+        if (!id) throw new Error('Order ID is required')
+        return baseApi.get(`/orders/${id}/history`).then((res) => res.data)
+    },
+}

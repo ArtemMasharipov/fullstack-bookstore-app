@@ -67,36 +67,30 @@
 </template>
 
 <script setup>
-import { useEntityDialog } from '@/composables/useEntityDialog'
 import { useAuthStore, useUsersStore } from '@/store'
 import { logger } from '@/utils/logger'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 /**
- * Store instances
+ * User Management Component
+ * Simplified - no useEntityDialog (ЭТАП 4)
  */
+
+// Store instances
 const authStore = useAuthStore()
 const usersStore = useUsersStore()
 
-/**
- * Dialog management
- */
-const { dialogs, selectedItem, openDialog, closeDialogs } = useEntityDialog({ entityName: 'user' })
+// Local dialog state (instead of useEntityDialog)
+const showConfirmDialog = ref(false)
+const userToDelete = ref(null)
 
-/**
- * Computed properties
- */
+// Computed properties
 const users = computed(() => usersStore.usersList)
 const loading = computed(() => usersStore.usersLoading)
 const error = computed(() => usersStore.usersError)
-// const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
-const showConfirmDialog = computed(() => dialogs.delete)
-const userToDelete = computed(() => selectedItem.value)
 
-/**
- * Methods
- */
+// Methods
 const fetchUsers = async () => {
     try {
         await usersStore.fetchUsers()
@@ -106,11 +100,13 @@ const fetchUsers = async () => {
 }
 
 const confirmDelete = (user) => {
-    openDialog('delete', user)
+    userToDelete.value = user
+    showConfirmDialog.value = true
 }
 
 const cancelDelete = () => {
-    closeDialogs()
+    showConfirmDialog.value = false
+    userToDelete.value = null
 }
 
 const performDelete = async () => {
@@ -119,16 +115,14 @@ const performDelete = async () => {
     try {
         await usersStore.deleteUser(userToDelete.value.id)
         logger.info(`User "${userToDelete.value.username}" deleted successfully`, 'UserManagement')
-        closeDialogs()
+        cancelDelete()
         await fetchUsers() // Refresh the list
     } catch (error) {
         logger.error('Failed to delete user', error, 'UserManagement')
     }
 }
 
-/**
- * Lifecycle hooks
- */
+// Lifecycle hooks
 onMounted(() => {
     if (isAdmin.value) {
         fetchUsers()

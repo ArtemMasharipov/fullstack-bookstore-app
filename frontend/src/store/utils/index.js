@@ -1,10 +1,3 @@
 // Store utilities exports
-export { formatCurrency, handleAsyncAction } from './stateHelpers'
-export { createBaseStore } from './storeFactory'
-export {
-    createLoadingActions,
-    createLoadingState,
-    createPaginationActions,
-    createPaginationGetters,
-    createPaginationState,
-} from './storeHelpers'
+// Factory utilities removed - ЭТАП 1 complete
+// All stores now use direct Pinia defineStore

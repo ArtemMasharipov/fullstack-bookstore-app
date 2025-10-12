@@ -13,22 +13,22 @@
 </template>
 
 <script setup>
-import { useUiStore } from '@/store'
-import { storeToRefs } from 'pinia'
+import { useDialog } from '@/composables/useDialog'
 import { computed } from 'vue'
 
 /**
  * DialogLayout component for handling app-level dialogs
- * Note: Toast notifications are now handled by the Toast component
+ * Now uses useDialog composable instead of ui store (ЭТАП 2)
  */
 
-// Store setup
-const uiStore = useUiStore()
-
-// Reactive state extraction
-const { dialogVisible, dialogType, dialogData } = storeToRefs(uiStore)
+// Dialog composable
+const { dialog, closeDialog } = useDialog()
 
 // Computed properties
+const dialogVisible = computed(() => dialog.value.visible)
+const dialogType = computed(() => dialog.value.type)
+const dialogData = computed(() => dialog.value.data)
+
 /**
  * Dynamically load dialog components based on the dialog type
  */
@@ -67,14 +67,7 @@ const closeOnClickOutside = () => {
     const allowOutsideClose = ['info', 'alert']
 
     if (allowOutsideClose.includes(dialogType.value)) {
-        uiStore.closeDialog()
+        closeDialog()
     }
-}
-
-/**
- * Close dialog method
- */
-const closeDialog = () => {
-    uiStore.closeDialog()
 }
 </script>

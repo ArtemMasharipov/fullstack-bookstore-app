@@ -1,43 +1,65 @@
 import { booksApi } from '@/services/api/booksApi'
-import { createBaseStore } from '@/store/utils/storeFactory'
 import { normalizeApiResponse, normalizeBook, normalizeBooks } from '@/utils/dataNormalizers'
 import { logger } from '@/utils/logger'
+import { defineStore } from 'pinia'
 
 /**
- * Books store - manages books data only (UI state moved to components)
- * Uses storeFactory with TTL caching for better performance
+ * Books Store
+ * Manages books data, search, filtering, and pagination
+ *
+ * Simplified version without factory - direct Pinia implementation
  */
-export const useBooksStore = createBaseStore({
-    id: 'books',
-    api: booksApi,
-    cacheTTL: 60000, // 60 seconds cache
-
-    // Custom state specific to books store
-    customState: () => ({
-        // Data state only
+export const useBooksStore = defineStore('books', {
+    state: () => ({
+        // Data state
         books: [],
         currentBook: null,
 
-        // Filter parameters (not UI state, but query parameters)
+        // Pagination
+        page: 1,
+        limit: 12,
+        total: 0,
+        pages: 0,
+
+        // Filter parameters
         searchQuery: '',
         category: null,
         authorId: null,
+
+        // Loading & error states
+        loading: false,
+        error: null,
     }),
 
-    // Custom getters specific to books store
-    customGetters: {
-        // Data getters
+    getters: {
+        /**
+         * Get books list
+         */
         booksList: (state) => state.books,
+
+        /**
+         * Get pagination info
+         */
         booksPagination: (state) => ({
             page: state.page,
             limit: state.limit,
             total: state.total,
             pages: state.pages,
         }),
+
+        /**
+         * Check loading state
+         */
         booksLoading: (state) => state.loading,
+
+        /**
+         * Get error message
+         */
         booksError: (state) => state.error,
 
-        // Filter parameters getter
+        /**
+         * Get filter parameters for API request
+         */
         filterParams: (state) => {
             const params = {
                 page: state.page,
@@ -58,51 +80,63 @@ export const useBooksStore = createBaseStore({
 
             return params
         },
+
+        /**
+         * Get all books (for admin)
+         */
+        getAllBooks: (state) => state.books,
     },
 
-    // Custom actions specific to books store
-    customActions: {
+    actions: {
         /**
-         * Fetch books with pagination and caching
-         * @param {Object} params - Query parameters
-         * @returns {Promise} - Fetched books
+         * Fetch books with pagination
          */
-        async fetchBooks(params = { page: 1, limit: 10 }) {
+        async fetchBooks(params = { page: 1, limit: 12 }) {
+            this.loading = true
+            this.error = null
+
             try {
-                const response = await this.fetchAll(params)
+                const response = await booksApi.fetchAll(params)
                 this.setBooksList(response)
                 return response
             } catch (error) {
-                // Don't log auth errors as they're handled by the interceptor
+                this.error = error.message
                 if (!error.isAuthError && !error.isNetworkError) {
                     logger.error('Error fetching books', error, 'books-store')
                 }
                 throw error
+            } finally {
+                this.loading = false
             }
         },
 
         /**
          * Fetch book by ID
-         * @param {string} id - Book ID
-         * @returns {Promise} - Book object
          */
         async fetchBookById(id) {
+            this.loading = true
+            this.error = null
+
             try {
-                const book = await this.fetchById(id)
+                const book = await booksApi.fetchById(id)
                 this.currentBook = book
                 return book
             } catch (error) {
+                this.error = error.message
                 logger.error('Error fetching book by ID', error, 'books-store')
                 throw error
+            } finally {
+                this.loading = false
             }
         },
 
         /**
          * Create a new book
-         * @param {Object|FormData} formData - Book data
-         * @returns {Promise} - Created book
          */
         async createBook(formData) {
+            this.loading = true
+            this.error = null
+
             try {
                 const response = await booksApi.create(formData)
                 const normalizedResponse = normalizeApiResponse(response)
@@ -110,25 +144,26 @@ export const useBooksStore = createBaseStore({
 
                 if (book) {
                     this.books.push(book)
+                    this.total += 1
                 }
 
-                // Invalidate cache after creating
-                this.invalidateCache()
                 return book
             } catch (error) {
+                this.error = error.message
                 logger.error('Error creating book', error, 'books-store')
                 throw error
+            } finally {
+                this.loading = false
             }
         },
 
         /**
          * Update an existing book
-         * @param {Object} params - Parameters object
-         * @param {string} params.id - Book ID
-         * @param {Object|FormData} params.formData - Updated book data
-         * @returns {Promise} - Updated book
          */
         async updateBook({ id, formData }) {
+            this.loading = true
+            this.error = null
+
             try {
                 const response = await booksApi.update(id, formData)
                 const normalizedResponse = normalizeApiResponse(response)
@@ -141,25 +176,26 @@ export const useBooksStore = createBaseStore({
                     }
                 }
 
-                // Invalidate cache after updating
-                this.invalidateCache()
                 return updatedBook
             } catch (error) {
+                this.error = error.message
                 logger.error('Error updating book', error, 'books-store')
                 throw error
+            } finally {
+                this.loading = false
             }
         },
 
         /**
          * Delete a book
-         * @param {string} id - Book ID
-         * @param {string} title - Book title for notification (optional)
          */
         async deleteBook(id, title = '') {
             if (!id) throw new Error('Book ID is required')
 
+            this.loading = true
+            this.error = null
+
             try {
-                // Find book title if not provided
                 if (!title) {
                     const book = this.books.find((b) => b._id === id)
                     title = book?.title || 'Book'
@@ -167,18 +203,18 @@ export const useBooksStore = createBaseStore({
 
                 await booksApi.delete(id)
                 this.books = this.books.filter((book) => book._id !== id)
-
-                // Invalidate cache after deleting
-                this.invalidateCache()
+                this.total = Math.max(0, this.total - 1)
             } catch (error) {
+                this.error = error.message
                 logger.error('Error deleting book', error, 'books-store')
                 throw error
+            } finally {
+                this.loading = false
             }
         },
 
         /**
          * Helper method to handle different API response formats
-         * @param {Array|Object} response - API response
          */
         setBooksList(response) {
             const normalizedResponse = normalizeApiResponse(response)
@@ -207,9 +243,9 @@ export const useBooksStore = createBaseStore({
             } else {
                 this.books = []
                 this.page = 1
-                this.limit = 10
+                this.limit = 12
                 this.total = 0
-                this.pages = 1
+                this.pages = 0
             }
         },
 
@@ -227,7 +263,14 @@ export const useBooksStore = createBaseStore({
          */
         setSearchQuery(query) {
             this.searchQuery = query
-            this.page = 1 // Reset to page 1 on search
+            this.page = 1
+        },
+
+        /**
+         * Debounced search (to be called from components)
+         */
+        debouncedSearch(query) {
+            this.setSearchQuery(query)
         },
 
         /**
@@ -235,7 +278,7 @@ export const useBooksStore = createBaseStore({
          */
         setCategory(category) {
             this.category = category
-            this.page = 1 // Reset to page 1 on filter change
+            this.page = 1
         },
 
         /**
@@ -243,7 +286,15 @@ export const useBooksStore = createBaseStore({
          */
         setAuthorId(authorId) {
             this.authorId = authorId
-            this.page = 1 // Reset to page 1 on filter change
+            this.page = 1
+        },
+
+        /**
+         * Change page
+         */
+        changePage(page) {
+            this.page = page
+            return this.loadBooks()
         },
 
         /**
@@ -253,11 +304,34 @@ export const useBooksStore = createBaseStore({
             try {
                 await this.fetchBooks(this.filterParams)
             } catch (error) {
-                // Don't show auth errors since they're handled by the API interceptor
                 if (!error.isAuthError && !error.isNetworkError) {
                     console.warn('Failed to load books:', error.message)
                 }
             }
+        },
+
+        /**
+         * Clear filters and reset
+         */
+        clearFilters() {
+            this.searchQuery = ''
+            this.category = null
+            this.authorId = null
+            this.page = 1
+        },
+
+        /**
+         * Set error message
+         */
+        setError(message) {
+            this.error = message
+        },
+
+        /**
+         * Clear error message
+         */
+        clearError() {
+            this.error = null
         },
     },
 })

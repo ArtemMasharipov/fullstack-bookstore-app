@@ -1,25 +1,27 @@
 import { useNotifications } from '@/composables/useNotifications'
 import { cartApi } from '@/services/api/cartApi'
-import { useAuthStore } from '@/store/modules/auth'
-import { createBaseStore, handleAsyncAction } from '@/store/utils'
+import { defineStore } from 'pinia'
 
 /**
- * Cart store using the base store factory
- * - Uses shared logic from the factory for loading and error states
- * - Implements cart-specific functionality for local and server storage
+ * Cart Store
+ * Manages shopping cart with local storage and server sync
+ *
+ * Simplified version without factory - direct Pinia implementation
  */
-export const useCartStore = createBaseStore({
-    id: 'cart',
-    api: cartApi,
-
-    // Custom state specific to cart store
-    customState: () => ({
+export const useCartStore = defineStore('cart', {
+    state: () => ({
+        // Cart items
         items: JSON.parse(localStorage.getItem('cart')) || [],
-        // loading and error are provided by the base store
+
+        // Loading & error states
+        loading: false,
+        error: null,
     }),
 
-    // Custom getters specific to cart store
-    customGetters: {
+    getters: {
+        /**
+         * Get formatted cart items
+         */
         cartItems: (state) =>
             state.items.map(({ _id, bookId, quantity, price }) => ({
                 _id,
@@ -31,189 +33,218 @@ export const useCartStore = createBaseStore({
                 quantity: Number(quantity),
                 price: Number(price),
             })),
+
+        /**
+         * Check loading state
+         */
         cartLoading: (state) => state.loading,
+
+        /**
+         * Get error message
+         */
         cartError: (state) => state.error,
+
+        /**
+         * Calculate cart total
+         */
         cartTotal: (state) => {
             return state.items.reduce((total, item) => {
                 return total + item.price * item.quantity
             }, 0)
         },
-        itemCount: (state) => state.items.length,
+
         /**
-         * Total quantity of all items in the cart
+         * Get number of unique items
+         */
+        itemCount: (state) => state.items.length,
+
+        /**
+         * Get total quantity of all items
          */
         totalQuantity: (state) => {
             return state.items.reduce((total, item) => total + (Number(item.quantity) || 1), 0)
         },
     },
 
-    // Custom actions specific to cart store
-    customActions: {
+    actions: {
         /**
-         * Fetch cart items from the server
+         * Fetch cart from server
          */
         async fetchCart() {
-            return handleAsyncAction(this, async () => {
+            this.loading = true
+            this.error = null
+
+            try {
                 const { items = [] } = (await cartApi.fetchCart()) || {}
                 this.setItems(items)
-            })
+            } catch (error) {
+                this.error = error.message
+                throw error
+            } finally {
+                this.loading = false
+            }
         },
+
         /**
-         * Add an item to the cart
-         * @param {Object} item - Item to add
-         * @param {string} item.bookId - Book ID
-         * @param {number} item.quantity - Quantity
-         * @param {number} item.price - Price
-         * @param {string} item.title - Book title (optional)
+         * Add item to cart
          */
         async addToCart({ bookId, quantity, price, title = 'Book' }) {
-            return handleAsyncAction(this, async () => {
-                try {
-                    const authStore = useAuthStore()
-                    if (authStore.isAuthenticated) {
-                        // Server-side cart
-                        const { items } = await cartApi.addToCart({ bookId, quantity, price })
-                        this.setItems(items)
-                    } else {
-                        // Local cart
-                        this.addLocalItem({ bookId, quantity, price })
-                    }
+            this.loading = true
+            this.error = null
 
-                    // Show success notification
-                    const { showSuccess } = useNotifications()
-                    showSuccess(`"${title}" added to cart`, {
-                        icon: 'mdi-cart-plus',
-                    })
-                } catch (error) {
-                    const { showError } = useNotifications()
-                    showError(`Failed to add "${title}" to cart: ${error.message}`, {
-                        icon: 'mdi-cart-remove',
-                    })
-                    throw error
+            const { showSuccess, showError } = useNotifications()
+
+            try {
+                const { useAuthStore } = await import('@/store/modules/auth')
+                const authStore = useAuthStore()
+
+                if (authStore.isAuthenticated) {
+                    // Server-side cart
+                    const { items } = await cartApi.addToCart({ bookId, quantity, price })
+                    this.setItems(items)
+                } else {
+                    // Local cart
+                    this.addLocalItem({ bookId, quantity, price })
                 }
-            })
+
+                showSuccess(`"${title}" added to cart`, {
+                    icon: 'mdi-cart-plus',
+                })
+            } catch (error) {
+                this.error = error.message
+                showError(`Failed to add "${title}" to cart: ${error.message}`, {
+                    icon: 'mdi-cart-remove',
+                })
+                throw error
+            } finally {
+                this.loading = false
+            }
         },
+
         /**
-         * Remove an item from the cart
-         * @param {string} itemId - Item ID to remove
-         * @param {string} title - Book title (optional)
+         * Remove item from cart
          */
         async removeFromCart(itemId, title = 'Item') {
-            return handleAsyncAction(this, async () => {
-                try {
-                    const response = await cartApi.removeFromCart(itemId)
-                    this.setItems(response.items)
+            this.loading = true
+            this.error = null
 
-                    // Show success notification
-                    const { showSuccess } = useNotifications()
-                    showSuccess(`"${title}" removed from cart`, {
-                        icon: 'mdi-cart-minus',
-                    })
-                } catch (error) {
-                    const { showError } = useNotifications()
-                    showError(`Failed to remove "${title}" from cart: ${error.message}`, {
-                        icon: 'mdi-alert-circle',
-                    })
-                    throw error
-                }
-            })
+            const { showSuccess, showError } = useNotifications()
+
+            try {
+                const response = await cartApi.removeFromCart(itemId)
+                this.setItems(response.items)
+
+                showSuccess(`"${title}" removed from cart`, {
+                    icon: 'mdi-cart-minus',
+                })
+            } catch (error) {
+                this.error = error.message
+                showError(`Failed to remove "${title}" from cart: ${error.message}`, {
+                    icon: 'mdi-alert-circle',
+                })
+                throw error
+            } finally {
+                this.loading = false
+            }
         },
+
         /**
          * Update item quantity
-         * @param {Object} payload - Update data
-         * @param {string} payload.itemId - Item ID
-         * @param {number} payload.quantity - New quantity
-         * @param {string} payload.title - Book title (optional)
          */
         async updateQuantity(payload) {
             const { title = 'Item' } = payload
+            this.loading = true
+            this.error = null
 
-            return handleAsyncAction(this, async () => {
-                try {
-                    const authStore = useAuthStore()
-                    if (authStore.isAuthenticated) {
-                        // Server-side cart
-                        const response = await cartApi.updateQuantity(payload.itemId, payload.quantity)
-                        if (response && response.items) {
-                            this.setItems(response.items)
-                        }
-                    } else {
-                        // Local cart
-                        this.updateLocalQuantity(payload)
-                    }
+            const { showSuccess, showError } = useNotifications()
 
-                    // Show success notification
-                    const { showSuccess } = useNotifications()
-                    showSuccess(`"${title}" quantity updated to ${payload.quantity}`, {
-                        icon: 'mdi-cart-outline',
-                    })
-                } catch (error) {
-                    const { showError } = useNotifications()
-                    showError(`Failed to update quantity: ${error.message}`, {
-                        icon: 'mdi-alert-circle',
-                    })
-                    throw error
-                }
-            })
-        },
-        /**
-         * Clear the cart
-         */
-        async clearCart() {
-            return handleAsyncAction(this, async () => {
-                try {
-                    await cartApi.clearCart()
-                    this.items = []
-                    localStorage.removeItem('cart')
+            try {
+                const { useAuthStore } = await import('@/store/modules/auth')
+                const authStore = useAuthStore()
 
-                    // Show success notification
-                    const { showSuccess } = useNotifications()
-                    showSuccess('Cart cleared successfully', {
-                        icon: 'mdi-cart-off',
-                    })
-                } catch (error) {
-                    const { showError } = useNotifications()
-                    showError(`Failed to clear cart: ${error.message}`, {
-                        icon: 'mdi-alert-circle',
-                    })
-                    throw error
-                }
-            })
-        },
-
-        /**
-         * Synchronize local cart with server after login
-         */
-        async syncCart() {
-            return handleAsyncAction(this, async () => {
-                try {
-                    const localCart = JSON.parse(localStorage.getItem('cart')) || []
-
-                    // Don't sync if cart is empty
-                    if (localCart.length === 0) {
-                        return
-                    }
-
-                    const response = await cartApi.syncCart(localCart)
-
+                if (authStore.isAuthenticated) {
+                    // Server-side cart
+                    const response = await cartApi.updateQuantity(payload.itemId, payload.quantity)
                     if (response?.items) {
                         this.setItems(response.items)
-                        localStorage.removeItem('cart')
-                    } else {
-                        throw new Error('Failed to sync cart')
                     }
-                } catch (error) {
-                    // Don't show error notifications for sync failures
-                    // Just log the error and continue
-                    console.warn('Cart sync failed:', error.message)
-                    throw error
+                } else {
+                    // Local cart
+                    this.updateLocalQuantity(payload)
                 }
-            })
+
+                showSuccess(`"${title}" quantity updated to ${payload.quantity}`, {
+                    icon: 'mdi-cart-outline',
+                })
+            } catch (error) {
+                this.error = error.message
+                showError(`Failed to update quantity: ${error.message}`, {
+                    icon: 'mdi-alert-circle',
+                })
+                throw error
+            } finally {
+                this.loading = false
+            }
         },
 
         /**
-         * Helper method to set items and update localStorage
-         * @param {Array} items - Cart items
+         * Clear cart
+         */
+        async clearCart() {
+            this.loading = true
+            this.error = null
+
+            const { showSuccess, showError } = useNotifications()
+
+            try {
+                await cartApi.clearCart()
+                this.items = []
+                localStorage.removeItem('cart')
+
+                showSuccess('Cart cleared successfully', {
+                    icon: 'mdi-cart-off',
+                })
+            } catch (error) {
+                this.error = error.message
+                showError(`Failed to clear cart: ${error.message}`, {
+                    icon: 'mdi-alert-circle',
+                })
+                throw error
+            } finally {
+                this.loading = false
+            }
+        },
+
+        /**
+         * Sync local cart with server after login
+         */
+        async syncCart() {
+            this.loading = true
+            this.error = null
+
+            try {
+                const localCart = JSON.parse(localStorage.getItem('cart')) || []
+
+                if (localCart.length === 0) {
+                    return
+                }
+
+                const response = await cartApi.syncCart(localCart)
+
+                if (response?.items) {
+                    this.setItems(response.items)
+                    localStorage.removeItem('cart')
+                }
+            } catch (error) {
+                this.error = error.message
+                console.warn('Cart sync failed:', error.message)
+            } finally {
+                this.loading = false
+            }
+        },
+
+        /**
+         * Set items and update localStorage
          */
         setItems(items) {
             this.items = items || []
@@ -221,8 +252,7 @@ export const useCartStore = createBaseStore({
         },
 
         /**
-         * Add an item to local storage cart
-         * @param {Object} item - Item to add
+         * Add item to local cart
          */
         addLocalItem(item) {
             const existingItem = this.items.find((i) => i.bookId?._id === item.bookId?._id || i.bookId === item.bookId)
@@ -235,8 +265,7 @@ export const useCartStore = createBaseStore({
         },
 
         /**
-         * Update quantity in local storage cart
-         * @param {Object} payload - Update data
+         * Update quantity in local cart
          */
         updateLocalQuantity({ bookId, quantity }) {
             const item = this.items.find((i) => i.bookId === bookId)
@@ -244,6 +273,20 @@ export const useCartStore = createBaseStore({
                 item.quantity = quantity
             }
             localStorage.setItem('cart', JSON.stringify(this.items))
+        },
+
+        /**
+         * Set error message
+         */
+        setError(message) {
+            this.error = message
+        },
+
+        /**
+         * Clear error message
+         */
+        clearError() {
+            this.error = null
         },
     },
 })

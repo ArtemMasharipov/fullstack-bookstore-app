@@ -89,7 +89,7 @@
 </template>
 
 <script setup>
-import { useAuthStore, useBooksStore, useUiStore } from '@/store'
+import { useAuthStore, useBooksStore } from '@/store'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -133,21 +133,9 @@ const router = useRouter()
 // Stores
 const authStore = useAuthStore()
 const booksStore = useBooksStore()
-const uiStore = useUiStore()
 
 // Extract reactive state from stores
-const {
-    booksList: books,
-    booksLoading,
-    booksPagination,
-    showForm,
-    selectedBook,
-    bookToDelete,
-    formSubmitting,
-    showDeleteDialog,
-    filterParams,
-    page: uiCurrentPage,
-} = storeToRefs(booksStore)
+const { booksList: books, booksLoading, booksPagination, filterParams, page: uiCurrentPage } = storeToRefs(booksStore)
 
 // Local reactive state
 const searchQuery = ref('')
@@ -178,8 +166,6 @@ const loadBooks = () => {
 
 const handleResize = () => {
     windowWidth.value = window.innerWidth
-    // Also update the UI store
-    uiStore.handleWindowResize()
 }
 
 const viewDetails = (bookId) => {
@@ -238,8 +224,7 @@ onMounted(() => {
             authorId: props.authorId,
             itemsPerPage: props.itemsPerPage,
         })
-        // Set up search debounce
-        booksStore.setupSearchDebounce()
+        // Search debounce is now handled locally in the component
 
         // Add event listener for window resizing
         window.addEventListener('resize', handleResize)

@@ -1,40 +1,70 @@
 import { useNotifications } from '@/composables/useNotifications'
 import { authApi } from '@/services/api/authService'
-import { useCartStore } from '@/store/modules/cart/cart'
-import { handleAsyncAction } from '@/store/utils/stateHelpers'
-import { createBaseStore } from '@/store/utils/storeFactory'
 import { jwtDecode } from 'jwt-decode'
+import { defineStore } from 'pinia'
 
 /**
- * Authentication store using the base store factory
- * - Uses shared logic from the factory for loading and error states
- * - Implements authentication-specific functionality
+ * Authentication Store
+ * Manages user authentication, tokens, and permissions
+ *
+ * Simplified version without factory - direct Pinia implementation
  */
-export const useAuthStore = createBaseStore({
-    id: 'auth',
-    api: authApi,
-
-    // Custom state specific to auth store
-    customState: () => ({
+export const useAuthStore = defineStore('auth', {
+    state: () => ({
+        // Auth state
         token: localStorage.getItem('token') || null,
         user: null,
         permissions: [],
+
+        // Loading & error states
+        loading: false,
+        error: null,
     }),
 
-    // Custom getters specific to auth store
-    customGetters: {
+    getters: {
+        /**
+         * Check if user is authenticated
+         */
         isAuthenticated: (state) => !!state.token,
+
+        /**
+         * Get current user
+         */
         currentUser: (state) => state.user,
+
+        /**
+         * Get auth token
+         */
         authToken: (state) => state.token,
+
+        /**
+         * Check loading state
+         */
         authLoading: (state) => state.loading,
+
+        /**
+         * Get error message
+         */
         authError: (state) => state.error,
-        hasPermission: (state) => (permission) => state.permissions.includes(permission),
+
+        /**
+         * Check if user is admin
+         */
+        isAdmin: (state) => {
+            return state.user?.role === 'admin' || state.permissions.includes('admin:access')
+        },
+
+        /**
+         * Check if user has specific permission
+         */
+        hasPermission: (state) => (permission) => {
+            return state.permissions.includes(permission)
+        },
     },
 
-    // Custom actions specific to auth store
-    customActions: {
+    actions: {
         /**
-         * Initialize the auth store
+         * Initialize auth store - restore user from token
          */
         async initialize() {
             try {
@@ -45,17 +75,12 @@ export const useAuthStore = createBaseStore({
                 }
             } catch (error) {
                 console.warn('Auth initialization failed:', error.message)
-                // Clear invalid token
-                localStorage.removeItem('token')
-                localStorage.removeItem('userData')
-                this.token = null
-                this.user = null
-                this.permissions = []
+                this.clearAuth()
             }
         },
+
         /**
-         * Log in a user
-         * @param {Object} credentials - Login credentials
+         * Login user
          */
         async login(credentials) {
             this.loading = true
@@ -66,25 +91,26 @@ export const useAuthStore = createBaseStore({
             try {
                 const response = await authApi.login(credentials)
 
-                // Check if we have both user and token in the response
-                if (!response || !response.user || !response.token) {
+                if (!response?.data?.user || !response?.data?.token) {
                     throw new Error('Invalid login response from server')
                 }
 
-                const { user, token } = response
+                const { user, token } = response.data
+
+                // Update state
                 this.user = user
                 this.token = token
                 this.permissions = user.permissions || []
 
-                // Save data in localStorage
+                // Save to localStorage
                 localStorage.setItem('token', token)
                 localStorage.setItem('userData', JSON.stringify(user))
 
                 // Sync cart after login
+                const { useCartStore } = await import('@/store/modules/cart/cart')
                 const cartStore = useCartStore()
                 await cartStore.syncCart()
 
-                // User login success - show toast notification
                 showSuccess(`Welcome back, ${user.name || user.email || 'User'}!`, {
                     icon: 'mdi-account-check',
                 })
@@ -92,13 +118,8 @@ export const useAuthStore = createBaseStore({
                 return response
             } catch (error) {
                 this.error = error.message || 'Login failed'
-                this.user = null
-                this.token = null
-                this.permissions = []
-                localStorage.removeItem('token')
-                localStorage.removeItem('userData')
+                this.clearAuth()
 
-                // Login failed - show error notification
                 showError(`Login failed: ${error.message || 'Invalid credentials'}`, {
                     icon: 'mdi-account-alert',
                 })
@@ -108,164 +129,165 @@ export const useAuthStore = createBaseStore({
                 this.loading = false
             }
         },
+
         /**
-         * Register a new user
-         * @param {Object} userData - User registration data
+         * Register new user
          */
         async register(userData) {
+            this.loading = true
+            this.error = null
+
             const { showSuccess, showError } = useNotifications()
 
-            return handleAsyncAction(
-                this,
-                async () => {
-                    const { user, token } = await authApi.register(userData)
-                    this.user = user
-                    this.token = token
-                    this.permissions = user.permissions || []
-                    localStorage.setItem('token', token)
-                    localStorage.setItem('userData', JSON.stringify(user))
+            try {
+                const response = await authApi.register(userData)
+                const { user, token } = response.data
 
-                    // Registration success - show toast notification
-                    showSuccess(`Welcome to Bookstore, ${user.name || user.email || 'User'}!`, {
-                        icon: 'mdi-account-plus',
-                    })
+                // Update state
+                this.user = user
+                this.token = token
+                this.permissions = user.permissions || []
 
-                    return { user, token }
-                },
-                {
-                    onError: (error) => {
-                        // Registration failed - show error notification
-                        showError(`Registration failed: ${error.message || 'Please try again'}`, {
-                            icon: 'mdi-account-remove',
-                        })
-                    },
-                }
-            )
+                // Save to localStorage
+                localStorage.setItem('token', token)
+                localStorage.setItem('userData', JSON.stringify(user))
+
+                showSuccess(`Welcome to Bookstore, ${user.name || user.email || 'User'}!`, {
+                    icon: 'mdi-account-plus',
+                })
+
+                return { user, token }
+            } catch (error) {
+                this.error = error.message || 'Registration failed'
+
+                showError(`Registration failed: ${error.message || 'Please try again'}`, {
+                    icon: 'mdi-account-remove',
+                })
+
+                throw error
+            } finally {
+                this.loading = false
+            }
         },
+
         /**
-         * Log out the current user
+         * Logout user
          */
         async logout() {
             const userName = this.user?.name || this.user?.email || 'User'
             const { showSuccess, showError } = useNotifications()
 
-            return handleAsyncAction(
-                this,
-                async () => {
-                    await authApi.logout()
-                    this.user = null
-                    this.token = null
-                    this.permissions = []
-                    localStorage.removeItem('token')
-                    localStorage.removeItem('userData')
+            this.loading = true
 
-                    // Logout success - show toast notification
-                    showSuccess(`${userName} has been logged out`, {
-                        icon: 'mdi-logout',
-                    })
-                },
-                {
-                    onError: (error) => {
-                        // Logout failed - show error notification
-                        showError(`Logout failed: ${error.message}`, {
-                            icon: 'mdi-logout-variant',
-                        })
-                    },
-                }
-            )
+            try {
+                await authApi.logout()
+
+                showSuccess(`${userName} has been logged out`, {
+                    icon: 'mdi-logout',
+                })
+            } catch (error) {
+                showError(`Logout failed: ${error.message}`, {
+                    icon: 'mdi-logout-variant',
+                })
+            } finally {
+                this.clearAuth()
+                this.loading = false
+            }
         },
 
         /**
-         * Restore user data from token in localStorage
+         * Restore user from JWT token in localStorage
          */
         restoreUserFromToken() {
             const token = localStorage.getItem('token')
-            if (token) {
-                try {
-                    // Decode token for basic authentication
-                    const decoded = jwtDecode(token)
-                    this.token = token
+            if (!token) return
 
-                    // Check if we have saved full user data in localStorage
-                    const userData = localStorage.getItem('userData')
-                    if (userData) {
-                        try {
-                            // If we have cached data, use it
-                            this.user = JSON.parse(userData)
-                            this.permissions = this.user.permissions || []
-                        } catch (parseError) {
-                            // If parsing error, use token data
-                            this.user = decoded
-                            this.permissions = decoded.permissions || []
-                        }
-                    } else {
-                        // If no cached data, set from token
-                        this.user = decoded
-                        this.permissions = decoded.permissions || []
+            try {
+                const decoded = jwtDecode(token)
+                this.token = token
 
-                        // Asynchronously request current user data from server
-                        this.fetchCurrentUser()
-                    }
-                } catch (error) {
-                    this.user = null
-                    this.permissions = []
-                    localStorage.removeItem('token')
-                    localStorage.removeItem('userData')
+                // Try to get cached user data
+                const userData = localStorage.getItem('userData')
+                if (userData) {
+                    this.user = JSON.parse(userData)
+                    this.permissions = this.user.permissions || []
+                } else {
+                    // Use token data as fallback
+                    this.user = decoded
+                    this.permissions = decoded.permissions || []
+
+                    // Fetch current user in background
+                    this.fetchCurrentUser()
                 }
+            } catch (error) {
+                console.error('Failed to restore user from token:', error)
+                this.clearAuth()
             }
         },
 
         /**
-         * Fetch current user data from server
+         * Fetch current user from server
          */
         async fetchCurrentUser() {
             try {
-                // Get current user data from server
-                const userData = await authApi.getCurrentUser()
-                if (userData) {
-                    this.user = userData
-                    this.permissions = userData.permissions || []
-                    // Save full data in localStorage for later reloads
-                    localStorage.setItem('userData', JSON.stringify(userData))
+                const response = await authApi.getCurrentUser()
+                if (response?.data) {
+                    this.user = response.data
+                    this.permissions = response.data.permissions || []
+                    localStorage.setItem('userData', JSON.stringify(response.data))
                 }
             } catch (error) {
-                // Failed to fetch user data, continue with existing data
+                console.warn('Failed to fetch current user:', error.message)
             }
         },
 
         /**
-         * Check authentication status and validity of the token
+         * Check auth status and token validity
          */
         async checkAuthStatus() {
             const token = localStorage.getItem('token')
             if (!token) return false
 
             try {
-                // Verify token with server or check expiration
                 const decoded = jwtDecode(token)
 
-                // If token is expired, handle it
+                // Check if token is expired
                 if (decoded.exp && decoded.exp * 1000 < Date.now()) {
-                    this.handleExpiredToken()
+                    this.clearAuth()
                     return false
                 }
 
                 return true
             } catch (error) {
-                this.handleExpiredToken()
+                this.clearAuth()
                 return false
             }
         },
 
         /**
-         * Handle expired or invalid tokens
+         * Clear auth state
          */
-        handleExpiredToken() {
+        clearAuth() {
             this.user = null
             this.token = null
             this.permissions = []
+            this.error = null
             localStorage.removeItem('token')
             localStorage.removeItem('userData')
+        },
+
+        /**
+         * Set error message
+         */
+        setError(message) {
+            this.error = message
+        },
+
+        /**
+         * Clear error message
+         */
+        clearError() {
+            this.error = null
         },
     },
 })

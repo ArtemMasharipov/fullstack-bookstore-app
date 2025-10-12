@@ -1,11 +1,26 @@
-import { createApiClient } from './apiFactory'
+import baseApi from './baseApi'
 
 /**
- * Roles API service
- * Provides centralized access to roles-related API endpoints
- * Follows the same pattern as other API services in the project
+ * Roles API - direct axios implementation
+ * No factory abstractions (ЭТАП 3)
  */
-export const rolesApi = createApiClient('roles', {
-    // Additional custom methods can be added here if needed
-    // For now, we use the default CRUD operations from createApiClient
-})
+export const rolesApi = {
+    fetchAll: (params) => baseApi.get('/roles', { params }).then((res) => res.data),
+    
+    fetchById: (id) => {
+        if (!id) throw new Error('Role ID is required')
+        return baseApi.get(`/roles/${id}`).then((res) => res.data)
+    },
+    
+    create: (data) => baseApi.post('/roles', data).then((res) => res.data),
+    
+    update: (id, data) => {
+        if (!id) throw new Error('Role ID is required')
+        return baseApi.put(`/roles/${id}`, data).then((res) => res.data)
+    },
+    
+    delete: (id) => {
+        if (!id) throw new Error('Role ID is required')
+        return baseApi.delete(`/roles/${id}`).then((res) => res.data)
+    },
+}
