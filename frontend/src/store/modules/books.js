@@ -250,15 +250,6 @@ export const useBooksStore = defineStore('books', {
         },
 
         /**
-         * Initialize with filter options
-         */
-        initialize({ category = null, authorId = null, itemsPerPage = 12 }) {
-            this.category = category
-            this.authorId = authorId
-            this.limit = itemsPerPage
-        },
-
-        /**
          * Set search query
          */
         setSearchQuery(query) {

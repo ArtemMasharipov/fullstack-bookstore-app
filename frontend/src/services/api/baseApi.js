@@ -17,17 +17,17 @@ const baseApi = axios.create({
 baseApi.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token')
-        
+
         // Public endpoints that don't require auth
         const publicEndpoints = ['/auth/login', '/auth/register', '/books', '/authors']
         const isPublic = publicEndpoints.some((ep) => config.url.includes(ep))
-        
+
         if (token && (!isPublic || config.headers.Authorization)) {
             config.headers.Authorization = `Bearer ${token}`
         } else if (!isPublic && !token) {
             return Promise.reject(new Error('Authorization required'))
         }
-        
+
         return config
     },
     (error) => Promise.reject(error)
@@ -43,9 +43,9 @@ baseApi.interceptors.response.use(
             networkError.code = 'NETWORK_ERROR'
             return Promise.reject(networkError)
         }
-        
+
         const { status, data } = error.response
-        
+
         // Unauthorized - redirect to login
         if (status === 401) {
             const currentPath = window.location.pathname
@@ -54,13 +54,13 @@ baseApi.interceptors.response.use(
                 window.location.href = '/login'
             }
         }
-        
+
         // Create error with message
         const message = data?.message || data?.error || 'An error occurred'
         const apiError = new Error(message)
         apiError.status = status
         apiError.data = data
-        
+
         return Promise.reject(apiError)
     }
 )

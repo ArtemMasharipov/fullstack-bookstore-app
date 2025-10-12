@@ -192,8 +192,9 @@
 </template>
 
 <script setup>
+import { useImageUpload } from '@/composables/useImageUpload'
 import { useAuthorsStore } from '@/store/modules/authors'
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import BaseModal from '../../ui/BaseModal.vue'
 
 /**
@@ -231,7 +232,22 @@ const authorsStore = useAuthorsStore()
  * Template refs
  */
 const bookForm = ref(null)
-const fileInput = ref(null)
+
+/**
+ * Image upload composable
+ */
+const {
+    fileInput,
+    currentImage,
+    fileConfig,
+    hasImage,
+    imageFileName,
+    currentPreviewUrl,
+    triggerFileInput,
+    handleImageUpload,
+    setCurrentImage,
+    removeImage,
+} = useImageUpload()
 
 /**
  * Reactive data
@@ -247,16 +263,6 @@ const form = reactive({
     inStock: true,
 })
 
-const fileConfig = reactive({
-    maxSize: 10 * 1024 * 1024, // 10MB
-    allowedTypes: ['image/jpeg', 'image/png', 'image/gif'],
-    file: null,
-    preview: null,
-    error: null,
-})
-
-const currentImage = ref(null)
-const isFileDialogOpen = ref(false)
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 
@@ -298,16 +304,6 @@ const submitButtonText = computed(() => {
     return isEdit.value ? 'Save Changes' : 'Create Book'
 })
 
-const hasImage = computed(() => fileConfig.file || currentImage.value)
-
-const imageFileName = computed(() => {
-    if (fileConfig.file) return fileConfig.file.name
-    if (currentImage.value) return currentImage.value.split('/').pop()
-    return ''
-})
-
-const currentPreviewUrl = computed(() => fileConfig.preview || currentImage.value)
-
 const showModal = computed({
     get() {
         return props.modelValue
@@ -331,7 +327,7 @@ watch(
             })
 
             if (newVal.image) {
-                currentImage.value = newVal.image
+                setCurrentImage(newVal.image)
             }
 
             errorMessage.value = ''
@@ -350,61 +346,6 @@ watch(
  */
 const fetchAuthors = () => {
     return authorsStore.fetchAuthors()
-}
-
-const triggerFileInput = () => {
-    isFileDialogOpen.value = true
-    fileInput.value.click()
-}
-
-const validateFile = (file) => {
-    if (!fileConfig.allowedTypes.includes(file.type)) {
-        throw new Error('Please upload an image file (JPEG, PNG, GIF)')
-    }
-    if (file.size > fileConfig.maxSize) {
-        throw new Error('File size should not exceed 10MB')
-    }
-}
-
-const handleImageUpload = (event) => {
-    isFileDialogOpen.value = false
-    const file = event.target.files[0]
-    if (!file) return
-
-    try {
-        validateFile(file)
-        fileConfig.file = file
-        fileConfig.preview = URL.createObjectURL(file)
-        fileConfig.error = null
-    } catch (error) {
-        fileConfig.error = error.message
-        resetImage()
-    }
-}
-
-const resetImage = () => {
-    if (fileConfig.preview) {
-        URL.revokeObjectURL(fileConfig.preview)
-    }
-    Object.assign(fileConfig, {
-        ...fileConfig,
-        file: null,
-        preview: null,
-        error: null,
-    })
-    if (fileInput.value) {
-        fileInput.value.value = ''
-    }
-}
-
-const removeCurrentImage = () => {
-    currentImage.value = null
-    form.image = null
-}
-
-const removeImage = () => {
-    resetImage()
-    removeCurrentImage()
 }
 
 const handleClose = () => {
@@ -468,9 +409,5 @@ const handleSubmit = async () => {
  */
 onMounted(() => {
     fetchAuthors()
-})
-
-onBeforeUnmount(() => {
-    resetImage()
 })
 </script>
