@@ -1,122 +1,122 @@
 # Fullstack Bookstore App
 
-A modern fullstack bookstore application built with Vue 3, Pinia, Vuetify, and Node.js.
+A modern e-commerce bookstore application built with Vue 3 and Node.js.
 
 ## Features
 
-- **Frontend**: Vue 3 + Pinia + Vuetify
-- **Backend**: Node.js + Express + MongoDB
-- **Authentication**: JWT-based auth system
-- **Admin Panel**: Book and user management
-- **Shopping Cart**: Add/remove books, quantity management
-- **Orders**: Order history and management
-- **Responsive Design**: Mobile-friendly interface
+- User authentication and authorization
+- Book catalog with search and filtering
+- Shopping cart functionality
+- Order management system
+- Admin panel for content management
+- Responsive design
 
 ## Tech Stack
 
-### Frontend
-- Vue 3 (Composition API)
-- Pinia (State Management)
-- Vuetify 3 (UI Framework)
-- Vue Router 4
-- Axios (HTTP Client)
-
-### Backend
-- Node.js + Express
-- MongoDB + Mongoose
-- JWT Authentication
-- Clean Architecture (DDD)
+**Frontend:** Vue 3, Pinia, Vuetify 3, Vue Router 4, Vite  
+**Backend:** Node.js, Express.js, MongoDB, Mongoose, JWT
 
 ## Quick Start
 
 ### Prerequisites
 - Node.js 16+
-- MongoDB
+- MongoDB 4.4+
 
 ### Installation
 
-1. Clone the repository
 ```bash
+# Clone repository
 git clone <repository-url>
 cd fullstack-bookstore-app
+
+# Install dependencies
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
-2. Install dependencies
+### Environment Setup
+
+Create `backend/.env`:
+```env
+NODE_ENV=development
+PORT=3000
+MONGODB_URI=mongodb://localhost:27017/bookstore
+JWT_SECRET=your-secret-key
+```
+
+### Run Application
+
 ```bash
 # Backend
-cd backend
-npm install
+cd backend && npm start
 
 # Frontend
-cd ../frontend
-npm install
+cd frontend && npm run dev
 ```
 
-3. Environment Setup
-```bash
-# Backend - create .env file
-cp backend/.env.example backend/.env
-# Edit backend/.env with your MongoDB connection string
-```
-
-4. Start the application
-```bash
-# Backend (from backend directory)
-npm run dev
-
-# Frontend (from frontend directory)
-npm run dev
-```
-
-The app will be available at:
-- Frontend: http://localhost:5173
-- Backend: http://localhost:3000
+**Access:**
+- Frontend: http://localhost:8080
+- Backend API: http://localhost:3000
 
 ## Project Structure
 
 ```
-├── backend/                 # Node.js API
-│   ├── src/
-│   │   ├── application/     # Use cases
-│   │   ├── domain/          # Entities & repositories
-│   │   ├── infrastructure/  # Database & external services
-│   │   └── presentation/    # Controllers & routes
-├── frontend/                # Vue.js SPA
-│   ├── src/
-│   │   ├── components/      # Vue components
-│   │   ├── composables/     # Composition API functions
-│   │   ├── store/           # Pinia stores
-│   │   ├── services/        # API services
-│   │   └── views/           # Page components
-└── README.md
-```
-
-## Development
-
-### Backend Commands
-```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm test            # Run tests
-```
-
-### Frontend Commands
-```bash
-npm run dev         # Start development server
-npm run build       # Build for production
-npm run preview     # Preview production build
-npm run lint        # Run ESLint
+├── backend/           # Node.js API
+│   ├── controllers/   # Request handlers
+│   ├── services/      # Business logic
+│   ├── models/        # Data models
+│   ├── middleware/    # Middleware functions
+│   └── routes/        # API routes
+└── frontend/          # Vue.js SPA
+    ├── src/
+    │   ├── components/ # Vue components
+    │   ├── views/      # Page components
+    │   ├── store/      # Pinia stores
+    │   ├── services/   # API services
+    │   └── router/     # Routing
 ```
 
 ## API Endpoints
 
-- `POST /api/v1/auth/login` - User login
+### Authentication
 - `POST /api/v1/auth/register` - User registration
+- `POST /api/v1/auth/login` - User login
+- `GET /api/v1/auth/profile` - User profile
+
+### Books
 - `GET /api/v1/books` - Get books list
+- `GET /api/v1/books/:id` - Get book details
 - `POST /api/v1/books` - Create book (admin)
+- `PUT /api/v1/books/:id` - Update book (admin)
+- `DELETE /api/v1/books/:id` - Delete book (admin)
+
+### Cart
 - `GET /api/v1/cart` - Get user cart
-- `POST /api/v1/cart` - Add to cart
+- `POST /api/v1/cart/add` - Add to cart
+- `PUT /api/v1/cart/update` - Update quantity
+- `DELETE /api/v1/cart/remove/:id` - Remove from cart
+
+### Orders
 - `GET /api/v1/orders` - Get user orders
+- `POST /api/v1/orders` - Create order
+- `GET /api/v1/orders/:id` - Get order details
+
+## Development
+
+```bash
+# Backend
+npm start          # Start server
+npm run dev        # Development mode
+
+# Frontend
+npm run dev        # Development mode
+npm run build      # Production build
+npm run lint       # Code linting
+```
+
+## Documentation
+
+This project follows clean architecture principles with separation of concerns between frontend and backend components.
 
 ## License
 
