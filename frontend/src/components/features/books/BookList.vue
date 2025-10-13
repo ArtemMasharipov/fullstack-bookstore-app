@@ -5,46 +5,22 @@
                 <v-toolbar-title class="text-white font-weight-medium"> Books </v-toolbar-title>
 
                 <v-spacer></v-spacer>
-                <v-text-field
-                    v-model="searchQuery"
-                    prepend-inner-icon="mdi-magnify"
-                    label="Search books"
-                    hide-details
-                    density="compact"
-                    variant="solo-filled"
-                    class="mx-2 mt-1 shrink"
-                    bg-color="primary-lighten-1"
-                    style="max-width: 250px"
-                    clearable
-                ></v-text-field>
+                <v-text-field v-model="searchQuery" prepend-inner-icon="mdi-magnify" label="Search books" hide-details
+                    density="compact" variant="solo-filled" class="mx-2 mt-1 shrink" bg-color="primary-lighten-1"
+                    style="max-width: 250px" clearable></v-text-field>
                 <!-- Admin button removed in preparation for new admin panel -->
             </v-toolbar>
 
             <!-- Loading state -->
-            <v-skeleton-loader
-                v-if="booksLoading"
-                type="card-avatar, article, actions"
-                class="py-4"
-            ></v-skeleton-loader>
+            <v-skeleton-loader v-if="booksLoading" type="card-avatar, article, actions"
+                class="py-4"></v-skeleton-loader>
 
             <!-- Empty state -->
-            <v-alert
-                v-else-if="!books.length"
-                type="info"
-                variant="tonal"
-                class="ma-4 text-center"
-                icon="mdi-bookshelf"
-                border="start"
-            >
+            <v-alert v-else-if="!books.length" type="info" variant="tonal" class="ma-4 text-center" icon="mdi-bookshelf"
+                border="start">
                 <p class="mb-1">No books found.</p>
-                <v-btn
-                    v-if="authStore.hasPermission('admin:access')"
-                    color="primary"
-                    variant="text"
-                    density="comfortable"
-                    to="/admin/books"
-                    prepend-icon="mdi-shield-account"
-                >
+                <v-btn v-if="authStore.hasPermission('admin:access')" color="primary" variant="text"
+                    density="comfortable" to="/admin/books" prepend-icon="mdi-shield-account">
                     Manage Books
                 </v-btn>
                 <p v-else class="mt-2 text-caption">Check back later for new books.</p>
@@ -53,36 +29,18 @@
             <!-- Books grid -->
             <v-container v-else fluid class="py-2">
                 <v-row>
-                    <v-col
-                        v-for="book in books"
-                        :key="book._id"
-                        cols="12"
-                        sm="6"
-                        md="4"
-                        lg="3"
-                        class="d-flex align-stretch"
-                    >
-                        <book-card
-                            :book="book"
-                            @click="viewDetails(book._id)"
-                            @add-to-cart="addToCartSuccess"
-                            class="w-100"
-                        />
+                    <v-col v-for="book in books" :key="book._id" cols="12" sm="6" md="4" lg="3"
+                        class="d-flex align-stretch">
+                        <book-card :book="book" @click="viewDetails(book._id)" @add-to-cart="addToCartSuccess"
+                            class="w-100" />
                     </v-col>
                 </v-row>
             </v-container>
 
             <!-- Pagination -->
             <v-card-actions v-if="books.length && totalPages > 1" class="justify-center pa-4">
-                <v-pagination
-                    v-model="currentPage"
-                    :length="totalPages"
-                    :total-visible="isMobile ? 3 : 7"
-                    @update:model-value="changePage"
-                    rounded
-                    color="primary"
-                    active-color="primary"
-                ></v-pagination>
+                <v-pagination v-model="currentPage" :length="totalPages" :total-visible="isMobile ? 3 : 7"
+                    @update:model-value="changePage" rounded color="primary" active-color="primary"></v-pagination>
             </v-card-actions>
         </v-card>
     </div>

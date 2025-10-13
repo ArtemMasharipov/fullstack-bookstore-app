@@ -40,7 +40,7 @@ authStore
         logger.info('Application initialized successfully', { version: '2.0' }, 'app-init')
     })
     .catch((error) => {
-        console.error('Failed to initialize application:', error)
+        // Failed to initialize application
         // Mount app anyway to show error page
         app.mount('#app')
     })

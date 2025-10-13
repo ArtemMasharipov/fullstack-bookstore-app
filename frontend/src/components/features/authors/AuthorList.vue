@@ -67,7 +67,7 @@ const fetchAuthors = async () => {
     try {
         await authorsStore.fetchAuthors()
     } catch (error) {
-        console.error('Failed to fetch authors:', error)
+        // Failed to fetch authors
     }
 }
 

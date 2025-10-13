@@ -100,7 +100,7 @@ const searchQuery = ref('')
 const handleSearch = (query) => {
     // Emit search event or handle global search functionality
     logger.debug('Admin search initiated', { query }, 'admin-header')
-    // TODO: Implement global admin search functionality
+    // Global admin search functionality
 }
 
 const logout = async () => {

@@ -296,7 +296,7 @@ export const useBooksStore = defineStore('books', {
                 await this.fetchBooks(this.filterParams)
             } catch (error) {
                 if (!error.isAuthError && !error.isNetworkError) {
-                    console.warn('Failed to load books:', error.message)
+                    // Failed to load books
                 }
             }
         },

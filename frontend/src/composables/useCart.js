@@ -83,7 +83,7 @@ export function useCart() {
                 await syncWithServer()
             }
         } catch (error) {
-            console.error('Failed to update quantity')
+            // Failed to update quantity
             throw error
         }
     }

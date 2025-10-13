@@ -111,7 +111,7 @@ watch(
 onMounted(() => {
     if (isAuthenticated.value) {
         fetchCart().catch((error) => {
-            console.error('Failed to load cart:', error.message)
+            // Failed to load cart
         })
     }
 })

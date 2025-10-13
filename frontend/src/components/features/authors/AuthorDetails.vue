@@ -132,7 +132,7 @@ const handleDelete = async () => {
         await deleteAuthor(author.value.id)
         router.push('/authors')
     } catch (error) {
-        console.error('Failed to delete author:', error.message || error)
+        // Failed to delete author
     }
 }
 

@@ -65,7 +65,7 @@ const onErrorCaptured = (err, instance, info) => {
         }
 
         // Log error for debugging
-        console.error('Error captured in AdminErrorBoundary:', err)
+        // Error captured in AdminErrorBoundary
         console.info('Component:', instance?.type?.name)
         console.info('Error Info:', info)
 

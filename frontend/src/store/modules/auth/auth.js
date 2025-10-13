@@ -74,7 +74,7 @@ export const useAuthStore = defineStore('auth', {
                     this.restoreUserFromToken()
                 }
             } catch (error) {
-                console.warn('Auth initialization failed:', error.message)
+                // Auth initialization failed
                 this.clearAuth()
             }
         },
@@ -220,7 +220,7 @@ export const useAuthStore = defineStore('auth', {
                     this.fetchCurrentUser()
                 }
             } catch (error) {
-                console.error('Failed to restore user from token:', error)
+                // Failed to restore user from token
                 this.clearAuth()
             }
         },
@@ -237,7 +237,7 @@ export const useAuthStore = defineStore('auth', {
                     localStorage.setItem('userData', JSON.stringify(response.data))
                 }
             } catch (error) {
-                console.warn('Failed to fetch current user:', error.message)
+                // Failed to fetch current user
             }
         },
 

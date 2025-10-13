@@ -15,7 +15,7 @@ export const sessionStorage = {
             const item = window.sessionStorage.getItem(key)
             return item ? JSON.parse(item) : defaultValue
         } catch (error) {
-            console.error('Error reading from sessionStorage:', error)
+            // Error reading from sessionStorage
             return defaultValue
         }
     },
@@ -29,7 +29,7 @@ export const sessionStorage = {
         try {
             window.sessionStorage.setItem(key, JSON.stringify(value))
         } catch (error) {
-            console.error('Error writing to sessionStorage:', error)
+            // Error writing to sessionStorage
         }
     },
 
@@ -41,7 +41,7 @@ export const sessionStorage = {
         try {
             window.sessionStorage.removeItem(key)
         } catch (error) {
-            console.error('Error removing from sessionStorage:', error)
+            // Error removing from sessionStorage
         }
     },
 
@@ -52,7 +52,7 @@ export const sessionStorage = {
         try {
             window.sessionStorage.clear()
         } catch (error) {
-            console.error('Error clearing sessionStorage:', error)
+            // Error clearing sessionStorage
         }
     },
 }

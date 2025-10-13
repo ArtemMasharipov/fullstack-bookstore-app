@@ -160,7 +160,7 @@ const handleAddToCart = async () => {
         await cartStore.fetchCart()
         emit('add-to-cart') // Emit just the add-to-cart event
     } catch (error) {
-        console.error('Failed to add to cart:', error.message)
+        // Failed to add to cart
     } finally {
         loading.value = false
     }

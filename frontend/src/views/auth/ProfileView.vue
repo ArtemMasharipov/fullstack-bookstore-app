@@ -160,7 +160,7 @@ const updateProfile = async () => {
         await authStore.updateProfile(profile.value)
         isEditing.value = false
     } catch (error) {
-        console.error('Error updating profile:', error)
+        // Error updating profile
     } finally {
         loading.value = false
     }
@@ -177,7 +177,7 @@ const deleteAccount = async () => {
         await authStore.deleteAccount()
         router.push({ name: 'Home' })
     } catch (error) {
-        console.error('Error deleting account:', error)
+        // Error deleting account
     }
 }
 

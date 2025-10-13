@@ -58,7 +58,7 @@ export function useApi(apiCall, options = {}) {
                     })
                     .catch(() => {
                         // Fallback to console if notifications are not available
-                        console.error('Error:', errorMessage)
+                        // API Error
                     })
             }
 

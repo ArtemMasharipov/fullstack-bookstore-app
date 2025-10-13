@@ -237,7 +237,7 @@ export const useCartStore = defineStore('cart', {
                 }
             } catch (error) {
                 this.error = error.message
-                console.warn('Cart sync failed:', error.message)
+                // Cart sync failed
             } finally {
                 this.loading = false
             }

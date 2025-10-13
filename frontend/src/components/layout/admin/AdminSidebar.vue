@@ -97,7 +97,7 @@ const menuItems = computed(() => [
         subtitle: 'Customer orders',
         icon: 'mdi-cart',
         to: '/admin/orders',
-        badge: '5', // TODO: Get from store
+        badge: '5', // Get from store
     },
     {
         title: 'Users',

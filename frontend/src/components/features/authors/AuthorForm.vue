@@ -161,7 +161,7 @@ const handleSubmit = async () => {
             emit('submit', { ...form })
         } catch (error) {
             errorMessage.value = error.message || 'Failed to save author'
-            console.error(errorMessage.value)
+            // Form validation error
         }
     }
 }
