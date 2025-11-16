@@ -167,7 +167,7 @@ import { computed, onMounted, ref } from 'vue'
 import AdminDataTable from '@/components/features/admin/AdminDataTable.vue'
 
 // Stores
-import { useOrdersStore } from '@/store/modules/orders'
+import { useOrdersStore } from '@/store'
 
 // Utilities
 import { formatPrice } from '@/utils'

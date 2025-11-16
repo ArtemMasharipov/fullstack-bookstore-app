@@ -1,6 +1,6 @@
 import { useNotifications } from '@/composables/useNotifications'
 import { orderApi } from '@/services/api/orderApi'
-import { useCartStore } from '@/store/modules/cart'
+import { useCartStore } from '@/store'
 import { defineStore } from 'pinia'
 
 /**

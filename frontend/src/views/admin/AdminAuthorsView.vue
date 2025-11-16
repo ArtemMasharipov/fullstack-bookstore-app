@@ -146,7 +146,7 @@ import { computed, onMounted, ref } from 'vue'
 import AdminDataTable from '@/components/features/admin/AdminDataTable.vue'
 
 // Stores
-import { useAuthorsStore } from '@/store/modules/authors'
+import { useAuthorsStore } from '@/store'
 
 // Utils
 import { logger } from '@/utils/logger'

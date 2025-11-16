@@ -51,7 +51,7 @@ import BookDialog from '@/components/features/admin/BookDialog.vue'
 
 // Stores
 import { useBooksStore } from '@/store'
-import { useAuthorsStore } from '@/store/modules/authors'
+import { useAuthorsStore } from '@/store'
 
 // Utils
 import { logger } from '@/utils/logger'
