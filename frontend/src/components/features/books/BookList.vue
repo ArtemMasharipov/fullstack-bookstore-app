@@ -29,9 +29,9 @@
             <!-- Books grid -->
             <v-container v-else fluid class="py-2">
                 <v-row>
-                    <v-col v-for="book in books" :key="book._id" cols="12" sm="6" md="4" lg="3"
+                    <v-col v-for="book in books" :key="book.id || book._id" cols="12" sm="6" md="4" lg="3"
                         class="d-flex align-stretch">
-                        <book-card :book="book" @click="viewDetails(book._id)" @add-to-cart="addToCartSuccess"
+                        <book-card :book="book" @click="viewDetails(book.id || book._id)" @add-to-cart="addToCartSuccess"
                             class="w-100" />
                     </v-col>
                 </v-row>

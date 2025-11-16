@@ -23,10 +23,10 @@ export const useCartStore = defineStore('cart', {
          * Get formatted cart items
          */
         cartItems: (state) =>
-            state.items.map(({ _id, bookId, quantity, price }) => ({
-                _id,
+            state.items.map(({ id, _id, bookId, quantity, price }) => ({
+                id: id || _id, // Поддержка старых данных с _id
                 bookId: {
-                    _id: bookId?._id || bookId,
+                    id: bookId?.id || bookId?._id || bookId,
                     title: bookId?.title || 'Unknown Book',
                     image: bookId?.image,
                 },
@@ -245,7 +245,11 @@ export const useCartStore = defineStore('cart', {
          * Add item to local cart
          */
         addLocalItem(item) {
-            const existingItem = this.items.find((i) => i.bookId?._id === item.bookId?._id || i.bookId === item.bookId)
+            const itemBookId = item.bookId?.id || item.bookId?._id || item.bookId
+            const existingItem = this.items.find((i) => {
+                const existingBookId = i.bookId?.id || i.bookId?._id || i.bookId
+                return existingBookId === itemBookId
+            })
             if (existingItem) {
                 existingItem.quantity += item.quantity
             } else {

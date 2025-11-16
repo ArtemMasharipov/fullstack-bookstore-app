@@ -140,7 +140,7 @@ export const useBooksStore = defineStore('books', {
                 const updatedBook = normalizeBook(normalizedResponse.data)
 
                 if (updatedBook) {
-                    const index = this.books.findIndex((book) => book._id === updatedBook._id)
+                    const index = this.books.findIndex((book) => book.id === updatedBook.id)
                     if (index !== -1) {
                         this.books.splice(index, 1, updatedBook)
                     }
@@ -167,12 +167,12 @@ export const useBooksStore = defineStore('books', {
 
             try {
                 if (!title) {
-                    const book = this.books.find((b) => b._id === id)
+                    const book = this.books.find((b) => b.id === id)
                     title = book?.title || 'Book'
                 }
 
                 await booksApi.delete(id)
-                this.books = this.books.filter((book) => book._id !== id)
+                this.books = this.books.filter((book) => book.id !== id)
                 this.total = Math.max(0, this.total - 1)
             } catch (error) {
                 this.error = error.message

@@ -124,7 +124,7 @@ export const normalizeBook = (book) => {
     }
 
     return {
-        _id: normalizeId(book._id || book.id),
+        id: normalizeId(book._id || book.id), // Нормализуем к единому 'id'
         title: normalizeString(book.title),
         author: book.author, // Может быть объектом или ID
         publicationYear: normalizeQuantity(book.publicationYear),
@@ -162,7 +162,7 @@ export const normalizeAuthor = (author) => {
     }
 
     return {
-        _id: normalizeId(author._id),
+        id: normalizeId(author._id || author.id), // Нормализуем к единому 'id'
         name: normalizeString(author.name),
         biography: normalizeString(author.biography),
         birthYear: normalizeQuantity(author.birthYear),
@@ -184,7 +184,7 @@ export const normalizeUser = (user) => {
     }
 
     return {
-        _id: normalizeId(user._id),
+        id: normalizeId(user._id || user.id), // Нормализуем к единому 'id'
         username: normalizeString(user.username),
         email: normalizeString(user.email),
         role: user.role, // Может быть объектом или строкой
@@ -204,7 +204,7 @@ export const normalizeCartItem = (item) => {
     }
 
     return {
-        _id: normalizeId(item._id),
+        id: normalizeId(item._id || item.id), // Нормализуем к единому 'id'
         book: item.book ? normalizeBook(item.book) : null,
         bookId: normalizeId(item.bookId),
         quantity: normalizeQuantity(item.quantity),
@@ -230,7 +230,7 @@ export const normalizeCart = (cart) => {
     const items = Array.isArray(cart.items) ? cart.items.map(normalizeCartItem).filter((item) => item !== null) : []
 
     return {
-        _id: normalizeId(cart._id),
+        id: normalizeId(cart._id || cart.id), // Нормализуем к единому 'id'
         userId: normalizeId(cart.userId),
         items,
         total: normalizePrice(cart.total),
@@ -251,7 +251,7 @@ export const normalizeOrder = (order) => {
     }
 
     return {
-        _id: normalizeId(order._id),
+        id: normalizeId(order._id || order.id), // Нормализуем к единому 'id'
         userId: normalizeId(order.userId),
         items: Array.isArray(order.items) ? order.items.map(normalizeCartItem).filter((item) => item !== null) : [],
         total: normalizePrice(order.total),
@@ -324,7 +324,7 @@ export const dataUtils = {
      * Проверка валидности книги
      */
     isValidBook: (book) => {
-        return book && book._id && book.title && book.price >= 0 && typeof book.inStock === 'boolean'
+        return book && book.id && book.title && book.price >= 0 && typeof book.inStock === 'boolean'
     },
 
     /**
