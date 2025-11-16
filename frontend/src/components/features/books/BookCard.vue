@@ -150,7 +150,7 @@ const handleAddToCart = async () => {
     loading.value = true
     try {
         await cartStore.addToCart({
-            bookId: props.book._id,
+            bookId: props.book.id || props.book._id, // Поддержка старых данных
             quantity: 1,
             price: props.book.price,
             title: props.book.title || 'Book',

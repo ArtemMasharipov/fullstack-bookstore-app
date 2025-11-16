@@ -94,7 +94,7 @@ export const useAuthorsStore = defineStore('authors', {
          * Update an existing author
          */
         async updateAuthor(authorData) {
-            if (!authorData || (!authorData._id && !authorData.id)) {
+            if (!authorData || !authorData.id) {
                 throw new Error('Author ID is required for update')
             }
 
@@ -102,10 +102,10 @@ export const useAuthorsStore = defineStore('authors', {
             this.error = null
 
             try {
-                const id = authorData._id || authorData.id
+                const id = authorData.id
                 const author = await authorsApi.update(id, authorData)
 
-                const index = this.list.findIndex((a) => a._id === id || a.id === id)
+                const index = this.list.findIndex((a) => a.id === id)
                 if (index !== -1) {
                     this.list.splice(index, 1, author)
                 }
@@ -128,10 +128,10 @@ export const useAuthorsStore = defineStore('authors', {
 
             try {
                 await authorsApi.delete(authorId)
-                this.list = this.list.filter((a) => a._id !== authorId && a.id !== authorId)
+                this.list = this.list.filter((a) => a.id !== authorId)
                 this.total = Math.max(0, this.total - 1)
 
-                if (this.current && (this.current._id === authorId || this.current.id === authorId)) {
+                if (this.current && this.current.id === authorId) {
                     this.current = null
                 }
             } catch (error) {

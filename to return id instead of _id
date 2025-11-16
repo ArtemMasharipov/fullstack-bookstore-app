@@ -1,0 +1,52 @@
+[33m3c7416c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrefactor/simplify-architecture[m[33m)[m refactor: remove unused usePagination composable
+ frontend/src/composables/usePagination.js | 140 [31m------------------------------[m
+ 1 file changed, 140 deletions(-)
+[33m4a428e0[m refactor: remove unused useApi and useCrudApi composables
+ frontend/src/composables/useApi.js | 186 [31m-------------------------------------[m
+ 1 file changed, 186 deletions(-)
+[33m5a7109a[m refactor: remove unused useBooks composable (286 lines)
+ frontend/src/composables/useBooks.js | 286 [31m-----------------------------------[m
+ 1 file changed, 286 deletions(-)
+[33mf0e28ab[m[33m ([m[1;31morigin/refactor/simplify-architecture[m[33m)[m refactor: remove redundant store getters
+ .../components/features/authors/AuthorDetails.vue  |  2 [32m+[m[31m-[m
+ .../src/components/features/authors/AuthorList.vue |  4 [32m+[m[31m--[m
+ .../src/components/features/books/BookForm.vue     |  2 [32m+[m[31m-[m
+ frontend/src/composables/useBooks.js               |  4 [32m+[m[31m--[m
+ frontend/src/store/modules/auth/auth.js            | 20 [31m---------------[m
+ frontend/src/store/modules/authors/authors.js      | 25 [32m+[m[31m-----------------[m
+ frontend/src/store/modules/books.js                | 30 [31m----------------------[m
+ frontend/src/store/modules/cart/cart.js            | 10 [31m--------[m
+ frontend/src/views/admin/AdminAuthorsView.vue      |  2 [32m+[m[31m-[m
+ frontend/src/views/admin/AdminBooksView.vue        |  4 [32m+[m[31m--[m
+ frontend/src/views/admin/AdminDashboardView.vue    |  4 [32m+[m[31m--[m
+ 11 files changed, 10 insertions(+), 97 deletions(-)
+[33ma01d224[m refactor: remove duplicate auth initialization from main.js
+ frontend/src/main.js | 19 [32m++++[m[31m---------------[m
+ 1 file changed, 4 insertions(+), 15 deletions(-)
+[33m092a0db[m refactor: remove useAuth wrapper composable
+ frontend/src/composables/useAuth.js | 29 [31m-----------------------------[m
+ frontend/src/composables/useCart.js |  8 [32m++++[m[31m----[m
+ 2 files changed, 4 insertions(+), 33 deletions(-)
+[33m7db8ae4[m refactor: remove redundant index.js files in store modules
+ frontend/src/components/features/books/BookForm.vue | 2 [32m+[m[31m-[m
+ frontend/src/store/index.js                         | 3 [32m+[m[31m--[m
+ frontend/src/store/modules/auth/index.js            | 2 [31m--[m
+ frontend/src/store/modules/authors/index.js         | 2 [31m--[m
+ frontend/src/store/modules/cart/index.js            | 2 [31m--[m
+ frontend/src/store/modules/orders/index.js          | 3 [31m---[m
+ frontend/src/store/modules/orders/orders.js         | 2 [32m+[m[31m-[m
+ frontend/src/store/modules/users/index.js           | 2 [31m--[m
+ frontend/src/views/admin/AdminAuthorsView.vue       | 2 [32m+[m[31m-[m
+ frontend/src/views/admin/AdminBooksView.vue         | 2 [32m+[m[31m-[m
+ frontend/src/views/admin/AdminOrdersView.vue        | 2 [32m+[m[31m-[m
+ 11 files changed, 6 insertions(+), 18 deletions(-)
+[33m24e3b96[m refactor: remove empty AdminLayout duplicate and layouts folder
+ README_OPTIMIZATION.md               | 62 [32m++++++++++++++++++++++++++++++++++++[m
+ frontend/src/layouts/AdminLayout.vue |  0
+ 2 files changed, 62 insertions(+)
+[33m353e261[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Merge branch 'main' of https://github.com/ArtemMasharipov/fullstack-bookstore-app
+[33mbfbe1a4[m Update backend README and rename server file
+ backend/README.md                          | 586 [32m+++++++[m[31m----------------------[m
+ backend/package.json                       |   6 [32m+[m[31m-[m
+ backend/{server-clean-mvc.js => server.js} |   0
+ 3 files changed, 144 insertions(+), 448 deletions(-)
