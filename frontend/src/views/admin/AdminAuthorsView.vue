@@ -184,7 +184,7 @@ const editedAuthor = ref({
 const authorToDelete = ref(null)
 
 // Computed properties
-const authors = computed(() => authorsStore.authorsList || [])
+const authors = computed(() => authorsStore.list || [])
 const loading = computed(() => authorsStore.loading)
 
 // Data table methods

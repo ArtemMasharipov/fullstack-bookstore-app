@@ -194,8 +194,8 @@ const loadDashboardData = async () => {
         ])
 
         stats.value = {
-            books: booksStore.booksList?.length || 0,
-            authors: authorsStore.authorsList?.length || 0,
+            books: booksStore.books?.length || 0,
+            authors: authorsStore.list?.length || 0,
             orders: ordersStore.ordersList?.length || 0,
             users: usersStore.usersList?.length || 0,
         }

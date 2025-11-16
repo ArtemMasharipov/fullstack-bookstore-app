@@ -207,7 +207,7 @@ const priceRules = [
 /**
  * Computed properties
  */
-const authorsList = computed(() => authorsStore.authorsList)
+const authorsList = computed(() => authorsStore.list)
 const authors = computed(() => authorsList.value)
 
 const isEdit = computed(() => !!props.initialData._id)

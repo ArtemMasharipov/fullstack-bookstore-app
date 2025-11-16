@@ -15,9 +15,7 @@ export function useBooks(options = {}) {
     const booksStore = useBooksStore()
 
     // Extract reactive state
-    const { loading, error } = storeToRefs(booksStore)
-    const books = computed(() => booksStore.booksList)
-    const currentBook = computed(() => booksStore.currentBook)
+    const { loading, error, books, currentBook } = storeToRefs(booksStore)
 
     // Local reactive state
     const filters = ref({

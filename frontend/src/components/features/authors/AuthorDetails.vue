@@ -92,7 +92,7 @@ const showDeleteModalPage = ref(false)
 /**
  * Computed properties
  */
-const currentAuthor = computed(() => authorsStore.currentAuthor)
+const { current: currentAuthor } = storeToRefs(authorsStore)
 const loading = computed(() => authorsStore.loading)
 const error = computed(() => authorsStore.error)
 const author = computed(() => currentAuthor.value)

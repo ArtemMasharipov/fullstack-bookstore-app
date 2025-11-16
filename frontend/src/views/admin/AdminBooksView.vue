@@ -77,8 +77,8 @@ const sortBy = ref([{ key: 'title', order: 'asc' }])
 const search = ref('')
 
 // Data from stores
-const books = computed(() => booksStore.booksList || [])
-const authors = computed(() => authorsStore.authorsList || [])
+const books = computed(() => booksStore.books || [])
+const authors = computed(() => authorsStore.list || [])
 const loading = computed(() => booksStore.loading)
 
 // Filtered and paginated data
