@@ -28,30 +28,7 @@ export const useAuthorsStore = defineStore('authors', {
     }),
 
     getters: {
-        /**
-         * Get authors list
-         */
-        authorsList: (state) => state.list,
-
-        /**
-         * Get current author
-         */
-        currentAuthor: (state) => state.current,
-
-        /**
-         * Check loading state
-         */
-        authorsLoading: (state) => state.loading,
-
-        /**
-         * Get error message
-         */
-        authorsError: (state) => state.error,
-
-        /**
-         * Get all authors (alias for admin)
-         */
-        getAllAuthors: (state) => state.list,
+        // Все простые getters удалены - используйте storeToRefs для прямого доступа к state
     },
 
     actions: {

@@ -29,18 +29,7 @@ if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
     window.__VUE_APP__ = app
 }
 
-// Initialize authentication and mount application
-import { useAuthStore } from './store'
-
-const authStore = useAuthStore()
-authStore
-    .initialize()
-    .then(() => {
-        app.mount('#app')
-        logger.info('Application initialized successfully', { version: '2.0' }, 'app-init')
-    })
-    .catch((error) => {
-        // Failed to initialize application
-        // Mount app anyway to show error page
-        app.mount('#app')
-    })
+// Mount application
+// Auth initialization happens in App.vue onMounted hook to avoid race conditions
+app.mount('#app')
+logger.info('Application mounted successfully', { version: '2.0' }, 'app-init')

@@ -35,16 +35,6 @@ export const useCartStore = defineStore('cart', {
             })),
 
         /**
-         * Check loading state
-         */
-        cartLoading: (state) => state.loading,
-
-        /**
-         * Get error message
-         */
-        cartError: (state) => state.error,
-
-        /**
          * Calculate cart total
          */
         cartTotal: (state) => {

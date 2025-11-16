@@ -28,26 +28,6 @@ export const useAuthStore = defineStore('auth', {
         isAuthenticated: (state) => !!state.token,
 
         /**
-         * Get current user
-         */
-        currentUser: (state) => state.user,
-
-        /**
-         * Get auth token
-         */
-        authToken: (state) => state.token,
-
-        /**
-         * Check loading state
-         */
-        authLoading: (state) => state.loading,
-
-        /**
-         * Get error message
-         */
-        authError: (state) => state.error,
-
-        /**
          * Check if user is admin
          */
         isAdmin: (state) => {

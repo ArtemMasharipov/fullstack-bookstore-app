@@ -56,9 +56,7 @@ const authStore = useAuthStore()
 /**
  * Computed properties
  */
-const authors = computed(() => authorsStore.authorsList)
-const loading = computed(() => authorsStore.authorsLoading)
-const error = computed(() => authorsStore.authorsError)
+const { list: authors, loading, error } = storeToRefs(authorsStore)
 
 /**
  * Methods

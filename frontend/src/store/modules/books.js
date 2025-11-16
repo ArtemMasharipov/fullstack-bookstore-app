@@ -33,31 +33,6 @@ export const useBooksStore = defineStore('books', {
 
     getters: {
         /**
-         * Get books list
-         */
-        booksList: (state) => state.books,
-
-        /**
-         * Get pagination info
-         */
-        booksPagination: (state) => ({
-            page: state.page,
-            limit: state.limit,
-            total: state.total,
-            pages: state.pages,
-        }),
-
-        /**
-         * Check loading state
-         */
-        booksLoading: (state) => state.loading,
-
-        /**
-         * Get error message
-         */
-        booksError: (state) => state.error,
-
-        /**
          * Get filter parameters for API request
          */
         filterParams: (state) => {
@@ -80,11 +55,6 @@ export const useBooksStore = defineStore('books', {
 
             return params
         },
-
-        /**
-         * Get all books (for admin)
-         */
-        getAllBooks: (state) => state.books,
     },
 
     actions: {
