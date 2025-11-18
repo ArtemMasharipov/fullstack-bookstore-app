@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { useAuthorsStore, useAuthStore } from '@/store'
+import { useAuthorsStore, useAuthStore } from '@/stores'
 import { computed, onMounted } from 'vue'
 import ErrorMessage from '../../ui/ErrorMessage.vue'
 import LoadingSpinner from '../../ui/LoadingSpinner.vue'

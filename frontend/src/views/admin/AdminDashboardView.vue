@@ -119,7 +119,7 @@
 </template>
 
 <script setup>
-import { useAuthorsStore, useBooksStore, useOrdersStore, useUsersStore } from '@/store'
+import { useAuthorsStore, useBooksStore, useOrdersStore, useUsersStore } from '@/stores'
 import { formatPrice } from '@/utils'
 import { logger } from '@/utils/logger'
 import { onMounted, ref } from 'vue'

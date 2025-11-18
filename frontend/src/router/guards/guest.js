@@ -3,7 +3,7 @@
  * Защита для страниц только для неаутентифицированных пользователей
  */
 
-import { useAuthStore } from '@/store'
+import { useAuthStore } from '@/stores'
 
 export const guestGuard = (to, from, next) => {
     const authStore = useAuthStore()

@@ -1,7 +1,7 @@
 import { booksApi } from '@/services/api/booksApi'
 import { normalizeApiResponse, normalizeBook, normalizeBooks } from '@/utils/dataNormalizers'
-import { logger } from '@/utils/logger'
 import { defineStore } from 'pinia'
+import { withLoading } from './storeHelpers'
 
 /**
  * Books Store
@@ -60,54 +60,33 @@ export const useBooksStore = defineStore('books', {
     actions: {
         /**
          * Fetch books with pagination
+         * Simplified with withLoading helper
          */
         async fetchBooks(params = { page: 1, limit: 12 }) {
-            this.loading = true
-            this.error = null
-
-            try {
+            return withLoading(this, async () => {
                 const response = await booksApi.fetchAll(params)
                 this.setBooksList(response)
                 return response
-            } catch (error) {
-                this.error = error.message
-                if (!error.isAuthError && !error.isNetworkError) {
-                    logger.error('Error fetching books', error, 'books-store')
-                }
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Fetch book by ID
+         * Simplified with withLoading helper
          */
         async fetchBookById(id) {
-            this.loading = true
-            this.error = null
-
-            try {
+            return withLoading(this, async () => {
                 const book = await booksApi.fetchById(id)
                 this.currentBook = book
                 return book
-            } catch (error) {
-                this.error = error.message
-                logger.error('Error fetching book by ID', error, 'books-store')
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Create a new book
          */
         async createBook(formData) {
-            this.loading = true
-            this.error = null
-
-            try {
+            return withLoading(this, async () => {
                 const response = await booksApi.create(formData)
                 const normalizedResponse = normalizeApiResponse(response)
                 const book = normalizeBook(normalizedResponse.data)
@@ -118,23 +97,14 @@ export const useBooksStore = defineStore('books', {
                 }
 
                 return book
-            } catch (error) {
-                this.error = error.message
-                logger.error('Error creating book', error, 'books-store')
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Update an existing book
          */
         async updateBook({ id, formData }) {
-            this.loading = true
-            this.error = null
-
-            try {
+            return withLoading(this, async () => {
                 const response = await booksApi.update(id, formData)
                 const normalizedResponse = normalizeApiResponse(response)
                 const updatedBook = normalizeBook(normalizedResponse.data)
@@ -147,13 +117,7 @@ export const useBooksStore = defineStore('books', {
                 }
 
                 return updatedBook
-            } catch (error) {
-                this.error = error.message
-                logger.error('Error updating book', error, 'books-store')
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
@@ -162,10 +126,7 @@ export const useBooksStore = defineStore('books', {
         async deleteBook(id, title = '') {
             if (!id) throw new Error('Book ID is required')
 
-            this.loading = true
-            this.error = null
-
-            try {
+            return withLoading(this, async () => {
                 if (!title) {
                     const book = this.books.find((b) => b.id === id)
                     title = book?.title || 'Book'
@@ -174,13 +135,7 @@ export const useBooksStore = defineStore('books', {
                 await booksApi.delete(id)
                 this.books = this.books.filter((book) => book.id !== id)
                 this.total = Math.max(0, this.total - 1)
-            } catch (error) {
-                this.error = error.message
-                logger.error('Error deleting book', error, 'books-store')
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**

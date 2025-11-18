@@ -61,7 +61,7 @@
 </template>
 
 <script setup>
-import { useAuthStore, useCartStore } from '@/store'
+import { useAuthStore, useCartStore } from '@/stores'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { onMounted, watch } from 'vue'

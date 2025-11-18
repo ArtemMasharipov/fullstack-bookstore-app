@@ -3,7 +3,7 @@
  * Проверка административных прав доступа
  */
 
-import { useAuthStore } from '@/store'
+import { useAuthStore } from '@/stores'
 
 export const adminGuard = (to, from, next) => {
     const authStore = useAuthStore()
