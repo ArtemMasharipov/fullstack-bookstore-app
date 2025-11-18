@@ -1,5 +1,6 @@
 import { useNotifications } from '@/composables/useNotifications'
 import { cartApi } from '@/services/api/cartApi'
+import { withLoading } from './storeHelpers'
 import { defineStore } from 'pinia'
 
 /**
@@ -61,30 +62,19 @@ export const useCartStore = defineStore('cart', {
          * Fetch cart from server
          */
         async fetchCart() {
-            this.loading = true
-            this.error = null
-
-            try {
+            return withLoading(this, async () => {
                 const { items = [] } = (await cartApi.fetchCart()) || {}
                 this.setItems(items)
-            } catch (error) {
-                this.error = error.message
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Add item to cart
          */
         async addToCart({ bookId, quantity, price, title = 'Book' }) {
-            this.loading = true
-            this.error = null
-
             const { showSuccess, showError } = useNotifications()
 
-            try {
+            return withLoading(this, async () => {
                 const { useAuthStore } = await import('@/stores/auth')
                 const authStore = useAuthStore()
 
@@ -100,42 +90,23 @@ export const useCartStore = defineStore('cart', {
                 showSuccess(`"${title}" added to cart`, {
                     icon: 'mdi-cart-plus',
                 })
-            } catch (error) {
-                this.error = error.message
-                showError(`Failed to add "${title}" to cart: ${error.message}`, {
-                    icon: 'mdi-cart-remove',
-                })
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Remove item from cart
          */
         async removeFromCart(itemId, title = 'Item') {
-            this.loading = true
-            this.error = null
-
             const { showSuccess, showError } = useNotifications()
 
-            try {
+            return withLoading(this, async () => {
                 const response = await cartApi.removeFromCart(itemId)
                 this.setItems(response.items)
 
                 showSuccess(`"${title}" removed from cart`, {
                     icon: 'mdi-cart-minus',
                 })
-            } catch (error) {
-                this.error = error.message
-                showError(`Failed to remove "${title}" from cart: ${error.message}`, {
-                    icon: 'mdi-alert-circle',
-                })
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
@@ -143,12 +114,9 @@ export const useCartStore = defineStore('cart', {
          */
         async updateQuantity(payload) {
             const { title = 'Item' } = payload
-            this.loading = true
-            this.error = null
-
             const { showSuccess, showError } = useNotifications()
 
-            try {
+            return withLoading(this, async () => {
                 const { useAuthStore } = await import('@/stores/auth')
                 const authStore = useAuthStore()
 
@@ -166,27 +134,16 @@ export const useCartStore = defineStore('cart', {
                 showSuccess(`"${title}" quantity updated to ${payload.quantity}`, {
                     icon: 'mdi-cart-outline',
                 })
-            } catch (error) {
-                this.error = error.message
-                showError(`Failed to update quantity: ${error.message}`, {
-                    icon: 'mdi-alert-circle',
-                })
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Clear cart
          */
         async clearCart() {
-            this.loading = true
-            this.error = null
-
             const { showSuccess, showError } = useNotifications()
 
-            try {
+            return withLoading(this, async () => {
                 await cartApi.clearCart()
                 this.items = []
                 localStorage.removeItem('cart')
@@ -194,25 +151,14 @@ export const useCartStore = defineStore('cart', {
                 showSuccess('Cart cleared successfully', {
                     icon: 'mdi-cart-off',
                 })
-            } catch (error) {
-                this.error = error.message
-                showError(`Failed to clear cart: ${error.message}`, {
-                    icon: 'mdi-alert-circle',
-                })
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Sync local cart with server after login
          */
         async syncCart() {
-            this.loading = true
-            this.error = null
-
-            try {
+            return withLoading(this, async () => {
                 const localCart = JSON.parse(localStorage.getItem('cart')) || []
 
                 if (localCart.length === 0) {
@@ -225,12 +171,7 @@ export const useCartStore = defineStore('cart', {
                     this.setItems(response.items)
                     localStorage.removeItem('cart')
                 }
-            } catch (error) {
-                this.error = error.message
-                // Cart sync failed
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
