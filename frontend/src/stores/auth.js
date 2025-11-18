@@ -1,8 +1,8 @@
 import { useNotifications } from '@/composables/useNotifications'
 import { authApi } from '@/services/api/authService'
 import { jwtDecode } from 'jwt-decode'
-import { withLoading } from './storeHelpers'
 import { defineStore } from 'pinia'
+import { withLoading } from './storeHelpers'
 
 /**
  * Authentication Store
