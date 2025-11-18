@@ -1,6 +1,6 @@
 import { authorsApi } from '@/services/api/authorsApi'
-import { withLoading } from './storeHelpers'
 import { defineStore } from 'pinia'
+import { withLoading } from './storeHelpers'
 
 /**
  * Authors Store

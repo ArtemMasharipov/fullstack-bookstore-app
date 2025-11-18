@@ -1,6 +1,7 @@
 import { useNotifications } from '@/composables/useNotifications'
 import { orderApi } from '@/services/api/orderApi'
 import { useCartStore } from '@/stores'
+import { withLoading } from './storeHelpers'
 import { defineStore } from 'pinia'
 
 /**
@@ -30,10 +31,9 @@ export const useOrdersStore = defineStore('orders', {
          * @param {Object} orderData - Data for the new order
          */
         async createOrder(orderData) {
-            this.loading = true
-            this.error = null
+            const { showSuccess } = useNotifications()
 
-            try {
+            return withLoading(this, async () => {
                 const order = await orderApi.createOrder(orderData)
 
                 // Add to the beginning of the list
@@ -44,39 +44,24 @@ export const useOrdersStore = defineStore('orders', {
                 await cartStore.clearCart()
 
                 // Show success notification
-                const { showSuccess } = useNotifications()
                 showSuccess(`Order #${order._id || order.id || 'New'} placed successfully!`, {
                     sound: 'success',
                     icon: 'mdi-check-circle',
                 })
 
                 return order
-            } catch (error) {
-                this.error = error.message
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Fetch all orders
          */
         async fetchOrders() {
-            this.loading = true
-            this.error = null
-
-            try {
+            return withLoading(this, async () => {
                 const orders = await orderApi.getOrders()
                 this.orders = Array.isArray(orders) ? orders : []
                 return orders
-            } catch (error) {
-                this.error = error.message
-                this.orders = []
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
@@ -84,19 +69,11 @@ export const useOrdersStore = defineStore('orders', {
          * @param {string} id - Order ID
          */
         async fetchOrderById(id) {
-            this.loading = true
-            this.error = null
-
-            try {
+            return withLoading(this, async () => {
                 const order = await orderApi.getOrderById(id)
                 this.currentOrder = order
                 return order
-            } catch (error) {
-                this.error = error.message
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
@@ -106,10 +83,9 @@ export const useOrdersStore = defineStore('orders', {
          * @param {string} params.status - New status
          */
         async updateOrderStatus({ id, status }) {
-            this.loading = true
-            this.error = null
+            const { showSuccess } = useNotifications()
 
-            try {
+            return withLoading(this, async () => {
                 const updatedOrder = await orderApi.updateOrderStatus(id, status)
 
                 // Update the order in our list
@@ -124,19 +100,13 @@ export const useOrdersStore = defineStore('orders', {
                 }
 
                 // Notify user
-                const { showSuccess } = useNotifications()
                 showSuccess(`Order #${id} status updated to "${status}"`, {
                     sound: 'success',
                     icon: 'mdi-clipboard-check',
                 })
 
                 return updatedOrder
-            } catch (error) {
-                this.error = error.message
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
@@ -144,10 +114,9 @@ export const useOrdersStore = defineStore('orders', {
          * @param {string} id - Order ID
          */
         async cancelOrder(id) {
-            this.loading = true
-            this.error = null
+            const { showWarning } = useNotifications()
 
-            try {
+            return withLoading(this, async () => {
                 const updatedOrder = await orderApi.cancelOrder(id)
 
                 // Update the order in our list
@@ -162,19 +131,13 @@ export const useOrdersStore = defineStore('orders', {
                 }
 
                 // Notify user
-                const { showWarning } = useNotifications()
                 showWarning(`Order #${id} has been cancelled`, {
                     sound: 'warning',
                     icon: 'mdi-cancel',
                 })
 
                 return updatedOrder
-            } catch (error) {
-                this.error = error.message
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**

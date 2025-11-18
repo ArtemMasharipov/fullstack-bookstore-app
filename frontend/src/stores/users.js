@@ -1,7 +1,7 @@
 import { useNotifications } from '@/composables/useNotifications'
 import { usersApi } from '@/services/api/usersApi'
-import { withLoading } from './storeHelpers'
 import { defineStore } from 'pinia'
+import { withLoading } from './storeHelpers'
 
 /**
  * Users Store
