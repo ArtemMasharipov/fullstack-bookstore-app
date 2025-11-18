@@ -21,25 +21,7 @@ export const useOrdersStore = defineStore('orders', {
     }),
 
     getters: {
-        /**
-         * Get orders list
-         */
-        ordersList: (state) => state.orders,
-
-        /**
-         * Get current order
-         */
-        getOrder: (state) => state.currentOrder,
-
-        /**
-         * Check loading state
-         */
-        ordersLoading: (state) => state.loading,
-
-        /**
-         * Get error message
-         */
-        ordersError: (state) => state.error,
+        // All removed - use storeToRefs for direct state access
     },
 
     actions: {

@@ -1,6 +1,7 @@
 import { booksApi } from '@/services/api/booksApi'
 import { normalizeApiResponse, normalizeBook, normalizeBooks } from '@/utils/dataNormalizers'
 import { logger } from '@/utils/logger'
+import { withLoading } from './storeHelpers'
 import { defineStore } from 'pinia'
 
 /**
@@ -60,44 +61,26 @@ export const useBooksStore = defineStore('books', {
     actions: {
         /**
          * Fetch books with pagination
+         * Simplified with withLoading helper
          */
         async fetchBooks(params = { page: 1, limit: 12 }) {
-            this.loading = true
-            this.error = null
-
-            try {
+            return withLoading(this, async () => {
                 const response = await booksApi.fetchAll(params)
                 this.setBooksList(response)
                 return response
-            } catch (error) {
-                this.error = error.message
-                if (!error.isAuthError && !error.isNetworkError) {
-                    logger.error('Error fetching books', error, 'books-store')
-                }
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Fetch book by ID
+         * Simplified with withLoading helper
          */
         async fetchBookById(id) {
-            this.loading = true
-            this.error = null
-
-            try {
+            return withLoading(this, async () => {
                 const book = await booksApi.fetchById(id)
                 this.currentBook = book
                 return book
-            } catch (error) {
-                this.error = error.message
-                logger.error('Error fetching book by ID', error, 'books-store')
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**

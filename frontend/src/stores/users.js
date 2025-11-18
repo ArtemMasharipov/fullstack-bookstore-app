@@ -27,27 +27,7 @@ export const useUsersStore = defineStore('users', {
 
     getters: {
         /**
-         * Get users list
-         */
-        usersList: (state) => state.list,
-
-        /**
-         * Get current user
-         */
-        currentUser: (state) => state.current,
-
-        /**
-         * Check loading state
-         */
-        usersLoading: (state) => state.loading,
-
-        /**
-         * Get error message
-         */
-        usersError: (state) => state.error,
-
-        /**
-         * Get user by ID
+         * Get user by ID - contains logic, so we keep it
          */
         getUserById: (state) => (id) => state.list.find((user) => user.id === id || user._id === id),
     },
