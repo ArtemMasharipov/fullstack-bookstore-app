@@ -1,8 +1,8 @@
 import { booksApi } from '@/services/api/booksApi'
 import { normalizeApiResponse, normalizeBook, normalizeBooks } from '@/utils/dataNormalizers'
 import { logger } from '@/utils/logger'
-import { withLoading } from './storeHelpers'
 import { defineStore } from 'pinia'
+import { withLoading } from './storeHelpers'
 
 /**
  * Books Store

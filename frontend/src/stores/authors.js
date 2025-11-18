@@ -1,4 +1,5 @@
 import { authorsApi } from '@/services/api/authorsApi'
+import { withLoading } from './storeHelpers'
 import { defineStore } from 'pinia'
 
 /**
@@ -36,58 +37,34 @@ export const useAuthorsStore = defineStore('authors', {
          * Fetch all authors
          */
         async fetchAuthors() {
-            this.loading = true
-            this.error = null
-
-            try {
+            return withLoading(this, async () => {
                 const authors = await authorsApi.fetchAll()
                 this.list = Array.isArray(authors) ? authors : []
                 return authors
-            } catch (error) {
-                this.error = error.message
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Fetch author by ID
          */
         async fetchAuthorById(id) {
-            this.loading = true
-            this.error = null
-
-            try {
+            return withLoading(this, async () => {
                 const author = await authorsApi.fetchById(id)
                 this.current = author
                 return author
-            } catch (error) {
-                this.error = error.message
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Create a new author
          */
         async createAuthor(authorData) {
-            this.loading = true
-            this.error = null
-
-            try {
+            return withLoading(this, async () => {
                 const author = await authorsApi.create(authorData)
                 this.list.push(author)
                 this.total += 1
                 return author
-            } catch (error) {
-                this.error = error.message
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
@@ -98,10 +75,7 @@ export const useAuthorsStore = defineStore('authors', {
                 throw new Error('Author ID is required for update')
             }
 
-            this.loading = true
-            this.error = null
-
-            try {
+            return withLoading(this, async () => {
                 const id = authorData.id
                 const author = await authorsApi.update(id, authorData)
 
@@ -111,22 +85,14 @@ export const useAuthorsStore = defineStore('authors', {
                 }
 
                 return author
-            } catch (error) {
-                this.error = error.message
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Delete an author
          */
         async deleteAuthor(authorId) {
-            this.loading = true
-            this.error = null
-
-            try {
+            return withLoading(this, async () => {
                 await authorsApi.delete(authorId)
                 this.list = this.list.filter((a) => a.id !== authorId)
                 this.total = Math.max(0, this.total - 1)
@@ -134,12 +100,7 @@ export const useAuthorsStore = defineStore('authors', {
                 if (this.current && this.current.id === authorId) {
                     this.current = null
                 }
-            } catch (error) {
-                this.error = error.message
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
