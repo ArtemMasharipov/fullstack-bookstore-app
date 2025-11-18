@@ -1,6 +1,7 @@
 import { useNotifications } from '@/composables/useNotifications'
 import { authApi } from '@/services/api/authService'
 import { jwtDecode } from 'jwt-decode'
+import { withLoading } from './storeHelpers'
 import { defineStore } from 'pinia'
 
 /**
@@ -63,12 +64,9 @@ export const useAuthStore = defineStore('auth', {
          * Login user
          */
         async login(credentials) {
-            this.loading = true
-            this.error = null
-
             const { showSuccess, showError } = useNotifications()
 
-            try {
+            return withLoading(this, async () => {
                 const response = await authApi.login(credentials)
 
                 if (!response?.data?.user || !response?.data?.token) {
@@ -96,30 +94,16 @@ export const useAuthStore = defineStore('auth', {
                 })
 
                 return response
-            } catch (error) {
-                this.error = error.message || 'Login failed'
-                this.clearAuth()
-
-                showError(`Login failed: ${error.message || 'Invalid credentials'}`, {
-                    icon: 'mdi-account-alert',
-                })
-
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Register new user
          */
         async register(userData) {
-            this.loading = true
-            this.error = null
-
             const { showSuccess, showError } = useNotifications()
 
-            try {
+            return withLoading(this, async () => {
                 const response = await authApi.register(userData)
                 const { user, token } = response.data
 
@@ -137,17 +121,7 @@ export const useAuthStore = defineStore('auth', {
                 })
 
                 return { user, token }
-            } catch (error) {
-                this.error = error.message || 'Registration failed'
-
-                showError(`Registration failed: ${error.message || 'Please try again'}`, {
-                    icon: 'mdi-account-remove',
-                })
-
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
@@ -209,16 +183,18 @@ export const useAuthStore = defineStore('auth', {
          * Fetch current user from server
          */
         async fetchCurrentUser() {
-            try {
-                const response = await authApi.getCurrentUser()
-                if (response?.data) {
-                    this.user = response.data
-                    this.permissions = response.data.permissions || []
-                    localStorage.setItem('userData', JSON.stringify(response.data))
-                }
-            } catch (error) {
-                // Failed to fetch current user
-            }
+            return withLoading(
+                this,
+                async () => {
+                    const response = await authApi.getCurrentUser()
+                    if (response?.data) {
+                        this.user = response.data
+                        this.permissions = response.data.permissions || []
+                        localStorage.setItem('userData', JSON.stringify(response.data))
+                    }
+                },
+                { throwError: false }
+            )
         },
 
         /**
