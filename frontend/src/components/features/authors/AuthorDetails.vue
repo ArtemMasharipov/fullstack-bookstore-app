@@ -54,7 +54,7 @@
 <script setup>
 import BookCard from '@/components/features/books/BookCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
-import { useAuthorsStore, useAuthStore } from '@/store'
+import { useAuthorsStore, useAuthStore } from '@/stores'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 

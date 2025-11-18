@@ -71,7 +71,7 @@
 
 <script setup>
 import placeholderImage from '@/assets/images/placeholder.png'
-import { useCartStore } from '@/store'
+import { useCartStore } from '@/stores'
 import { formatPrice } from '@/utils'
 import { debounce } from '@/utils/helpers/debounce'
 import { computed, onMounted, ref } from 'vue'

@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { useAuthStore, useCartStore } from '@/store'
+import { useAuthStore, useCartStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'

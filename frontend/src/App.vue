@@ -24,7 +24,7 @@ import { DialogLayout, FooterLayout, NavBarLayout } from './components/layout'
 import NotificationContainer from './components/notifications/NotificationContainer.vue'
 
 // Stores
-import { useAuthStore } from './store'
+import { useAuthStore } from './stores'
 
 // Composition API imports
 import { onMounted } from 'vue'

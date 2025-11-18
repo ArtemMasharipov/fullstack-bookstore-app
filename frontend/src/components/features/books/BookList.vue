@@ -47,7 +47,7 @@
 </template>
 
 <script setup>
-import { useAuthStore, useBooksStore } from '@/store'
+import { useAuthStore, useBooksStore } from '@/stores'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'

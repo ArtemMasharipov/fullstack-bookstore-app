@@ -84,7 +84,7 @@
 </template>
 
 <script setup>
-import { useAuthStore, useCartStore } from '@/store'
+import { useAuthStore, useCartStore } from '@/stores'
 import { formatPrice } from '@/utils'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'

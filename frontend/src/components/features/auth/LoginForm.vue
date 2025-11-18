@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { useAuthStore } from '@/store'
+import { useAuthStore } from '@/stores'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { ref } from 'vue'

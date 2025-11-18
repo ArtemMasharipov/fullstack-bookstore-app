@@ -2,7 +2,7 @@
  * Composable for handling cart operations
  * Provides reactive cart state and methods for cart management
  */
-import { useAuthStore, useCartStore } from '@/store'
+import { useAuthStore, useCartStore } from '@/stores'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'

@@ -108,7 +108,7 @@
 
 <script setup>
 import { useImageUpload } from '@/composables/useImageUpload'
-import { useAuthorsStore } from '@/store'
+import { useAuthorsStore } from '@/stores'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import BaseModal from '../../ui/BaseModal.vue'
 

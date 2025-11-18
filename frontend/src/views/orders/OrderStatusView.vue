@@ -64,7 +64,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useOrdersStore } from '@/store'
+import { useOrdersStore } from '@/stores'
 
 const route = useRoute()
 const router = useRouter()

@@ -15,7 +15,7 @@
 </template>
 
 <script setup>
-import { useOrdersStore } from '@/store'
+import { useOrdersStore } from '@/stores'
 import { computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 

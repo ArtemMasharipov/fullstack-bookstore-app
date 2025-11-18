@@ -50,8 +50,7 @@ import BookDeleteDialog from '@/components/features/admin/BookDeleteDialog.vue'
 import BookDialog from '@/components/features/admin/BookDialog.vue'
 
 // Stores
-import { useBooksStore } from '@/store'
-import { useAuthorsStore } from '@/store'
+import { useAuthorsStore, useBooksStore } from '@/stores'
 
 // Utils
 import { logger } from '@/utils/logger'
