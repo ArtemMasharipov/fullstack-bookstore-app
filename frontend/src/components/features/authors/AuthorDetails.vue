@@ -54,7 +54,7 @@
 <script setup>
 import BookCard from '@/components/features/books/BookCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
-import { useAuthorsStore, useAuthStore } from '@/store'
+import { useAuthorsStore, useAuthStore } from '@/stores'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -92,7 +92,7 @@ const showDeleteModalPage = ref(false)
 /**
  * Computed properties
  */
-const currentAuthor = computed(() => authorsStore.currentAuthor)
+const { current: currentAuthor } = storeToRefs(authorsStore)
 const loading = computed(() => authorsStore.loading)
 const error = computed(() => authorsStore.error)
 const author = computed(() => currentAuthor.value)

@@ -1,5 +1,5 @@
 import { useRoles } from '@/composables/useRoles'
-import { useUsersStore } from '@/store'
+import { useUsersStore } from '@/stores'
 import { logger } from '@/utils/logger'
 import { computed, ref } from 'vue'
 

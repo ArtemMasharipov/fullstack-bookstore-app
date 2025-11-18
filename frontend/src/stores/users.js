@@ -1,6 +1,7 @@
 import { useNotifications } from '@/composables/useNotifications'
 import { usersApi } from '@/services/api/usersApi'
 import { defineStore } from 'pinia'
+import { withLoading } from './storeHelpers'
 
 /**
  * Users Store
@@ -27,27 +28,7 @@ export const useUsersStore = defineStore('users', {
 
     getters: {
         /**
-         * Get users list
-         */
-        usersList: (state) => state.list,
-
-        /**
-         * Get current user
-         */
-        currentUser: (state) => state.current,
-
-        /**
-         * Check loading state
-         */
-        usersLoading: (state) => state.loading,
-
-        /**
-         * Get error message
-         */
-        usersError: (state) => state.error,
-
-        /**
-         * Get user by ID
+         * Get user by ID - contains logic, so we keep it
          */
         getUserById: (state) => (id) => state.list.find((user) => user.id === id || user._id === id),
     },
@@ -57,36 +38,20 @@ export const useUsersStore = defineStore('users', {
          * Fetch all users
          */
         async fetchUsers() {
-            this.loading = true
-            this.error = null
-
-            const { showError } = useNotifications()
-
-            try {
+            return withLoading(this, async () => {
                 const users = await usersApi.fetchAll()
                 this.list = Array.isArray(users) ? users : []
                 return users
-            } catch (error) {
-                this.error = error.message
-                showError('Failed to fetch users', {
-                    icon: 'mdi-account-alert',
-                })
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Create a new user
          */
         async createUser(userData) {
-            this.loading = true
-            this.error = null
-
             const { showSuccess } = useNotifications()
 
-            try {
+            return withLoading(this, async () => {
                 const result = await usersApi.createUser(userData)
                 this.list.unshift(result)
                 this.total += 1
@@ -96,24 +61,16 @@ export const useUsersStore = defineStore('users', {
                     icon: 'mdi-account-plus',
                 })
                 return result
-            } catch (error) {
-                this.error = error.message
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Update an existing user
          */
         async updateUser(id, userData) {
-            this.loading = true
-            this.error = null
-
             const { showSuccess } = useNotifications()
 
-            try {
+            return withLoading(this, async () => {
                 const result = await usersApi.updateUser(id, userData)
 
                 const index = this.list.findIndex((user) => user.id === id || user._id === id)
@@ -126,24 +83,16 @@ export const useUsersStore = defineStore('users', {
                     icon: 'mdi-account-edit',
                 })
                 return result
-            } catch (error) {
-                this.error = error.message
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Delete a user
          */
         async deleteUser(id) {
-            this.loading = true
-            this.error = null
-
             const { showWarning } = useNotifications()
 
-            try {
+            return withLoading(this, async () => {
                 const userToDelete = this.list.find((user) => user.id === id || user._id === id)
                 const userName = userToDelete?.name || userToDelete?.username || userToDelete?.email || 'User'
 
@@ -155,36 +104,18 @@ export const useUsersStore = defineStore('users', {
                 showWarning(`User "${userName}" deleted successfully`, {
                     icon: 'mdi-account-remove',
                 })
-            } catch (error) {
-                this.error = error.message
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
          * Fetch user by ID
          */
         async fetchUserById(id) {
-            this.loading = true
-            this.error = null
-
-            const { showError } = useNotifications()
-
-            try {
+            return withLoading(this, async () => {
                 const user = await usersApi.fetchById(id)
                 this.current = user
                 return user
-            } catch (error) {
-                this.error = error.message
-                showError('Failed to fetch user details', {
-                    icon: 'mdi-account-alert',
-                })
-                throw error
-            } finally {
-                this.loading = false
-            }
+            })
         },
 
         /**
@@ -202,3 +133,5 @@ export const useUsersStore = defineStore('users', {
         },
     },
 })
+
+

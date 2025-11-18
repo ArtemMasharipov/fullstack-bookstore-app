@@ -50,8 +50,7 @@ import BookDeleteDialog from '@/components/features/admin/BookDeleteDialog.vue'
 import BookDialog from '@/components/features/admin/BookDialog.vue'
 
 // Stores
-import { useBooksStore } from '@/store'
-import { useAuthorsStore } from '@/store/modules/authors'
+import { useAuthorsStore, useBooksStore } from '@/stores'
 
 // Utils
 import { logger } from '@/utils/logger'
@@ -77,8 +76,8 @@ const sortBy = ref([{ key: 'title', order: 'asc' }])
 const search = ref('')
 
 // Data from stores
-const books = computed(() => booksStore.booksList || [])
-const authors = computed(() => authorsStore.authorsList || [])
+const books = computed(() => booksStore.books || [])
+const authors = computed(() => authorsStore.list || [])
 const loading = computed(() => booksStore.loading)
 
 // Filtered and paginated data

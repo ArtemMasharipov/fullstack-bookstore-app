@@ -111,7 +111,7 @@
 <script setup>
 import BookCard from '@/components/features/books/BookCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
-import { useAuthStore, useBooksStore, useCartStore } from '@/store'
+import { useAuthStore, useBooksStore, useCartStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'

@@ -2,16 +2,16 @@
  * Composable for handling cart operations
  * Provides reactive cart state and methods for cart management
  */
-import { useCartStore } from '@/store'
+import { useAuthStore, useCartStore } from '@/stores'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
-import { useAuth } from './useAuth'
 
 export function useCart() {
-    // Stores and composables
+    // Stores
     const cartStore = useCartStore()
-    const { isAuthenticated } = useAuth()
+    const authStore = useAuthStore()
+    const { isAuthenticated } = storeToRefs(authStore)
 
     // Extract reactive state
     const { items, loading, error } = storeToRefs(cartStore)
@@ -30,7 +30,10 @@ export function useCart() {
     })
 
     const getItemById = computed(() => (bookId) => {
-        return cartItems.value.find((item) => item.bookId._id === bookId)
+        return cartItems.value.find((item) => {
+            const itemBookId = item.bookId?.id || item.bookId?._id
+            return itemBookId === bookId
+        })
     })
 
     const isInCart = computed(() => (bookId) => {
@@ -55,7 +58,7 @@ export function useCart() {
 
     async function removeFromCart(itemId) {
         try {
-            const item = cartItems.value.find((item) => item._id === itemId)
+            const item = cartItems.value.find((item) => (item.id || item._id) === itemId)
             await cartStore.removeFromCart(itemId)
             logger.info(`Removed "${item?.bookId?.title || 'item'}" from cart`, null, 'cart')
 
@@ -89,14 +92,14 @@ export function useCart() {
     }
 
     async function increaseQuantity(itemId) {
-        const item = cartItems.value.find((item) => item._id === itemId)
+        const item = cartItems.value.find((item) => (item.id || item._id) === itemId)
         if (item) {
             await updateQuantity(itemId, item.quantity + 1)
         }
     }
 
     async function decreaseQuantity(itemId) {
-        const item = cartItems.value.find((item) => item._id === itemId)
+        const item = cartItems.value.find((item) => (item.id || item._id) === itemId)
         if (item) {
             await updateQuantity(itemId, item.quantity - 1)
         }
@@ -143,7 +146,7 @@ export function useCart() {
     // Quick add helpers
     async function quickAddBook(book, quantity = 1) {
         const cartItem = {
-            bookId: book._id,
+            bookId: book.id || book._id,
             title: book.title,
             price: book.price,
             quantity,
@@ -153,9 +156,11 @@ export function useCart() {
     }
 
     async function toggleBookInCart(book) {
-        if (isInCart.value(book._id)) {
-            const cartItem = getItemById.value(book._id)
-            await removeFromCart(cartItem._id)
+        const bookId = book.id || book._id
+        if (isInCart.value(bookId)) {
+            const cartItem = getItemById.value(bookId)
+            const itemId = cartItem.id || cartItem._id
+            await removeFromCart(itemId)
         } else {
             await quickAddBook(book)
         }
@@ -165,7 +170,7 @@ export function useCart() {
     function prepareCheckoutData() {
         return {
             items: cartItems.value.map((item) => ({
-                bookId: item.bookId._id,
+                bookId: item.bookId?.id || item.bookId?._id,
                 quantity: item.quantity,
                 price: item.price,
             })),
@@ -183,7 +188,8 @@ export function useCart() {
         }
 
         cartItems.value.forEach((item) => {
-            if (!item.bookId || !item.bookId._id) {
+            const bookId = item.bookId?.id || item.bookId?._id
+            if (!item.bookId || !bookId) {
                 errors.push(`Invalid book reference for item: ${item.title}`)
             }
 

@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { useAuthorsStore, useAuthStore } from '@/store'
+import { useAuthorsStore, useAuthStore } from '@/stores'
 import { computed, onMounted } from 'vue'
 import ErrorMessage from '../../ui/ErrorMessage.vue'
 import LoadingSpinner from '../../ui/LoadingSpinner.vue'
@@ -56,9 +56,7 @@ const authStore = useAuthStore()
 /**
  * Computed properties
  */
-const authors = computed(() => authorsStore.authorsList)
-const loading = computed(() => authorsStore.authorsLoading)
-const error = computed(() => authorsStore.authorsError)
+const { list: authors, loading, error } = storeToRefs(authorsStore)
 
 /**
  * Methods

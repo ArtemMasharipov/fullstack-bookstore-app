@@ -146,7 +146,7 @@ import { computed, onMounted, ref } from 'vue'
 import AdminDataTable from '@/components/features/admin/AdminDataTable.vue'
 
 // Stores
-import { useAuthorsStore } from '@/store/modules/authors'
+import { useAuthorsStore } from '@/stores'
 
 // Utils
 import { logger } from '@/utils/logger'
@@ -184,7 +184,7 @@ const editedAuthor = ref({
 const authorToDelete = ref(null)
 
 // Computed properties
-const authors = computed(() => authorsStore.authorsList || [])
+const authors = computed(() => authorsStore.list || [])
 const loading = computed(() => authorsStore.loading)
 
 // Data table methods

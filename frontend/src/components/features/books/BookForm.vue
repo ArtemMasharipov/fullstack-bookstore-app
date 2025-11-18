@@ -108,7 +108,7 @@
 
 <script setup>
 import { useImageUpload } from '@/composables/useImageUpload'
-import { useAuthorsStore } from '@/store/modules/authors'
+import { useAuthorsStore } from '@/stores'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import BaseModal from '../../ui/BaseModal.vue'
 
@@ -207,7 +207,7 @@ const priceRules = [
 /**
  * Computed properties
  */
-const authorsList = computed(() => authorsStore.authorsList)
+const authorsList = computed(() => authorsStore.list)
 const authors = computed(() => authorsList.value)
 
 const isEdit = computed(() => !!props.initialData._id)

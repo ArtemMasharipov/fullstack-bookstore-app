@@ -169,7 +169,7 @@
 
 <script setup>
 import ErrorMessage from '@/components/ui/ErrorMessage.vue'
-import { useAuthStore, useOrdersStore } from '@/store'
+import { useAuthStore, useOrdersStore } from '@/stores'
 import { formatPrice } from '@/utils'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'

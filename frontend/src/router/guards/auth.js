@@ -1,5 +1,5 @@
 // Direct import to avoid circular dependency
-import { useAuthStore } from '@/store/modules/auth/auth'
+import { useAuthStore } from '@/stores/auth'
 
 const authGuard = async (to, from, next) => {
     const authStore = useAuthStore()

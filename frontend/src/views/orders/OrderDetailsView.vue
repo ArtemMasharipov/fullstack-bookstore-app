@@ -69,7 +69,7 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useAuthStore, useOrdersStore } from '@/store'
+import { useAuthStore, useOrdersStore } from '@/stores'
 import { formatPrice } from '@/utils'
 
 const route = useRoute()
