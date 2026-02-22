@@ -3,7 +3,7 @@
  * Handles HTTP requests/responses for orders
  */
 
-import * as orderService from '../services/orderService.js'
+import * as orderService from "../services/orderService.js";
 
 /**
  * @route   POST /api/v1/orders
@@ -11,13 +11,13 @@ import * as orderService from '../services/orderService.js'
  * @access  Private
  */
 export async function createOrder(req, res) {
-  const order = await orderService.createOrder(req.user.id, req.body)
+  const order = await orderService.createOrder(req.user.id, req.body);
 
   res.status(201).json({
     success: true,
     data: order,
-    message: 'Order created successfully',
-  })
+    message: "Order created successfully",
+  });
 }
 
 /**
@@ -26,13 +26,13 @@ export async function createOrder(req, res) {
  * @access  Private
  */
 export async function getUserOrders(req, res) {
-  const result = await orderService.getUserOrders(req.user.id, req.query)
+  const result = await orderService.getUserOrders(req.user.id, req.query);
 
   res.status(200).json({
     success: true,
     data: result.orders,
     pagination: result.pagination,
-  })
+  });
 }
 
 /**
@@ -41,12 +41,12 @@ export async function getUserOrders(req, res) {
  * @access  Private
  */
 export async function getOrder(req, res) {
-  const order = await orderService.getOrderById(req.params.id, req.user.id)
+  const order = await orderService.getOrderById(req.params.id, req.user.id);
 
   res.status(200).json({
     success: true,
     data: order,
-  })
+  });
 }
 
 /**
@@ -55,13 +55,13 @@ export async function getOrder(req, res) {
  * @access  Private
  */
 export async function cancelOrder(req, res) {
-  const order = await orderService.cancelOrder(req.params.id, req.user.id)
+  const order = await orderService.cancelOrder(req.params.id, req.user.id);
 
   res.status(200).json({
     success: true,
     data: order,
-    message: 'Order cancelled successfully',
-  })
+    message: "Order cancelled successfully",
+  });
 }
 
 // =============================================================================
@@ -74,13 +74,13 @@ export async function cancelOrder(req, res) {
  * @access  Private/Admin
  */
 export async function getAllOrders(req, res) {
-  const result = await orderService.getAllOrders(req.query)
+  const result = await orderService.getAllOrders(req.query);
 
   res.status(200).json({
     success: true,
     data: result.orders,
     pagination: result.pagination,
-  })
+  });
 }
 
 /**
@@ -89,22 +89,22 @@ export async function getAllOrders(req, res) {
  * @access  Private/Admin
  */
 export async function updateOrderStatus(req, res) {
-  const { status } = req.body
+  const { status } = req.body;
 
   if (!status) {
     return res.status(400).json({
       success: false,
-      error: 'Status is required',
-    })
+      error: "Status is required",
+    });
   }
 
-  const order = await orderService.updateOrderStatus(req.params.id, status)
+  const order = await orderService.updateOrderStatus(req.params.id, status);
 
   res.status(200).json({
     success: true,
     data: order,
-    message: 'Order status updated successfully',
-  })
+    message: "Order status updated successfully",
+  });
 }
 
 /**
@@ -113,13 +113,13 @@ export async function updateOrderStatus(req, res) {
  * @access  Private/Admin
  */
 export async function markOrderAsPaid(req, res) {
-  const order = await orderService.markOrderAsPaid(req.params.id)
+  const order = await orderService.markOrderAsPaid(req.params.id);
 
   res.status(200).json({
     success: true,
     data: order,
-    message: 'Order marked as paid',
-  })
+    message: "Order marked as paid",
+  });
 }
 
 /**
@@ -128,10 +128,10 @@ export async function markOrderAsPaid(req, res) {
  * @access  Private/Admin
  */
 export async function getOrderStats(req, res) {
-  const stats = await orderService.getOrderStats()
+  const stats = await orderService.getOrderStats();
 
   res.status(200).json({
     success: true,
     data: stats,
-  })
+  });
 }

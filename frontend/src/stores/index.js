@@ -7,5 +7,3 @@ export { useBooksStore } from './books'
 export { useCartStore } from './cart'
 export { useOrdersStore } from './orders'
 export { useUsersStore } from './users'
-
-

@@ -4,7 +4,7 @@
  * All business logic delegated to service layer
  */
 
-import * as bookService from '../services/bookService.js'
+import * as bookService from "../services/bookService.js";
 
 /**
  * @route   GET /api/v1/books
@@ -12,13 +12,13 @@ import * as bookService from '../services/bookService.js'
  * @access  Public
  */
 export async function getBooks(req, res) {
-  const result = await bookService.getBooks(req.query)
+  const result = await bookService.getBooks(req.query);
 
   res.status(200).json({
     success: true,
     data: result.books,
     pagination: result.pagination,
-  })
+  });
 }
 
 /**
@@ -27,12 +27,12 @@ export async function getBooks(req, res) {
  * @access  Public
  */
 export async function getBook(req, res) {
-  const book = await bookService.getBookById(req.params.id)
+  const book = await bookService.getBookById(req.params.id);
 
   res.status(200).json({
     success: true,
     data: book,
-  })
+  });
 }
 
 /**
@@ -45,15 +45,15 @@ export async function createBook(req, res) {
     ...req.body,
     // Add file path if image was uploaded
     ...(req.file && { image: req.file.path }),
-  }
+  };
 
-  const book = await bookService.createBook(bookData)
+  const book = await bookService.createBook(bookData);
 
   res.status(201).json({
     success: true,
     data: book,
-    message: 'Book created successfully',
-  })
+    message: "Book created successfully",
+  });
 }
 
 /**
@@ -66,15 +66,15 @@ export async function updateBook(req, res) {
     ...req.body,
     // Add new image path if uploaded
     ...(req.file && { image: req.file.path }),
-  }
+  };
 
-  const book = await bookService.updateBook(req.params.id, updateData)
+  const book = await bookService.updateBook(req.params.id, updateData);
 
   res.status(200).json({
     success: true,
     data: book,
-    message: 'Book updated successfully',
-  })
+    message: "Book updated successfully",
+  });
 }
 
 /**
@@ -83,12 +83,12 @@ export async function updateBook(req, res) {
  * @access  Private/Admin
  */
 export async function deleteBook(req, res) {
-  await bookService.deleteBook(req.params.id)
+  await bookService.deleteBook(req.params.id);
 
   res.status(200).json({
     success: true,
-    message: 'Book deleted successfully',
-  })
+    message: "Book deleted successfully",
+  });
 }
 
 /**
@@ -100,13 +100,13 @@ export async function getBooksByCategory(req, res) {
   const books = await bookService.getBooksByCategory(
     req.params.category,
     req.query
-  )
+  );
 
   res.status(200).json({
     success: true,
     count: books.length,
     data: books,
-  })
+  });
 }
 
 /**
@@ -115,22 +115,22 @@ export async function getBooksByCategory(req, res) {
  * @access  Private/Admin
  */
 export async function updateBookStock(req, res) {
-  const { inStock } = req.body
+  const { inStock } = req.body;
 
-  if (typeof inStock !== 'boolean') {
+  if (typeof inStock !== "boolean") {
     return res.status(400).json({
       success: false,
-      error: 'inStock must be a boolean value',
-    })
+      error: "inStock must be a boolean value",
+    });
   }
 
-  const book = await bookService.updateBookStock(req.params.id, inStock)
+  const book = await bookService.updateBookStock(req.params.id, inStock);
 
   res.status(200).json({
     success: true,
     data: book,
-    message: 'Stock status updated successfully',
-  })
+    message: "Stock status updated successfully",
+  });
 }
 
 /**
@@ -142,11 +142,11 @@ export async function getBooksByAuthor(req, res) {
   const books = await bookService.getBooksByAuthor(
     req.params.authorId,
     req.query
-  )
+  );
 
   res.status(200).json({
     success: true,
     count: books.length,
     data: books,
-  })
+  });
 }

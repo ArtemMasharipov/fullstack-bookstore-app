@@ -89,7 +89,8 @@ const props = defineProps({
     item: {
         type: Object,
         required: true,
-        validator: ({ bookId, quantity, price }) => bookId && Number.isFinite(quantity) && Number.isFinite(price),
+        validator: ({ bookId, book, quantity, price }) =>
+            (bookId || book) && Number.isFinite(quantity) && Number.isFinite(price),
     },
 })
 
@@ -105,12 +106,16 @@ const showDeleteConfirm = ref(false)
 
 // Computed properties
 const bookTitle = computed(() => {
-    const { title = 'Unknown Book' } = props.item.bookId || {}
-    return title
+    return props.item.bookId?.title ?? props.item.book?.title ?? 'Unknown Book'
 })
 
 const bookImage = computed(() => {
-    return props.item?.bookId?.image || placeholderImage
+    return props.item?.bookId?.image ?? props.item?.book?.image ?? placeholderImage
+})
+
+const bookIdForApi = computed(() => {
+    const b = props.item.bookId || props.item.book
+    return b?._id ?? b?.id
 })
 
 const formattedPrice = computed(() => {
@@ -133,7 +138,7 @@ const remove = async () => {
 
     removing.value = true
     try {
-        await cartStore.removeFromCart(props.item._id, bookTitle.value)
+        await cartStore.removeFromCart(bookIdForApi.value ?? props.item._id, bookTitle.value)
         // После удаления элемента обновляем счетчик корзины
         await cartStore.fetchCart()
     } catch (error) {
@@ -155,17 +160,18 @@ const handleImageError = (e) => {
  */
 const handleQuantityChange = (quantity) => {
     if (quantity < 1) return
+    const id = bookIdForApi.value ?? props.item._id
 
     emit('update-quantity', {
-        bookId: props.item.bookId._id,
+        bookId: id,
         quantity,
         title: bookTitle.value,
     })
 
     cartStore
         .updateQuantity({
-            itemId: props.item._id,
-            bookId: props.item.bookId._id,
+            itemId: id,
+            bookId: id,
             quantity,
             title: bookTitle.value,
         })
