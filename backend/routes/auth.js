@@ -3,12 +3,12 @@
  * Defines authentication endpoints
  */
 
-import express from 'express'
-import * as authController from '../controllers/authController.js'
-import { asyncHandler } from '../middleware/asyncHandler.js'
-import { protect } from '../middleware/auth.js'
+import express from "express";
+import * as authController from "../controllers/authController.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
+import { protect } from "../middleware/auth.js";
 
-const router = express.Router()
+const router = express.Router();
 
 // =============================================================================
 // PUBLIC ROUTES
@@ -20,7 +20,7 @@ const router = express.Router()
  * @body    { username, email, password, firstName?, lastName? }
  * @access  Public
  */
-router.post('/register', asyncHandler(authController.register))
+router.post("/register", asyncHandler(authController.register));
 
 /**
  * @route   POST /api/v1/auth/login
@@ -28,7 +28,7 @@ router.post('/register', asyncHandler(authController.register))
  * @body    { emailOrUsername, password }
  * @access  Public
  */
-router.post('/login', asyncHandler(authController.login))
+router.post("/login", asyncHandler(authController.login));
 
 // =============================================================================
 // PROTECTED ROUTES (Authenticated Users)
@@ -39,7 +39,7 @@ router.post('/login', asyncHandler(authController.login))
  * @desc    Get current logged-in user
  * @access  Private
  */
-router.get('/me', protect, asyncHandler(authController.getCurrentUser))
+router.get("/me", protect, asyncHandler(authController.getCurrentUser));
 
 /**
  * @route   PUT /api/v1/auth/password
@@ -47,7 +47,7 @@ router.get('/me', protect, asyncHandler(authController.getCurrentUser))
  * @body    { currentPassword, newPassword }
  * @access  Private
  */
-router.put('/password', protect, asyncHandler(authController.changePassword))
+router.put("/password", protect, asyncHandler(authController.changePassword));
 
 /**
  * @route   PUT /api/v1/auth/profile
@@ -55,13 +55,13 @@ router.put('/password', protect, asyncHandler(authController.changePassword))
  * @body    { firstName?, lastName?, username? }
  * @access  Private
  */
-router.put('/profile', protect, asyncHandler(authController.updateProfile))
+router.put("/profile", protect, asyncHandler(authController.updateProfile));
 
 /**
  * @route   POST /api/v1/auth/logout
  * @desc    Logout user
  * @access  Private
  */
-router.post('/logout', protect, asyncHandler(authController.logout))
+router.post("/logout", protect, asyncHandler(authController.logout));
 
-export default router
+export default router;

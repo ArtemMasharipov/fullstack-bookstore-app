@@ -3,20 +3,20 @@
  * Defines user management endpoints (admin only)
  */
 
-import express from 'express'
-import * as userController from '../controllers/userController.js'
-import { asyncHandler } from '../middleware/asyncHandler.js'
-import { authorize, protect } from '../middleware/auth.js'
+import express from "express";
+import * as userController from "../controllers/userController.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
+import { authorize, protect } from "../middleware/auth.js";
 
-const router = express.Router()
+const router = express.Router();
 
 // =============================================================================
 // ALL ROUTES REQUIRE ADMIN AUTHENTICATION
 // =============================================================================
 
 // Apply protect and admin authorization to all routes
-router.use(protect)
-router.use(authorize('admin'))
+router.use(protect);
+router.use(authorize("admin"));
 
 /**
  * @route   GET /api/v1/users
@@ -24,14 +24,14 @@ router.use(authorize('admin'))
  * @query   page?, limit?, role?, isActive?, search?
  * @access  Private/Admin
  */
-router.get('/', asyncHandler(userController.getUsers))
+router.get("/", asyncHandler(userController.getUsers));
 
 /**
  * @route   GET /api/v1/users/stats
  * @desc    Get user statistics
  * @access  Private/Admin
  */
-router.get('/stats', asyncHandler(userController.getUserStats))
+router.get("/stats", asyncHandler(userController.getUserStats));
 
 /**
  * @route   GET /api/v1/users/role/:role
@@ -39,7 +39,7 @@ router.get('/stats', asyncHandler(userController.getUserStats))
  * @params  :role (required)
  * @access  Private/Admin
  */
-router.get('/role/:role', asyncHandler(userController.getUsersByRole))
+router.get("/role/:role", asyncHandler(userController.getUsersByRole));
 
 /**
  * @route   GET /api/v1/users/:id
@@ -47,7 +47,7 @@ router.get('/role/:role', asyncHandler(userController.getUsersByRole))
  * @params  :id (required)
  * @access  Private/Admin
  */
-router.get('/:id', asyncHandler(userController.getUser))
+router.get("/:id", asyncHandler(userController.getUser));
 
 /**
  * @route   POST /api/v1/users
@@ -55,7 +55,7 @@ router.get('/:id', asyncHandler(userController.getUser))
  * @body    { username, email, password, role? }
  * @access  Private/Admin
  */
-router.post('/', asyncHandler(userController.createUser))
+router.post("/", asyncHandler(userController.createUser));
 
 /**
  * @route   PUT /api/v1/users/:id
@@ -64,7 +64,7 @@ router.post('/', asyncHandler(userController.createUser))
  * @body    { username?, email?, role?, isActive? }
  * @access  Private/Admin
  */
-router.put('/:id', asyncHandler(userController.updateUser))
+router.put("/:id", asyncHandler(userController.updateUser));
 
 /**
  * @route   PATCH /api/v1/users/:id/status
@@ -73,7 +73,7 @@ router.put('/:id', asyncHandler(userController.updateUser))
  * @body    { isActive: boolean }
  * @access  Private/Admin
  */
-router.patch('/:id/status', asyncHandler(userController.toggleUserStatus))
+router.patch("/:id/status", asyncHandler(userController.toggleUserStatus));
 
 /**
  * @route   DELETE /api/v1/users/:id
@@ -81,7 +81,7 @@ router.patch('/:id/status', asyncHandler(userController.toggleUserStatus))
  * @params  :id (required)
  * @access  Private/Admin
  */
-router.delete('/:id', asyncHandler(userController.deleteUser))
+router.delete("/:id", asyncHandler(userController.deleteUser));
 
 /**
  * @route   DELETE /api/v1/users/:id/permanent
@@ -90,8 +90,8 @@ router.delete('/:id', asyncHandler(userController.deleteUser))
  * @access  Private/Admin
  */
 router.delete(
-  '/:id/permanent',
+  "/:id/permanent",
   asyncHandler(userController.permanentlyDeleteUser)
-)
+);
 
-export default router
+export default router;

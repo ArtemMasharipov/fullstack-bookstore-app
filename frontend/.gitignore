@@ -10,7 +10,10 @@ node_modules
 vite.config.js.timestamp-*
 .vite-ssg-temp/
 
-# local env files
+# local env files (sensitive)
+.env
+.env.development
+.env.production
 .env.local
 .env.*.local
 

@@ -8,14 +8,18 @@ build/
 */dist/
 */build/
 
-# Environment variables
+# Environment variables (sensitive)
 .env
 .env.local
+.env.development
 .env.development.local
-.env.test.local
+.env.production
 .env.production.local
+.env.test.local
 */.env
 */.env.local
+*/.env.development
+*/.env.production
 
 # Logs
 logs/

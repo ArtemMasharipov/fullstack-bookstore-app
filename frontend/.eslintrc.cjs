@@ -4,7 +4,12 @@ module.exports = {
         node: true,
         'vue/setup-compiler-macros': true,
     },
-    extends: ['plugin:vue/vue3-essential', 'eslint:recommended', 'plugin:prettier/recommended'],
+    extends: [
+        'plugin:vue/vue3-essential',
+        'eslint:recommended',
+        'plugin:prettier/recommended',
+        'prettier', // eslint-config-prettier: MUST be last — disables rules that conflict with Prettier
+    ],
     parserOptions: {
         ecmaVersion: 2020,
     },

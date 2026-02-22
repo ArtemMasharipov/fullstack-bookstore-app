@@ -3,19 +3,19 @@
  * Defines order management endpoints
  */
 
-import express from 'express'
-import * as orderController from '../controllers/orderController.js'
-import { asyncHandler } from '../middleware/asyncHandler.js'
-import { authorize, protect } from '../middleware/auth.js'
+import express from "express";
+import * as orderController from "../controllers/orderController.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
+import { authorize, protect } from "../middleware/auth.js";
 
-const router = express.Router()
+const router = express.Router();
 
 // =============================================================================
 // ALL ROUTES REQUIRE AUTHENTICATION
 // =============================================================================
 
 // Apply protect middleware to all routes
-router.use(protect)
+router.use(protect);
 
 // =============================================================================
 // ADMIN ROUTES
@@ -27,10 +27,10 @@ router.use(protect)
  * @access  Private/Admin
  */
 router.get(
-  '/admin/all',
-  authorize('admin'),
+  "/admin/all",
+  authorize("admin"),
   asyncHandler(orderController.getAllOrders)
-)
+);
 
 /**
  * @route   GET /api/v1/orders/admin/stats
@@ -38,10 +38,10 @@ router.get(
  * @access  Private/Admin
  */
 router.get(
-  '/admin/stats',
-  authorize('admin'),
+  "/admin/stats",
+  authorize("admin"),
   asyncHandler(orderController.getOrderStats)
-)
+);
 
 /**
  * @route   PATCH /api/v1/orders/:id/status
@@ -50,10 +50,10 @@ router.get(
  * @access  Private/Admin
  */
 router.patch(
-  '/:id/status',
-  authorize('admin'),
+  "/:id/status",
+  authorize("admin"),
   asyncHandler(orderController.updateOrderStatus)
-)
+);
 
 /**
  * @route   PATCH /api/v1/orders/:id/pay
@@ -61,10 +61,10 @@ router.patch(
  * @access  Private/Admin
  */
 router.patch(
-  '/:id/pay',
-  authorize('admin'),
+  "/:id/pay",
+  authorize("admin"),
   asyncHandler(orderController.markOrderAsPaid)
-)
+);
 
 // =============================================================================
 // USER ROUTES
@@ -76,7 +76,7 @@ router.patch(
  * @body    { shippingAddress, paymentMethod? }
  * @access  Private
  */
-router.post('/', asyncHandler(orderController.createOrder))
+router.post("/", asyncHandler(orderController.createOrder));
 
 /**
  * @route   GET /api/v1/orders
@@ -84,7 +84,7 @@ router.post('/', asyncHandler(orderController.createOrder))
  * @query   page?, limit?, status?
  * @access  Private
  */
-router.get('/', asyncHandler(orderController.getUserOrders))
+router.get("/", asyncHandler(orderController.getUserOrders));
 
 /**
  * @route   GET /api/v1/orders/:id
@@ -92,7 +92,7 @@ router.get('/', asyncHandler(orderController.getUserOrders))
  * @params  :id (required)
  * @access  Private
  */
-router.get('/:id', asyncHandler(orderController.getOrder))
+router.get("/:id", asyncHandler(orderController.getOrder));
 
 /**
  * @route   PATCH /api/v1/orders/:id/cancel
@@ -100,6 +100,6 @@ router.get('/:id', asyncHandler(orderController.getOrder))
  * @params  :id (required)
  * @access  Private
  */
-router.patch('/:id/cancel', asyncHandler(orderController.cancelOrder))
+router.patch("/:id/cancel", asyncHandler(orderController.cancelOrder));
 
-export default router
+export default router;
