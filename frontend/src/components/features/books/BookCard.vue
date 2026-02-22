@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="2" height="100%" hover @click="emit('click', book.id)">
+    <v-card elevation="2" height="100%" hover @click="emit('click', book.id ?? book._id)">
         <v-img
             :src="book.image || placeholderImage"
             :alt="book.title || 'No image available'"

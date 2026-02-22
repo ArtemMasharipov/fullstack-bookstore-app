@@ -24,16 +24,22 @@ export const useCartStore = defineStore('cart', {
          * Get formatted cart items
          */
         cartItems: (state) =>
-            state.items.map(({ id, _id, bookId, quantity, price }) => ({
-                id: id || _id, // Поддержка старых данных с _id
-                bookId: {
-                    id: bookId?.id || bookId?._id || bookId,
-                    title: bookId?.title || 'Unknown Book',
-                    image: bookId?.image,
-                },
-                quantity: Number(quantity),
-                price: Number(price),
-            })),
+            state.items.map(({ id, _id, bookId, book, quantity, price }) => {
+                const bookData = bookId || book
+                return {
+                    id: id || _id,
+                    _id: _id || id,
+                    bookId: {
+                        id: bookData?._id || bookData?.id,
+                        _id: bookData?._id || bookData?.id,
+                        title: bookData?.title || 'Unknown Book',
+                        image: bookData?.image,
+                    },
+                    book: bookData,
+                    quantity: Number(quantity),
+                    price: Number(price),
+                }
+            }),
 
         /**
          * Calculate cart total
@@ -63,7 +69,8 @@ export const useCartStore = defineStore('cart', {
          */
         async fetchCart() {
             return withLoading(this, async () => {
-                const { items = [] } = (await cartApi.fetchCart()) || {}
+                const response = await cartApi.fetchCart()
+                const items = response?.data?.items ?? response?.items ?? []
                 this.setItems(items)
             })
         },
@@ -80,7 +87,8 @@ export const useCartStore = defineStore('cart', {
 
                 if (authStore.isAuthenticated) {
                     // Server-side cart
-                    const { items } = await cartApi.addToCart({ bookId, quantity, price })
+                    const response = await cartApi.addToCart({ bookId, quantity, price })
+                    const items = response?.data?.items ?? response?.items ?? []
                     this.setItems(items)
                 } else {
                     // Local cart
@@ -101,7 +109,8 @@ export const useCartStore = defineStore('cart', {
 
             return withLoading(this, async () => {
                 const response = await cartApi.removeFromCart(itemId)
-                this.setItems(response.items)
+                const items = response?.data?.items ?? response?.items ?? []
+                this.setItems(items)
 
                 showSuccess(`"${title}" removed from cart`, {
                     icon: 'mdi-cart-minus',
@@ -123,9 +132,8 @@ export const useCartStore = defineStore('cart', {
                 if (authStore.isAuthenticated) {
                     // Server-side cart
                     const response = await cartApi.updateQuantity(payload.itemId, payload.quantity)
-                    if (response?.items) {
-                        this.setItems(response.items)
-                    }
+                    const items = response?.data?.items ?? response?.items
+                    if (items) this.setItems(items)
                 } else {
                     // Local cart
                     this.updateLocalQuantity(payload)
@@ -225,5 +233,3 @@ export const useCartStore = defineStore('cart', {
         },
     },
 })
-
-

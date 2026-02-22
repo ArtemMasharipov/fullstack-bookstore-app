@@ -3,7 +3,7 @@
  * Handles HTTP requests/responses for authentication
  */
 
-import * as authService from '../services/authService.js'
+import * as authService from "../services/authService.js";
 
 /**
  * @route   POST /api/v1/auth/register
@@ -11,7 +11,7 @@ import * as authService from '../services/authService.js'
  * @access  Public
  */
 export async function register(req, res) {
-  const result = await authService.register(req.body)
+  const result = await authService.register(req.body);
 
   res.status(201).json({
     success: true,
@@ -19,8 +19,8 @@ export async function register(req, res) {
       user: result.user,
       token: result.token,
     },
-    message: 'User registered successfully',
-  })
+    message: "User registered successfully",
+  });
 }
 
 /**
@@ -29,7 +29,7 @@ export async function register(req, res) {
  * @access  Public
  */
 export async function login(req, res) {
-  const result = await authService.login(req.body)
+  const result = await authService.login(req.body);
 
   res.status(200).json({
     success: true,
@@ -37,8 +37,8 @@ export async function login(req, res) {
       user: result.user,
       token: result.token,
     },
-    message: 'Login successful',
-  })
+    message: "Login successful",
+  });
 }
 
 /**
@@ -48,12 +48,12 @@ export async function login(req, res) {
  */
 export async function getCurrentUser(req, res) {
   // req.user is set by protect middleware
-  const user = await authService.getCurrentUser(req.user.id)
+  const user = await authService.getCurrentUser(req.user.id);
 
   res.status(200).json({
     success: true,
     data: user,
-  })
+  });
 }
 
 /**
@@ -62,12 +62,12 @@ export async function getCurrentUser(req, res) {
  * @access  Private
  */
 export async function changePassword(req, res) {
-  await authService.changePassword(req.user.id, req.body)
+  await authService.changePassword(req.user.id, req.body);
 
   res.status(200).json({
     success: true,
-    message: 'Password changed successfully',
-  })
+    message: "Password changed successfully",
+  });
 }
 
 /**
@@ -76,13 +76,13 @@ export async function changePassword(req, res) {
  * @access  Private
  */
 export async function updateProfile(req, res) {
-  const user = await authService.updateProfile(req.user.id, req.body)
+  const user = await authService.updateProfile(req.user.id, req.body);
 
   res.status(200).json({
     success: true,
     data: user,
-    message: 'Profile updated successfully',
-  })
+    message: "Profile updated successfully",
+  });
 }
 
 /**
@@ -96,6 +96,6 @@ export async function logout(req, res) {
 
   res.status(200).json({
     success: true,
-    message: 'Logout successful. Please remove the token from client.',
-  })
+    message: "Logout successful. Please remove the token from client.",
+  });
 }

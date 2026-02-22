@@ -16,7 +16,7 @@
                 <div>
                     <CartItem
                         v-for="item in cartItems"
-                        :key="item.bookId._id"
+                        :key="item.bookId?.id ?? item.id ?? item._id"
                         :item="item"
                         @remove="handleRemoveFromCart"
                         @update-quantity="updateQuantity"

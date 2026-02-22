@@ -7,16 +7,16 @@ import baseApi from './baseApi'
 export const cartApi = {
     fetchCart: () => baseApi.get('/cart').then((res) => res.data),
 
-    addToCart: (item) => baseApi.post('/cart/add', item).then((res) => res.data),
+    addToCart: (item) => baseApi.post('/cart', item).then((res) => res.data),
 
-    removeFromCart: (itemId) => {
-        if (!itemId) throw new Error('Item ID is required')
-        return baseApi.delete(`/cart/items/${itemId}`).then((res) => res.data)
+    removeFromCart: (bookId) => {
+        if (!bookId) throw new Error('Book ID is required')
+        return baseApi.delete(`/cart/${bookId}`).then((res) => res.data)
     },
 
-    updateQuantity: (itemId, quantity) => {
-        if (!itemId) throw new Error('Item ID is required')
-        return baseApi.put(`/cart/items/${itemId}`, { quantity }).then((res) => res.data)
+    updateQuantity: (bookId, quantity) => {
+        if (!bookId) throw new Error('Book ID is required')
+        return baseApi.put(`/cart/${bookId}`, { quantity }).then((res) => res.data)
     },
 
     clearCart: () => baseApi.delete('/cart').then((res) => res.data),

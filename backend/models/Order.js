@@ -3,14 +3,14 @@
  * Schema for customer orders
  */
 
-import mongoose from 'mongoose'
+import mongoose from "mongoose";
 
 const orderItemSchema = new mongoose.Schema(
   {
     book: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Book',
-      required: [true, 'Book is required'],
+      ref: "Book",
+      required: [true, "Book is required"],
     },
     title: {
       type: String,
@@ -18,13 +18,13 @@ const orderItemSchema = new mongoose.Schema(
     },
     quantity: {
       type: Number,
-      required: [true, 'Quantity is required'],
-      min: [1, 'Quantity must be at least 1'],
+      required: [true, "Quantity is required"],
+      min: [1, "Quantity must be at least 1"],
     },
     price: {
       type: Number,
-      required: [true, 'Price is required'],
-      min: [0, 'Price cannot be negative'],
+      required: [true, "Price is required"],
+      min: [0, "Price cannot be negative"],
     },
     subtotal: {
       type: Number,
@@ -33,33 +33,33 @@ const orderItemSchema = new mongoose.Schema(
     },
   },
   { _id: false }
-)
+);
 
 const shippingAddressSchema = new mongoose.Schema(
   {
     fullName: {
       type: String,
-      required: [true, 'Full name is required'],
+      required: [true, "Full name is required"],
       trim: true,
     },
     address: {
       type: String,
-      required: [true, 'Address is required'],
+      required: [true, "Address is required"],
       trim: true,
     },
     city: {
       type: String,
-      required: [true, 'City is required'],
+      required: [true, "City is required"],
       trim: true,
     },
     postalCode: {
       type: String,
-      required: [true, 'Postal code is required'],
+      required: [true, "Postal code is required"],
       trim: true,
     },
     country: {
       type: String,
-      required: [true, 'Country is required'],
+      required: [true, "Country is required"],
       trim: true,
     },
     phone: {
@@ -68,7 +68,7 @@ const shippingAddressSchema = new mongoose.Schema(
     },
   },
   { _id: false }
-)
+);
 
 const orderSchema = new mongoose.Schema(
   {
@@ -80,8 +80,8 @@ const orderSchema = new mongoose.Schema(
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'User is required'],
+      ref: "User",
+      required: [true, "User is required"],
       index: true,
     },
     items: {
@@ -89,20 +89,20 @@ const orderSchema = new mongoose.Schema(
       required: true,
       validate: {
         validator: function (items) {
-          return items && items.length > 0
+          return items && items.length > 0;
         },
-        message: 'Order must have at least one item',
+        message: "Order must have at least one item",
       },
     },
     shippingAddress: {
       type: shippingAddressSchema,
-      required: [true, 'Shipping address is required'],
+      required: [true, "Shipping address is required"],
     },
     paymentMethod: {
       type: String,
-      required: [true, 'Payment method is required'],
-      enum: ['card', 'paypal', 'cash_on_delivery'],
-      default: 'card',
+      required: [true, "Payment method is required"],
+      enum: ["card", "paypal", "cash_on_delivery"],
+      default: "card",
     },
     itemsPrice: {
       type: Number,
@@ -131,8 +131,8 @@ const orderSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
-      default: 'pending',
+      enum: ["pending", "processing", "shipped", "delivered", "cancelled"],
+      default: "pending",
       index: true,
     },
     isPaid: {
@@ -157,7 +157,7 @@ const orderSchema = new mongoose.Schema(
     notes: {
       type: String,
       trim: true,
-      maxlength: [500, 'Notes cannot exceed 500 characters'],
+      maxlength: [500, "Notes cannot exceed 500 characters"],
     },
   },
   {
@@ -165,104 +165,104 @@ const orderSchema = new mongoose.Schema(
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   }
-)
+);
 
 // Indexes for performance
-orderSchema.index({ user: 1, createdAt: -1 })
-orderSchema.index({ status: 1, createdAt: -1 })
-orderSchema.index({ isPaid: 1, isDelivered: 1 })
+orderSchema.index({ user: 1, createdAt: -1 });
+orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ isPaid: 1, isDelivered: 1 });
 
 // Virtual - total items count
-orderSchema.virtual('totalItems').get(function () {
-  return this.items.reduce((sum, item) => sum + item.quantity, 0)
-})
+orderSchema.virtual("totalItems").get(function () {
+  return this.items.reduce((sum, item) => sum + item.quantity, 0);
+});
 
 // Static method - generate order number
 orderSchema.statics.generateOrderNumber = async function () {
-  const date = new Date()
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
   // Count orders today
-  const startOfDay = new Date(date.setHours(0, 0, 0, 0))
-  const endOfDay = new Date(date.setHours(23, 59, 59, 999))
+  const startOfDay = new Date(date.setHours(0, 0, 0, 0));
+  const endOfDay = new Date(date.setHours(23, 59, 59, 999));
 
   const count = await this.countDocuments({
     createdAt: { $gte: startOfDay, $lte: endOfDay },
-  })
+  });
 
-  const sequence = String(count + 1).padStart(4, '0')
+  const sequence = String(count + 1).padStart(4, "0");
 
-  return `ORD-${year}${month}${day}-${sequence}`
-}
+  return `ORD-${year}${month}${day}-${sequence}`;
+};
 
 // Static method - find orders by user
 orderSchema.statics.findByUser = function (userId, filters = {}) {
-  const query = { user: userId }
+  const query = { user: userId };
 
   if (filters.status) {
-    query.status = filters.status
+    query.status = filters.status;
   }
 
   return this.find(query)
-    .populate('items.book', 'title author image')
-    .sort('-createdAt')
-}
+    .populate("items.book", "title author image")
+    .sort("-createdAt");
+};
 
 // Instance method - calculate totals
 orderSchema.methods.calculatePrices = function () {
   // Calculate items price
   this.itemsPrice = this.items.reduce((sum, item) => {
-    item.subtotal = item.price * item.quantity
-    return sum + item.subtotal
-  }, 0)
+    item.subtotal = item.price * item.quantity;
+    return sum + item.subtotal;
+  }, 0);
 
   // Calculate shipping (free shipping over $50)
-  this.shippingPrice = this.itemsPrice >= 50 ? 0 : 10
+  this.shippingPrice = this.itemsPrice >= 50 ? 0 : 10;
 
   // Calculate tax (10%)
-  this.taxPrice = Math.round(this.itemsPrice * 0.1 * 100) / 100
+  this.taxPrice = Math.round(this.itemsPrice * 0.1 * 100) / 100;
 
   // Calculate total
-  this.totalPrice = this.itemsPrice + this.shippingPrice + this.taxPrice
+  this.totalPrice = this.itemsPrice + this.shippingPrice + this.taxPrice;
 
   // Round to 2 decimal places
-  this.itemsPrice = Math.round(this.itemsPrice * 100) / 100
-  this.totalPrice = Math.round(this.totalPrice * 100) / 100
-}
+  this.itemsPrice = Math.round(this.itemsPrice * 100) / 100;
+  this.totalPrice = Math.round(this.totalPrice * 100) / 100;
+};
 
 // Instance method - mark as paid
 orderSchema.methods.markAsPaid = function () {
-  this.isPaid = true
-  this.paidAt = new Date()
-  if (this.status === 'pending') {
-    this.status = 'processing'
+  this.isPaid = true;
+  this.paidAt = new Date();
+  if (this.status === "pending") {
+    this.status = "processing";
   }
-}
+};
 
 // Instance method - mark as delivered
 orderSchema.methods.markAsDelivered = function () {
-  this.isDelivered = true
-  this.deliveredAt = new Date()
-  this.status = 'delivered'
-}
+  this.isDelivered = true;
+  this.deliveredAt = new Date();
+  this.status = "delivered";
+};
 
 // Instance method - cancel order
 orderSchema.methods.cancel = function () {
-  if (this.status === 'delivered') {
-    throw new Error('Cannot cancel delivered order')
+  if (this.status === "delivered") {
+    throw new Error("Cannot cancel delivered order");
   }
-  this.status = 'cancelled'
-  this.cancelledAt = new Date()
-}
+  this.status = "cancelled";
+  this.cancelledAt = new Date();
+};
 
 // Pre-save middleware - calculate prices
-orderSchema.pre('save', function (next) {
-  if (this.isNew || this.isModified('items')) {
-    this.calculatePrices()
+orderSchema.pre("save", function (next) {
+  if (this.isNew || this.isModified("items")) {
+    this.calculatePrices();
   }
-  next()
-})
+  next();
+});
 
-export default mongoose.model('Order', orderSchema)
+export default mongoose.model("Order", orderSchema);

@@ -251,5 +251,3 @@ export const useBooksStore = defineStore('books', {
         },
     },
 })
-
-

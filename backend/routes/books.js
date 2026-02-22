@@ -3,12 +3,12 @@
  * Defines all routes for book-related operations
  */
 
-import express from 'express'
-import * as bookController from '../controllers/bookController.js'
-import { asyncHandler } from '../middleware/asyncHandler.js'
-import { authorize, protect } from '../middleware/auth.js'
+import express from "express";
+import * as bookController from "../controllers/bookController.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
+import { authorize, protect } from "../middleware/auth.js";
 
-const router = express.Router()
+const router = express.Router();
 
 // =============================================================================
 // PUBLIC ROUTES
@@ -20,7 +20,7 @@ const router = express.Router()
  * @params  ?page=1&limit=20&category=fiction&authorId=xxx&inStock=true&search=query&sortBy=-createdAt
  * @access  Public
  */
-router.get('/', asyncHandler(bookController.getBooks))
+router.get("/", asyncHandler(bookController.getBooks));
 
 /**
  * @route   GET /api/v1/books/category/:category
@@ -29,9 +29,9 @@ router.get('/', asyncHandler(bookController.getBooks))
  * @access  Public
  */
 router.get(
-  '/category/:category',
+  "/category/:category",
   asyncHandler(bookController.getBooksByCategory)
-)
+);
 
 /**
  * @route   GET /api/v1/books/author/:authorId
@@ -39,7 +39,7 @@ router.get(
  * @params  :authorId (required), ?limit=50&sortBy=-publicationYear
  * @access  Public
  */
-router.get('/author/:authorId', asyncHandler(bookController.getBooksByAuthor))
+router.get("/author/:authorId", asyncHandler(bookController.getBooksByAuthor));
 
 /**
  * @route   GET /api/v1/books/:id
@@ -47,7 +47,7 @@ router.get('/author/:authorId', asyncHandler(bookController.getBooksByAuthor))
  * @params  :id (required)
  * @access  Public
  */
-router.get('/:id', asyncHandler(bookController.getBook))
+router.get("/:id", asyncHandler(bookController.getBook));
 
 // =============================================================================
 // PROTECTED ROUTES (Admin Only)
@@ -60,11 +60,11 @@ router.get('/:id', asyncHandler(bookController.getBook))
  * @access  Private/Admin
  */
 router.post(
-  '/',
+  "/",
   protect,
-  authorize('admin'),
+  authorize("admin"),
   asyncHandler(bookController.createBook)
-)
+);
 
 /**
  * @route   PUT /api/v1/books/:id
@@ -74,11 +74,11 @@ router.post(
  * @access  Private/Admin
  */
 router.put(
-  '/:id',
+  "/:id",
   protect,
-  authorize('admin'),
+  authorize("admin"),
   asyncHandler(bookController.updateBook)
-)
+);
 
 /**
  * @route   PATCH /api/v1/books/:id/stock
@@ -88,11 +88,11 @@ router.put(
  * @access  Private/Admin
  */
 router.patch(
-  '/:id/stock',
+  "/:id/stock",
   protect,
-  authorize('admin'),
+  authorize("admin"),
   asyncHandler(bookController.updateBookStock)
-)
+);
 
 /**
  * @route   DELETE /api/v1/books/:id
@@ -101,10 +101,10 @@ router.patch(
  * @access  Private/Admin
  */
 router.delete(
-  '/:id',
+  "/:id",
   protect,
-  authorize('admin'),
+  authorize("admin"),
   asyncHandler(bookController.deleteBook)
-)
+);
 
-export default router
+export default router;

@@ -11,8 +11,7 @@ export function useAddToCart() {
 
     const loading = ref(false)
 
-    const canAddToCart = (book) =>
-        !loading.value && book?.inStock && authStore.hasPermission?.('create:cart')
+    const canAddToCart = (book) => !loading.value && book?.inStock && authStore.hasPermission?.('create:cart')
 
     async function addToCart(book) {
         if (!book?.inStock) return

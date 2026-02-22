@@ -1,111 +1,111 @@
 :root {
-  --primary-color: #42b983;
-  --primary-color-dark: #3a9e77;
-  --primary-color-light: #8dedc9;
-  --danger-color: #dc3545;
-  --danger-color-dark: #c82333;
-  --danger-color-light: #f8d7da;
-  --gray-light: #f8f9fa;
-  --gray-medium: #6c757d;
-  --text-primary: #2c3e50;
-  --text-secondary: #6c757d;
-  --text-muted: #adb5bd;
-  --white: #ffffff;
+    --primary-color: #42b983;
+    --primary-color-dark: #3a9e77;
+    --primary-color-light: #8dedc9;
+    --danger-color: #dc3545;
+    --danger-color-dark: #c82333;
+    --danger-color-light: #f8d7da;
+    --gray-light: #f8f9fa;
+    --gray-medium: #6c757d;
+    --text-primary: #2c3e50;
+    --text-secondary: #6c757d;
+    --text-muted: #adb5bd;
+    --white: #ffffff;
 }
 
 body,
 html {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: Arial, sans-serif;
 }
 
 #app {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 header,
 footer {
-  background-color: var(--primary-color);
-  color: var(--white);
-  padding: 1rem;
-  text-align: center;
+    background-color: var(--primary-color);
+    color: var(--white);
+    padding: 1rem;
+    text-align: center;
 }
 
 header {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 footer {
-  margin-top: auto;
+    margin-top: auto;
 }
 
 nav a {
-  color: var(--white);
-  margin: 0 0.5rem;
-  text-decoration: none;
+    color: var(--white);
+    margin: 0 0.5rem;
+    text-decoration: none;
 }
 
 nav a:hover {
-  text-decoration: underline;
+    text-decoration: underline;
 }
 
 nav a.router-link-active {
-  font-weight: bold;
-  border-bottom: 2px solid var(--white);
+    font-weight: bold;
+    border-bottom: 2px solid var(--white);
 }
 
 .btn {
-  padding: 8px 16px;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
 }
 
 .btn-primary {
-  background-color: var(--primary-color);
-  color: var(--white);
+    background-color: var(--primary-color);
+    color: var(--white);
 }
 
 .btn-primary:hover {
-  opacity: 0.9;
+    opacity: 0.9;
 }
 
 .btn-secondary {
-  background-color: var(--gray-medium);
-  color: var(--white);
+    background-color: var(--gray-medium);
+    color: var(--white);
 }
 
 .btn-secondary:hover {
-  opacity: 0.9;
+    opacity: 0.9;
 }
 
 .form-group {
-  margin-bottom: 1rem;
+    margin-bottom: 1rem;
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
+    display: block;
+    margin-bottom: 0.5rem;
 }
 
 .form-group input {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid var(--gray-medium);
-  border-radius: 4px;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--gray-medium);
+    border-radius: 4px;
 }
 
 .card {
-  background: var(--white);
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: var(--white);
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
