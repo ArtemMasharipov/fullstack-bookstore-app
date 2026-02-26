@@ -5,6 +5,12 @@
 
 import mongoose from "mongoose";
 
+/** Reusable populate config for book references */
+const POPULATE_BOOKS = {
+  path: "items.book",
+  select: "title author price image inStock category",
+};
+
 const cartItemSchema = new mongoose.Schema(
   {
     book: {
@@ -34,7 +40,7 @@ const cartSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: [true, "User is required"],
-      unique: true, // One cart per user
+      unique: true,
       index: true,
     },
     items: {
@@ -59,53 +65,65 @@ const cartSchema = new mongoose.Schema(
   }
 );
 
-// Indexes
 cartSchema.index({ user: 1, updatedAt: -1 });
 
-// Virtual - check if cart is empty
-cartSchema.virtual("isEmpty").get(function () {
-  return this.items.length === 0;
-});
-
-// Virtual - items count
-cartSchema.virtual("itemsCount").get(function () {
-  return this.items.length;
-});
-
-// Method - calculate totals
-cartSchema.methods.calculateTotals = function () {
-  this.totalItems = this.items.reduce((sum, item) => sum + item.quantity, 0);
-  this.totalPrice = this.items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-  // Round to 2 decimal places
-  this.totalPrice = Math.round(this.totalPrice * 100) / 100;
-};
-
-// Pre-save middleware - calculate totals before saving
+// Pre-save — recalculate totals
 cartSchema.pre("save", function (next) {
-  this.calculateTotals();
+  this.totalItems = this.items.reduce((sum, item) => sum + item.quantity, 0);
+  this.totalPrice = Math.round(
+    this.items.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100
+  ) / 100;
   next();
 });
 
-// Static method - find cart by user
+/**
+ * Find cart with populated books (for reading/returning to client)
+ */
 cartSchema.statics.findByUser = function (userId) {
-  return this.findOne({ user: userId }).populate({
-    path: "items.book",
-    select: "title author price image inStock category",
-  });
+  return this.findOne({ user: userId }).populate(POPULATE_BOOKS);
 };
 
-// Static method - create or get cart for user
+/**
+ * Get or create cart WITHOUT populate (for write operations).
+ * items.book stays as raw ObjectId so .toString() comparisons work.
+ */
 cartSchema.statics.getOrCreate = async function (userId) {
-  let cart = await this.findByUser(userId);
-
-  if (!cart) {
-    cart = await this.create({ user: userId, items: [] });
+  try {
+    return await this.findOneAndUpdate(
+      { user: userId },
+      { $setOnInsert: { user: userId, items: [] } },
+      { upsert: true, new: true }
+    );
+  } catch (err) {
+    if (err.code === 11000) {
+      return this.findOne({ user: userId });
+    }
+    throw err;
   }
-
-  return cart;
 };
 
-export default mongoose.model("Cart", cartSchema);
+/**
+ * Populate config getter — used by services after save
+ */
+cartSchema.statics.POPULATE_BOOKS = POPULATE_BOOKS;
+
+// Clean up stale indexes from old schema versions
+cartSchema.statics.cleanupIndexes = async function () {
+  try {
+    const indexes = await this.collection.indexes();
+    for (const idx of indexes) {
+      if (idx.key.userId !== undefined && idx.name !== "_id_") {
+        console.log(`Dropping stale index: ${idx.name}`);
+        await this.collection.dropIndex(idx.name);
+      }
+    }
+  } catch {
+    // Best-effort
+  }
+};
+
+const Cart = mongoose.model("Cart", cartSchema);
+
+Cart.cleanupIndexes();
+
+export default Cart;

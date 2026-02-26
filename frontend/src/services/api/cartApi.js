@@ -2,7 +2,7 @@ import baseApi from './baseApi'
 
 /**
  * Cart API - direct axios implementation
- * No factory abstractions (ЭТАП 3)
+ * No factory abstractions (PHASE 3)
  */
 export const cartApi = {
     fetchCart: () => baseApi.get('/cart').then((res) => res.data),

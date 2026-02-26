@@ -2,7 +2,7 @@ import baseApi from './baseApi'
 
 /**
  * Roles API - direct axios implementation
- * No factory abstractions (ЭТАП 3)
+ * No factory abstractions (PHASE 3)
  */
 export const rolesApi = {
     fetchAll: (params) => baseApi.get('/roles', { params }).then((res) => res.data),

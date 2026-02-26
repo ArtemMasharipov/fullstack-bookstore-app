@@ -1,5 +1,5 @@
 :root {
-    /* Основные цвета приложения */
+    /* Core application colors */
     --primary-color: #42b983;
     --primary-color-dark: #3a9e77;
     --primary-color-light: #8dedc9;
@@ -14,7 +14,7 @@
     --white: #ffffff;
 }
 
-/* Кастомные классы, которые можно использовать вместе с Vuetify */
+/* Custom classes that can be used alongside Vuetify */
 .custom-text-primary {
     color: var(--text-primary) !important;
 }
@@ -31,7 +31,7 @@
     background-color: var(--gray-medium) !important;
 }
 
-/* Общие утилитарные классы */
+/* Shared utility classes */
 .router-link-custom-active {
     font-weight: bold;
     border-bottom: 2px solid var(--white);

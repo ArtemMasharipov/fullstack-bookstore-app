@@ -88,7 +88,7 @@
                         <v-slide-group-item
                             v-for="(relatedBook, index) in relatedBooks"
                             :key="relatedBook?.id || `related-book-${index}`"
-                            v-slot="{ isSelected, toggle, selectedClass }"
+                            v-slot="{}"
                         >
                             <div class="pa-2">
                                 <book-card
@@ -111,7 +111,7 @@
 <script setup>
 import BookCard from '@/components/features/books/BookCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
-import { useAuthStore, useBooksStore, useCartStore } from '@/stores'
+import { useBooksStore, useCartStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -124,15 +124,11 @@ const props = defineProps({
     },
 })
 
-// Emits
-const emit = defineEmits(['success', 'error'])
-
 // Router
 const router = useRouter()
 
 // Store setup
 const booksStore = useBooksStore()
-const authStore = useAuthStore()
 const cartStore = useCartStore()
 
 // Reactive state extraction
@@ -173,16 +169,14 @@ const handleAddToCart = async () => {
 
     try {
         await addToCart({
-            bookId: book.value._id,
+            bookId: book.value.id || book.value._id,
             quantity: 1,
             price: book.value.price,
             title: book.value.title || 'Book',
+            image: book.value.image,
         })
-        // Обновляем состояние корзины, чтобы обновить счетчик в NavBar
-        await cartStore.fetchCart()
-        // emit('success', 'Added to cart') // Optionally emit event only
     } catch (error) {
-        // emit('error', error.message) // Optionally emit error event only
+        // Failed to add to cart
     }
 }
 

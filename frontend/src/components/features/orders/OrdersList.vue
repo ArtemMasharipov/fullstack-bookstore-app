@@ -177,7 +177,7 @@ import { computed, onMounted, ref } from 'vue'
 
 /**
  * Component for displaying and managing user orders
- * All UI logic moved from ordersUi store to component level (ЭТАП 2)
+ * All UI logic moved from ordersUi store to component level (PHASE 2)
  */
 
 // Store setup

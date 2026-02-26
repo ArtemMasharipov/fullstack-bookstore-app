@@ -8,13 +8,12 @@ import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 
 export function useCart() {
-    // Stores
     const cartStore = useCartStore()
     const authStore = useAuthStore()
     const { isAuthenticated } = storeToRefs(authStore)
 
-    // Extract reactive state
-    const { items, loading, error } = storeToRefs(cartStore)
+    // Reactive state
+    const { loading, error } = storeToRefs(cartStore)
 
     // Computed properties
     const cartItems = computed(() => cartStore.cartItems)
@@ -24,10 +23,7 @@ export function useCart() {
     const isEmpty = computed(() => cartItems.value.length === 0)
     const hasItems = computed(() => !isEmpty.value)
 
-    // Individual item calculations
-    const getItemTotal = computed(() => (item) => {
-        return item.quantity * item.price
-    })
+    const getItemTotal = computed(() => (item) => item.quantity * item.price)
 
     const getItemById = computed(() => (bookId) => {
         return cartItems.value.find((item) => {
@@ -36,36 +32,22 @@ export function useCart() {
         })
     })
 
-    const isInCart = computed(() => (bookId) => {
-        return !!getItemById.value(bookId)
-    })
+    const isInCart = computed(() => (bookId) => !!getItemById.value(bookId))
 
-    // Cart operations
+    // Cart operations — delegate directly to store (which handles server/local routing)
     async function addToCart(item) {
         try {
             await cartStore.addToCart(item)
-            logger.info(`Added "${item.title || item.bookId?.title || 'item'}" to cart`, null, 'cart')
-
-            // Sync with server if authenticated
-            if (isAuthenticated.value) {
-                await syncWithServer()
-            }
         } catch (error) {
             logger.error('Failed to add item to cart', error, 'cart')
             throw error
         }
     }
 
-    async function removeFromCart(itemId) {
+    async function removeFromCart(bookId) {
         try {
-            const item = cartItems.value.find((item) => (item.id || item._id) === itemId)
-            await cartStore.removeFromCart(itemId)
-            logger.info(`Removed "${item?.bookId?.title || 'item'}" from cart`, null, 'cart')
-
-            // Sync with server if authenticated
-            if (isAuthenticated.value) {
-                await syncWithServer()
-            }
+            const item = cartItems.value.find((item) => (item.id || item._id) === bookId)
+            await cartStore.removeFromCart(bookId, item?.bookId?.title)
         } catch (error) {
             logger.error('Failed to remove item from cart', error, 'cart')
             throw error
@@ -78,15 +60,8 @@ export function useCart() {
                 await removeFromCart(itemId)
                 return
             }
-
             await cartStore.updateQuantity({ itemId, quantity })
-
-            // Sync with server if authenticated
-            if (isAuthenticated.value) {
-                await syncWithServer()
-            }
         } catch (error) {
-            // Failed to update quantity
             throw error
         }
     }
@@ -108,19 +83,12 @@ export function useCart() {
     async function clearCart() {
         try {
             await cartStore.clearCart()
-            logger.info('Cart cleared', null, 'cart')
-
-            // Sync with server if authenticated
-            if (isAuthenticated.value) {
-                await syncWithServer()
-            }
         } catch (error) {
             logger.error('Failed to clear cart', error, 'cart')
             throw error
         }
     }
 
-    // Server synchronization
     async function fetchCart() {
         if (!isAuthenticated.value) return
 
@@ -132,35 +100,22 @@ export function useCart() {
         }
     }
 
-    async function syncWithServer() {
-        if (!isAuthenticated.value) return
-
-        try {
-            await cartStore.syncCart()
-        } catch (error) {
-            logger.error('Failed to sync cart', error, 'cart')
-            // Don't show error toast for sync failures as they're background operations
-        }
-    }
-
     // Quick add helpers
     async function quickAddBook(book, quantity = 1) {
-        const cartItem = {
+        await addToCart({
             bookId: book.id || book._id,
             title: book.title,
             price: book.price,
+            image: book.image,
             quantity,
-        }
-
-        await addToCart(cartItem)
+        })
     }
 
     async function toggleBookInCart(book) {
         const bookId = book.id || book._id
         if (isInCart.value(bookId)) {
             const cartItem = getItemById.value(bookId)
-            const itemId = cartItem.id || cartItem._id
-            await removeFromCart(itemId)
+            await removeFromCart(cartItem.id || cartItem._id)
         } else {
             await quickAddBook(book)
         }
@@ -179,7 +134,6 @@ export function useCart() {
         }
     }
 
-    // Validation
     function validateCart() {
         const errors = []
 
@@ -190,34 +144,25 @@ export function useCart() {
         cartItems.value.forEach((item) => {
             const bookId = item.bookId?.id || item.bookId?._id
             if (!item.bookId || !bookId) {
-                errors.push(`Invalid book reference for item: ${item.title}`)
+                errors.push(`Invalid book reference for item: ${item.bookId?.title || 'unknown'}`)
             }
-
             if (item.quantity <= 0) {
-                errors.push(`Invalid quantity for item: ${item.title}`)
+                errors.push(`Invalid quantity for item: ${item.bookId?.title || 'unknown'}`)
             }
-
             if (!item.price || item.price <= 0) {
-                errors.push(`Invalid price for item: ${item.title}`)
+                errors.push(`Invalid price for item: ${item.bookId?.title || 'unknown'}`)
             }
         })
 
-        return {
-            isValid: errors.length === 0,
-            errors,
-        }
+        return { isValid: errors.length === 0, errors }
     }
 
-    // Watch for authentication changes to sync cart
+    // Fetch server cart when user authenticates
     watch(
         isAuthenticated,
         async (newAuth, oldAuth) => {
             if (newAuth && !oldAuth) {
-                // User just logged in, fetch server cart
                 await fetchCart()
-            } else if (!newAuth && oldAuth) {
-                // User just logged out, cart will be maintained locally
-                logger.info('User logged out, cart maintained locally', null, 'cart')
             }
         },
         { immediate: true }
@@ -247,11 +192,10 @@ export function useCart() {
         decreaseQuantity,
         clearCart,
 
-        // Server sync
+        // Server
         fetchCart,
-        syncWithServer,
 
-        // Quick helpers
+        // Helpers
         quickAddBook,
         toggleBookInCart,
 
@@ -259,7 +203,7 @@ export function useCart() {
         prepareCheckoutData,
         validateCart,
 
-        // Store methods
+        // Store
         clearError: cartStore.clearError,
     }
 }

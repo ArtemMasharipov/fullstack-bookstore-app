@@ -1,13 +1,13 @@
 /**
  * Session Storage Service
- * Утилиты для работы с sessionStorage
+ * Utilities for working with sessionStorage
  */
 
 export const sessionStorage = {
     /**
-     * Получить значение из sessionStorage
-     * @param {string} key - ключ
-     * @param {any} defaultValue - значение по умолчанию
+     * Get value from sessionStorage
+     * @param {string} key - key
+     * @param {any} defaultValue - default value
      * @returns {any}
      */
     get(key, defaultValue = null) {
@@ -21,9 +21,9 @@ export const sessionStorage = {
     },
 
     /**
-     * Сохранить значение в sessionStorage
-     * @param {string} key - ключ
-     * @param {any} value - значение
+     * Save value to sessionStorage
+     * @param {string} key - key
+     * @param {any} value - value
      */
     set(key, value) {
         try {
@@ -34,8 +34,8 @@ export const sessionStorage = {
     },
 
     /**
-     * Удалить значение из sessionStorage
-     * @param {string} key - ключ
+     * Remove value from sessionStorage
+     * @param {string} key - key
      */
     remove(key) {
         try {
@@ -46,7 +46,7 @@ export const sessionStorage = {
     },
 
     /**
-     * Очистить sessionStorage
+     * Clear sessionStorage
      */
     clear() {
         try {

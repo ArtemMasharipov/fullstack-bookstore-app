@@ -1,6 +1,6 @@
 /**
  * Auth Routes
- * Маршруты аутентификации
+ * Authentication routes
  */
 
 import { guestGuard } from '../guards/guest.js'

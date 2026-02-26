@@ -3,6 +3,8 @@ import { normalizeApiResponse, normalizeBook, normalizeBooks } from '@/utils/dat
 import { defineStore } from 'pinia'
 import { withLoading } from './storeHelpers'
 
+let _searchTimer = null
+
 /**
  * Books Store
  * Manages books data, search, filtering, and pagination
@@ -28,6 +30,7 @@ export const useBooksStore = defineStore('books', {
 
         // Loading & error states
         loading: false,
+        searching: false,
         error: null,
     }),
 
@@ -76,7 +79,9 @@ export const useBooksStore = defineStore('books', {
          */
         async fetchBookById(id) {
             return withLoading(this, async () => {
-                const book = await booksApi.fetchById(id)
+                const response = await booksApi.fetchById(id)
+                const normalizedResponse = normalizeApiResponse(response)
+                const book = normalizeBook(normalizedResponse.data)
                 this.currentBook = book
                 return book
             })
@@ -147,7 +152,6 @@ export const useBooksStore = defineStore('books', {
             if (Array.isArray(normalizedResponse.data)) {
                 this.books = normalizeBooks(normalizedResponse.data)
                 this.page = 1
-                this.limit = this.books.length
                 this.total = this.books.length
                 this.pages = 1
             } else if (normalizedResponse.data && typeof normalizedResponse.data === 'object') {
@@ -161,7 +165,6 @@ export const useBooksStore = defineStore('books', {
                     this.pages = normalizedResponse.pagination.pages
                 } else {
                     this.page = 1
-                    this.limit = this.books.length
                     this.total = this.books.length
                     this.pages = 1
                 }
@@ -184,9 +187,29 @@ export const useBooksStore = defineStore('books', {
 
         /**
          * Debounced search (to be called from components)
+         * Minimum 2 characters to trigger search, empty clears filter
          */
         debouncedSearch(query) {
-            this.setSearchQuery(query)
+            clearTimeout(_searchTimer)
+            const trimmed = query?.trim() ?? ''
+
+            if (!trimmed) {
+                this.setSearchQuery('')
+                this.loadBooks()
+                return
+            }
+
+            if (trimmed.length < 2) return
+
+            this.setSearchQuery(trimmed)
+            _searchTimer = setTimeout(async () => {
+                this.searching = true
+                try {
+                    await this.fetchBooks(this.filterParams)
+                } finally {
+                    this.searching = false
+                }
+            }, 300)
         },
 
         /**

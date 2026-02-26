@@ -1,6 +1,6 @@
 /**
  * Application Constants
- * Общие константы приложения
+ * Shared application constants
  */
 
 export const APP_NAME = 'Bookstore App'

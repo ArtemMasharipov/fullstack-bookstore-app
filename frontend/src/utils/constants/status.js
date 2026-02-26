@@ -1,6 +1,6 @@
 /**
  * Status Constants
- * Константы статусов для различных операций
+ * Status constants for different operations
  */
 
 export const LOADING_STATES = {

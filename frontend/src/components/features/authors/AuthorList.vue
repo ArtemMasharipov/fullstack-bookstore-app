@@ -36,8 +36,9 @@
 </template>
 
 <script setup>
-import { useAuthorsStore, useAuthStore } from '@/stores'
-import { computed, onMounted } from 'vue'
+import { useAuthorsStore } from '@/stores'
+import { onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import ErrorMessage from '../../ui/ErrorMessage.vue'
 import LoadingSpinner from '../../ui/LoadingSpinner.vue'
 import AuthorListItem from './AuthorListItem.vue'
@@ -51,7 +52,6 @@ const emit = defineEmits(['author-click'])
  * Store instances
  */
 const authorsStore = useAuthorsStore()
-const authStore = useAuthStore()
 
 /**
  * Computed properties

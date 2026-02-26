@@ -38,7 +38,7 @@ const route = useRoute()
 const errorMessage = ref('')
 
 onMounted(() => {
-    // Получаем сообщение об ошибке из query параметров или состояния
+    // Get error message from query params or state
     errorMessage.value = route.query.message || route.params.error || ''
 })
 

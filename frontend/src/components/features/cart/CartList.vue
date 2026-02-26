@@ -18,8 +18,6 @@
                         v-for="item in cartItems"
                         :key="item.bookId?.id ?? item.id ?? item._id"
                         :item="item"
-                        @remove="handleRemoveFromCart"
-                        @update-quantity="updateQuantity"
                     />
                     <div class="d-flex justify-end mt-6">
                         <v-btn
@@ -64,7 +62,7 @@
 import { useAuthStore, useCartStore } from '@/stores'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
-import { onMounted, watch } from 'vue'
+import { watch } from 'vue'
 import ErrorMessage from '../../ui/ErrorMessage.vue'
 import LoadingSpinner from '../../ui/LoadingSpinner.vue'
 import CartItem from './CartItem.vue'
@@ -77,28 +75,13 @@ const authStore = useAuthStore()
 const { cartItems, loading: cartLoading, error: cartError, cartTotal, itemCount } = storeToRefs(cartStore)
 const { isAuthenticated } = storeToRefs(authStore)
 
-// Methods
-const fetchCart = async () => {
-    return cartStore.fetchCart()
-}
-
-const handleRemoveFromCart = async (itemId) => {
-    await cartStore.removeFromCart(itemId)
-    await fetchCart()
-}
-
-const updateQuantity = async (payload) => {
-    await cartStore.updateQuantity(payload)
-    await fetchCart()
-}
-
-// Watchers
+// Watchers — fetch server cart when user authenticates
 watch(
     isAuthenticated,
     async (newVal) => {
         if (newVal) {
             try {
-                await fetchCart()
+                await cartStore.fetchCart()
             } catch (error) {
                 logger.error('Failed to load cart', error, 'cart-list')
             }
@@ -106,13 +89,4 @@ watch(
     },
     { immediate: true }
 )
-
-// Lifecycle
-onMounted(() => {
-    if (isAuthenticated.value) {
-        fetchCart().catch((error) => {
-            // Failed to load cart
-        })
-    }
-})
 </script>

@@ -1,6 +1,6 @@
 /**
  * Public Routes
- * Публичные маршруты приложения
+ * Public application routes
  */
 
 export const publicRoutes = [

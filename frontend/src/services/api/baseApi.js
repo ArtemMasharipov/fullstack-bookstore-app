@@ -2,7 +2,7 @@ import axios from 'axios'
 
 /**
  * Base Axios instance with interceptors
- * Simplified version - no unnecessary wrappers (ЭТАП 3)
+ * Simplified version - no unnecessary wrappers (PHASE 3)
  */
 
 const baseApi = axios.create({
