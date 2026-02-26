@@ -41,23 +41,21 @@ export async function getBooks(filters = {}) {
 
   const skip = (page - 1) * limit;
 
-  // Search vs regular query
-  let booksQuery;
+  // Add search filter (regex for partial matching)
   if (search) {
-    booksQuery = Book.searchBooks(search).skip(skip).limit(Number(limit));
-  } else {
-    booksQuery = Book.find(query)
-      .populate("author", "firstName lastName")
-      .sort(sortBy)
-      .skip(skip)
-      .limit(Number(limit))
-      .lean();
+    const searchRegex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    query.$or = [{ title: searchRegex }, { description: searchRegex }];
   }
 
   // Execute queries in parallel
   const [books, total] = await Promise.all([
-    booksQuery,
-    Book.countDocuments(search ? { $text: { $search: search } } : query),
+    Book.find(query)
+      .populate("author", "firstName lastName")
+      .sort(sortBy)
+      .skip(skip)
+      .limit(Number(limit))
+      .lean(),
+    Book.countDocuments(query),
   ]);
 
   return {

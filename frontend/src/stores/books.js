@@ -3,6 +3,8 @@ import { normalizeApiResponse, normalizeBook, normalizeBooks } from '@/utils/dat
 import { defineStore } from 'pinia'
 import { withLoading } from './storeHelpers'
 
+let searchTimer = null
+
 /**
  * Books Store
  * Manages books data, search, filtering, and pagination
@@ -28,6 +30,7 @@ export const useBooksStore = defineStore('books', {
 
         // Loading & error states
         loading: false,
+        searching: false,
         error: null,
     }),
 
@@ -147,7 +150,6 @@ export const useBooksStore = defineStore('books', {
             if (Array.isArray(normalizedResponse.data)) {
                 this.books = normalizeBooks(normalizedResponse.data)
                 this.page = 1
-                this.limit = this.books.length
                 this.total = this.books.length
                 this.pages = 1
             } else if (normalizedResponse.data && typeof normalizedResponse.data === 'object') {
@@ -161,7 +163,6 @@ export const useBooksStore = defineStore('books', {
                     this.pages = normalizedResponse.pagination.pages
                 } else {
                     this.page = 1
-                    this.limit = this.books.length
                     this.total = this.books.length
                     this.pages = 1
                 }
@@ -184,9 +185,39 @@ export const useBooksStore = defineStore('books', {
 
         /**
          * Debounced search (to be called from components)
+         * Minimum 2 characters to trigger search, empty clears filter
          */
         debouncedSearch(query) {
-            this.setSearchQuery(query)
+            clearTimeout(searchTimer)
+            const trimmed = query?.trim() ?? ''
+
+            // Clear search — reload full list immediately
+            if (!trimmed) {
+                this.setSearchQuery('')
+                return this.searchBooks()
+            }
+
+            // Ignore short queries
+            if (trimmed.length < 2) return
+
+            this.setSearchQuery(trimmed)
+            searchTimer = setTimeout(() => this.searchBooks(), 300)
+        },
+
+        /**
+         * Search books with searching flag (no skeleton flash)
+         */
+        async searchBooks() {
+            this.searching = true
+            this.error = null
+            try {
+                const response = await booksApi.fetchAll(this.filterParams)
+                this.setBooksList(response)
+            } catch (error) {
+                this.error = error.message || 'Search failed'
+            } finally {
+                this.searching = false
+            }
         },
 
         /**
