@@ -38,7 +38,8 @@ export const useAuthorsStore = defineStore('authors', {
          */
         async fetchAuthors() {
             return withLoading(this, async () => {
-                const authors = await authorsApi.fetchAll()
+                const response = await authorsApi.fetchAll()
+                const authors = response?.data ?? response
                 this.list = Array.isArray(authors) ? authors : []
                 return authors
             })
