@@ -3,7 +3,7 @@ import { normalizeApiResponse, normalizeBook, normalizeBooks } from '@/utils/dat
 import { defineStore } from 'pinia'
 import { withLoading } from './storeHelpers'
 
-let searchTimer = null
+let _searchTimer = null
 
 /**
  * Books Store
@@ -188,36 +188,26 @@ export const useBooksStore = defineStore('books', {
          * Minimum 2 characters to trigger search, empty clears filter
          */
         debouncedSearch(query) {
-            clearTimeout(searchTimer)
+            clearTimeout(_searchTimer)
             const trimmed = query?.trim() ?? ''
 
-            // Clear search — reload full list immediately
             if (!trimmed) {
                 this.setSearchQuery('')
-                return this.searchBooks()
+                this.loadBooks()
+                return
             }
 
-            // Ignore short queries
             if (trimmed.length < 2) return
 
             this.setSearchQuery(trimmed)
-            searchTimer = setTimeout(() => this.searchBooks(), 300)
-        },
-
-        /**
-         * Search books with searching flag (no skeleton flash)
-         */
-        async searchBooks() {
-            this.searching = true
-            this.error = null
-            try {
-                const response = await booksApi.fetchAll(this.filterParams)
-                this.setBooksList(response)
-            } catch (error) {
-                this.error = error.message || 'Search failed'
-            } finally {
-                this.searching = false
-            }
+            _searchTimer = setTimeout(async () => {
+                this.searching = true
+                try {
+                    await this.fetchBooks(this.filterParams)
+                } finally {
+                    this.searching = false
+                }
+            }, 300)
         },
 
         /**
