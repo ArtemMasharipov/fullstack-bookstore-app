@@ -20,10 +20,12 @@
                                 id="password"
                                 v-model="password"
                                 label="Password"
-                                type="password"
+                                :type="showPassword ? 'text' : 'password'"
                                 variant="outlined"
                                 required
                                 autocomplete="current-password"
+                                :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+                                @click:append-inner="showPassword = !showPassword"
                             ></v-text-field>
 
                             <v-btn type="submit" color="primary" block :loading="authLoading" class="mt-4">
@@ -67,6 +69,7 @@ const { loading: authLoading, error: authError, isAuthenticated } = storeToRefs(
 // Local reactive state
 const email = ref('')
 const password = ref('')
+const showPassword = ref(false)
 
 // Methods
 const handleSubmit = async () => {
