@@ -173,7 +173,7 @@ const handleAddToCart = async () => {
 
     try {
         await addToCart({
-            bookId: book.value._id,
+            bookId: book.value.id || book.value._id,
             quantity: 1,
             price: book.value.price,
             title: book.value.title || 'Book',

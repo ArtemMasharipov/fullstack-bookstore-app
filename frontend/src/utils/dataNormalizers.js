@@ -123,10 +123,23 @@ export const normalizeBook = (book) => {
         return null
     }
 
+    // Нормализуем автора: конструируем name из firstName + lastName если нужно
+    let author = book.author
+    if (author && typeof author === 'object') {
+        author = {
+            id: normalizeId(author._id || author.id),
+            name:
+                normalizeString(author.name) ||
+                [author.firstName, author.lastName].filter(Boolean).join(' ') ||
+                '',
+            bio: author.bio !== undefined ? normalizeString(author.bio) : undefined,
+        }
+    }
+
     return {
         id: normalizeId(book._id || book.id), // Нормализуем к единому 'id'
         title: normalizeString(book.title),
-        author: book.author, // Может быть объектом или ID
+        author,
         publicationYear: normalizeQuantity(book.publicationYear),
         category: normalizeString(book.category),
         description: normalizeString(book.description),

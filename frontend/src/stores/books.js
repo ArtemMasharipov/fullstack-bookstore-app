@@ -79,7 +79,9 @@ export const useBooksStore = defineStore('books', {
          */
         async fetchBookById(id) {
             return withLoading(this, async () => {
-                const book = await booksApi.fetchById(id)
+                const response = await booksApi.fetchById(id)
+                const normalizedResponse = normalizeApiResponse(response)
+                const book = normalizeBook(normalizedResponse.data)
                 this.currentBook = book
                 return book
             })
