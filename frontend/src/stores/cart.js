@@ -24,10 +24,8 @@ export const useCartStore = defineStore('cart', {
          */
         cartItems: (state) =>
             state.items.map((item) => {
-                const bookData =
-                    typeof item.book === 'object' && item.book ? item.book : null
-                const bookId =
-                    bookData?._id || bookData?.id || item.book || item.bookId
+                const bookData = typeof item.book === 'object' && item.book ? item.book : null
+                const bookId = bookData?._id || bookData?.id || item.book || item.bookId
 
                 return {
                     id: bookId,
@@ -43,13 +41,11 @@ export const useCartStore = defineStore('cart', {
                 }
             }),
 
-        cartTotal: (state) =>
-            state.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+        cartTotal: (state) => state.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
 
         itemCount: (state) => state.items.length,
 
-        totalQuantity: (state) =>
-            state.items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0),
+        totalQuantity: (state) => state.items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0),
     },
 
     actions: {
@@ -122,25 +118,34 @@ export const useCartStore = defineStore('cart', {
         },
 
         async updateQuantity({ itemId, quantity, title = 'Item' }) {
-            const { showSuccess } = useNotifications()
+            const { showError } = useNotifications()
 
-            return withLoading(this, async () => {
-                if (isLoggedIn()) {
-                    const response = await cartApi.updateQuantity(itemId, quantity)
-                    this.setItems(this._extractItems(response))
-                } else {
-                    const id = String(itemId)
-                    const item = this.items.find((i) => this._getBookId(i) === id)
-                    if (item) {
-                        item.quantity = quantity
-                        this._persist()
-                    }
+            if (isLoggedIn()) {
+                const id = String(itemId)
+                const item = this.items.find((i) => this._getBookId(i) === id)
+                if (!item) return
+
+                const prev = item.quantity
+                // Optimistic update — instant UI, no loading spinner
+                item.quantity = quantity
+                this._persist()
+
+                try {
+                    await cartApi.updateQuantity(itemId, quantity)
+                } catch {
+                    // Rollback on failure
+                    item.quantity = prev
+                    this._persist()
+                    showError(`Could not update "${title}" quantity`)
                 }
-
-                showSuccess(`"${title}" quantity updated to ${quantity}`, {
-                    icon: 'mdi-cart-outline',
-                })
-            })
+            } else {
+                const id = String(itemId)
+                const item = this.items.find((i) => this._getBookId(i) === id)
+                if (item) {
+                    item.quantity = quantity
+                    this._persist()
+                }
+            }
         },
 
         async clearCart() {

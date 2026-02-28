@@ -10,33 +10,29 @@
 
         <v-divider></v-divider>
 
-        <!-- Navigation Menu -->
+        <!-- Main Navigation -->
         <v-list density="compact" nav>
             <v-list-item
-                v-for="item in menuItems"
-                :key="item.title"
+                v-for="item in mainItems"
+                :key="item.id"
                 :to="item.to"
                 :prepend-icon="item.icon"
                 :title="item.title"
                 :subtitle="item.subtitle"
                 class="mb-1"
                 rounded="xl"
-            >
-                <template v-slot:append v-if="item.badge">
-                    <v-badge :content="item.badge" color="error" inline></v-badge>
-                </template>
-            </v-list-item>
+            ></v-list-item>
         </v-list>
 
         <v-divider class="my-4"></v-divider>
 
-        <!-- System Section -->
+        <!-- System Navigation -->
         <v-list density="compact" nav>
             <v-list-subheader>System</v-list-subheader>
 
             <v-list-item
                 v-for="item in systemItems"
-                :key="item.title"
+                :key="item.id"
                 :to="item.to"
                 :prepend-icon="item.icon"
                 :title="item.title"
@@ -59,71 +55,20 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { buildAdminNav } from '@/router/buildRoutes'
 
 /**
- * AdminSidebar component - Admin panel navigation sidebar
+ * AdminSidebar — nav items are driven by the route manifest via buildAdminNav().
+ * Adding or removing an admin route automatically updates this sidebar;
+ * no manual sync is required.
  */
 
-// Router
-const router = useRouter()
-const route = useRoute()
-
-// Reactive state
 const drawer = ref(true)
 
-// Navigation items
-const menuItems = computed(() => [
-    {
-        title: 'Dashboard',
-        subtitle: 'Overview & stats',
-        icon: 'mdi-view-dashboard',
-        to: '/admin',
-    },
-    {
-        title: 'Books',
-        subtitle: 'Manage inventory',
-        icon: 'mdi-book-multiple',
-        to: '/admin/books',
-    },
-    {
-        title: 'Authors',
-        subtitle: 'Author profiles',
-        icon: 'mdi-account-edit',
-        to: '/admin/authors',
-    },
-    {
-        title: 'Orders',
-        subtitle: 'Customer orders',
-        icon: 'mdi-cart',
-        to: '/admin/orders',
-        badge: '5', // Get from store
-    },
-    {
-        title: 'Users',
-        subtitle: 'User accounts',
-        icon: 'mdi-account-group',
-        to: '/admin/users',
-    },
-])
+const adminNav = buildAdminNav()
 
-const systemItems = computed(() => [
-    {
-        title: 'Settings',
-        icon: 'mdi-cog',
-        to: '/admin/settings',
-    },
-    {
-        title: 'Logs',
-        icon: 'mdi-text-box-multiple',
-        to: '/admin/logs',
-    },
-    {
-        title: 'Reports',
-        icon: 'mdi-chart-line',
-        to: '/admin/reports',
-    },
-])
+const mainItems = computed(() => adminNav.main ?? [])
+const systemItems = computed(() => adminNav.system ?? [])
 </script>
 
 <style scoped>

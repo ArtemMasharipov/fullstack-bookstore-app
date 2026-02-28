@@ -129,11 +129,7 @@ const loading = ref(false)
 /**
  * Determines if user can add book to cart
  */
-const canAddToCart = computed(() => {
-    if (loading.value || !props.book.inStock) return false
-    // Guests can add to local cart; authenticated users need permission
-    return !authStore.isAuthenticated || authStore.hasPermission('create:cart')
-})
+const canAddToCart = computed(() => !loading.value && props.book.inStock)
 
 // Methods
 /**

@@ -1,19 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import authGuard from './guards/auth.js'
-import { adminRoutes } from './routes/admin.js'
-import { authRoutes } from './routes/auth.js'
-import { errorRoutes } from './routes/errors.js'
-import { ordersRoutes } from './routes/orders.js'
-import { publicRoutes } from './routes/public.js'
-
-// Combine all routes
-const routes = [...publicRoutes, ...authRoutes, ...ordersRoutes, ...adminRoutes, ...errorRoutes]
+import { buildRoutes } from './buildRoutes.js'
+import unifiedGuard from './guards/unified.js'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL || '/'),
-    routes,
+    routes: buildRoutes(),
 })
 
-router.beforeEach(authGuard)
+router.beforeEach(unifiedGuard)
+
+// Centralised page title — reads from route meta set in the manifest.
+router.afterEach((to) => {
+    document.title = to.meta.title ? `${to.meta.title} | Bookstore` : 'Bookstore'
+})
 
 export default router
