@@ -26,10 +26,11 @@
                             size="small"
                             class="mr-1"
                             :disabled="localQuantity <= 1"
+                            aria-label="Decrease quantity"
                             @click="decrement"
                         ></v-btn>
 
-                        <span class="text-body-1 mx-2">{{ localQuantity }}</span>
+                        <span class="text-body-1 mx-2" aria-live="polite">{{ localQuantity }}</span>
 
                         <v-btn
                             icon="mdi-plus"
@@ -37,6 +38,7 @@
                             variant="outlined"
                             size="small"
                             class="ml-1"
+                            aria-label="Increase quantity"
                             @click="increment"
                         ></v-btn>
                     </div>
@@ -53,6 +55,7 @@
                     variant="text"
                     icon="mdi-delete"
                     size="small"
+                    aria-label="Remove item"
                     @click="confirmRemove"
                     :loading="removing"
                 ></v-btn>

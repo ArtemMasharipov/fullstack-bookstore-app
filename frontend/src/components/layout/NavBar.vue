@@ -23,6 +23,17 @@
 
             <v-spacer class="d-none d-md-block" />
 
+            <!-- Dark mode toggle -->
+            <v-btn
+                variant="text"
+                icon
+                class="text-white"
+                :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+                @click="toggleTheme"
+            >
+                <v-icon>{{ isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
+            </v-btn>
+
             <!-- Cart Icon (visible for all users) -->
             <v-btn variant="text" to="/cart" icon class="text-white" aria-label="Shopping cart">
                 <v-badge :content="cartItemsCount" color="secondary" v-if="cartItemsCount > 0">
@@ -126,10 +137,17 @@ import { useAuthStore, useCartStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useTheme } from 'vuetify'
 
 const router = useRouter()
+const theme = useTheme()
 const authStore = useAuthStore()
 const cartStore = useCartStore()
+
+const isDark = computed(() => theme.global.current.value.dark)
+const toggleTheme = () => {
+    theme.global.name.value = isDark.value ? 'light' : 'dark'
+}
 
 const { isAuthenticated, user } = storeToRefs(authStore)
 
