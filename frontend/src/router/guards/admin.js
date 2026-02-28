@@ -1,6 +1,6 @@
 /**
  * Admin Guard
- * Проверка административных прав доступа
+ * Check admin access permissions
  */
 
 import { useAuthStore } from '@/stores'
@@ -11,7 +11,7 @@ export const adminGuard = (to, from, next) => {
     const isAuthenticated = authStore.isAuthenticated
 
     if (!isAuthenticated) {
-        // Если пользователь не аутентифицирован, перенаправляем на логин
+        // If user is not authenticated, redirect to login
         next({
             name: 'Login',
             query: { redirect: to.fullPath },
@@ -20,7 +20,7 @@ export const adminGuard = (to, from, next) => {
     }
 
     if (!user || user.role !== 'admin') {
-        // Если пользователь не админ, перенаправляем на главную
+        // If user is not an admin, redirect to home
         next({ name: 'Home' })
         return
     }

@@ -1,6 +1,6 @@
 /**
  * Error Routes
- * Маршруты ошибок
+ * Error routes
  */
 
 export const errorRoutes = [

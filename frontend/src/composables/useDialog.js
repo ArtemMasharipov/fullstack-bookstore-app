@@ -2,7 +2,7 @@ import { ref } from 'vue'
 
 /**
  * Simple dialog state management composable
- * Replaces ui store for dialog functionality (ЭТАП 2)
+ * Replaces ui store for dialog functionality (PHASE 2)
  */
 
 // Global dialog state (shared across components)

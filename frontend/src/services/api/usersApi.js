@@ -3,7 +3,7 @@ import { jwtDecode } from 'jwt-decode'
 
 /**
  * Users API - direct axios implementation
- * No factory abstractions (ЭТАП 3)
+ * No factory abstractions (PHASE 3)
  */
 export const usersApi = {
     fetchAll: (params) => baseApi.get('/users', { params }).then((res) => res.data),

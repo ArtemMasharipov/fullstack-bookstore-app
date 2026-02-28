@@ -35,10 +35,10 @@ export const protect = async (req, res, next) => {
     next();
   } catch (error) {
     if (error.name === "JsonWebTokenError") {
-      throw new UnauthorizedError("Invalid token");
+      return next(new UnauthorizedError("Invalid token"));
     }
     if (error.name === "TokenExpiredError") {
-      throw new UnauthorizedError("Token expired");
+      return next(new UnauthorizedError("Token expired"));
     }
     next(error);
   }
@@ -51,12 +51,14 @@ export const protect = async (req, res, next) => {
 export const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
-      throw new UnauthorizedError("Access denied. Please log in.");
+      return next(new UnauthorizedError("Access denied. Please log in."));
     }
 
     if (!roles.includes(req.user.role)) {
-      throw new ForbiddenError(
-        `Access denied. Role ${req.user.role} is not authorized to access this resource.`
+      return next(
+        new ForbiddenError(
+          `Access denied. Role ${req.user.role} is not authorized to access this resource.`
+        )
       );
     }
 

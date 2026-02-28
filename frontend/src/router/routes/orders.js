@@ -1,6 +1,6 @@
 /**
  * Orders Routes
- * Маршруты заказов (требуют аутентификации)
+ * Order routes (require authentication)
  */
 
 export const ordersRoutes = [

@@ -1,16 +1,23 @@
 /**
  * Guest Guard
- * Защита для страниц только для неаутентифицированных пользователей
+ * Guard for pages accessible only to unauthenticated users
  */
 
 import { useAuthStore } from '@/stores'
 
-export const guestGuard = (to, from, next) => {
+export const guestGuard = async (to, from, next) => {
     const authStore = useAuthStore()
-    const isAuthenticated = authStore.isAuthenticated
+    let isAuthenticated = authStore.isAuthenticated
 
     if (isAuthenticated) {
-        // Если пользователь уже аутентифицирован, перенаправляем на главную
+        const isValid = await authStore.checkAuthStatus()
+        if (!isValid) {
+            isAuthenticated = false
+        }
+    }
+
+    if (isAuthenticated) {
+        // If user is already authenticated, redirect to home
         next({ name: 'Home' })
         return
     }

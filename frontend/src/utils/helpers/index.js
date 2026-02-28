@@ -1,11 +1,11 @@
 /**
  * Helper Utilities Index
- * Центральный экспорт всех вспомогательных утилит
+ * Central export of all helper utilities
  */
 
 export * from './currency.js'
-// export * from './errorHandling.js' // файл удален
-// export * from './formatters.js' // файл удален
+// export * from './errorHandling.js' // file removed
+// export * from './formatters.js' // file removed
 
 // Date utilities
 export const formatDate = (date, locale = 'ru-RU') => {

@@ -2,7 +2,7 @@ import baseApi from './baseApi'
 
 /**
  * Orders API - direct axios implementation
- * No factory abstractions (ЭТАП 3)
+ * No factory abstractions (PHASE 3)
  */
 export const orderApi = {
     fetchAll: (params) => baseApi.get('/orders', { params }).then((res) => res.data),

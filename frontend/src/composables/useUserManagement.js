@@ -5,7 +5,7 @@ import { computed, ref } from 'vue'
 
 /**
  * Composable for managing user operations in admin panel
- * Simplified - no useEntityDialog (ЭТАП 4)
+ * Simplified - no useEntityDialog (PHASE 4)
  */
 export function useUserManagement(options = {}) {
     const { autoLoad = true } = options

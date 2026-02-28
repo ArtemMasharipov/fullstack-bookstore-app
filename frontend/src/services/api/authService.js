@@ -2,7 +2,7 @@ import baseApi from './baseApi'
 
 /**
  * Authentication API - direct axios implementation
- * No factory abstractions (ЭТАП 3)
+ * No factory abstractions (PHASE 3)
  */
 export const authApi = {
     login: (credentials) => {

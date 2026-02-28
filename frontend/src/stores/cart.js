@@ -3,231 +3,182 @@ import { cartApi } from '@/services/api/cartApi'
 import { withLoading } from './storeHelpers'
 import { defineStore } from 'pinia'
 
+/** Check auth without importing auth store (avoids circular dep) */
+const isLoggedIn = () => !!localStorage.getItem('token')
+
 /**
  * Cart Store
- * Manages shopping cart with local storage and server sync
- *
- * Simplified version without factory - direct Pinia implementation
+ * Manages shopping cart: server-side for authenticated users, localStorage for guests.
  */
 export const useCartStore = defineStore('cart', {
     state: () => ({
-        // Cart items
         items: JSON.parse(localStorage.getItem('cart')) || [],
-
-        // Loading & error states
         loading: false,
         error: null,
     }),
 
     getters: {
         /**
-         * Get formatted cart items
+         * Normalize items for display.
+         * Server items have `book` (populated object), local items have `bookId` (string) + title/image.
          */
         cartItems: (state) =>
-            state.items.map(({ id, _id, bookId, book, quantity, price }) => {
-                const bookData = bookId || book
+            state.items.map((item) => {
+                const bookData =
+                    typeof item.book === 'object' && item.book ? item.book : null
+                const bookId =
+                    bookData?._id || bookData?.id || item.book || item.bookId
+
                 return {
-                    id: id || _id,
-                    _id: _id || id,
+                    id: bookId,
+                    _id: bookId,
                     bookId: {
-                        id: bookData?._id || bookData?.id,
-                        _id: bookData?._id || bookData?.id,
-                        title: bookData?.title || 'Unknown Book',
-                        image: bookData?.image,
+                        id: bookId,
+                        _id: bookId,
+                        title: bookData?.title || item.title || 'Unknown Book',
+                        image: bookData?.image || item.image,
                     },
-                    book: bookData,
-                    quantity: Number(quantity),
-                    price: Number(price),
+                    quantity: Number(item.quantity) || 1,
+                    price: Number(item.price) || 0,
                 }
             }),
 
-        /**
-         * Calculate cart total
-         */
-        cartTotal: (state) => {
-            return state.items.reduce((total, item) => {
-                return total + item.price * item.quantity
-            }, 0)
-        },
+        cartTotal: (state) =>
+            state.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
 
-        /**
-         * Get number of unique items
-         */
         itemCount: (state) => state.items.length,
 
-        /**
-         * Get total quantity of all items
-         */
-        totalQuantity: (state) => {
-            return state.items.reduce((total, item) => total + (Number(item.quantity) || 1), 0)
-        },
+        totalQuantity: (state) =>
+            state.items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0),
     },
 
     actions: {
-        /**
-         * Fetch cart from server
-         */
+        // -- Server/local routing helpers --
+
+        /** Extract items from API response: { success, data: { items }, message } */
+        _extractItems(response) {
+            return response?.data?.items ?? []
+        },
+
+        /** Get book ID string from any item shape */
+        _getBookId(item) {
+            if (typeof item.book === 'object' && item.book) {
+                return String(item.book._id || item.book.id)
+            }
+            return String(item.bookId || item.book)
+        },
+
+        /** Persist items to state + localStorage */
+        _persist() {
+            localStorage.setItem('cart', JSON.stringify(this.items))
+        },
+
+        // -- Public actions --
+
         async fetchCart() {
             return withLoading(this, async () => {
                 const response = await cartApi.fetchCart()
-                const items = response?.data?.items ?? response?.items ?? []
-                this.setItems(items)
+                this.setItems(this._extractItems(response))
             })
         },
 
-        /**
-         * Add item to cart
-         */
-        async addToCart({ bookId, quantity, price, title = 'Book' }) {
-            const { showSuccess, showError } = useNotifications()
+        async addToCart({ bookId, quantity = 1, price, title = 'Book', image }) {
+            const { showSuccess } = useNotifications()
 
             return withLoading(this, async () => {
-                const { useAuthStore } = await import('@/stores/auth')
-                const authStore = useAuthStore()
-
-                if (authStore.isAuthenticated) {
-                    // Server-side cart
+                if (isLoggedIn()) {
                     const response = await cartApi.addToCart({ bookId, quantity, price })
-                    const items = response?.data?.items ?? response?.items ?? []
-                    this.setItems(items)
+                    this.setItems(this._extractItems(response))
                 } else {
-                    // Local cart
-                    this.addLocalItem({ bookId, quantity, price })
+                    const id = String(bookId)
+                    const existing = this.items.find((i) => this._getBookId(i) === id)
+                    if (existing) {
+                        existing.quantity += quantity
+                    } else {
+                        this.items.push({ bookId: id, quantity, price, title, image })
+                    }
+                    this._persist()
                 }
 
-                showSuccess(`"${title}" added to cart`, {
-                    icon: 'mdi-cart-plus',
-                })
+                showSuccess(`"${title}" added to cart`, { icon: 'mdi-cart-plus' })
             })
         },
 
-        /**
-         * Remove item from cart
-         */
-        async removeFromCart(itemId, title = 'Item') {
-            const { showSuccess, showError } = useNotifications()
+        async removeFromCart(bookId, title = 'Item') {
+            const { showSuccess } = useNotifications()
 
             return withLoading(this, async () => {
-                const response = await cartApi.removeFromCart(itemId)
-                const items = response?.data?.items ?? response?.items ?? []
-                this.setItems(items)
+                if (isLoggedIn()) {
+                    const response = await cartApi.removeFromCart(bookId)
+                    this.setItems(this._extractItems(response))
+                } else {
+                    const id = String(bookId)
+                    this.items = this.items.filter((i) => this._getBookId(i) !== id)
+                    this._persist()
+                }
 
-                showSuccess(`"${title}" removed from cart`, {
-                    icon: 'mdi-cart-minus',
-                })
+                showSuccess(`"${title}" removed from cart`, { icon: 'mdi-cart-minus' })
             })
         },
 
-        /**
-         * Update item quantity
-         */
-        async updateQuantity(payload) {
-            const { title = 'Item' } = payload
-            const { showSuccess, showError } = useNotifications()
+        async updateQuantity({ itemId, quantity, title = 'Item' }) {
+            const { showSuccess } = useNotifications()
 
             return withLoading(this, async () => {
-                const { useAuthStore } = await import('@/stores/auth')
-                const authStore = useAuthStore()
-
-                if (authStore.isAuthenticated) {
-                    // Server-side cart
-                    const response = await cartApi.updateQuantity(payload.itemId, payload.quantity)
-                    const items = response?.data?.items ?? response?.items
-                    if (items) this.setItems(items)
+                if (isLoggedIn()) {
+                    const response = await cartApi.updateQuantity(itemId, quantity)
+                    this.setItems(this._extractItems(response))
                 } else {
-                    // Local cart
-                    this.updateLocalQuantity(payload)
+                    const id = String(itemId)
+                    const item = this.items.find((i) => this._getBookId(i) === id)
+                    if (item) {
+                        item.quantity = quantity
+                        this._persist()
+                    }
                 }
 
-                showSuccess(`"${title}" quantity updated to ${payload.quantity}`, {
+                showSuccess(`"${title}" quantity updated to ${quantity}`, {
                     icon: 'mdi-cart-outline',
                 })
             })
         },
 
-        /**
-         * Clear cart
-         */
         async clearCart() {
-            const { showSuccess, showError } = useNotifications()
+            const { showSuccess } = useNotifications()
 
             return withLoading(this, async () => {
-                await cartApi.clearCart()
+                if (isLoggedIn()) {
+                    await cartApi.clearCart()
+                }
                 this.items = []
                 localStorage.removeItem('cart')
-
-                showSuccess('Cart cleared successfully', {
-                    icon: 'mdi-cart-off',
-                })
+                showSuccess('Cart cleared successfully', { icon: 'mdi-cart-off' })
             })
         },
 
-        /**
-         * Sync local cart with server after login
-         */
         async syncCart() {
             return withLoading(this, async () => {
                 const localCart = JSON.parse(localStorage.getItem('cart')) || []
-
-                if (localCart.length === 0) {
-                    return
-                }
+                if (localCart.length === 0) return
 
                 const response = await cartApi.syncCart(localCart)
-
-                if (response?.items) {
-                    this.setItems(response.items)
-                    localStorage.removeItem('cart')
+                const items = this._extractItems(response)
+                if (items.length > 0) {
+                    this.setItems(items)
                 }
+                localStorage.removeItem('cart')
             })
         },
 
-        /**
-         * Set items and update localStorage
-         */
         setItems(items) {
             this.items = items || []
-            localStorage.setItem('cart', JSON.stringify(this.items))
+            this._persist()
         },
 
-        /**
-         * Add item to local cart
-         */
-        addLocalItem(item) {
-            const itemBookId = item.bookId?.id || item.bookId?._id || item.bookId
-            const existingItem = this.items.find((i) => {
-                const existingBookId = i.bookId?.id || i.bookId?._id || i.bookId
-                return existingBookId === itemBookId
-            })
-            if (existingItem) {
-                existingItem.quantity += item.quantity
-            } else {
-                this.items.push(item)
-            }
-            localStorage.setItem('cart', JSON.stringify(this.items))
-        },
-
-        /**
-         * Update quantity in local cart
-         */
-        updateLocalQuantity({ bookId, quantity }) {
-            const item = this.items.find((i) => i.bookId === bookId)
-            if (item) {
-                item.quantity = quantity
-            }
-            localStorage.setItem('cart', JSON.stringify(this.items))
-        },
-
-        /**
-         * Set error message
-         */
         setError(message) {
             this.error = message
         },
 
-        /**
-         * Clear error message
-         */
         clearError() {
             this.error = null
         },
