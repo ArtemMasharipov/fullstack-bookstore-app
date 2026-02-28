@@ -25,11 +25,11 @@
                             variant="outlined"
                             size="small"
                             class="mr-1"
-                            :disabled="item.quantity <= 1"
-                            @click="updateQuantity(item.quantity - 1)"
+                            :disabled="localQuantity <= 1"
+                            @click="decrement"
                         ></v-btn>
 
-                        <span class="text-body-1 mx-2">{{ item.quantity }}</span>
+                        <span class="text-body-1 mx-2">{{ localQuantity }}</span>
 
                         <v-btn
                             icon="mdi-plus"
@@ -37,12 +37,12 @@
                             variant="outlined"
                             size="small"
                             class="ml-1"
-                            @click="updateQuantity(item.quantity + 1)"
+                            @click="increment"
                         ></v-btn>
                     </div>
 
                     <div class="text-subtitle-1 font-weight-bold mt-3">
-                        Total: {{ formatPrice(item.quantity * item.price) }}
+                        Total: {{ formatPrice(localQuantity * item.price) }}
                     </div>
                 </v-card-item>
             </v-col>
@@ -74,7 +74,7 @@ import placeholderImage from '@/assets/images/placeholder.png'
 import { useCartStore } from '@/stores'
 import { formatPrice } from '@/utils'
 import { debounce } from '@/utils/helpers/debounce'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import ConfirmModal from '../../ui/ConfirmModal.vue'
 
 /**
@@ -94,15 +94,20 @@ const props = defineProps({
     },
 })
 
-// Emits
-const emit = defineEmits(['error'])
-
 // Store setup
 const cartStore = useCartStore()
 
 // Reactive state
 const removing = ref(false)
 const showDeleteConfirm = ref(false)
+// Local quantity for instant display — synced from store on external changes (rollback, fetchCart)
+const localQuantity = ref(props.item.quantity)
+watch(
+    () => props.item.quantity,
+    (val) => {
+        localQuantity.value = val
+    }
+)
 
 // Computed properties
 const bookTitle = computed(() => {
@@ -116,10 +121,6 @@ const bookImage = computed(() => {
 const bookIdForApi = computed(() => {
     const b = props.item.bookId || props.item.book
     return b?._id ?? b?.id
-})
-
-const formattedPrice = computed(() => {
-    return formatPrice(props.item.price)
 })
 
 // Methods
@@ -153,24 +154,20 @@ const handleImageError = (e) => {
     e.target.src = placeholderImage
 }
 
-/**
- * Handle quantity in cart (debounced)
- */
-const handleQuantityChange = (quantity) => {
-    if (quantity < 1) return
+// Debounced sync to store — batches rapid clicks into one API call
+const syncToStore = debounce((quantity) => {
     const id = bookIdForApi.value ?? props.item._id
+    cartStore.updateQuantity({ itemId: id, quantity, title: bookTitle.value })
+}, 300)
 
-    cartStore
-        .updateQuantity({
-            itemId: id,
-            quantity,
-            title: bookTitle.value,
-        })
-        .catch(() => {
-            // Failed to update quantity
-        })
+const increment = () => {
+    localQuantity.value++
+    syncToStore(localQuantity.value)
 }
 
-// Debounced update — initialized immediately so it's available in template
-const updateQuantity = debounce(handleQuantityChange, 300)
+const decrement = () => {
+    if (localQuantity.value <= 1) return
+    localQuantity.value--
+    syncToStore(localQuantity.value)
+}
 </script>
