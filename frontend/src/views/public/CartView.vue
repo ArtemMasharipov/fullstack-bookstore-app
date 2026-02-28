@@ -1,11 +1,10 @@
 <template>
-    <v-container>
-        <v-row justify="center">
-            <v-col cols="12" lg="10">
-                <h1 class="text-h4 text-center mb-6">Your Cart</h1>
-                <cart-list />
-            </v-col>
-        </v-row>
+    <v-container class="py-6">
+        <div class="d-flex align-center justify-space-between mb-6">
+            <h1 class="text-h4 font-weight-bold">Your Cart</h1>
+            <v-btn variant="text" to="/books" prepend-icon="mdi-arrow-left"> Continue Shopping </v-btn>
+        </div>
+        <cart-list />
     </v-container>
 </template>
 
