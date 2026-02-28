@@ -11,10 +11,14 @@ export function useAddToCart() {
 
     const loading = ref(false)
 
-    const canAddToCart = (book) => !loading.value && book?.inStock && authStore.hasPermission?.('create:cart')
+    const canAddToCart = (book) => {
+        if (loading.value || !book?.inStock) return false
+        // Guests can add to local cart; authenticated users need permission
+        return !authStore.isAuthenticated || authStore.hasPermission?.('create:cart')
+    }
 
     async function addToCart(book) {
-        if (!book?.inStock) return
+        if (!book?.inStock) return false
 
         loading.value = true
         try {
@@ -23,8 +27,8 @@ export function useAddToCart() {
                 quantity: 1,
                 price: book.price,
                 title: book.title || 'Book',
+                image: book.image,
             })
-            await cartStore.fetchCart()
             return true
         } catch {
             return false

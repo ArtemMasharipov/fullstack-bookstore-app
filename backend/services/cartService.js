@@ -1,273 +1,163 @@
 /**
  * Cart Service Layer
- * Contains business logic for shopping cart operations
+ *
+ * Pattern: write operations use raw ObjectIds (getOrCreate / findOne — no populate),
+ * then populate books right before returning to the controller.
  */
 
 import Book from "../models/Book.js";
 import Cart from "../models/Cart.js";
 import { NotFoundError, ValidationError } from "../utils/errors.js";
 
+/** Populate book refs and return the cart */
+async function withBooks(cart) {
+  await cart.populate(Cart.POPULATE_BOOKS);
+  return cart;
+}
+
 /**
- * Get user's cart
- * @param {string} userId - User ID
- * @returns {Object} Cart with items
+ * Get user's cart (creates empty if none exists)
  */
 export async function getCart(userId) {
-  const cart = await Cart.findByUser(userId);
-
-  if (!cart) {
-    // Create empty cart if doesn't exist
-    const newCart = await Cart.create({ user: userId, items: [] });
-    return newCart;
-  }
-
-  return cart;
+  const cart = await Cart.getOrCreate(userId);
+  return withBooks(cart);
 }
 
 /**
  * Add item to cart
- * @param {string} userId - User ID
- * @param {Object} itemData - { bookId, quantity }
- * @returns {Object} Updated cart
  */
-export async function addToCart(userId, itemData) {
-  const { bookId, quantity = 1 } = itemData;
-
-  // Validate input
-  if (!bookId) {
-    throw new ValidationError("Book ID is required");
-  }
-
+export async function addToCart(userId, { bookId, quantity = 1 }) {
+  if (!bookId) throw new ValidationError("Book ID is required");
   if (quantity < 1 || quantity > 99) {
     throw new ValidationError("Quantity must be between 1 and 99");
   }
 
-  // Check if book exists and is in stock
   const book = await Book.findById(bookId);
+  if (!book) throw new NotFoundError("Book not found");
+  if (!book.inStock) throw new ValidationError("Book is out of stock");
 
-  if (!book) {
-    throw new NotFoundError("Book not found");
-  }
-
-  if (!book.inStock) {
-    throw new ValidationError("Book is out of stock");
-  }
-
-  // Get or create cart
+  // Unpopulated cart — item.book is raw ObjectId, .toString() works
   const cart = await Cart.getOrCreate(userId);
 
-  // Check if item already exists in cart
-  const existingItemIndex = cart.items.findIndex(
+  const existing = cart.items.find(
     (item) => item.book.toString() === bookId
   );
 
-  if (existingItemIndex > -1) {
-    // Update quantity of existing item
-    const newQuantity = cart.items[existingItemIndex].quantity + quantity;
-
-    if (newQuantity > 99) {
-      throw new ValidationError(
-        "Cannot add more than 99 items of the same book"
-      );
+  if (existing) {
+    const newQty = existing.quantity + quantity;
+    if (newQty > 99) {
+      throw new ValidationError("Cannot add more than 99 of the same book");
     }
-
-    cart.items[existingItemIndex].quantity = newQuantity;
-    cart.items[existingItemIndex].price = book.price; // Update price in case it changed
+    existing.quantity = newQty;
+    existing.price = book.price;
   } else {
-    // Add new item
-    cart.items.push({
-      book: bookId,
-      quantity,
-      price: book.price,
-    });
+    cart.items.push({ book: bookId, quantity, price: book.price });
   }
 
   await cart.save();
-
-  // Populate and return
-  await cart.populate({
-    path: "items.book",
-    select: "title author price image inStock category",
-  });
-
-  return cart;
+  return withBooks(cart);
 }
 
 /**
- * Update item quantity in cart
- * @param {string} userId - User ID
- * @param {string} bookId - Book ID
- * @param {number} quantity - New quantity
- * @returns {Object} Updated cart
+ * Update item quantity
  */
 export async function updateCartItem(userId, bookId, quantity) {
-  // Validate quantity
   if (quantity < 1 || quantity > 99) {
     throw new ValidationError("Quantity must be between 1 and 99");
   }
 
   const cart = await Cart.findOne({ user: userId });
+  if (!cart) throw new NotFoundError("Cart not found");
 
-  if (!cart) {
-    throw new NotFoundError("Cart not found");
-  }
+  const item = cart.items.find((i) => i.book.toString() === bookId);
+  if (!item) throw new NotFoundError("Item not found in cart");
 
-  // Find item in cart
-  const itemIndex = cart.items.findIndex(
-    (item) => item.book.toString() === bookId
-  );
-
-  if (itemIndex === -1) {
-    throw new NotFoundError("Item not found in cart");
-  }
-
-  // Update quantity
-  cart.items[itemIndex].quantity = quantity;
+  item.quantity = quantity;
 
   await cart.save();
-
-  // Populate and return
-  await cart.populate({
-    path: "items.book",
-    select: "title author price image inStock category",
-  });
-
-  return cart;
+  return withBooks(cart);
 }
 
 /**
  * Remove item from cart
- * @param {string} userId - User ID
- * @param {string} bookId - Book ID
- * @returns {Object} Updated cart
  */
 export async function removeFromCart(userId, bookId) {
   const cart = await Cart.findOne({ user: userId });
+  if (!cart) throw new NotFoundError("Cart not found");
 
-  if (!cart) {
-    throw new NotFoundError("Cart not found");
-  }
-
-  // Filter out the item
-  const initialLength = cart.items.length;
-  cart.items = cart.items.filter((item) => item.book.toString() !== bookId);
-
-  if (cart.items.length === initialLength) {
+  const before = cart.items.length;
+  cart.items = cart.items.filter((i) => i.book.toString() !== bookId);
+  if (cart.items.length === before) {
     throw new NotFoundError("Item not found in cart");
   }
 
   await cart.save();
-
-  // Populate and return
-  await cart.populate({
-    path: "items.book",
-    select: "title author price image inStock category",
-  });
-
-  return cart;
+  return withBooks(cart);
 }
 
 /**
  * Clear entire cart
- * @param {string} userId - User ID
- * @returns {Object} Empty cart
  */
 export async function clearCart(userId) {
   const cart = await Cart.findOne({ user: userId });
-
-  if (!cart) {
-    throw new NotFoundError("Cart not found");
-  }
+  if (!cart) throw new NotFoundError("Cart not found");
 
   cart.items = [];
   await cart.save();
-
   return cart;
 }
 
 /**
- * Sync cart items with current book prices and availability
- * @param {string} userId - User ID
- * @returns {Object} Updated cart with sync info
+ * Sync cart — update prices, remove out-of-stock items
  */
 export async function syncCart(userId) {
-  const cart = await Cart.findOne({ user: userId });
+  const cart = await Cart.getOrCreate(userId);
+  const updates = { pricesUpdated: [], removedOutOfStock: [] };
 
-  if (!cart) {
-    throw new NotFoundError("Cart not found");
-  }
-
-  const updates = {
-    pricesUpdated: [],
-    removedOutOfStock: [],
-  };
-
-  // Check each item
   for (let i = cart.items.length - 1; i >= 0; i--) {
     const item = cart.items[i];
     const book = await Book.findById(item.book);
 
     if (!book || !book.inStock) {
-      // Remove out of stock items
       updates.removedOutOfStock.push({
         bookId: item.book,
-        title: book ? book.title : "Unknown",
+        title: book?.title || "Unknown",
       });
       cart.items.splice(i, 1);
     } else if (book.price !== item.price) {
-      // Update price if changed
       updates.pricesUpdated.push({
         bookId: item.book,
         title: book.title,
         oldPrice: item.price,
         newPrice: book.price,
       });
-      cart.items[i].price = book.price;
+      item.price = book.price;
     }
   }
 
   await cart.save();
-
-  await cart.populate({
-    path: "items.book",
-    select: "title author price image inStock category",
-  });
-
-  return {
-    cart,
-    updates,
-  };
+  return { cart: await withBooks(cart), updates };
 }
 
 /**
  * Validate cart before checkout
- * @param {string} userId - User ID
- * @returns {Object} Validation result
  */
 export async function validateCart(userId) {
   const cart = await Cart.findByUser(userId);
-
   if (!cart || cart.items.length === 0) {
     throw new ValidationError("Cart is empty");
   }
 
   const issues = [];
 
-  // Check each item
   for (const item of cart.items) {
-    const book = await Book.findById(item.book._id || item.book);
+    const bookId = item.book._id || item.book;
+    const book = await Book.findById(bookId);
 
     if (!book) {
-      issues.push({
-        bookId: item.book._id || item.book,
-        issue: "Book no longer exists",
-      });
+      issues.push({ bookId, issue: "Book no longer exists" });
     } else if (!book.inStock) {
-      issues.push({
-        bookId: book._id,
-        title: book.title,
-        issue: "Out of stock",
-      });
+      issues.push({ bookId: book._id, title: book.title, issue: "Out of stock" });
     } else if (book.price !== item.price) {
       issues.push({
         bookId: book._id,
@@ -279,9 +169,5 @@ export async function validateCart(userId) {
     }
   }
 
-  return {
-    valid: issues.length === 0,
-    issues,
-    cart,
-  };
+  return { valid: issues.length === 0, issues, cart };
 }

@@ -173,12 +173,10 @@ const handleAddToCart = async () => {
             quantity: 1,
             price: book.value.price,
             title: book.value.title || 'Book',
+            image: book.value.image,
         })
-        // Refresh cart state to update NavBar counter
-        await cartStore.fetchCart()
-        // emit('success', 'Added to cart') // Optionally emit event only
     } catch (error) {
-        // emit('error', error.message) // Optionally emit error event only
+        // Failed to add to cart
     }
 }
 

@@ -74,7 +74,7 @@ import placeholderImage from '@/assets/images/placeholder.png'
 import { useCartStore } from '@/stores'
 import { formatPrice } from '@/utils'
 import { debounce } from '@/utils/helpers/debounce'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import ConfirmModal from '../../ui/ConfirmModal.vue'
 
 /**
@@ -95,7 +95,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['error', 'update-quantity'])
+const emit = defineEmits(['error'])
 
 // Store setup
 const cartStore = useCartStore()
@@ -139,8 +139,6 @@ const remove = async () => {
     removing.value = true
     try {
         await cartStore.removeFromCart(bookIdForApi.value ?? props.item._id, bookTitle.value)
-        // After removing an item, update the cart counter
-        await cartStore.fetchCart()
     } catch (error) {
         // Failed to remove item
     } finally {
@@ -162,34 +160,17 @@ const handleQuantityChange = (quantity) => {
     if (quantity < 1) return
     const id = bookIdForApi.value ?? props.item._id
 
-    emit('update-quantity', {
-        bookId: id,
-        quantity,
-        title: bookTitle.value,
-    })
-
     cartStore
         .updateQuantity({
             itemId: id,
-            bookId: id,
             quantity,
             title: bookTitle.value,
         })
-        .then(() => {
-            // After updating quantity, update the cart counter
-            return cartStore.fetchCart()
-        })
-        .catch((error) => {
+        .catch(() => {
             // Failed to update quantity
         })
 }
 
-// Debounced update quantity function
-let updateQuantity
-
-// Lifecycle
-onMounted(() => {
-    // Initialize debounced quantity update function
-    updateQuantity = debounce(handleQuantityChange, 300)
-})
+// Debounced update — initialized immediately so it's available in template
+const updateQuantity = debounce(handleQuantityChange, 300)
 </script>

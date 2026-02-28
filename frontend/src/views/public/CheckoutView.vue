@@ -17,7 +17,7 @@
                         <div class="text-h6 mb-3">Order Summary</div>
 
                         <v-list density="compact" class="pa-0 bg-transparent">
-                            <v-list-item v-for="item in cartItems" :key="item.id" :title="item.title">
+                            <v-list-item v-for="item in cartItems" :key="item.id" :title="item.bookId?.title || 'Unknown Book'">
                                 <template v-slot:append> {{ item.quantity }} x {{ formatPrice(item.price) }} </template>
                             </v-list-item>
                         </v-list>
@@ -63,7 +63,7 @@ import { reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import ErrorMessage from '@/components/ui/ErrorMessage.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
-import { useCartStore, useOrdersStore } from '@/store'
+import { useCartStore, useOrdersStore } from '@/stores'
 import { formatPrice } from '@/utils'
 
 const router = useRouter()

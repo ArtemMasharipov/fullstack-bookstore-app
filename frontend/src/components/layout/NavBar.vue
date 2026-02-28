@@ -36,7 +36,7 @@
                             <template v-slot:activator="{ props }">
                                 <v-btn variant="text" v-bind="props" class="text-white">
                                     <v-icon left>mdi-account</v-icon>
-                                    {{ user.name }}
+                                    {{ user?.name }}
                                     <v-icon right>mdi-chevron-down</v-icon>
                                 </v-btn>
                             </template>
@@ -87,11 +87,10 @@ const cartStore = useCartStore()
 
 // Reactive state
 const { isAuthenticated, user } = storeToRefs(authStore)
-const { items } = storeToRefs(cartStore)
 
 // Computed properties
 const isAdmin = computed(() => user.value?.role === 'admin')
-const cartItemsCount = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0))
+const cartItemsCount = computed(() => cartStore.totalQuantity)
 
 // Methods
 const logout = async () => {

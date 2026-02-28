@@ -130,7 +130,9 @@ const loading = ref(false)
  * Determines if user can add book to cart
  */
 const canAddToCart = computed(() => {
-    return !loading.value && props.book.inStock && authStore && authStore.hasPermission('create:cart')
+    if (loading.value || !props.book.inStock) return false
+    // Guests can add to local cart; authenticated users need permission
+    return !authStore.isAuthenticated || authStore.hasPermission('create:cart')
 })
 
 // Methods
@@ -150,15 +152,13 @@ const handleAddToCart = async () => {
     loading.value = true
     try {
         await cartStore.addToCart({
-            bookId: props.book.id || props.book._id, // Support legacy data
+            bookId: props.book.id || props.book._id,
             quantity: 1,
             price: props.book.price,
             title: props.book.title || 'Book',
+            image: props.book.image,
         })
-        // No need to call toast here because it is already called in the store
-        // Refresh cart state to update NavBar counter
-        await cartStore.fetchCart()
-        emit('add-to-cart') // Emit just the add-to-cart event
+        emit('add-to-cart')
     } catch (error) {
         // Failed to add to cart
     } finally {
