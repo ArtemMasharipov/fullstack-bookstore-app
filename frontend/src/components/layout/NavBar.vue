@@ -1,130 +1,175 @@
 <template>
-    <v-app-bar app color="primary" class="text-white">
-        <v-container class="py-0 px-2">
-            <v-row align="center" no-gutters>
-                <!-- Logo/Brand -->
-                <v-col cols="auto">
-                    <router-link to="/" class="text-decoration-none text-white">
-                        <v-btn variant="text" size="large" class="text-h6 font-weight-bold text-white">
-                            📚 Bookstore
-                        </v-btn>
-                    </router-link>
-                </v-col>
+    <v-app-bar app color="primary" elevation="2">
+        <v-container class="py-0 px-2 d-flex align-center">
+            <!-- Mobile hamburger -->
+            <v-app-bar-nav-icon
+                class="d-md-none text-white"
+                aria-label="Open navigation menu"
+                @click="drawer = !drawer"
+            />
 
-                <v-spacer></v-spacer>
+            <!-- Logo/Brand -->
+            <router-link to="/" class="text-decoration-none text-white d-flex align-center">
+                <v-btn variant="text" size="large" class="text-h6 font-weight-bold text-white"> Bookstore </v-btn>
+            </router-link>
 
-                <!-- Navigation Links -->
-                <v-col cols="auto">
-                    <v-btn variant="text" to="/books" class="text-white">Books</v-btn>
-                    <v-btn variant="text" to="/authors" class="text-white">Authors</v-btn>
-                    <v-btn variant="text" to="/contact" class="text-white">Contact</v-btn>
-                </v-col>
+            <v-spacer />
 
-                <!-- Auth Section -->
-                <v-col cols="auto">
-                    <template v-if="isAuthenticated">
-                        <!-- Cart Icon -->
-                        <v-btn variant="text" to="/cart" icon class="text-white">
-                            <v-badge :content="cartItemsCount" color="red" v-if="cartItemsCount > 0">
-                                <v-icon>mdi-cart</v-icon>
-                            </v-badge>
-                            <v-icon v-else>mdi-cart</v-icon>
-                        </v-btn>
+            <!-- Desktop Navigation Links -->
+            <div class="d-none d-md-flex align-center ga-1">
+                <v-btn variant="text" to="/books" class="text-white">Books</v-btn>
+                <v-btn variant="text" to="/authors" class="text-white">Authors</v-btn>
+            </div>
 
-                        <!-- User Menu -->
-                        <v-menu>
-                            <template v-slot:activator="{ props }">
-                                <v-btn variant="text" v-bind="props" class="text-white">
-                                    <v-icon left>mdi-account</v-icon>
-                                    {{ user?.name }}
-                                    <v-icon right>mdi-chevron-down</v-icon>
-                                </v-btn>
-                            </template>
-                            <v-list>
-                                <v-list-item to="/profile">
-                                    <v-list-item-title>Profile</v-list-item-title>
-                                </v-list-item>
-                                <v-list-item to="/orders">
-                                    <v-list-item-title>My Orders</v-list-item-title>
-                                </v-list-item>
-                                <v-list-item v-if="isAdmin" to="/admin">
-                                    <v-list-item-title>Admin Panel</v-list-item-title>
-                                </v-list-item>
-                                <v-divider></v-divider>
-                                <v-list-item @click="logout">
-                                    <v-list-item-title>Logout</v-list-item-title>
-                                </v-list-item>
-                            </v-list>
-                        </v-menu>
-                    </template>
+            <v-spacer class="d-none d-md-block" />
 
-                    <template v-else>
-                        <v-btn variant="text" to="/login" class="text-white">Login</v-btn>
-                        <v-btn variant="outlined" to="/register" class="text-white">Register</v-btn>
-                    </template>
-                </v-col>
-            </v-row>
+            <!-- Cart Icon (visible for all users) -->
+            <v-btn variant="text" to="/cart" icon class="text-white" aria-label="Shopping cart">
+                <v-badge :content="cartItemsCount" color="secondary" v-if="cartItemsCount > 0">
+                    <v-icon>mdi-cart</v-icon>
+                </v-badge>
+                <v-icon v-else>mdi-cart-outline</v-icon>
+            </v-btn>
+
+            <!-- Auth Section (Desktop) -->
+            <div class="d-none d-md-flex align-center">
+                <template v-if="isAuthenticated">
+                    <v-menu>
+                        <template v-slot:activator="{ props }">
+                            <v-btn variant="text" v-bind="props" class="text-white">
+                                <v-avatar size="28" color="secondary" class="mr-2">
+                                    <span class="text-caption font-weight-bold">{{ userInitials }}</span>
+                                </v-avatar>
+                                {{ user?.name }}
+                                <v-icon end size="small">mdi-chevron-down</v-icon>
+                            </v-btn>
+                        </template>
+                        <v-list density="compact" rounded="lg" elevation="3" min-width="180">
+                            <v-list-item to="/profile" prepend-icon="mdi-account-outline">
+                                <v-list-item-title>Profile</v-list-item-title>
+                            </v-list-item>
+                            <v-list-item to="/orders" prepend-icon="mdi-package-variant-closed">
+                                <v-list-item-title>My Orders</v-list-item-title>
+                            </v-list-item>
+                            <v-list-item v-if="isAdmin" to="/admin" prepend-icon="mdi-shield-crown-outline">
+                                <v-list-item-title>Admin Panel</v-list-item-title>
+                            </v-list-item>
+                            <v-divider class="my-1" />
+                            <v-list-item @click="logout" prepend-icon="mdi-logout">
+                                <v-list-item-title>Logout</v-list-item-title>
+                            </v-list-item>
+                        </v-list>
+                    </v-menu>
+                </template>
+
+                <template v-else>
+                    <v-btn variant="text" to="/login" class="text-white">Login</v-btn>
+                    <v-btn variant="outlined" to="/register" class="text-white ml-1">Register</v-btn>
+                </template>
+            </div>
         </v-container>
     </v-app-bar>
+
+    <!-- Mobile Navigation Drawer -->
+    <v-navigation-drawer v-model="drawer" temporary location="left">
+        <v-list density="compact" nav>
+            <v-list-item prepend-icon="mdi-home-outline" title="Home" to="/" @click="drawer = false" />
+            <v-list-item
+                prepend-icon="mdi-book-open-page-variant-outline"
+                title="Books"
+                to="/books"
+                @click="drawer = false"
+            />
+            <v-list-item
+                prepend-icon="mdi-account-group-outline"
+                title="Authors"
+                to="/authors"
+                @click="drawer = false"
+            />
+
+            <v-divider class="my-2" />
+
+            <template v-if="isAuthenticated">
+                <v-list-item prepend-icon="mdi-account-outline" title="Profile" to="/profile" @click="drawer = false" />
+                <v-list-item
+                    prepend-icon="mdi-package-variant-closed"
+                    title="My Orders"
+                    to="/orders"
+                    @click="drawer = false"
+                />
+                <v-list-item
+                    v-if="isAdmin"
+                    prepend-icon="mdi-shield-crown-outline"
+                    title="Admin Panel"
+                    to="/admin"
+                    @click="drawer = false"
+                />
+                <v-divider class="my-2" />
+                <v-list-item prepend-icon="mdi-logout" title="Logout" @click="handleLogout" />
+            </template>
+
+            <template v-else>
+                <v-list-item prepend-icon="mdi-login" title="Login" to="/login" @click="drawer = false" />
+                <v-list-item
+                    prepend-icon="mdi-account-plus-outline"
+                    title="Register"
+                    to="/register"
+                    @click="drawer = false"
+                />
+            </template>
+        </v-list>
+    </v-navigation-drawer>
 </template>
 
 <script setup>
 import { useAuthStore, useCartStore } from '@/stores'
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-/**
- * NavBar component - Application navigation bar
- */
-
-// Router
 const router = useRouter()
-
-// Stores
 const authStore = useAuthStore()
 const cartStore = useCartStore()
 
-// Reactive state
 const { isAuthenticated, user } = storeToRefs(authStore)
 
-// Computed properties
+const drawer = ref(false)
 const isAdmin = computed(() => user.value?.role === 'admin')
 const cartItemsCount = computed(() => cartStore.totalQuantity)
+const userInitials = computed(() => {
+    const name = user.value?.name || ''
+    return (
+        name
+            .split(' ')
+            .map((w) => w[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2) || 'U'
+    )
+})
 
-// Methods
 const logout = async () => {
     await authStore.logout()
     router.push('/')
 }
+
+const handleLogout = () => {
+    logout()
+    drawer.value = false
+}
 </script>
 
 <style scoped>
-/* Ensure white text remains visible on primary background */
-.v-app-bar {
+.v-app-bar .v-btn.text-white {
     color: white !important;
 }
 
-.v-app-bar .v-btn {
-    color: white !important;
+.v-app-bar .v-btn--variant-outlined.text-white {
+    border-color: rgba(255, 255, 255, 0.6) !important;
 }
 
-.v-app-bar .v-btn:hover {
-    background-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-.v-app-bar .v-icon {
-    color: white !important;
-}
-
-/* Styles for outlined Register button */
-.v-app-bar .v-btn--variant-outlined {
+.v-app-bar .v-btn--variant-outlined.text-white:hover {
+    background-color: rgba(255, 255, 255, 0.12) !important;
     border-color: white !important;
-    color: white !important;
-}
-
-.v-app-bar .v-btn--variant-outlined:hover {
-    background-color: white !important;
-    color: var(--primary-color) !important;
 }
 </style>
