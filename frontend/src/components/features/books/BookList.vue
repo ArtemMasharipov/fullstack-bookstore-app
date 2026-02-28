@@ -17,13 +17,36 @@
                     style="max-width: 250px"
                     clearable
                 ></v-text-field>
-                <!-- Admin button removed in preparation for new admin panel -->
             </v-toolbar>
 
-            <!-- Search progress (no skeleton flash) -->
+            <!-- Category filters -->
+            <div class="px-4 py-3 d-flex align-center flex-wrap ga-2">
+                <v-chip
+                    :variant="!selectedCategory ? 'elevated' : 'outlined'"
+                    :color="!selectedCategory ? 'primary' : undefined"
+                    size="small"
+                    @click="selectCategory(null)"
+                >
+                    All
+                </v-chip>
+                <v-chip
+                    v-for="cat in categories"
+                    :key="cat"
+                    :variant="selectedCategory === cat ? 'elevated' : 'outlined'"
+                    :color="selectedCategory === cat ? 'primary' : undefined"
+                    size="small"
+                    @click="selectCategory(cat)"
+                >
+                    {{ cat }}
+                </v-chip>
+            </div>
+
+            <v-divider />
+
+            <!-- Search progress -->
             <v-progress-linear v-if="searching" indeterminate color="primary" height="3"></v-progress-linear>
 
-            <!-- Loading state (initial load only) -->
+            <!-- Loading state -->
             <v-skeleton-loader
                 v-if="loading && !searching"
                 type="card-avatar, article, actions"
@@ -55,6 +78,9 @@
 
             <!-- Books grid -->
             <v-container v-else fluid class="py-2">
+                <p v-if="total > 0" class="text-caption text-medium-emphasis mb-3">
+                    Showing {{ books.length }} of {{ total }} books
+                </p>
                 <v-row>
                     <v-col
                         v-for="book in books"
@@ -88,18 +114,13 @@
 
 <script setup>
 import { useAuthStore, useBooksStore } from '@/stores'
+import { BOOK_CATEGORIES } from '@/utils/constants/app'
 import { useDisplay } from 'vuetify'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import BookCard from './BookCard.vue'
 
-/**
- * Component for displaying and managing a paginated list of books
- * Simplified: removed redundant wrappers, using Vuetify breakpoints, direct store access
- */
-
-// Props
 const props = defineProps({
     category: {
         type: String,
@@ -115,28 +136,29 @@ const props = defineProps({
     },
 })
 
-// Composables
 const router = useRouter()
-const { mobile } = useDisplay() // Vuetify breakpoint
+const { mobile } = useDisplay()
 
-// Stores
 const authStore = useAuthStore()
 const booksStore = useBooksStore()
 
-// Direct state access - no redundant getters
-const { books, loading, searching, page, pages } = storeToRefs(booksStore)
+const { books, loading, searching, page, pages, total } = storeToRefs(booksStore)
 
-// Local state
 const searchQuery = ref('')
+const selectedCategory = ref(props.category || null)
+const categories = BOOK_CATEGORIES
 
-// Computed
 const totalPages = computed(() => pages.value || 1)
 const currentPage = computed({
     get: () => page.value,
     set: (value) => (page.value = value),
 })
 
-// Watchers
+const selectCategory = (cat) => {
+    selectedCategory.value = cat
+    booksStore.setCategory(cat)
+}
+
 watch(searchQuery, (val) => {
     booksStore.debouncedSearch(val)
 })
@@ -144,7 +166,6 @@ watch(searchQuery, (val) => {
 watch(
     () => [props.category, props.authorId, props.itemsPerPage],
     () => {
-        // Sync props to store and load
         booksStore.category = props.category
         booksStore.authorId = props.authorId
         booksStore.limit = props.itemsPerPage
@@ -152,9 +173,7 @@ watch(
     }
 )
 
-// Lifecycle
 onMounted(() => {
-    // Sync props and load books
     booksStore.category = props.category
     booksStore.authorId = props.authorId
     booksStore.limit = props.itemsPerPage
