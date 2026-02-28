@@ -1,34 +1,48 @@
 <template>
-    <v-container class="login-page fill-height" fluid>
+    <v-container class="fill-height" fluid>
         <v-row justify="center" align="center">
-            <v-col cols="12" sm="8" md="6" lg="4">
-                <v-card class="login-container elevation-3">
-                    <v-card-title class="text-center">Login</v-card-title>
+            <!-- Branding side (desktop only) -->
+            <v-col cols="12" md="5" class="d-none d-md-flex flex-column align-center justify-center">
+                <v-icon icon="mdi-book-open-page-variant" size="80" color="primary" class="mb-4" />
+                <h2 class="text-h4 font-weight-bold text-center mb-2">Welcome Back</h2>
+                <p class="text-body-1 text-medium-emphasis text-center">
+                    Sign in to access your orders, wishlist, and personalized recommendations.
+                </p>
+            </v-col>
+
+            <v-divider vertical class="d-none d-md-block mx-6" />
+
+            <!-- Form side -->
+            <v-col cols="12" sm="8" md="5" lg="4">
+                <v-card class="pa-2" elevation="0" color="transparent">
+                    <v-card-title class="text-h5 font-weight-bold text-center d-md-none mb-2">Login</v-card-title>
                     <v-card-text>
-                        <v-form class="auth-form" @submit.prevent="handleSubmit">
+                        <v-form ref="formRef" class="auth-form" @submit.prevent="handleSubmit">
                             <v-text-field
                                 id="email"
                                 v-model="email"
                                 label="Email"
                                 type="email"
-                                variant="outlined"
                                 required
                                 autocomplete="username"
-                            ></v-text-field>
+                                prepend-inner-icon="mdi-email-outline"
+                                :rules="[(v) => !!v || 'Email is required']"
+                            />
 
                             <v-text-field
                                 id="password"
                                 v-model="password"
                                 label="Password"
                                 :type="showPassword ? 'text' : 'password'"
-                                variant="outlined"
                                 required
                                 autocomplete="current-password"
+                                prepend-inner-icon="mdi-lock-outline"
                                 :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+                                :rules="[(v) => !!v || 'Password is required']"
                                 @click:append-inner="showPassword = !showPassword"
-                            ></v-text-field>
+                            />
 
-                            <v-btn type="submit" color="primary" block :loading="authLoading" class="mt-4">
+                            <v-btn type="submit" color="primary" block :loading="authLoading" size="large" class="mt-2">
                                 {{ authLoading ? 'Logging in...' : 'Login' }}
                             </v-btn>
 
@@ -36,9 +50,9 @@
                                 {{ authError }}
                             </v-alert>
 
-                            <div class="text-center mt-4">
-                                Don't have an account?
-                                <v-btn variant="text" color="primary" to="/register" class="ps-1" density="compact">
+                            <div class="text-center mt-6">
+                                <span class="text-medium-emphasis">Don't have an account?</span>
+                                <v-btn variant="text" color="primary" to="/register" density="compact">
                                     Register
                                 </v-btn>
                             </div>
@@ -57,35 +71,29 @@ import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-// Router
 const router = useRouter()
-
-// Stores
 const authStore = useAuthStore()
 
-// Extract reactive state from stores
 const { loading: authLoading, error: authError, isAuthenticated } = storeToRefs(authStore)
 
-// Local reactive state
+const formRef = ref(null)
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
 
-// Methods
 const handleSubmit = async () => {
+    const { valid } = await formRef.value.validate()
+    if (!valid) return
+
     try {
-        // Attempt login
         await authStore.login({
             email: email.value,
             password: password.value,
         })
 
-        // If successfully authenticated, redirect to saved path or home page
         if (isAuthenticated.value) {
-            // Check for a saved redirect path
             const redirectPath = localStorage.getItem('redirectPath')
             if (redirectPath) {
-                // Clear the saved path before redirecting
                 localStorage.removeItem('redirectPath')
                 router.push(redirectPath)
             } else {
@@ -97,13 +105,3 @@ const handleSubmit = async () => {
     }
 }
 </script>
-
-<style scoped>
-.login-page {
-    background-color: var(--gray-light);
-}
-
-.auth-form {
-    width: 100%;
-}
-</style>

@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="2" height="100%" hover @click="emit('click', book.id ?? book._id)">
+    <v-card class="book-card" elevation="2" height="100%" hover @click="emit('click', book.id ?? book._id)">
         <v-img
             :src="book.image || placeholderImage"
             :alt="book.title || 'No image available'"
@@ -36,7 +36,7 @@
                 {{ book.description }}
             </p>
             <div class="d-flex align-center justify-space-between mt-3">
-                <div class="text-subtitle-1 font-weight-bold">
+                <div class="text-subtitle-1 font-weight-bold text-secondary">
                     {{ formatPriceMethod(book.price) }}
                 </div>
 
@@ -164,6 +164,21 @@ const handleAddToCart = async () => {
 </script>
 
 <style scoped>
+.book-card {
+    transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.book-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg, 0 8px 24px rgba(27, 42, 74, 0.12)) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .book-card:hover {
+        transform: none;
+    }
+}
+
 .text-truncate-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;

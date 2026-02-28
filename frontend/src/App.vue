@@ -49,6 +49,6 @@ body {
 }
 
 .v-application {
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 </style>
