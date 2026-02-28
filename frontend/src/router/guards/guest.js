@@ -5,9 +5,16 @@
 
 import { useAuthStore } from '@/stores'
 
-export const guestGuard = (to, from, next) => {
+export const guestGuard = async (to, from, next) => {
     const authStore = useAuthStore()
-    const isAuthenticated = authStore.isAuthenticated
+    let isAuthenticated = authStore.isAuthenticated
+
+    if (isAuthenticated) {
+        const isValid = await authStore.checkAuthStatus()
+        if (!isValid) {
+            isAuthenticated = false
+        }
+    }
 
     if (isAuthenticated) {
         // Если пользователь уже аутентифицирован, перенаправляем на главную

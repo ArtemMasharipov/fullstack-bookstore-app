@@ -24,7 +24,11 @@
             <v-progress-linear v-if="searching" indeterminate color="primary" height="3"></v-progress-linear>
 
             <!-- Loading state (initial load only) -->
-            <v-skeleton-loader v-if="loading && !searching" type="card-avatar, article, actions" class="py-4"></v-skeleton-loader>
+            <v-skeleton-loader
+                v-if="loading && !searching"
+                type="card-avatar, article, actions"
+                class="py-4"
+            ></v-skeleton-loader>
 
             <!-- Empty state -->
             <v-alert

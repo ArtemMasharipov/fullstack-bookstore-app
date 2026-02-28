@@ -128,10 +128,7 @@ export const normalizeBook = (book) => {
     if (author && typeof author === 'object') {
         author = {
             id: normalizeId(author._id || author.id),
-            name:
-                normalizeString(author.name) ||
-                [author.firstName, author.lastName].filter(Boolean).join(' ') ||
-                '',
+            name: normalizeString(author.name) || [author.firstName, author.lastName].filter(Boolean).join(' ') || '',
             bio: author.bio !== undefined ? normalizeString(author.bio) : undefined,
         }
     }
