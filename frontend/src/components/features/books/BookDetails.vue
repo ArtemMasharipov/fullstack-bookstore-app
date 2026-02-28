@@ -112,6 +112,7 @@
 import BookCard from '@/components/features/books/BookCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { useBooksStore, useCartStore } from '@/stores'
+import { formatPrice } from '@/utils'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -178,10 +179,6 @@ const handleAddToCart = async () => {
     } catch (error) {
         // Failed to add to cart
     }
-}
-
-const formatPrice = (price) => {
-    return price ? `${price} грн` : 'Price not available'
 }
 
 const navigateToBook = (book) => {

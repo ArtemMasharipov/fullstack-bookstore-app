@@ -1,115 +1,151 @@
 <template>
-    <div class="profile-view">
-        <div class="container">
-            <div class="profile-header">
-                <h1>Мой профиль</h1>
-                <p class="profile-subtitle">Управление личными данными и настройками</p>
-            </div>
+    <v-container class="py-8">
+        <div class="text-center mb-8">
+            <h1 class="text-h4 font-weight-bold">My Profile</h1>
+            <p class="text-body-1 text-medium-emphasis mt-1">Manage your personal details and settings</p>
+        </div>
 
-            <div class="profile-content">
-                <div class="profile-card">
-                    <div class="profile-avatar">
-                        <div class="avatar-placeholder">
-                            {{ userInitials }}
+        <v-row justify="center">
+            <!-- Profile Card -->
+            <v-col cols="12" md="7" lg="8">
+                <v-card class="pa-6">
+                    <!-- Avatar -->
+                    <div class="text-center mb-6">
+                        <v-avatar size="96" color="primary" class="mb-3">
+                            <span class="text-h4 font-weight-bold text-white">{{ userInitials }}</span>
+                        </v-avatar>
+                        <div>
+                            <v-btn variant="text" size="small" prepend-icon="mdi-camera-outline"> Change photo </v-btn>
                         </div>
-                        <button class="avatar-upload-btn">Изменить фото</button>
                     </div>
 
-                    <div class="profile-info">
-                        <form @submit.prevent="updateProfile" class="profile-form">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="firstName">Имя</label>
-                                    <input
-                                        id="firstName"
-                                        v-model="profile.firstName"
-                                        type="text"
-                                        class="form-control"
-                                        :disabled="!isEditing"
-                                    />
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="lastName">Фамилия</label>
-                                    <input
-                                        id="lastName"
-                                        v-model="profile.lastName"
-                                        type="text"
-                                        class="form-control"
-                                        :disabled="!isEditing"
-                                    />
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="email">Email</label>
-                                <input id="email" v-model="profile.email" type="email" class="form-control" disabled />
-                                <small class="form-text">Email нельзя изменить</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="phone">Телефон</label>
-                                <input
-                                    id="phone"
-                                    v-model="profile.phone"
-                                    type="tel"
-                                    class="form-control"
+                    <!-- Profile Form -->
+                    <v-form @submit.prevent="updateProfile">
+                        <v-row>
+                            <v-col cols="12" sm="6">
+                                <v-text-field
+                                    id="firstName"
+                                    v-model="profile.firstName"
+                                    label="First Name"
                                     :disabled="!isEditing"
                                 />
-                            </div>
+                            </v-col>
+                            <v-col cols="12" sm="6">
+                                <v-text-field
+                                    id="lastName"
+                                    v-model="profile.lastName"
+                                    label="Last Name"
+                                    :disabled="!isEditing"
+                                />
+                            </v-col>
+                        </v-row>
 
-                            <div class="form-actions">
-                                <button v-if="!isEditing" type="button" @click="startEditing" class="btn btn-primary">
-                                    Редактировать
-                                </button>
+                        <v-text-field
+                            id="email"
+                            v-model="profile.email"
+                            label="Email"
+                            type="email"
+                            disabled
+                            hint="Email cannot be changed"
+                            persistent-hint
+                        />
 
-                                <template v-else>
-                                    <button type="submit" class="btn btn-success" :disabled="loading">
-                                        {{ loading ? 'Сохранение...' : 'Сохранить' }}
-                                    </button>
+                        <v-text-field
+                            id="phone"
+                            v-model="profile.phone"
+                            label="Phone"
+                            type="tel"
+                            :disabled="!isEditing"
+                        />
 
-                                    <button type="button" @click="cancelEditing" class="btn btn-secondary">
-                                        Отмена
-                                    </button>
+                        <div class="d-flex ga-3 mt-2">
+                            <v-btn
+                                v-if="!isEditing"
+                                color="primary"
+                                prepend-icon="mdi-pencil-outline"
+                                @click="startEditing"
+                            >
+                                Edit
+                            </v-btn>
+
+                            <template v-else>
+                                <v-btn type="submit" color="success" :loading="loading" prepend-icon="mdi-check">
+                                    Save
+                                </v-btn>
+                                <v-btn variant="outlined" color="default" @click="cancelEditing"> Cancel </v-btn>
+                            </template>
+                        </div>
+                    </v-form>
+                </v-card>
+            </v-col>
+
+            <!-- Actions Card -->
+            <v-col cols="12" md="5" lg="4">
+                <v-card>
+                    <v-card-title class="text-h6">Quick Actions</v-card-title>
+                    <v-card-text class="pa-0">
+                        <v-list>
+                            <v-list-item>
+                                <template v-slot:default>
+                                    <v-list-item-title>Change Password</v-list-item-title>
+                                    <v-list-item-subtitle
+                                        >Update your password for better security</v-list-item-subtitle
+                                    >
                                 </template>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                                <template v-slot:append>
+                                    <v-btn variant="outlined" size="small">Change</v-btn>
+                                </template>
+                            </v-list-item>
 
-                <div class="profile-actions-card">
-                    <h3>Дополнительные действия</h3>
+                            <v-divider />
 
-                    <div class="action-item">
-                        <div class="action-info">
-                            <h4>Изменить пароль</h4>
-                            <p>Обновите пароль для повышения безопасности</p>
-                        </div>
-                        <button class="btn btn-outline">Изменить</button>
-                    </div>
+                            <v-list-item>
+                                <template v-slot:default>
+                                    <v-list-item-title>My Orders</v-list-item-title>
+                                    <v-list-item-subtitle>View purchase history</v-list-item-subtitle>
+                                </template>
+                                <template v-slot:append>
+                                    <v-btn variant="outlined" size="small" :to="{ name: 'Orders' }">View</v-btn>
+                                </template>
+                            </v-list-item>
 
-                    <div class="action-item">
-                        <div class="action-info">
-                            <h4>Мои заказы</h4>
-                            <p>Просмотр истории покупок</p>
-                        </div>
-                        <router-link :to="{ name: 'Orders' }" class="btn btn-outline"> Перейти </router-link>
-                    </div>
+                            <v-divider />
 
-                    <div class="action-item danger">
-                        <div class="action-info">
-                            <h4>Удалить аккаунт</h4>
-                            <p>Безвозвратное удаление учетной записи</p>
-                        </div>
-                        <button class="btn btn-danger" @click="confirmDeleteAccount">Удалить</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+                            <v-list-item>
+                                <template v-slot:default>
+                                    <v-list-item-title class="text-error">Delete Account</v-list-item-title>
+                                    <v-list-item-subtitle>Permanently delete your account</v-list-item-subtitle>
+                                </template>
+                                <template v-slot:append>
+                                    <v-btn
+                                        variant="outlined"
+                                        size="small"
+                                        color="error"
+                                        @click="showDeleteDialog = true"
+                                    >
+                                        Delete
+                                    </v-btn>
+                                </template>
+                            </v-list-item>
+                        </v-list>
+                    </v-card-text>
+                </v-card>
+            </v-col>
+        </v-row>
+
+        <!-- Delete Account Confirmation -->
+        <confirm-modal
+            v-model="showDeleteDialog"
+            title="Delete Account"
+            message="Are you sure you want to delete your account? This action cannot be undone."
+            confirm-text="Delete"
+            @confirm="deleteAccount"
+        />
+    </v-container>
 </template>
 
 <script setup>
+import ConfirmModal from '@/components/ui/ConfirmModal.vue'
 import { useAuthStore } from '@/stores'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -117,9 +153,9 @@ import { useRouter } from 'vue-router'
 const authStore = useAuthStore()
 const router = useRouter()
 
-// Reactive data
 const isEditing = ref(false)
 const loading = ref(false)
+const showDeleteDialog = ref(false)
 const profile = ref({
     firstName: '',
     lastName: '',
@@ -128,7 +164,6 @@ const profile = ref({
 })
 const originalProfile = ref({})
 
-// Computed properties
 const user = computed(() => authStore.user)
 const userInitials = computed(() => {
     const first = profile.value.firstName?.charAt(0) || ''
@@ -136,7 +171,6 @@ const userInitials = computed(() => {
     return (first + last).toUpperCase() || 'U'
 })
 
-// Methods
 const loadProfile = () => {
     if (user.value) {
         profile.value = { ...user.value }
@@ -166,12 +200,6 @@ const updateProfile = async () => {
     }
 }
 
-const confirmDeleteAccount = () => {
-    if (confirm('Вы уверены, что хотите удалить аккаунт? Это действие нельзя отменить.')) {
-        deleteAccount()
-    }
-}
-
 const deleteAccount = async () => {
     try {
         await authStore.deleteAccount()
@@ -181,255 +209,7 @@ const deleteAccount = async () => {
     }
 }
 
-// Lifecycle
 onMounted(() => {
     loadProfile()
 })
 </script>
-
-<style scoped>
-.profile-view {
-    min-height: 100vh;
-    background: #f8f9fa;
-    padding: 2rem 0;
-}
-
-.container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 0 1rem;
-}
-
-.profile-header {
-    text-align: center;
-    margin-bottom: 3rem;
-}
-
-.profile-header h1 {
-    font-size: 2.5rem;
-    font-weight: 600;
-    color: #2c3e50;
-    margin-bottom: 0.5rem;
-}
-
-.profile-subtitle {
-    color: #6c757d;
-    font-size: 1.1rem;
-}
-
-.profile-content {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 2rem;
-}
-
-.profile-card,
-.profile-actions-card {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-}
-
-.profile-avatar {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.avatar-placeholder {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    font-weight: bold;
-    color: white;
-    margin-bottom: 1rem;
-}
-
-.avatar-upload-btn {
-    display: block;
-    margin: 0 auto;
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.avatar-upload-btn:hover {
-    background: #e9ecef;
-}
-
-.profile-form {
-    max-width: 500px;
-    margin: 0 auto;
-}
-
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
-
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    color: #2c3e50;
-}
-
-.form-control {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    font-size: 1rem;
-    transition: border-color 0.3s ease;
-}
-
-.form-control:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.form-control:disabled {
-    background: #f8f9fa;
-    cursor: not-allowed;
-}
-
-.form-text {
-    color: #6c757d;
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
-}
-
-.form-actions {
-    display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
-}
-
-.btn {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.btn-primary {
-    background: #667eea;
-    color: white;
-}
-
-.btn-primary:hover {
-    background: #5a6fd8;
-}
-
-.btn-success {
-    background: #28a745;
-    color: white;
-}
-
-.btn-success:hover {
-    background: #218838;
-}
-
-.btn-secondary {
-    background: #6c757d;
-    color: white;
-}
-
-.btn-secondary:hover {
-    background: #5a6268;
-}
-
-.btn-outline {
-    background: transparent;
-    color: #667eea;
-    border: 1px solid #667eea;
-}
-
-.btn-outline:hover {
-    background: #667eea;
-    color: white;
-}
-
-.btn-danger {
-    background: #dc3545;
-    color: white;
-}
-
-.btn-danger:hover {
-    background: #c82333;
-}
-
-.profile-actions-card h3 {
-    margin-bottom: 1.5rem;
-    color: #2c3e50;
-}
-
-.action-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 0;
-    border-bottom: 1px solid #f1f3f4;
-}
-
-.action-item:last-child {
-    border-bottom: none;
-}
-
-.action-item.danger {
-    color: #dc3545;
-}
-
-.action-info h4 {
-    margin: 0 0 0.25rem 0;
-    font-size: 1rem;
-    font-weight: 500;
-}
-
-.action-info p {
-    margin: 0;
-    font-size: 0.875rem;
-    color: #6c757d;
-}
-
-@media (max-width: 768px) {
-    .profile-content {
-        grid-template-columns: 1fr;
-    }
-
-    .form-row {
-        grid-template-columns: 1fr;
-    }
-
-    .form-actions {
-        flex-direction: column;
-    }
-
-    .action-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-}
-</style>
