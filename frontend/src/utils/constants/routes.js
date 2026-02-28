@@ -1,6 +1,6 @@
 /**
  * Routes Constants
- * Константы маршрутов приложения
+ * Application route constants
  */
 
 export const ROUTE_NAMES = {

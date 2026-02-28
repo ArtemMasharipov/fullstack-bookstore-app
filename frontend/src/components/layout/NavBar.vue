@@ -101,7 +101,7 @@ const logout = async () => {
 </script>
 
 <style scoped>
-/* Обеспечиваем видимость белого текста на primary фоне */
+/* Ensure white text remains visible on primary background */
 .v-app-bar {
     color: white !important;
 }
@@ -118,7 +118,7 @@ const logout = async () => {
     color: white !important;
 }
 
-/* Стили для outlined кнопки Register */
+/* Styles for outlined Register button */
 .v-app-bar .v-btn--variant-outlined {
     border-color: white !important;
     color: white !important;

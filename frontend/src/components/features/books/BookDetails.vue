@@ -174,7 +174,7 @@ const handleAddToCart = async () => {
             price: book.value.price,
             title: book.value.title || 'Book',
         })
-        // Обновляем состояние корзины, чтобы обновить счетчик в NavBar
+        // Refresh cart state to update NavBar counter
         await cartStore.fetchCart()
         // emit('success', 'Added to cart') // Optionally emit event only
     } catch (error) {

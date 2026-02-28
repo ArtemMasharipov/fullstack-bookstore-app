@@ -1,32 +1,32 @@
 /**
- * Оптимизированная конфигурация Vuetify с tree-shaking
- * Импортируются только критически важные компоненты
- * Остальные компоненты загружаются динамически
+ * Optimized Vuetify configuration with tree-shaking
+ * Only critical components are imported
+ * Other components are loaded dynamically
  */
 
 import { createVuetify } from 'vuetify'
 
-// Критически важные компоненты (используются на каждой странице)
+// Critical components (used on every page)
 import {
-    // Алерты
+    // Alerts
     VAlert,
-    // Базовая структура приложения
+    // Base application layout
     VApp,
-    // Навигация
+    // Navigation
     VAppBar,
-    // Автокомплит
+    // Autocomplete
     VAutocomplete,
-    // Аватар
+    // Avatar
     VAvatar,
 
-    // Бейдж
+    // Badge
     VBadge,
-    // Нижняя навигация
+    // Bottom navigation
     VBottomNavigation,
-    // Хлебные крошки
+    // Breadcrumbs
     VBreadcrumbs,
     VBreadcrumbsItem,
-    // Основные компоненты
+    // Core components
     VBtn,
     VCard,
     VCardActions,
@@ -35,101 +35,101 @@ import {
     VCardText,
     VCardTitle,
     VCheckbox,
-    // Чипы
+    // Chips
     VChip,
     VCol,
-    // Комбобокс
+    // Combobox
     VCombobox,
     VContainer,
-    // Таблицы (только для админки)
+    // Data tables (admin only)
     VDataTable,
-    // Диалоги и модальные окна
+    // Dialogs and modals
     VDialog,
-    // Разделители
+    // Dividers
     VDivider,
     VExpansionPanel,
     VExpansionPanelText,
     VExpansionPanelTitle,
-    // Расширяемые панели
+    // Expansion panels
     VExpansionPanels,
-    // Файловый ввод
+    // File input
     VFileInput,
-    // Футер
+    // Footer
     VFooter,
-    // Формы
+    // Forms
     VForm,
-    // Иконки и изображения
+    // Icons and images
     VIcon,
     VImg,
-    // Списки
+    // Lists
     VList,
     VListItem,
     VListItemSubtitle,
     VListItemTitle,
     VMain,
-    // Меню
+    // Menus
     VMenu,
     VNavigationDrawer,
-    // Оверлей
+    // Overlay
     VOverlay,
-    // Пагинация
+    // Pagination
     VPagination,
-    // Прогресс
+    // Progress
     VProgressCircular,
     VProgressLinear,
-    // Радио
+    // Radio
     VRadio,
     VRadioGroup,
-    // Рейтинг
+    // Rating
     VRating,
-    // Сетка
+    // Grid
     VRow,
     VSelect,
-    // Лист
+    // Sheet
     VSheet,
-    // Скелетон лоадер
+    // Skeleton loader
     VSkeletonLoader,
-    // Слайд группа
+    // Slide group
     VSlideGroup,
     VSlideGroupItem,
-    // Слайдер
+    // Slider
     VSlider,
 
-    // Снакбар
+    // Snackbar
     VSnackbar,
 
-    // Спасер
+    // Spacer
     VSpacer,
     VSwitch,
     VTab,
-    // Табы
+    // Tabs
     VTabs,
     VTextField,
     VTextarea,
-    // Тулбар
+    // Toolbar
     VToolbar,
     VToolbarTitle,
 
-    // Тултип
+    // Tooltip
     VTooltip,
 } from 'vuetify/components'
 
-// Импорт необходимых директив
+// Import required directives
 import { Intersect, Ripple } from 'vuetify/directives'
 
-// Создание оптимизированной конфигурации Vuetify
+// Create optimized Vuetify configuration
 export const vuetify = createVuetify({
     components: {
-        // Базовая структура приложения
+        // Base application layout
         VApp,
         VMain,
         VContainer,
 
-        // Навигация
+        // Navigation
         VAppBar,
         VNavigationDrawer,
 
-        // Основные компоненты
+        // Core components
         VBtn,
         VCard,
         VCardActions,
@@ -138,7 +138,7 @@ export const vuetify = createVuetify({
         VCardText,
         VCardTitle,
 
-        // Формы
+        // Forms
         VForm,
         VTextField,
         VTextarea,
@@ -146,113 +146,113 @@ export const vuetify = createVuetify({
         VCheckbox,
         VSwitch,
 
-        // Сетка
+        // Grid
         VRow,
         VCol,
 
-        // Иконки и изображения
+        // Icons and images
         VIcon,
         VImg,
 
-        // Диалоги и модальные окна
+        // Dialogs and modals
         VDialog,
 
-        // Списки
+        // Lists
         VList,
         VListItem,
         VListItemTitle,
         VListItemSubtitle,
 
-        // Разделители
+        // Dividers
         VDivider,
 
-        // Прогресс
+        // Progress
         VProgressCircular,
         VProgressLinear,
 
-        // Чипы
+        // Chips
         VChip,
 
-        // Пагинация
+        // Pagination
         VPagination,
 
-        // Алерты
+        // Alerts
         VAlert,
 
-        // Меню
+        // Menus
         VMenu,
 
-        // Файловый ввод
+        // File input
         VFileInput,
 
-        // Автокомплит
+        // Autocomplete
         VAutocomplete,
 
-        // Таблицы (только для админки)
+        // Data tables (admin only)
         VDataTable,
 
-        // Аватар
+        // Avatar
         VAvatar,
 
-        // Бейдж
+        // Badge
         VBadge,
 
-        // Футер
+        // Footer
         VFooter,
 
-        // Хлебные крошки
+        // Breadcrumbs
         VBreadcrumbs,
         VBreadcrumbsItem,
 
-        // Расширяемые панели
+        // Expansion panels
         VExpansionPanels,
         VExpansionPanel,
         VExpansionPanelTitle,
         VExpansionPanelText,
 
-        // Комбобокс
+        // Combobox
         VCombobox,
 
-        // Оверлей
+        // Overlay
         VOverlay,
 
-        // Нижняя навигация
+        // Bottom navigation
         VBottomNavigation,
 
-        // Скелетон лоадер
+        // Skeleton loader
         VSkeletonLoader,
 
-        // Слайдер
+        // Slider
         VSlider,
 
-        // Снакбар
+        // Snackbar
         VSnackbar,
 
-        // Спасер
+        // Spacer
         VSpacer,
 
-        // Табы
+        // Tabs
         VTabs,
         VTab,
 
-        // Тулбар
+        // Toolbar
         VToolbar,
         VToolbarTitle,
 
-        // Тултип
+        // Tooltip
         VTooltip,
 
-        // Лист
+        // Sheet
         VSheet,
 
-        // Слайд группа
+        // Slide group
         VSlideGroup,
         VSlideGroupItem,
 
-        // Рейтинг
+        // Rating
         VRating,
 
-        // Радио
+        // Radio
         VRadio,
         VRadioGroup,
     },

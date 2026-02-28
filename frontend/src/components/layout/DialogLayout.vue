@@ -18,7 +18,7 @@ import { computed } from 'vue'
 
 /**
  * DialogLayout component for handling app-level dialogs
- * Now uses useDialog composable instead of ui store (ЭТАП 2)
+ * Now uses useDialog composable instead of ui store (PHASE 2)
  */
 
 // Dialog composable

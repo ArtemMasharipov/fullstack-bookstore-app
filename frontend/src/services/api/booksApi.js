@@ -2,7 +2,7 @@ import baseApi from './baseApi'
 
 /**
  * Books API - direct axios implementation
- * No factory abstractions (ЭТАП 3)
+ * No factory abstractions (PHASE 3)
  */
 export const booksApi = {
     fetchAll: (params) => baseApi.get('/books', { params }).then((res) => res.data),

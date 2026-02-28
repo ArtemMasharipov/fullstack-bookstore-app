@@ -6,7 +6,7 @@ import { errorRoutes } from './routes/errors.js'
 import { ordersRoutes } from './routes/orders.js'
 import { publicRoutes } from './routes/public.js'
 
-// Объединяем все маршруты
+// Combine all routes
 const routes = [...publicRoutes, ...authRoutes, ...ordersRoutes, ...adminRoutes, ...errorRoutes]
 
 const router = createRouter({

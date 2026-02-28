@@ -29,7 +29,7 @@ export const useAuthorsStore = defineStore('authors', {
     }),
 
     getters: {
-        // Все простые getters удалены - используйте storeToRefs для прямого доступа к state
+        // All simple getters removed - use storeToRefs for direct state access
     },
 
     actions: {

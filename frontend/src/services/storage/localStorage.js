@@ -1,13 +1,13 @@
 /**
  * Local Storage Service
- * Утилиты для работы с localStorage
+ * Utilities for working with localStorage
  */
 
 export const localStorage = {
     /**
-     * Получить значение из localStorage
-     * @param {string} key - ключ
-     * @param {any} defaultValue - значение по умолчанию
+     * Get value from localStorage
+     * @param {string} key - key
+     * @param {any} defaultValue - default value
      * @returns {any}
      */
     get(key, defaultValue = null) {
@@ -21,9 +21,9 @@ export const localStorage = {
     },
 
     /**
-     * Сохранить значение в localStorage
-     * @param {string} key - ключ
-     * @param {any} value - значение
+     * Save value to localStorage
+     * @param {string} key - key
+     * @param {any} value - value
      */
     set(key, value) {
         try {
@@ -34,8 +34,8 @@ export const localStorage = {
     },
 
     /**
-     * Удалить значение из localStorage
-     * @param {string} key - ключ
+     * Remove value from localStorage
+     * @param {string} key - key
      */
     remove(key) {
         try {
@@ -46,7 +46,7 @@ export const localStorage = {
     },
 
     /**
-     * Очистить localStorage
+     * Clear localStorage
      */
     clear() {
         try {

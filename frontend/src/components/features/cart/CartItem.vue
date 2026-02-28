@@ -139,7 +139,7 @@ const remove = async () => {
     removing.value = true
     try {
         await cartStore.removeFromCart(bookIdForApi.value ?? props.item._id, bookTitle.value)
-        // После удаления элемента обновляем счетчик корзины
+        // After removing an item, update the cart counter
         await cartStore.fetchCart()
     } catch (error) {
         // Failed to remove item
@@ -176,7 +176,7 @@ const handleQuantityChange = (quantity) => {
             title: bookTitle.value,
         })
         .then(() => {
-            // После обновления количества обновляем счетчик корзины
+            // After updating quantity, update the cart counter
             return cartStore.fetchCart()
         })
         .catch((error) => {

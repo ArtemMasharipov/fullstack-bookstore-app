@@ -1,6 +1,6 @@
 /**
  * Admin Routes
- * Административные маршруты
+ * Admin routes
  */
 
 import { adminGuard } from '../guards/admin.js'

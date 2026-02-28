@@ -150,13 +150,13 @@ const handleAddToCart = async () => {
     loading.value = true
     try {
         await cartStore.addToCart({
-            bookId: props.book.id || props.book._id, // Поддержка старых данных
+            bookId: props.book.id || props.book._id, // Support legacy data
             quantity: 1,
             price: props.book.price,
             title: props.book.title || 'Book',
         })
-        // Не нужно вызывать toast тут, так как он уже вызывается в store
-        // Обновляем состояние корзины, чтобы обновить счетчик в NavBar
+        // No need to call toast here because it is already called in the store
+        // Refresh cart state to update NavBar counter
         await cartStore.fetchCart()
         emit('add-to-cart') // Emit just the add-to-cart event
     } catch (error) {

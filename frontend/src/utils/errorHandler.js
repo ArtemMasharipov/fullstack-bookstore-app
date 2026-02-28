@@ -1,18 +1,18 @@
 /**
  * Centralized Error Handler for Frontend
- * Единая точка обработки всех ошибок в frontend приложении
+ * Single point for handling all errors in the frontend app
  *
- * Принципы:
- * - Single Responsibility: только обработка ошибок
- * - Consistency: одинаковый формат ошибок
- * - User Experience: понятные сообщения для пользователя
- * - Logging: централизованное логирование
+ * Principles:
+ * - Single Responsibility: handles errors only
+ * - Consistency: uniform error format
+ * - User Experience: clear messages for users
+ * - Logging: centralized logging
  */
 
 import { logger } from './logger'
 
 /**
- * Типы ошибок
+ * Error types
  */
 export const ERROR_TYPES = {
     NETWORK: 'NETWORK_ERROR',
@@ -25,7 +25,7 @@ export const ERROR_TYPES = {
 }
 
 /**
- * Коды ошибок HTTP
+ * HTTP error codes
  */
 export const HTTP_STATUS = {
     BAD_REQUEST: 400,
@@ -39,7 +39,7 @@ export const HTTP_STATUS = {
 }
 
 /**
- * Класс для ошибок приложения
+ * Application error class
  */
 export class AppError extends Error {
     constructor(message, type = ERROR_TYPES.UNKNOWN, statusCode = 500, details = null) {
@@ -53,33 +53,33 @@ export class AppError extends Error {
 }
 
 /**
- * Централизованный обработчик ошибок
+ * Centralized error handler
  */
 export class ErrorHandler {
     /**
-     * Обработка ошибки
-     * @param {Error|AppError} error - Ошибка
-     * @param {Object} context - Контекст (компонент, действие)
-     * @returns {Object} - Нормализованная ошибка
+     * Handle an error
+     * @param {Error|AppError} error - Error
+     * @param {Object} context - Context (component, action)
+     * @returns {Object} - Normalized error
      */
     static handle(error, context = {}) {
-        // Логирование ошибки
+        // Error logging
         this.logError(error, context)
 
-        // Нормализация ошибки
+        // Error normalization
         const normalizedError = this.normalizeError(error)
 
-        // Возврат нормализованной ошибки
+        // Return normalized error
         return normalizedError
     }
 
     /**
-     * Нормализация ошибки
-     * @param {Error} error - Исходная ошибка
-     * @returns {Object} - Нормализованная ошибка
+     * Error normalization
+     * @param {Error} error - Original error
+     * @returns {Object} - Normalized error
      */
     static normalizeError(error) {
-        // Если это уже наша ошибка
+        // If this is already an AppError
         if (error instanceof AppError) {
             return {
                 type: error.type,
@@ -91,7 +91,7 @@ export class ErrorHandler {
             }
         }
 
-        // Обработка сетевых ошибок
+        // Handle network errors
         if (error.message === 'Network Error' || !error.response) {
             return {
                 type: ERROR_TYPES.NETWORK,
@@ -103,7 +103,7 @@ export class ErrorHandler {
             }
         }
 
-        // Обработка HTTP ошибок
+        // Handle HTTP errors
         if (error.response) {
             const { status, data } = error.response
 
@@ -117,7 +117,7 @@ export class ErrorHandler {
             }
         }
 
-        // Неизвестная ошибка
+        // Unknown error
         return {
             type: ERROR_TYPES.UNKNOWN,
             message: error.message || 'Unknown error occurred',
@@ -129,9 +129,9 @@ export class ErrorHandler {
     }
 
     /**
-     * Определение типа ошибки по статусу
-     * @param {number} status - HTTP статус
-     * @returns {string} - Тип ошибки
+     * Determine error type by status
+     * @param {number} status - HTTP status
+     * @returns {string} - Error type
      */
     static getErrorType(status) {
         switch (status) {
@@ -155,10 +155,10 @@ export class ErrorHandler {
     }
 
     /**
-     * Получение пользовательского сообщения
-     * @param {string} type - Тип ошибки
-     * @param {string} message - Сообщение ошибки
-     * @returns {string} - Пользовательское сообщение
+     * Get user-facing message
+     * @param {string} type - Error type
+     * @param {string} message - Error message
+     * @returns {string} - User-facing message
      */
     static getUserMessage(type, message) {
         const messages = {
@@ -175,9 +175,9 @@ export class ErrorHandler {
     }
 
     /**
-     * Логирование ошибки
-     * @param {Error} error - Ошибка
-     * @param {Object} context - Контекст
+     * Error logging
+     * @param {Error} error - Error
+     * @param {Object} context - Context
      */
     static logError(error, context = {}) {
         const errorInfo = {
@@ -198,9 +198,9 @@ export class ErrorHandler {
     }
 
     /**
-     * Создание ошибки валидации
-     * @param {string} message - Сообщение
-     * @param {Object} details - Детали
+     * Create validation error
+     * @param {string} message - Message
+     * @param {Object} details - Details
      * @returns {AppError}
      */
     static createValidationError(message, details = null) {
@@ -208,8 +208,8 @@ export class ErrorHandler {
     }
 
     /**
-     * Создание ошибки аутентификации
-     * @param {string} message - Сообщение
+     * Create authentication error
+     * @param {string} message - Message
      * @returns {AppError}
      */
     static createAuthError(message = 'Authentication required') {
@@ -217,8 +217,8 @@ export class ErrorHandler {
     }
 
     /**
-     * Создание ошибки авторизации
-     * @param {string} message - Сообщение
+     * Create authorization error
+     * @param {string} message - Message
      * @returns {AppError}
      */
     static createAuthorizationError(message = 'Access forbidden') {
@@ -226,8 +226,8 @@ export class ErrorHandler {
     }
 
     /**
-     * Создание ошибки "не найдено"
-     * @param {string} message - Сообщение
+     * Create not-found error
+     * @param {string} message - Message
      * @returns {AppError}
      */
     static createNotFoundError(message = 'Resource not found') {
@@ -235,8 +235,8 @@ export class ErrorHandler {
     }
 
     /**
-     * Создание сетевой ошибки
-     * @param {string} message - Сообщение
+     * Create network error
+     * @param {string} message - Message
      * @returns {AppError}
      */
     static createNetworkError(message = 'Network error') {
@@ -245,7 +245,7 @@ export class ErrorHandler {
 }
 
 /**
- * Хук для обработки ошибок в Vue компонентах
+ * Hook for handling errors in Vue components
  */
 export function useErrorHandler() {
     const handleError = (error, context = {}) => {
@@ -278,15 +278,15 @@ export function useErrorHandler() {
 }
 
 /**
- * Глобальный обработчик необработанных ошибок
+ * Global handler for uncaught errors
  */
 export function setupGlobalErrorHandling() {
-    // Обработка необработанных ошибок
+    // Handle uncaught errors
     window.addEventListener('error', (event) => {
         ErrorHandler.handle(event.error, { type: 'unhandled_error' })
     })
 
-    // Обработка необработанных промисов
+    // Handle unhandled promise rejections
     window.addEventListener('unhandledrejection', (event) => {
         ErrorHandler.handle(event.reason, { type: 'unhandled_promise_rejection' })
     })
