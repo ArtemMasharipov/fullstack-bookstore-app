@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="2" height="100%" hover @click="emit('click', book.id ?? book._id)">
+    <v-card class="book-card" elevation="2" height="100%" hover @click="emit('click', book.id ?? book._id)">
         <v-img
             :src="book.image || placeholderImage"
             :alt="book.title || 'No image available'"
@@ -36,7 +36,7 @@
                 {{ book.description }}
             </p>
             <div class="d-flex align-center justify-space-between mt-3">
-                <div class="text-subtitle-1 font-weight-bold">
+                <div class="text-subtitle-1 font-weight-bold text-secondary">
                     {{ formatPriceMethod(book.price) }}
                 </div>
 
@@ -68,14 +68,14 @@
                 <v-col cols="12" class="mt-2">
                     <v-btn
                         v-if="book.inStock"
-                        color="primary"
+                        :color="added ? 'success' : 'primary'"
                         block
-                        prepend-icon="mdi-cart"
+                        :prepend-icon="added ? 'mdi-check' : 'mdi-cart'"
                         :disabled="!canAddToCart"
                         :loading="loading"
                         @click.stop="handleAddToCart"
                     >
-                        Add to Cart
+                        {{ added ? 'Added!' : 'Add to Cart' }}
                     </v-btn>
                 </v-col>
             </v-row>
@@ -124,16 +124,13 @@ const authStore = useAuthStore()
 
 // Reactive state
 const loading = ref(false)
+const added = ref(false)
 
 // Computed properties
 /**
  * Determines if user can add book to cart
  */
-const canAddToCart = computed(() => {
-    if (loading.value || !props.book.inStock) return false
-    // Guests can add to local cart; authenticated users need permission
-    return !authStore.isAuthenticated || authStore.hasPermission('create:cart')
-})
+const canAddToCart = computed(() => !loading.value && props.book.inStock)
 
 // Methods
 /**
@@ -159,6 +156,10 @@ const handleAddToCart = async () => {
             image: props.book.image,
         })
         emit('add-to-cart')
+        added.value = true
+        setTimeout(() => {
+            added.value = false
+        }, 2000)
     } catch (error) {
         // Failed to add to cart
     } finally {
@@ -168,6 +169,21 @@ const handleAddToCart = async () => {
 </script>
 
 <style scoped>
+.book-card {
+    transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.book-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg, 0 8px 24px rgba(27, 42, 74, 0.12)) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .book-card:hover {
+        transform: none;
+    }
+}
+
 .text-truncate-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;

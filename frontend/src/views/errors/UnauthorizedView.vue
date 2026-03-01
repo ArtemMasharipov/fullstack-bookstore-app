@@ -2,11 +2,11 @@
     <v-container class="fill-height">
         <v-row justify="center" align="center">
             <v-col cols="12" sm="8" md="6" class="text-center">
-                <v-icon icon="mdi-book-off-outline" size="80" color="primary" class="mb-4" />
-                <h1 class="text-h2 font-weight-bold mb-2">404</h1>
-                <h2 class="text-h5 text-medium-emphasis mb-4">Page Not Found</h2>
+                <v-icon icon="mdi-shield-lock-outline" size="80" color="error" class="mb-4" />
+                <h1 class="text-h2 font-weight-bold mb-2">403</h1>
+                <h2 class="text-h5 text-medium-emphasis mb-4">Access Denied</h2>
                 <p class="text-body-1 text-medium-emphasis mb-8">
-                    The page you're looking for doesn't exist or has been moved.
+                    You don't have permission to view this page. Please sign in or contact support.
                 </p>
                 <div class="d-flex justify-center ga-3">
                     <v-btn color="primary" :to="{ name: 'Home' }" prepend-icon="mdi-home-outline"> Go Home </v-btn>

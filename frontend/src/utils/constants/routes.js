@@ -1,10 +1,17 @@
 /**
- * Routes Constants
- * Application route constants
+ * Route constants — derived from the route manifest.
+ *
+ * ROUTE_NAMES  Use with { name: ROUTE_NAMES.X } in router.push / <router-link>.
+ * ROUTE_PATHS  Use for string comparisons (e.g. in axios interceptors).
+ *
+ * Rules:
+ *  - Every name/path here must match an `id`/`path` in router/manifest.js.
+ *  - Never add entries for routes that do not exist in the manifest.
+ *  - Never use raw string literals for navigation — always use these constants.
  */
 
 export const ROUTE_NAMES = {
-    // Public routes
+    // Public
     HOME: 'Home',
     BOOKS: 'Books',
     BOOK_DETAILS: 'BookDetails',
@@ -12,34 +19,33 @@ export const ROUTE_NAMES = {
     AUTHOR_DETAILS: 'AuthorDetails',
     CART: 'Cart',
     CHECKOUT: 'Checkout',
-    CONTACT: 'Contact',
-    ABOUT: 'About',
-    PRIVACY: 'Privacy',
 
-    // Auth routes
+    // Auth
     LOGIN: 'Login',
     REGISTER: 'Register',
     PROFILE: 'Profile',
 
-    // Order routes
+    // Orders
     ORDERS: 'Orders',
     ORDER_DETAILS: 'OrderDetails',
     ORDER_STATUS: 'OrderStatus',
 
-    // Admin routes
+    // Admin
     ADMIN_DASHBOARD: 'AdminDashboard',
     ADMIN_BOOKS: 'AdminBooks',
     ADMIN_AUTHORS: 'AdminAuthors',
     ADMIN_ORDERS: 'AdminOrders',
     ADMIN_USERS: 'AdminUsers',
+    ADMIN_SETTINGS: 'AdminSettings',
 
-    // Error routes
-    NOT_FOUND: 'NotFound',
+    // Errors
     ERROR: 'Error',
+    UNAUTHORIZED: 'Unauthorized',
+    NOT_FOUND: 'NotFound',
 }
 
 export const ROUTE_PATHS = {
-    // Public paths
+    // Public
     HOME: '/',
     BOOKS: '/books',
     BOOK_DETAILS: '/books/:id',
@@ -47,28 +53,26 @@ export const ROUTE_PATHS = {
     AUTHOR_DETAILS: '/authors/:id',
     CART: '/cart',
     CHECKOUT: '/checkout',
-    CONTACT: '/contact',
-    ABOUT: '/about',
-    PRIVACY: '/privacy',
 
-    // Auth paths
+    // Auth
     LOGIN: '/login',
     REGISTER: '/register',
     PROFILE: '/profile',
 
-    // Order paths
+    // Orders
     ORDERS: '/orders',
     ORDER_DETAILS: '/orders/:id',
     ORDER_STATUS: '/orders/:id/status',
 
-    // Admin paths
+    // Admin
     ADMIN_DASHBOARD: '/admin',
     ADMIN_BOOKS: '/admin/books',
     ADMIN_AUTHORS: '/admin/authors',
     ADMIN_ORDERS: '/admin/orders',
     ADMIN_USERS: '/admin/users',
+    ADMIN_SETTINGS: '/admin/settings',
 
-    // Error paths
-    NOT_FOUND: '/:pathMatch(.*)*',
+    // Errors
     ERROR: '/error',
+    UNAUTHORIZED: '/unauthorized',
 }

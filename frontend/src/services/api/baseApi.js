@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { ROUTE_PATHS } from '@/utils/constants/routes'
 
 /**
  * Base Axios instance with interceptors
@@ -49,9 +50,9 @@ baseApi.interceptors.response.use(
         // Unauthorized - redirect to login
         if (status === 401) {
             const currentPath = window.location.pathname
-            if (currentPath !== '/login' && currentPath !== '/register') {
+            if (currentPath !== ROUTE_PATHS.LOGIN && currentPath !== ROUTE_PATHS.REGISTER) {
                 localStorage.removeItem('token')
-                window.location.href = '/login'
+                window.location.href = ROUTE_PATHS.LOGIN
             }
         }
 

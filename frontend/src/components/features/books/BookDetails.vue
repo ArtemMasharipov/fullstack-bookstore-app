@@ -14,12 +14,12 @@
                         :alt="book.title || 'No image available'"
                         aspect-ratio="3/4"
                         cover
-                        class="rounded elevation-3"
+                        class="rounded-lg elevation-3"
                     ></v-img>
                 </v-col>
 
                 <v-col cols="12" sm="8" md="9">
-                    <h1 class="text-h4 mb-2">{{ book.title || 'No Title' }}</h1>
+                    <h1 class="text-h4 font-weight-bold mb-2">{{ book.title || 'No Title' }}</h1>
 
                     <v-btn
                         v-if="book.author?.id"
@@ -31,50 +31,89 @@
                         {{ book.author?.name || 'Unknown Author' }}
                     </v-btn>
 
-                    <v-row class="mb-3">
-                        <v-col cols="auto">
-                            <v-chip size="small" color="secondary" variant="tonal">
-                                Published: {{ book.publicationYear || 'N/A' }}
-                            </v-chip>
-                        </v-col>
-
-                        <v-col v-if="book.category" cols="auto">
-                            <v-chip size="small" color="secondary" variant="tonal">
-                                Category: {{ book.category }}
-                            </v-chip>
-                        </v-col>
-                    </v-row>
-
-                    <div class="d-flex align-center mb-4">
-                        <div class="text-h5 font-weight-bold primary--text mr-4">
-                            {{ formatPrice(book.price) }}
-                        </div>
-
+                    <div class="d-flex flex-wrap ga-2 mb-4">
+                        <v-chip size="small" color="secondary" variant="tonal" prepend-icon="mdi-calendar">
+                            {{ book.publicationYear || 'N/A' }}
+                        </v-chip>
+                        <v-chip
+                            v-if="book.category"
+                            size="small"
+                            color="secondary"
+                            variant="tonal"
+                            prepend-icon="mdi-tag"
+                        >
+                            {{ book.category }}
+                        </v-chip>
                         <v-chip :color="book.inStock ? 'success' : 'error'" size="small">
                             {{ book.inStock ? 'In Stock' : 'Out of Stock' }}
                         </v-chip>
                     </div>
 
-                    <v-card v-if="book.description" variant="outlined" class="mb-4 bg-grey-lighten-4">
-                        <v-card-text>
-                            {{ book.description }}
-                        </v-card-text>
-                    </v-card>
+                    <div class="text-h4 font-weight-bold text-secondary mb-4">
+                        {{ formatPrice(book.price) }}
+                    </div>
 
-                    <v-row>
-                        <v-col cols="12">
+                    <p v-if="book.description" class="text-body-1 text-medium-emphasis mb-6">
+                        {{ book.description }}
+                    </p>
+
+                    <!-- Add to cart section -->
+                    <div v-if="book.inStock" class="d-flex align-center ga-3 mb-4" style="max-width: 360px">
+                        <div class="d-flex align-center">
                             <v-btn
-                                v-if="book.inStock"
-                                color="primary"
-                                block
-                                :loading="loading"
-                                @click="handleAddToCart"
-                                prepend-icon="mdi-cart-plus"
-                            >
-                                Add to Cart
-                            </v-btn>
-                        </v-col>
-                    </v-row>
+                                icon="mdi-minus"
+                                density="compact"
+                                variant="outlined"
+                                size="small"
+                                :disabled="quantity <= 1"
+                                aria-label="Decrease quantity"
+                                @click="quantity--"
+                            />
+                            <span class="text-body-1 font-weight-medium mx-3" aria-live="polite">{{ quantity }}</span>
+                            <v-btn
+                                icon="mdi-plus"
+                                density="compact"
+                                variant="outlined"
+                                size="small"
+                                aria-label="Increase quantity"
+                                @click="quantity++"
+                            />
+                        </div>
+
+                        <v-btn
+                            size="large"
+                            :loading="adding"
+                            :prepend-icon="added ? 'mdi-check' : 'mdi-cart-plus'"
+                            :color="added ? 'success' : 'primary'"
+                            class="flex-grow-1"
+                            @click="handleAddToCart"
+                        >
+                            {{ added ? 'Added!' : 'Add to Cart' }}
+                        </v-btn>
+                    </div>
+
+                    <v-alert
+                        v-else
+                        type="warning"
+                        variant="tonal"
+                        density="compact"
+                        class="mb-4"
+                        style="max-width: 360px"
+                    >
+                        This book is currently out of stock.
+                    </v-alert>
+
+                    <!-- Trust cues -->
+                    <div class="d-flex flex-wrap ga-4 mt-2">
+                        <div class="d-flex align-center ga-1 text-caption text-medium-emphasis">
+                            <v-icon size="16">mdi-truck-delivery-outline</v-icon>
+                            Free shipping over $50
+                        </div>
+                        <div class="d-flex align-center ga-1 text-caption text-medium-emphasis">
+                            <v-icon size="16">mdi-autorenew</v-icon>
+                            30-day returns
+                        </div>
+                    </div>
                 </v-col>
             </v-row>
 
@@ -82,7 +121,7 @@
 
             <v-row v-if="relatedBooks && relatedBooks.length > 0">
                 <v-col cols="12">
-                    <h2 class="text-h5 mb-4">Related Books</h2>
+                    <h2 class="text-h5 font-weight-bold mb-4">Related Books</h2>
 
                     <v-slide-group v-if="!loading" show-arrows>
                         <v-slide-group-item
@@ -90,7 +129,7 @@
                             :key="relatedBook?.id || `related-book-${index}`"
                             v-slot="{}"
                         >
-                            <div class="pa-2">
+                            <div class="pa-2" style="width: 250px">
                                 <book-card
                                     v-if="relatedBook"
                                     :book="relatedBook"
@@ -112,11 +151,11 @@
 import BookCard from '@/components/features/books/BookCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { useBooksStore, useCartStore } from '@/stores'
+import { formatPrice } from '@/utils'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-// Props
 const props = defineProps({
     bookId: {
         type: String,
@@ -124,77 +163,58 @@ const props = defineProps({
     },
 })
 
-// Router
 const router = useRouter()
-
-// Store setup
 const booksStore = useBooksStore()
 const cartStore = useCartStore()
 
-// Reactive state extraction
 const { currentBook, loading, error } = storeToRefs(booksStore)
 
-// Reactive state
 const placeholderImage = ref('/images/placeholder.png')
+const quantity = ref(1)
+const adding = ref(false)
+const added = ref(false)
 
-// Computed properties
 const book = computed(() => currentBook.value)
-
-const relatedBooks = computed(() => {
-    return book.value ? book.value.relatedBooks || [] : []
-})
+const relatedBooks = computed(() => (book.value ? book.value.relatedBooks || [] : []))
 
 const breadcrumbItems = computed(() => [
-    {
-        title: 'Books',
-        to: '/books',
-    },
-    {
-        title: book.value?.title || 'Unknown Title',
-        disabled: true,
-    },
+    { title: 'Books', to: '/books' },
+    { title: book.value?.title || 'Unknown Title', disabled: true },
 ])
 
-// Methods
-const fetchBook = (id) => {
-    return booksStore.fetchBookById(id)
-}
-
-const addToCart = (item) => {
-    return cartStore.addToCart(item)
-}
+const fetchBook = (id) => booksStore.fetchBookById(id)
 
 const handleAddToCart = async () => {
-    if (!book.value.inStock) return
+    if (!book.value.inStock || adding.value) return
 
+    adding.value = true
     try {
-        await addToCart({
+        await cartStore.addToCart({
             bookId: book.value.id || book.value._id,
-            quantity: 1,
+            quantity: quantity.value,
             price: book.value.price,
             title: book.value.title || 'Book',
             image: book.value.image,
         })
+        added.value = true
+        setTimeout(() => {
+            added.value = false
+        }, 2000)
     } catch (error) {
         // Failed to add to cart
+    } finally {
+        adding.value = false
     }
 }
 
-const formatPrice = (price) => {
-    return price ? `${price} грн` : 'Price not available'
+const navigateToBook = (navBook) => {
+    if (navBook.id === props.bookId) return
+    router.push(`/books/${navBook.id}`)
+    fetchBook(navBook.id)
+    quantity.value = 1
+    added.value = false
 }
 
-const navigateToBook = (book) => {
-    // Prevent navigation if we're already on this book
-    if (book.id === props.bookId) return
-
-    // Navigate to the new book and refresh the page
-    router.push(`/books/${book.id}`)
-    // Fetch the new book data
-    fetchBook(book.id)
-}
-
-// Lifecycle
 onMounted(() => {
     fetchBook(props.bookId)
 })

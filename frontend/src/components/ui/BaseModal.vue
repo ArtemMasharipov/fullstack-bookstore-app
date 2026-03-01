@@ -16,6 +16,7 @@
                     icon="mdi-close"
                     size="small"
                     variant="text"
+                    aria-label="Close dialog"
                     @click="close"
                     class="ml-auto"
                 ></v-btn>
