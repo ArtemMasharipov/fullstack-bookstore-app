@@ -68,14 +68,14 @@
                 <v-col cols="12" class="mt-2">
                     <v-btn
                         v-if="book.inStock"
-                        color="primary"
+                        :color="added ? 'success' : 'primary'"
                         block
-                        prepend-icon="mdi-cart"
+                        :prepend-icon="added ? 'mdi-check' : 'mdi-cart'"
                         :disabled="!canAddToCart"
                         :loading="loading"
                         @click.stop="handleAddToCart"
                     >
-                        Add to Cart
+                        {{ added ? 'Added!' : 'Add to Cart' }}
                     </v-btn>
                 </v-col>
             </v-row>
@@ -124,6 +124,7 @@ const authStore = useAuthStore()
 
 // Reactive state
 const loading = ref(false)
+const added = ref(false)
 
 // Computed properties
 /**
@@ -155,6 +156,10 @@ const handleAddToCart = async () => {
             image: props.book.image,
         })
         emit('add-to-cart')
+        added.value = true
+        setTimeout(() => {
+            added.value = false
+        }, 2000)
     } catch (error) {
         // Failed to add to cart
     } finally {

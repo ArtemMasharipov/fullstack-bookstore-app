@@ -14,6 +14,7 @@ import {
     VApp,
     // Navigation
     VAppBar,
+    VAppBarNavIcon,
     // Autocomplete
     VAutocomplete,
     // Avatar
@@ -127,6 +128,7 @@ export const vuetify = createVuetify({
 
         // Navigation
         VAppBar,
+        VAppBarNavIcon,
         VNavigationDrawer,
 
         // Core components
