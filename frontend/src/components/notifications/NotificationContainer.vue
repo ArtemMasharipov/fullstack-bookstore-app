@@ -7,7 +7,8 @@
                 size="small"
                 variant="text"
                 color="grey"
-                title="Очистить все уведомления"
+                title="Clear all notifications"
+                aria-label="Clear all notifications"
                 @click="clear"
             >
                 <v-icon icon="mdi-close-circle" />

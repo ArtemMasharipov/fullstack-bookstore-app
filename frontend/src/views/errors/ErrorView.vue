@@ -1,33 +1,36 @@
 <template>
-    <div class="error-view">
-        <div class="error-container">
-            <div class="error-icon">
-                <svg width="120" height="120" viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
-                    />
-                </svg>
-            </div>
+    <v-container class="fill-height">
+        <v-row justify="center" align="center">
+            <v-col cols="12" sm="8" md="6" class="text-center">
+                <v-icon icon="mdi-alert-circle-outline" size="80" color="error" class="mb-4" />
+                <h1 class="text-h2 font-weight-bold mb-2">Oops!</h1>
+                <h2 class="text-h5 text-medium-emphasis mb-4">Something went wrong</h2>
+                <p class="text-body-1 text-medium-emphasis mb-6">
+                    An unexpected error occurred. We're already working on fixing it.
+                </p>
 
-            <h1 class="error-title">Упс!</h1>
-            <h2 class="error-subtitle">Что-то пошло не так</h2>
+                <v-expand-transition>
+                    <v-alert
+                        v-if="errorMessage"
+                        type="error"
+                        variant="tonal"
+                        class="text-left mb-6"
+                        closable
+                        density="compact"
+                    >
+                        <pre class="text-caption" style="white-space: pre-wrap; word-break: break-word">{{
+                            errorMessage
+                        }}</pre>
+                    </v-alert>
+                </v-expand-transition>
 
-            <p class="error-message">Произошла неожиданная ошибка. Мы уже работаем над её устранением.</p>
-
-            <div class="error-details" v-if="errorMessage">
-                <details>
-                    <summary>Подробности ошибки</summary>
-                    <pre>{{ errorMessage }}</pre>
-                </details>
-            </div>
-
-            <div class="error-actions">
-                <router-link :to="{ name: 'Home' }" class="btn btn-primary"> На главную </router-link>
-
-                <button @click="reloadPage" class="btn btn-secondary">Обновить страницу</button>
-            </div>
-        </div>
-    </div>
+                <div class="d-flex justify-center ga-3">
+                    <v-btn color="primary" :to="{ name: 'Home' }" prepend-icon="mdi-home-outline"> Go Home </v-btn>
+                    <v-btn variant="outlined" prepend-icon="mdi-refresh" @click="reloadPage"> Reload Page </v-btn>
+                </div>
+            </v-col>
+        </v-row>
+    </v-container>
 </template>
 
 <script setup>
@@ -38,7 +41,6 @@ const route = useRoute()
 const errorMessage = ref('')
 
 onMounted(() => {
-    // Get error message from query params or state
     errorMessage.value = route.query.message || route.params.error || ''
 })
 
@@ -46,127 +48,3 @@ const reloadPage = () => {
     window.location.reload()
 }
 </script>
-
-<style scoped>
-.error-view {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-    color: white;
-    text-align: center;
-    padding: 2rem;
-}
-
-.error-container {
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.error-icon {
-    margin-bottom: 2rem;
-    opacity: 0.8;
-}
-
-.error-title {
-    font-size: 4rem;
-    font-weight: bold;
-    margin: 0;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.error-subtitle {
-    font-size: 2rem;
-    margin: 1rem 0;
-    font-weight: 300;
-}
-
-.error-message {
-    font-size: 1.2rem;
-    margin: 2rem 0;
-    opacity: 0.9;
-    line-height: 1.6;
-}
-
-.error-details {
-    margin: 2rem 0;
-    text-align: left;
-}
-
-.error-details summary {
-    cursor: pointer;
-    margin-bottom: 1rem;
-    font-weight: 500;
-}
-
-.error-details pre {
-    background: rgba(0, 0, 0, 0.2);
-    padding: 1rem;
-    border-radius: 4px;
-    overflow-x: auto;
-    font-size: 0.9rem;
-}
-
-.error-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-top: 3rem;
-}
-
-.btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 500;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    min-width: 120px;
-}
-
-.btn-primary {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-}
-
-.btn-primary:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: translateY(-2px);
-}
-
-.btn-secondary {
-    background: transparent;
-    color: white;
-    border: 2px solid rgba(255, 255, 255, 0.5);
-}
-
-.btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateY(-2px);
-}
-
-@media (max-width: 768px) {
-    .error-title {
-        font-size: 3rem;
-    }
-
-    .error-subtitle {
-        font-size: 1.5rem;
-    }
-
-    .error-actions {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .btn {
-        width: 100%;
-        max-width: 200px;
-    }
-}
-</style>

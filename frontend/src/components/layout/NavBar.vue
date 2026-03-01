@@ -146,7 +146,15 @@ const cartStore = useCartStore()
 
 const isDark = computed(() => theme.global.current.value.dark)
 const toggleTheme = () => {
-    theme.global.name.value = isDark.value ? 'light' : 'dark'
+    const next = isDark.value ? 'light' : 'dark'
+    theme.global.name.value = next
+    localStorage.setItem('bookstore-theme', next)
+}
+
+// Restore saved theme on load
+const savedTheme = localStorage.getItem('bookstore-theme')
+if (savedTheme === 'dark' || savedTheme === 'light') {
+    theme.global.name.value = savedTheme
 }
 
 const { isAuthenticated, user } = storeToRefs(authStore)
