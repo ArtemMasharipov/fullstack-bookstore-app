@@ -9,11 +9,22 @@ import "./config/load-env.js";
 
 import mongoose from "mongoose";
 
-// Configuration
-import { config, connectDatabase } from "./config/index.js";
+// Configuration and application. config/default.js validates the environment
+// when it is imported (app.js imports it too), so both are loaded here and not
+// with static imports: an invalid configuration is printed as its list of
+// problems, not as an uncaught error, and stops the process before it starts.
+let config;
+let connectDatabase;
+let app;
 
-// Application
-import app from "./app.js";
+try {
+  ({ config, connectDatabase } = await import("./config/index.js"));
+  ({ default: app } = await import("./app.js"));
+} catch (error) {
+  if (error.name !== "ConfigError") throw error;
+  console.error(error.message);
+  process.exit(1);
+}
 
 // =============================================================================
 // DATABASE & SERVER START
