@@ -20,10 +20,10 @@ const bookSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Publication year is required"],
       min: [1450, "Publication year cannot be before 1450"],
-      max: [
-        () => new Date().getFullYear(),
-        "Publication year cannot be in the future",
-      ],
+      validate: {
+        validator: (v) => v <= new Date().getFullYear(),
+        message: "Publication year cannot be in the future",
+      },
     },
     category: {
       type: String,
