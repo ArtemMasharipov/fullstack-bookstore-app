@@ -12,11 +12,6 @@ export default async function connectDatabase() {
     mongoose.connection.on("disconnected", () =>
       console.warn("MongoDB disconnected")
     );
-
-    process.on("SIGINT", async () => {
-      await mongoose.connection.close();
-      process.exit(0);
-    });
   } catch (err) {
     console.error("MongoDB connection failed:", err.message);
     throw err;

@@ -13,6 +13,7 @@ import { config } from "./config/index.js";
 
 // Middleware
 import { errorHandler } from "./middleware/errorHandler.js";
+import { createRequestLogger } from "./middleware/requestLogger.js";
 
 // Routes
 import routes from "./routes/index.js";
@@ -33,11 +34,8 @@ app.use(cors(config.cors));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging (simple)
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  next();
-});
+// Request logging (method, path without query, status, duration); off in tests
+if (config.nodeEnv !== "test") app.use(createRequestLogger());
 
 // =============================================================================
 // ROUTES

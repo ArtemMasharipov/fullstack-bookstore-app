@@ -1,6 +1,3 @@
-import dotenv from "dotenv";
-dotenv.config();
-
 const env = (key, fallback) => process.env[key] ?? fallback;
 
 const dbUri = () => {
