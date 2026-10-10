@@ -12,7 +12,8 @@
     "dev": "nodemon server.js",
     "dev:kill": "taskkill /F /IM node.exe 2>nul & npm run dev",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "seed": "node scripts/seed.js"
   },
   "config": {
     "mongodbMemoryServer": {
