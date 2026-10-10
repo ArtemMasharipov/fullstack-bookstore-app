@@ -3,71 +3,11 @@
  * Simple, focused server implementation following MVC pattern
  */
 
-import cors from "cors";
-import express from "express";
-import helmet from "helmet";
-
 // Configuration
 import { config, connectDatabase } from "./config/index.js";
 
-// Middleware
-import { errorHandler } from "./middleware/errorHandler.js";
-
-// Routes
-import routes from "./routes/index.js";
-
-const app = express();
-
-// =============================================================================
-// SECURITY & MIDDLEWARE
-// =============================================================================
-
-// Security headers
-app.use(helmet());
-
-// CORS
-app.use(cors(config.cors));
-
-// Body parsing
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Request logging (simple)
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  next();
-});
-
-// =============================================================================
-// ROUTES
-// =============================================================================
-
-// API v1
-app.use("/api/v1", routes);
-
-// Root endpoint
-app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "Bookstore API - Clean MVC",
-    version: "1.0.0",
-    documentation: "/api/v1",
-  });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error: "Route not found",
-  });
-});
-
-// =============================================================================
-// ERROR HANDLER (MUST BE LAST!)
-// =============================================================================
-
-app.use(errorHandler);
+// Application
+import app from "./app.js";
 
 // =============================================================================
 // DATABASE & SERVER START
