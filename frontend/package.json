@@ -11,6 +11,7 @@
         "build": "vite build",
         "preview": "vite preview",
         "test": "vitest run",
+        "test:e2e": "playwright test",
         "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --ignore-path .gitignore",
         "lint:fix": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
         "format": "prettier --write .",
@@ -28,6 +29,7 @@
         "vuetify": "^3.8.3"
     },
     "devDependencies": {
+        "@playwright/test": "1.63.0",
         "@vitejs/plugin-vue": "^5.2.3",
         "eslint": "^7.32.0",
         "eslint-config-prettier": "^8.3.0",
