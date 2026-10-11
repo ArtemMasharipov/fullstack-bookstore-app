@@ -87,7 +87,7 @@
 </template>
 
 <script setup>
-import { debounce } from 'lodash-es'
+import { debounce } from '@/utils/helpers/debounce'
 import { computed, onMounted, ref, watch } from 'vue'
 
 // Props

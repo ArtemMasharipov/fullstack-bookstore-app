@@ -11,26 +11,15 @@ export default defineConfig({
             '@': fileURLToPath(new URL('./src', import.meta.url)),
         },
     },
+    // Drop side-effect-free console calls from the production bundle
+    esbuild: {
+        pure: ['console.log', 'console.info', 'console.debug'],
+    },
     build: {
         outDir: path.resolve(__dirname, '../dist'),
-        minify: 'terser',
-        terserOptions: {
-            compress: {
-                drop_console: true,
-                drop_debugger: true,
-                pure_funcs: ['console.log', 'console.info', 'console.debug'],
-                // Remove unused code more aggressively
-                dead_code: true,
-                unused: true,
-                // Remove comments in production
-                keep_classnames: false,
-                keep_fnames: false,
-            },
-            mangle: {
-                // Mangle variable names for smaller size
-                safari10: true,
-            },
-        },
+        // outDir is outside the project root, so Vite would not empty it by default
+        emptyOutDir: true,
+        minify: 'esbuild',
         // CSS optimization
         cssCodeSplit: true,
         cssMinify: 'esbuild',
@@ -127,7 +116,7 @@ export default defineConfig({
     },
     // Build optimizations
     optimizeDeps: {
-        include: ['vue', 'vue-router', 'pinia', 'axios', 'lodash-es/debounce'],
+        include: ['vue', 'vue-router', 'pinia', 'axios'],
         exclude: [
             // Let Vite handle these with tree-shaking
             'vuetify',
@@ -139,12 +128,16 @@ export default defineConfig({
         __VUE_OPTIONS_API__: false, // Disable Options API support
         __VUE_PROD_DEVTOOLS__: false,
     },
+    test: {
+        environment: 'happy-dom',
+        include: ['src/**/*.spec.js'],
+    },
     server: {
         port: 8080,
         open: true,
         proxy: {
             '/api': {
-                target: 'http://localhost:3000',
+                target: process.env.API_PROXY_TARGET || 'http://localhost:3000',
                 changeOrigin: true,
                 secure: false,
             },
