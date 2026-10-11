@@ -269,21 +269,17 @@ backend/                    # Express API (ESM)
 ├── middleware/             # auth, error handling, request logging
 ├── utils/                  # helpers
 ├── scripts/                # seed command and data, e2e server
-├── tests/                  # vitest: unit and integration
-└── docs/                   # historical notes, not maintained
+└── tests/                  # vitest: unit and integration
 frontend/                   # Vue 3 SPA (Vite)
 ├── src/                    # components, views, stores (Pinia), services (API), router, styles
 ├── e2e/                    # Playwright smoke test
 └── public/                 # static files
-docs/                       # project overhaul documents (audit, roadmap, specs)
 dist/                       # frontend build output (git-ignored)
 ```
 
 ## Known limitations
 
-The application is mid-overhaul. The current state is in
-[`docs/project-overhaul/STATUS.md`](docs/project-overhaul/STATUS.md), the stages named below are in
-[`docs/project-overhaul/03-backlog.md`](docs/project-overhaul/03-backlog.md). Today:
+The application is mid-overhaul. Today:
 
 - Checkout and order history do not work (stage 1A); the admin panel does not work either (stage 2).
 - The catalogue shows the first 12 books only: the pager stays hidden (stage 1B).

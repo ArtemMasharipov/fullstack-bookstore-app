@@ -33,8 +33,7 @@ backend/
 ├── middleware/      # auth (protect, authorize), errorHandler, requestLogger, asyncHandler
 ├── utils/           # Error classes
 ├── scripts/         # seed.js, seed-data.js, e2e-server.js
-├── tests/           # unit and integration tests (vitest)
-└── docs/            # Historical notes, not maintained
+└── tests/           # unit and integration tests (vitest)
 ```
 
 ## API
