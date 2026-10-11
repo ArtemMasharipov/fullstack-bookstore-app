@@ -1,220 +1,163 @@
 # Bookstore Backend API
 
-Clean MVC architecture for fullstack bookstore application.
+REST API of the bookstore: Node.js 24, Express 4, MongoDB (Mongoose), JWT.
 
-## Architecture
+Setup, configuration (`.env`), running, seed data and tests are described in the
+[root README](../README.md). This file covers the backend itself.
+
+## Scripts
+
+Run them from `backend/`.
+
+| Command            | What it does                                                              |
+| ------------------ | ------------------------------------------------------------------------- |
+| `npm start`        | `node server.js`                                                          |
+| `npm run dev`      | the same under nodemon: restarts on source changes, not on `.env` edits (type `rs`, see the [root README](../README.md#run)) |
+| `npm test`         | vitest with an in-memory MongoDB                                          |
+| `npm run test:watch` | vitest in watch mode                                                    |
+| `npm run seed`     | demo users, authors and books (`npm run seed -- --reset` to start over)   |
+| `npm run e2e:server` | the API for the Playwright smoke test; started by Playwright, not by hand |
+
+## Structure
 
 ```
 backend/
-├── config/           # Application configuration
-│   ├── default.js    # Centralized configuration
-│   ├── database.js   # Database connection
-│   └── index.js      # Exports
-├── controllers/      # HTTP handlers (thin layer)
-├── services/         # Business logic
-├── models/           # Mongoose schemas
-├── routes/           # Route definitions
-├── middleware/       # Middleware (auth, errors, async)
-├── utils/            # Utilities (errors)
-└── server.js         # Entry point
+├── app.js           # Express app: security headers, CORS, parsing, logging, routes, 404, error handler.
+│                    # It neither listens nor connects to a database, so tests import it directly
+├── server.js        # Entry point: loads .env, connects to MongoDB, listens, shuts down on SIGINT/SIGTERM
+├── config/          # default.js (validated configuration), database.js, load-env.js, mongo-guard.js
+├── routes/          # Route definitions and the access rules of each endpoint
+├── controllers/     # HTTP handlers: read the request, call a service, send the response
+├── services/        # Business logic; throws the errors of utils/errors.js
+├── models/          # Mongoose schemas
+├── middleware/      # auth (protect, authorize), errorHandler, requestLogger, asyncHandler
+├── utils/           # Error classes
+├── scripts/         # seed.js, seed-data.js, e2e-server.js
+├── tests/           # unit and integration tests (vitest)
+└── docs/            # Historical notes, not maintained
 ```
 
-### Application Layers
+## API
 
-**Model** → **Service** → **Controller** → **Routes**
+Base path: `/api/v1`. The paths below are relative to it. Query parameters and request bodies are documented in the
+comment above each route in [`routes/`](routes).
 
-- **Config**: Centralized configuration, environment variables
-- **Models**: Data schemas, validation, virtual fields
-- **Services**: All business logic, throws errors
-- **Controllers**: HTTP request/response, calls services
-- **Routes**: Endpoint definitions + middleware
+Access: **Public** needs no token; **User** needs a valid token of any role; **Admin** needs a token of a user whose
+role is `admin`.
 
-## Quick Start
+### Service
 
-### Prerequisites
-- Node.js 16+
-- MongoDB 4.4+
+| Method | Path      | Access | Description                              |
+| ------ | --------- | ------ | ---------------------------------------- |
+| GET    | `/health` | Public | Health check                             |
+| GET    | `/`       | Public | API info with the list of resource paths |
 
-### Installation
+`GET /` outside `/api/v1` also answers with a short info message.
 
-```bash
-npm install
-```
+### Auth (`/auth`)
 
-### Environment Setup
+| Method | Path             | Access | Description         |
+| ------ | ---------------- | ------ | ------------------- |
+| POST   | `/auth/register` | Public | Register a new user |
+| POST   | `/auth/login`    | Public | Log in              |
+| GET    | `/auth/me`       | User   | Current user        |
+| PUT    | `/auth/password` | User   | Change password     |
+| PUT    | `/auth/profile`  | User   | Update the profile  |
+| POST   | `/auth/logout`   | User   | Log out (the client discards the token; nothing is revoked on the server) |
 
-Copy `.env.example` to `.env`:
+### Books (`/books`)
 
-```bash
-cp .env.example .env
-```
+| Method | Path                      | Access | Description                  |
+| ------ | ------------------------- | ------ | ---------------------------- |
+| GET    | `/books`                  | Public | List books (filter, search, paginate) |
+| GET    | `/books/category/:category` | Public | Books of a category        |
+| GET    | `/books/author/:authorId` | Public | Books of an author           |
+| GET    | `/books/:id`              | Public | One book                     |
+| POST   | `/books`                  | Admin  | Create a book                |
+| PUT    | `/books/:id`              | Admin  | Update a book                |
+| PATCH  | `/books/:id/stock`        | Admin  | Change only the stock status |
+| DELETE | `/books/:id`              | Admin  | Delete a book                |
 
-Edit `.env` file:
+### Authors (`/authors`)
 
-```env
-# Server Configuration
-PORT=3000
-NODE_ENV=development
+| Method | Path                         | Access | Description                  |
+| ------ | ---------------------------- | ------ | ---------------------------- |
+| GET    | `/authors`                   | Public | List authors (filter, search, paginate) |
+| GET    | `/authors/country/:country`  | Public | Authors of a country         |
+| GET    | `/authors/:id`               | Public | One author                   |
+| GET    | `/authors/:id/books`         | Public | Books of an author           |
+| GET    | `/authors/:id/stats`         | Public | Statistics of an author      |
+| POST   | `/authors`                   | Admin  | Create an author             |
+| PUT    | `/authors/:id`               | Admin  | Update an author             |
+| DELETE | `/authors/:id`               | Admin  | Delete an author             |
 
-# Database Configuration
-MONGODB_URI=mongodb://localhost:27017/bookstore
+### Cart (`/cart`, every route needs a token)
 
-# JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-change-in-production
-JWT_EXPIRATION=7d
+| Method | Path             | Access | Description                                  |
+| ------ | ---------------- | ------ | -------------------------------------------- |
+| GET    | `/cart`          | User   | The user's cart                              |
+| GET    | `/cart/validate` | User   | Validate the cart before checkout            |
+| POST   | `/cart`          | User   | Add an item                                  |
+| POST   | `/cart/sync`     | User   | Sync with current prices and availability    |
+| PUT    | `/cart/:bookId`  | User   | Change the quantity of an item               |
+| DELETE | `/cart/:bookId`  | User   | Remove an item                               |
+| DELETE | `/cart`          | User   | Clear the cart                               |
 
-# CORS Configuration
-CORS_ORIGIN=http://localhost:8080
-CORS_METHODS=GET,POST,PUT,PATCH,DELETE
-CORS_CREDENTIALS=true
-```
+### Orders (`/orders`, every route needs a token)
 
-> **⚠️ Important:** Change `JWT_SECRET` to a random string in production!
+| Method | Path                  | Access | Description              |
+| ------ | --------------------- | ------ | ------------------------ |
+| POST   | `/orders`             | User   | Create an order from the cart |
+| GET    | `/orders`             | User   | The user's orders        |
+| GET    | `/orders/:id`         | User   | One order                |
+| PATCH  | `/orders/:id/cancel`  | User   | Cancel an order          |
+| GET    | `/orders/admin/all`   | Admin  | All orders               |
+| GET    | `/orders/admin/stats` | Admin  | Order statistics         |
+| PATCH  | `/orders/:id/status`  | Admin  | Change the order status  |
+| PATCH  | `/orders/:id/pay`     | Admin  | Mark an order as paid    |
 
-### Run Server
+### Users (`/users`, every route needs an admin token)
 
-```bash
-# Production
-npm start
-
-# Development (with auto-reload)
-npm run dev
-```
-
-Server will start at: `http://localhost:3000`
-
-## Modules
-
-### Books
-- CRUD operations
-- Search and filtering
-- Category management
-- Author relationships
-
-### Authors
-- CRUD operations
-- Author statistics
-- Author's books list
-
-### Authentication
-- User registration and login
-- JWT tokens
-- Profile management
-- Roles: user, admin, moderator
-
-### Cart
-- Add/remove items
-- Price synchronization
-- Validation before checkout
-
-### Orders
-- Order creation
-- Order statuses
-- Order history
-- Admin management
-
-## API Endpoints
-
-### Authentication
-- `POST /api/v1/auth/register` - User registration
-- `POST /api/v1/auth/login` - User login
-- `GET /api/v1/auth/profile` - User profile
-- `PUT /api/v1/auth/profile` - Update profile
-
-### Books
-- `GET /api/v1/books` - Get books list
-- `GET /api/v1/books/:id` - Get book by ID
-- `POST /api/v1/books` - Create book (admin)
-- `PUT /api/v1/books/:id` - Update book (admin)
-- `DELETE /api/v1/books/:id` - Delete book (admin)
-
-### Authors
-- `GET /api/v1/authors` - Get authors list
-- `GET /api/v1/authors/:id` - Get author by ID
-- `POST /api/v1/authors` - Create author (admin)
-- `PUT /api/v1/authors/:id` - Update author (admin)
-- `DELETE /api/v1/authors/:id` - Delete author (admin)
-
-### Cart
-- `GET /api/v1/cart` - Get user cart
-- `POST /api/v1/cart/add` - Add to cart
-- `PUT /api/v1/cart/update` - Update quantity
-- `DELETE /api/v1/cart/remove/:id` - Remove from cart
-- `DELETE /api/v1/cart/clear` - Clear cart
-
-### Orders
-- `GET /api/v1/orders` - Get user orders
-- `POST /api/v1/orders` - Create order
-- `GET /api/v1/orders/:id` - Get order details
-- `PUT /api/v1/orders/:id/status` - Update status (admin)
-
-### Users (Admin)
-- `GET /api/v1/users` - Get users list (admin)
-- `GET /api/v1/users/:id` - Get user by ID (admin)
-- `POST /api/v1/users` - Create user (admin)
-- `PUT /api/v1/users/:id` - Update user (admin)
-- `DELETE /api/v1/users/:id` - Delete user (admin)
-
-Protected endpoints require JWT token in `Authorization: Bearer <token>` header.
-
-## Response Format
-
-### Success Response
-```json
-{
-  "success": true,
-  "data": { ... }
-}
-```
-
-### Error Response
-```json
-{
-  "success": false,
-  "error": "Error description"
-}
-```
+| Method | Path                    | Access | Description                  |
+| ------ | ----------------------- | ------ | ---------------------------- |
+| GET    | `/users`                | Admin  | List users (filter, search)  |
+| GET    | `/users/stats`          | Admin  | User statistics              |
+| GET    | `/users/role/:role`     | Admin  | Users with a role            |
+| GET    | `/users/:id`            | Admin  | One user                     |
+| POST   | `/users`                | Admin  | Create a user                |
+| PUT    | `/users/:id`            | Admin  | Update a user                |
+| PATCH  | `/users/:id/status`     | Admin  | Set the active status (`{ isActive: boolean }`) |
+| DELETE | `/users/:id`            | Admin  | Delete a user (soft delete)  |
+| DELETE | `/users/:id/permanent`  | Admin  | Delete a user permanently    |
 
 ## Authentication
 
-After successful login, server returns JWT token:
+`POST /auth/register` and `POST /auth/login` answer with the user and a JWT:
+
 ```json
 {
   "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "data": {
-    "id": "...",
-    "username": "testuser",
-    "email": "test@example.com",
-    "role": "user"
-  }
+    "user": { "_id": "...", "username": "...", "email": "...", "role": "user", "...": "..." },
+    "token": "eyJhbGciOi..."
+  },
+  "message": "Login successful"
 }
 ```
 
-Use token in header for protected endpoints:
+Send the token with every protected request:
+
 ```
-Authorization: Bearer YOUR_TOKEN_HERE
+Authorization: Bearer <token>
 ```
 
-## User Roles
+The token is signed with `JWT_SECRET` and expires after `JWT_EXPIRATION` (default `7d`). Roles are `user` (the
+default), `admin` and `moderator`; the routes check for `admin` only.
 
-- **user** - Regular user (purchases, cart, orders)
-- **admin** - Administrator (full access)
+## Response format
 
-## Dependencies
+Success: `{ "success": true, "data": ..., "message": "..." }` (`data` and `message` are not on every response).
 
-### Production
-- **express** - Web framework
-- **mongoose** - MongoDB ODM
-- **jsonwebtoken** - JWT tokens
-- **bcrypt** - Password hashing
-- **cors** - CORS middleware
-- **helmet** - Security headers
-- **morgan** - HTTP logging
-
-### Development
-- **nodemon** - Auto-reload
-
-## License
-
-MIT License
+Error: `{ "success": false, "error": "Description" }`. A validation error also has an `errors` array with one message
+per invalid field. An unexpected server error answers `Internal server error`; with `EXPOSE_ERROR_DETAILS=true`
+(not in production) the response carries the real message and a `stack`.

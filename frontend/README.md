@@ -1,27 +1,20 @@
 # Bookstore Frontend
 
-Vue 3 + Pinia + Vuetify frontend for the bookstore application.
+Vue 3 + Pinia + Vuetify 3 single-page app built with Vite.
 
-## Features
+Setup (Node 24), configuration, running it together with the backend, seed data, tests and known limitations are
+described in the [root README](../README.md).
 
--   Modern Vue 3 Composition API
--   Pinia state management
--   Vuetify 3 UI components
--   Responsive design
--   JWT authentication
--   Shopping cart functionality
--   Admin panel
+## Commands
 
-## Development
+Run them from `frontend/`:
 
 ```bash
-npm install
-npm run dev
-```
-
-## Build
-
-```bash
-npm run build
-npm run preview
+npm ci                # install dependencies (Node 24)
+npm run dev           # dev server on http://localhost:8080, proxies /api to http://localhost:3000
+npm run build         # production build into dist/ in the repository root
+npm test              # unit tests (vitest + happy-dom)
+npm run test:e2e      # Playwright smoke test (run `npx playwright install chromium` once before)
+npm run lint          # ESLint, only checks
+npm run format:check  # Prettier, only checks
 ```
