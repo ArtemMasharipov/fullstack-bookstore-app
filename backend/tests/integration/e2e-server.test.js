@@ -7,7 +7,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { childEnv } from "../helpers/process.js";
 
-// REQ-0-09: the e2e server (npm run e2e:server) starts its own in-memory
+// The e2e server (npm run e2e:server) starts its own in-memory
 // MongoDB and never connects to the one named by MONGODB_URI. Every case runs
 // it in a child process.
 const e2eServerPath = fileURLToPath(

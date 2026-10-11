@@ -5,7 +5,7 @@ import { createUser, loginAs } from "../helpers/auth.js";
 import { useTestDatabase } from "../helpers/db.js";
 import { createAuthor } from "../helpers/factories.js";
 
-// REQ-0-14 / AUD-DATA-01: a book's publication year is valid from 1450 up to
+// A book's publication year is valid from 1450 up to
 // and including the current year. Admin creates and updates books through the API.
 useTestDatabase();
 

@@ -25,7 +25,7 @@ module.exports = {
                         name: 'pinia',
                         importNames: ['mapGetters', 'mapActions', 'mapStores'],
                         message:
-                            "Please don't use map* helpers from Pinia. Follow our standard approach from docs/PINIA_USAGE_GUIDELINES.md",
+                            "Please don't use map* helpers from Pinia. Call the store composable (for example useBooksStore()) and use storeToRefs for reactive state.",
                     },
                 ],
             },

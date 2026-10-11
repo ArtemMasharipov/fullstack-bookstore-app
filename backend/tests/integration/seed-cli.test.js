@@ -11,7 +11,7 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { assertLocalMongoUri } from "../../config/mongo-guard.js";
 import { childEnv } from "../helpers/process.js";
 
-// REQ-0-10: the seed CLI (node scripts/seed.js [--reset]) never writes to a
+// The seed CLI (node scripts/seed.js [--reset]) never writes to a
 // remote database by accident. Every case runs it in a child process.
 const seedPath = fileURLToPath(
   new URL("../../scripts/seed.js", import.meta.url)

@@ -12,7 +12,7 @@ import { createUser } from "../helpers/auth.js";
 import { useTestDatabase } from "../helpers/db.js";
 import { createAuthor } from "../helpers/factories.js";
 
-// REQ-0-10: seed() fills a database with demo users, authors and books for
+// seed() fills a database with demo users, authors and books for
 // layout checks and the e2e smoke test. The CLI around it is seed-cli.test.js.
 useTestDatabase();
 
@@ -181,7 +181,7 @@ describe("seed() on a connection that is not local", () => {
 });
 
 describe("seed data", () => {
-  it("covers the layout cases of REQ-0-10", async () => {
+  it("covers the catalogue layout cases", async () => {
     await seed(passwords);
     const books = await Book.find().lean();
     const titles = books.map((book) => book.title);

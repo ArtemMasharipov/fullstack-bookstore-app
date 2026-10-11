@@ -6,7 +6,7 @@ import { createUser, loginAs } from "../helpers/auth.js";
 import { useTestDatabase } from "../helpers/db.js";
 
 // Characterization tests: they record the correct behavior the API has today
-// and are the safety net for the stage 0 refactoring. They must not pin defects.
+// and are the safety net for the backend refactoring. They must not pin defects.
 useTestDatabase();
 
 const alice = {
