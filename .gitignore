@@ -123,3 +123,7 @@ vite.config.js.timestamp-*
 *.zip
 *.tar.gz
 *.rar
+
+# Claude Code: local settings and worktrees
+.claude/settings.local.json
+.claude/worktrees/
