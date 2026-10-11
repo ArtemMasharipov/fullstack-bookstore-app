@@ -1,6 +1,7 @@
 {
   "name": "bookstore-backend",
   "version": "1.0.0",
+  "private": true,
   "description": "Backend API for bookstore application with user authentication, book management, and cart functionality",
   "type": "module",
   "main": "server.js",
@@ -31,7 +32,7 @@
     "rest-api"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "dependencies": {
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",

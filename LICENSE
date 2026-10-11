@@ -1,0 +1,14 @@
+Copyright (c) 2024–2026 Artem Masharipov. All rights reserved.
+
+This repository is public so that its code can be read and evaluated. No license
+is granted to use, copy, modify, merge, publish, distribute, sublicense or sell
+any part of it, except for the rights that the GitHub Terms of Service give to
+GitHub users for public repositories (viewing and forking on GitHub).
+
+To request permission for any other use, contact the author:
+https://github.com/ArtemMasharipov
+
+Third-party code keeps its own license. frontend/src/utils/helpers/debounce.js
+is derived from lodash, which is available under the MIT License; its copyright
+and permission notice are in the header of that file. Packages installed by npm
+are not part of this repository and are covered by their own licenses.

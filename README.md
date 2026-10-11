@@ -290,6 +290,6 @@ The application is mid-overhaul. The current state is in
 - `npm audit` reports vulnerable dependencies in both packages (dependency update: stage 4).
 - The seed data is for layout checks; there is no real catalogue yet.
 
-## License
+## Copyright
 
-MIT License
+Copyright (c) 2024–2026 Artem Masharipov. All rights reserved. See [LICENSE](LICENSE).
