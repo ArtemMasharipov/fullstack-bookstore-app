@@ -32,7 +32,7 @@
             </v-row>
 
             <div v-if="errorMessage" class="mt-4">
-                <error-message :message="errorMessage" @close="errorMessage = ''" />
+                <ErrorMessage :message="errorMessage" @close="errorMessage = ''" />
             </div>
         </v-form>
 

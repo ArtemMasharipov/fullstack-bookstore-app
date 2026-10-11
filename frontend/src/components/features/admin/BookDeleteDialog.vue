@@ -36,7 +36,7 @@
                     </v-card>
 
                     <v-alert v-if="book.stock > 0" type="warning" variant="text" class="mt-4" density="compact">
-                        <v-icon slot="prepend">mdi-information</v-icon>
+                        <template #prepend><v-icon>mdi-information</v-icon></template>
                         This book currently has {{ book.stock }} {{ book.stock === 1 ? 'copy' : 'copies' }} in stock.
                     </v-alert>
                 </div>

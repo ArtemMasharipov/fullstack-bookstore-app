@@ -64,7 +64,7 @@ export const useAuthStore = defineStore('auth', {
          * Login user
          */
         async login(credentials) {
-            const { showSuccess, showError } = useNotifications()
+            const { showSuccess } = useNotifications()
 
             return withLoading(this, async () => {
                 const response = await authApi.login(credentials)
@@ -101,7 +101,7 @@ export const useAuthStore = defineStore('auth', {
          * Register new user
          */
         async register(userData) {
-            const { showSuccess, showError } = useNotifications()
+            const { showSuccess } = useNotifications()
 
             return withLoading(this, async () => {
                 const response = await authApi.register(userData)

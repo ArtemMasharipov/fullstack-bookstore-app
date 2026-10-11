@@ -1,29 +1,29 @@
 /* ── Design Tokens ─────────────────────────────────────── */
 :root {
     /* Brand */
-    --color-primary: #1B2A4A;
-    --color-primary-light: #3A5A8C;
-    --color-secondary: #D4A574;
-    --color-accent: #E8C547;
+    --color-primary: #1b2a4a;
+    --color-primary-light: #3a5a8c;
+    --color-secondary: #d4a574;
+    --color-accent: #e8c547;
 
     /* Semantic */
     --color-success: #42b983;
-    --color-error: #C0392B;
-    --color-warning: #F39C12;
-    --color-info: #2196F3;
+    --color-error: #c0392b;
+    --color-warning: #f39c12;
+    --color-info: #2196f3;
 
     /* Surfaces */
-    --color-background: #FAFAF7;
-    --color-surface: #FFFFFF;
-    --color-surface-variant: #F0EDE8;
+    --color-background: #fafaf7;
+    --color-surface: #ffffff;
+    --color-surface-variant: #f0ede8;
 
     /* Text */
-    --color-text-primary: #2D3436;
-    --color-text-secondary: #5A5A5A;
-    --color-text-muted: #9E9E9E;
+    --color-text-primary: #2d3436;
+    --color-text-secondary: #5a5a5a;
+    --color-text-muted: #9e9e9e;
 
     /* Borders */
-    --color-border: #E0DCD5;
+    --color-border: #e0dcd5;
     --color-focus-ring: rgba(27, 42, 74, 0.35);
 
     /* Radius */

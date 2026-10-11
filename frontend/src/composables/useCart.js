@@ -55,15 +55,11 @@ export function useCart() {
     }
 
     async function updateQuantity(itemId, quantity) {
-        try {
-            if (quantity <= 0) {
-                await removeFromCart(itemId)
-                return
-            }
-            await cartStore.updateQuantity({ itemId, quantity })
-        } catch (error) {
-            throw error
+        if (quantity <= 0) {
+            await removeFromCart(itemId)
+            return
         }
+        await cartStore.updateQuantity({ itemId, quantity })
     }
 
     async function increaseQuantity(itemId) {
