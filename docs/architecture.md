@@ -1,0 +1,181 @@
+# Architecture
+
+Fullstack Bookstore is a Vue single-page application with an Express REST API and MongoDB behind it. This page shows how
+the parts fit together. Setup and commands are in the [README](../README.md), the full list of API routes is in
+[backend/README.md](../backend/README.md#api), and the reasons behind the main choices are in the
+[decision records](decisions/).
+
+## Overview
+
+```mermaid
+flowchart LR
+    SPA["Vue 3 SPA<br/>Vuetify, Pinia, Vue Router"] -- "HTTP /api/v1" --> R
+    subgraph API["Express REST API (Node.js 24)"]
+        R["routes"] --> C["controllers"] --> S["services"] --> M["Mongoose models"]
+    end
+    M --> DB[("MongoDB")]
+```
+
+The repository holds two npm packages, each with its own `package.json` and lock file: `backend/` (Express, Mongoose)
+and `frontend/` (Vite, Vue 3). The browser calls the API at the relative path `/api/v1`. In development and preview the
+Vite server forwards `/api` to the API, so the browser sees a single origin. Some features are not finished yet; the
+README lists them.
+
+## Backend
+
+- **Entry points.** `server.js` runs the API (`npm start`, `npm run dev`). Its first import, `config/load-env.js`, loads
+  `backend/.env`; then it loads the configuration and the app, connects to MongoDB and listens. `app.js` builds the
+  Express app: Helmet security headers, CORS, JSON and form parsing, request logging (off when `NODE_ENV=test`), the
+  API under `/api/v1`, a JSON 404 and the error handler. It neither listens nor connects, so tests import it directly.
+- **Configuration** (`config/`). `default.js` exports `loadConfig(env)`, which validates an environment object and
+  throws a `ConfigError` that lists every problem; its default export is the validated configuration of the process.
+  `load-env.js` reads `.env`, and only the entry points import it: `server.js` and the seed command. `database.js`
+  connects Mongoose. `mongo-guard.js` refuses database hosts that are not local in tests, seeding and end-to-end runs
+  ([decision 0002](decisions/0002-test-infrastructure-and-local-database-guard.md)).
+- **Layers.** A request passes through `routes/`, `controllers/`, `services/` and `models/`, in that order. A route
+  file maps paths to controllers and declares access with the `protect` and `authorize("admin")` middleware. A
+  controller reads the request, calls a service and sends the JSON response. A service holds the business logic and
+  reports failures with the error classes of `utils/errors.js` (400, 401, 403, 404, 409). A model is a Mongoose schema
+  with validation, indexes and hooks.
+- **Middleware** (`middleware/`). In `auth.js`, `protect` verifies the `Authorization: Bearer <token>` JWT with
+  `JWT_SECRET` and puts its payload (user id, username, email, role) on `req.user`; `authorize(...roles)` checks the
+  role. `errorHandler.js` comes last: Mongoose validation errors and malformed ids become 400, duplicate keys 409, and
+  the app's own errors keep their status. Any other error keeps its own status code or gets 500, and its message is
+  replaced with `Internal server error`. The handler logs 5xx errors with their stack and 4xx errors as one warning
+  line. `requestLogger.js` logs one line per response: method, path without the query string, status and duration.
+  `asyncHandler.js` passes errors of async handlers on to the error handler.
+- **API.** `routes/index.js` mounts the routers under `/api/v1`, grouped as `/books`, `/authors`, `/auth`, `/users`,
+  `/cart` and `/orders`. `GET /api/v1/health` answers 200 with `API is running`.
+- **Shutdown.** On SIGTERM or SIGINT the server stops accepting connections, waits for open requests, closes the
+  MongoDB connection and exits with 0. An unhandled rejection or an uncaught exception takes the same path and exits
+  with 1. If the cleanup has not finished after 10 seconds, the process prints `shutdown timed out` and exits with 1.
+
+## Data model
+
+Five Mongoose models live in `backend/models/`. Each has `createdAt` and `updatedAt` timestamps.
+
+| Model | Key fields | Relations |
+| --- | --- | --- |
+| `Author` | `firstName`, `lastName`, `bio`, `birthYear`, `country`, `website` | `books`: ids of the author's books |
+| `Book` | `title`, `publicationYear` (1450 up to the current year), `category`, `description`, `price`, `image`, `inStock` | `author` (an `Author`, required) |
+| `User` | `username` and `email` (both unique), `password` (bcrypt hash, left out of query results by default), `role` (`user`, `admin`, `moderator`), `isActive`, `lastLogin` | none |
+| `Cart` | `items` (`book`, `quantity` from 1 to 99, `price`), `totalItems`, `totalPrice` | `user` (a `User`, one cart each); `items.book` (a `Book`) |
+| `Order` | `orderNumber` (`ORD-YYYYMMDD-NNNN`), `items` (`book`, `title`, `quantity`, `price`, `subtotal`), `shippingAddress`, `paymentMethod`, `itemsPrice`, `shippingPrice`, `taxPrice`, `totalPrice`, `status`, `isPaid`, `isDelivered` | `user` (a `User`); `items.book` (a `Book`) |
+
+- Saving a book adds it to its author's `books` list.
+- An order is built from the user's cart. Each item keeps the title and the price the book had when the order was
+  placed. A pre-save hook computes the totals: shipping is free when the items cost 50 or more and 10 otherwise, and
+  tax is 10%. `status` is one of `pending`, `processing`, `shipped`, `delivered` or `cancelled`.
+
+## Request path
+
+How the catalogue page gets its books, from the browser to MongoDB and back:
+
+1. On `/books` the router renders `BooksView`. Its `BookList` component (`components/features/books`) calls
+   `loadBooks()` of the books store when it mounts.
+2. The store calls `booksApi.fetchAll()` with `page` and `limit`, plus the search text and filters when they are set.
+3. `booksApi` sends the request through the shared Axios instance in `services/api/baseApi.js`. Its base URL is
+   `/api/v1`, so the browser asks the origin that served the page for `GET /api/v1/books?page=1&limit=12`.
+4. The Vite server forwards `/api` to the API at `API_PROXY_TARGET` (default `http://localhost:3000`): the dev server
+   on port 8080 in development, the preview server on port 4173 in a preview.
+5. Express runs the global middleware (Helmet, CORS, body parsing, request logging). The `/api/v1` router hands the
+   request to `routes/books.js`, where `GET /` is public and calls `bookController.getBooks` through `asyncHandler`.
+6. The controller passes the parsed query (`req.query`) to `bookService.getBooks()`.
+7. The service checks `page` and `limit` (at most 100) and builds the filter. It runs two queries at once: `Book.find()`
+   with the author's first and last name populated, newest first, skipped and limited to the requested page, and
+   `Book.countDocuments()` for the total.
+8. Mongoose sends both queries to MongoDB and returns the documents as plain objects (`lean()`).
+9. The controller answers 200 with `{ success: true, data, pagination }`: `data` is the list of books, `pagination`
+   holds `page`, `limit`, `total`, `pages`, `hasNext` and `hasPrev`. The request logger prints
+   `GET /api/v1/books 200 <duration>ms`.
+10. The store keeps the books, and `BookList` renders them as cards.
+
+If any step throws, for example because `limit` is above 100, `asyncHandler` passes the error to the error handler,
+which answers `{ success: false, error: "<message>" }` with the matching status.
+
+## Frontend
+
+`frontend/` is a Vite project: Vue 3 with Vuetify, Pinia and Vue Router. `src/main.js` creates the app and installs
+the three plugins.
+
+- **Router** (`src/router/`). `manifest.js` is the single list of routes: path, lazily loaded view, page title and an
+  access policy (`auth`, `guestOnly`, `permission`). `buildRoutes.js` turns it into Vue Router records, passes a
+  layout's policy down to its children and builds the admin sidebar from the same list. `guards/unified.js` is the one
+  `beforeEach` guard: public routes pass at once; otherwise it checks that the stored token has not expired and sends
+  the user to the login page, the home page or the "access denied" page as the policy requires. The API checks every
+  protected request on its own.
+- **State** (`src/stores/`). One Pinia store per area: `auth`, `authors`, `books`, `cart`, `orders` and `users`. Each
+  calls its API module and tracks loading and error state through a shared helper.
+- **API client** (`src/services/api/`). One module per resource (`booksApi.js`, `authorsApi.js`, `cartApi.js`,
+  `orderApi.js`, `usersApi.js`, `rolesApi.js`, `authService.js`), all on the Axios instance in `baseApi.js`. It sets
+  the base URL and a 15-second timeout, adds the token from `localStorage` to protected requests, turns failures into
+  `Error` objects with a readable message, and sends the user to the login page after a 401.
+- **Components and views.** `src/components/features/` holds the components of each area: `admin`, `auth`, `authors`,
+  `books`, `cart`, `orders`. Shared pieces live in `components/ui`, `components/layout` and
+  `components/notifications`. `src/views/` holds the pages that the router loads, grouped as `public`, `auth`,
+  `orders`, `admin` and `errors`.
+
+## Configuration and environments
+
+The backend reads its settings from environment variables and checks them at startup
+([decision 0001](decisions/0001-node-24-and-validated-configuration.md)). The [README](../README.md) lists them all;
+the key ones are:
+
+- `MONGODB_URI`: default `mongodb://localhost:27017/bookStoreDB`, required in production (the older `MONGODB_URL`
+  also works);
+- `JWT_SECRET`: required everywhere, at least 32 characters in production;
+- `PORT`: default 3000;
+- `CORS_ORIGIN`: default `http://localhost:8080` outside production, required and not `*` in production;
+- `EXPOSE_ERROR_DETAILS`: `true` adds error messages and stack traces to responses, outside production only.
+
+The frontend uses two: `VITE_API_URL`, the API base URL built into the bundle (default `/api/v1`), and
+`API_PROXY_TARGET`, where the dev and preview servers forward `/api` (default `http://localhost:3000`). `vite.config.js`
+reads `API_PROXY_TARGET` from the process environment
+([decision 0003](decisions/0003-relative-api-base-url.md)).
+
+| Environment | Frontend | API | Database |
+| --- | --- | --- | --- |
+| Development | `npm run dev`: Vite on 8080, proxies `/api` to 3000 | `npm run dev` (nodemon) or `npm start` on 3000 | `MONGODB_URI` from `backend/.env` |
+| Tests | Vitest on happy-dom | Vitest and Supertest against `app.js` | in-memory MongoDB |
+| End-to-end | `vite preview` of a fresh build on 4173, proxies `/api` to 3100 | `npm run e2e:server` on 3100 | in-memory MongoDB with the demo data |
+
+`npm run build` writes the bundle to `dist/` in the repository root and empties that directory first. esbuild minifies
+the code and drops `console.log`, `console.info` and `console.debug` calls. By default the bundle names no API host, so
+a production web server has to forward `/api` to the API; the other option is to build with an absolute
+`VITE_API_URL`.
+
+## Testing
+
+- **Backend.** Vitest with Supertest. Unit tests (`tests/unit/`) cover the configuration, the database guard, the
+  error handler, the request logger and `.env` loading. Integration tests (`tests/integration/`) call the API over
+  HTTP and run the seed command, the end-to-end server and `server.js` start-up and shutdown in child processes. Tests
+  of the SIGTERM and SIGINT handling run on Linux and are skipped on Windows.
+- **Database.** One in-memory MongoDB (mongodb-memory-server, mongod 8.2.6 pinned in `backend/package.json`) serves
+  the whole run. Each Vitest worker uses its own database, and collections are emptied after every test. The test
+  helper passes the URI through the local-only guard before it connects and checks the connected host after. With
+  `NODE_ENV=test` the `.env` loader does nothing, so the database URI in `backend/.env` never reaches the tests
+  ([decision 0002](decisions/0002-test-infrastructure-and-local-database-guard.md)).
+- **Characterization tests** (`tests/integration/characterization.test.js`) record the API's correct behavior before
+  the refactoring: health, registration and login, `/auth/me`, the book list and lookup, admin-only book creation.
+  They must not pin known defects.
+- **Frontend.** Vitest on happy-dom runs `src/**/*.spec.js`: today the API client's base URL and the debounce helper.
+- **End-to-end.** A Playwright smoke test in Chromium (`frontend/e2e/smoke.spec.js`) opens the catalogue, checks that
+  the books came through the preview's `/api` proxy, opens a seeded book and checks its title. Playwright starts its
+  own servers on dedicated ports: the API on 3100 (`npm run e2e:server`, an in-memory MongoDB with the demo data) and
+  `vite preview` on 4173. Existing servers are never reused, so a busy port fails the run instead of testing a dev
+  stack.
+
+## CI
+
+`.github/workflows/ci.yml` runs on every pull request and on pushes to `main`: three jobs on `ubuntu-24.04`, with
+Node.js taken from `.nvmrc`.
+
+| Job | Steps | Timeout |
+| --- | --- | --- |
+| `backend` | `npm ci`, `npm test`; the mongod binary is cached between runs | 15 min |
+| `frontend` | `npm ci`, `npm run lint`, `npm run format:check`, `npm test`, `npm run build` | 15 min |
+| `e2e` | after both: `npm ci` in both packages, Chromium, `npm run test:e2e`; the Playwright report is kept on failure | 25 min |
+
+Every action is pinned to a full commit SHA with its version in a comment. The workflow token can only read the
+repository, and `actions/checkout` does not keep the credentials. CI only checks: `lint` and `format:check` never
+change files ([decision 0004](decisions/0004-dependency-and-ci-policy.md)).
