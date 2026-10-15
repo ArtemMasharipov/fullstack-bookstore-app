@@ -93,6 +93,54 @@
         },
         "inStock": "Skladem"
     },
+    "checkout": {
+        "title": "Pokladna",
+        "backToCart": "Zpět do košíku",
+        "addressTitle": "Doručovací adresa",
+        "fields": {
+            "fullName": "Jméno a příjmení",
+            "line1": "Ulice a číslo domu",
+            "city": "Město",
+            "postalCode": "PSČ",
+            "country": "Země",
+            "phone": "Telefon"
+        },
+        "countryName": "Česko",
+        "countryHint": "Doručujeme pouze v rámci Česka.",
+        "hints": {
+            "postalCode": "Například 110 00",
+            "phone": "Například +420 777 123 456"
+        },
+        "fieldErrors": {
+            "required": "Vyplňte toto pole.",
+            "too_small": "Zadejte alespoň {min} znaky.",
+            "too_big": "Zadejte nejvýše {max} znaků.",
+            "invalid_format": "Zkontrolujte formát tohoto pole.",
+            "invalid_value": "Tuto hodnotu nelze použít.",
+            "invalid_type": "Zkontrolujte toto pole."
+        },
+        "fieldFormats": {
+            "postalCode": "Zadejte pět číslic, například 110 00.",
+            "phone": "Zadejte české telefonní číslo, například +420 777 123 456."
+        },
+        "errorSummary": "Opravte prosím tato pole:",
+        "itemsTitle": "Vaše objednávka",
+        "lineQuantity": "{quantity} × {price}",
+        "paymentNote": "Objednávka bude čekat na zaplacení. Online platba zatím není k dispozici.",
+        "submit": "Objednat s povinností platby",
+        "empty": "Košík je prázdný, není co objednat.",
+        "goToCart": "Přejít do košíku",
+        "networkError": "Spojení se přerušilo dřív, než byla objednávka potvrzena. Opakování je bezpečné: objednávka se vytvoří jen jednou.",
+        "priceChanged": {
+            "title": "Celková cena se změnila",
+            "text": "Během objednávání se změnily ceny. Nová celková cena je {total}.",
+            "confirm": "Objednat za novou cenu",
+            "cancel": "Zpět k objednávce"
+        }
+    },
+    "orders": {
+        "tax": "Daň"
+    },
     "shipping": {
         "freeOver": "Doprava zdarma při objednávce nad {amount}"
     },

@@ -93,6 +93,54 @@
         },
         "inStock": "In stock"
     },
+    "checkout": {
+        "title": "Checkout",
+        "backToCart": "Back to cart",
+        "addressTitle": "Delivery address",
+        "fields": {
+            "fullName": "Full name",
+            "line1": "Street and house number",
+            "city": "City",
+            "postalCode": "Postal code",
+            "country": "Country",
+            "phone": "Phone"
+        },
+        "countryName": "Czech Republic",
+        "countryHint": "We deliver only within the Czech Republic.",
+        "hints": {
+            "postalCode": "For example 110 00",
+            "phone": "For example +420 777 123 456"
+        },
+        "fieldErrors": {
+            "required": "Fill in this field.",
+            "too_small": "Enter at least {min} characters.",
+            "too_big": "Enter at most {max} characters.",
+            "invalid_format": "Check the format of this field.",
+            "invalid_value": "This value cannot be used.",
+            "invalid_type": "Check this field."
+        },
+        "fieldFormats": {
+            "postalCode": "Enter five digits, for example 110 00.",
+            "phone": "Enter a Czech phone number, for example +420 777 123 456."
+        },
+        "errorSummary": "Please correct these fields:",
+        "itemsTitle": "Your order",
+        "lineQuantity": "{quantity} × {price}",
+        "paymentNote": "The order will wait for payment. Online payment is not available yet.",
+        "submit": "Order with obligation to pay",
+        "empty": "Your cart is empty, so there is nothing to order.",
+        "goToCart": "Go to the cart",
+        "networkError": "The connection was lost before the order was confirmed. Retrying is safe: the order is placed only once.",
+        "priceChanged": {
+            "title": "The total has changed",
+            "text": "Prices changed while you were ordering. The new total is {total}.",
+            "confirm": "Order at the new total",
+            "cancel": "Back to checkout"
+        }
+    },
+    "orders": {
+        "tax": "Tax"
+    },
     "shipping": {
         "freeOver": "Free shipping over {amount}"
     },

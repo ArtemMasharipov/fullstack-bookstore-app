@@ -1,163 +1,197 @@
 <template>
     <v-container class="py-6">
-        <div class="d-flex align-center mb-6">
-            <v-btn variant="text" to="/cart" prepend-icon="mdi-arrow-left" class="mr-2"> Back to Cart </v-btn>
-            <h1 class="text-h4 font-weight-bold">Checkout</h1>
+        <div class="d-flex flex-wrap align-center justify-space-between ga-2 mb-6">
+            <h1 class="text-h4 font-weight-bold">{{ t('checkout.title') }}</h1>
+            <v-btn variant="text" :to="localeRoute('Cart')" prepend-icon="mdi-arrow-left">
+                {{ t('checkout.backToCart') }}
+            </v-btn>
         </div>
 
-        <div v-if="loading" class="text-center py-10">
-            <loading-spinner />
-        </div>
+        <v-row v-if="cart.status === 'idle' || cart.status === 'loading'">
+            <v-col cols="12" md="7">
+                <v-skeleton-loader type="heading, text, text, text, text, button" />
+            </v-col>
+            <v-col cols="12" md="5">
+                <v-skeleton-loader type="article" />
+            </v-col>
+        </v-row>
 
-        <div v-else-if="error">
-            <error-message :message="error" />
-        </div>
+        <error-message
+            v-else-if="cart.status === 'error'"
+            :code="cartErrorCode"
+            :on-retry="cart.load"
+            :closable="false"
+        />
+
+        <v-alert v-else-if="cart.isEmpty && !placing" type="info" variant="tonal" icon="mdi-cart-off">
+            {{ t('checkout.empty') }}
+            <div class="mt-2">
+                <v-btn variant="text" :to="localeRoute('Books')" prepend-icon="mdi-book-open-page-variant-outline">
+                    {{ t('cart.browse') }}
+                </v-btn>
+            </div>
+        </v-alert>
 
         <v-row v-else>
-            <!-- Shipping form -->
             <v-col cols="12" md="7">
+                <v-alert v-if="cart.hasUnavailable" type="warning" variant="tonal" class="mb-4">
+                    {{ t('errors.CART_HAS_UNAVAILABLE_ITEMS') }}
+                    <div class="mt-2">
+                        <v-btn variant="text" :to="localeRoute('Cart')" prepend-icon="mdi-cart">
+                            {{ t('checkout.goToCart') }}
+                        </v-btn>
+                    </div>
+                </v-alert>
+
+                <v-alert v-if="checkout.error === 'NETWORK_ERROR'" type="error" variant="tonal" class="mb-4">
+                    {{ t('checkout.networkError') }}
+                    <div class="mt-2">
+                        <v-btn variant="text" prepend-icon="mdi-refresh" @click="retry">{{ t('errors.retry') }}</v-btn>
+                    </div>
+                </v-alert>
+                <error-message v-else-if="otherError" :code="checkout.error" :closable="false" class="mb-4" />
+
                 <v-card>
-                    <v-card-title class="text-h6">Shipping Information</v-card-title>
+                    <v-card-title class="text-h6">{{ t('checkout.addressTitle') }}</v-card-title>
                     <v-card-text>
-                        <v-form ref="formRef" @submit.prevent="submitOrder">
-                            <v-textarea
-                                v-model="orderData.address"
-                                label="Shipping Address"
-                                rows="3"
-                                :rules="addressRules"
-                                prepend-inner-icon="mdi-map-marker-outline"
-                            />
-
-                            <v-text-field
-                                v-model="orderData.phone"
-                                label="Phone Number"
-                                type="tel"
-                                :rules="phoneRules"
-                                prepend-inner-icon="mdi-phone-outline"
-                            />
-
-                            <v-btn
-                                type="submit"
-                                color="primary"
-                                block
-                                :loading="submitting"
-                                :disabled="!cartItems.length"
-                                size="large"
-                                class="mt-2"
-                                prepend-icon="mdi-check-circle-outline"
-                            >
-                                Place Order
-                            </v-btn>
-                        </v-form>
+                        <checkout-form
+                            :fields="checkout.fields"
+                            :submitting="checkout.status === 'submitting'"
+                            :blocked="cart.hasUnavailable"
+                            @submit="place"
+                        />
                     </v-card-text>
                 </v-card>
             </v-col>
 
-            <!-- Order summary sidebar -->
             <v-col cols="12" md="5">
-                <div class="checkout-summary-sticky">
-                    <v-card variant="outlined">
-                        <v-card-title class="text-subtitle-1 font-weight-bold">
-                            Order Summary ({{ cartItems.length }} items)
-                        </v-card-title>
-                        <v-card-text>
-                            <v-list density="compact" class="pa-0 bg-transparent">
-                                <v-list-item v-for="item in cartItems" :key="item.bookId" class="px-0">
-                                    <v-list-item-title class="text-body-2">
-                                        {{ item.title }}
-                                    </v-list-item-title>
-                                    <v-list-item-subtitle class="text-caption">
-                                        {{ item.quantity }} x {{ formatMoney(item.unitPrice) }}
-                                    </v-list-item-subtitle>
-                                    <template v-slot:append>
-                                        <span class="text-body-2 font-weight-medium">
-                                            {{ formatMoney(item.lineTotal) }}
-                                        </span>
-                                    </template>
-                                </v-list-item>
-                            </v-list>
-
-                            <v-divider class="my-3" />
-
-                            <div class="d-flex justify-space-between mb-2">
-                                <span class="text-medium-emphasis">Subtotal</span>
-                                <span>{{ formatMoney(quote?.itemsTotal) }}</span>
-                            </div>
-                            <div class="d-flex justify-space-between mb-3">
-                                <span class="text-medium-emphasis">Shipping</span>
-                                <span>{{ formatMoney(quote?.shipping) }}</span>
-                            </div>
-
-                            <v-divider class="mb-3" />
-
-                            <div class="d-flex justify-space-between">
-                                <span class="text-subtitle-1 font-weight-bold">Total</span>
-                                <span class="text-subtitle-1 font-weight-bold text-primary">
-                                    {{ formatMoney(quote?.total) }}
+                <v-card variant="outlined" class="checkout-summary">
+                    <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('checkout.itemsTitle') }}</v-card-title>
+                    <v-card-text>
+                        <ul class="checkout-lines mb-3">
+                            <li
+                                v-for="line in cart.lines"
+                                :key="line.bookId"
+                                class="d-flex justify-space-between ga-2 mb-2"
+                            >
+                                <span>
+                                    <span class="d-block">{{ line.title ?? t('cart.unavailable.DELETED') }}</span>
+                                    <span class="text-caption text-medium-emphasis">
+                                        {{
+                                            t('checkout.lineQuantity', {
+                                                quantity: line.quantity,
+                                                price: formatMoney(line.unitPrice),
+                                            })
+                                        }}
+                                    </span>
                                 </span>
-                            </div>
-                        </v-card-text>
-                    </v-card>
-                </div>
+                                <span class="text-no-wrap">{{ formatMoney(line.lineTotal) }}</span>
+                            </li>
+                        </ul>
+                        <order-quote v-if="cart.quote" :quote="cart.quote" />
+                    </v-card-text>
+                </v-card>
             </v-col>
         </v-row>
+
+        <v-dialog :model-value="!!checkout.priceChange" max-width="480" persistent>
+            <v-card v-if="checkout.priceChange">
+                <v-card-title class="text-h6 text-wrap">{{ t('checkout.priceChanged.title') }}</v-card-title>
+                <v-card-text>
+                    {{ t('checkout.priceChanged.text', { total: formatMoney(checkout.priceChange.total) }) }}
+                </v-card-text>
+                <v-card-actions class="flex-wrap">
+                    <v-spacer />
+                    <v-btn variant="text" @click="checkout.priceChange = null">
+                        {{ t('checkout.priceChanged.cancel') }}
+                    </v-btn>
+                    <v-btn
+                        color="primary"
+                        variant="flat"
+                        :loading="checkout.status === 'submitting'"
+                        @click="confirmPrice"
+                    >
+                        {{ t('checkout.priceChanged.confirm') }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </v-container>
 </template>
 
 <script setup>
-import { reactive, computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import CheckoutForm from '@/components/features/checkout/CheckoutForm.vue'
+import OrderQuote from '@/components/features/orders/OrderQuote.vue'
 import ErrorMessage from '@/components/ui/ErrorMessage.vue'
-import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
-import { useCartStore, useOrdersStore } from '@/stores'
+import { localeRoute } from '@/router/locale'
+import { useCartStore, useCheckoutStore } from '@/stores'
 import { formatMoney } from '@/utils'
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
+const { t } = useI18n()
 const router = useRouter()
-const cartStore = useCartStore()
-const ordersStore = useOrdersStore()
+const cart = useCartStore()
+const checkout = useCheckoutStore()
 
-const formRef = ref(null)
-const submitting = ref(false)
+// The last request, so a retry after a lost connection sends exactly the same
+const lastRequest = ref(null)
+// An order is being placed: the cart empties before the order page opens
+const placing = ref(false)
 
-const orderData = reactive({
-    address: '',
-    phone: '',
-})
+const cartErrorCode = computed(() => cart.error?.replace(/^errors\./, ''))
+const HANDLED = ['NETWORK_ERROR', 'PRICE_CHANGED', 'VALIDATION_FAILED', 'CART_HAS_UNAVAILABLE_ITEMS']
+const otherError = computed(() => checkout.error && !HANDLED.includes(checkout.error))
 
-const addressRules = [(v) => !!v || 'Address is required', (v) => v.length >= 10 || 'Please enter a full address']
-const phoneRules = [
-    (v) => !!v || 'Phone number is required',
-    (v) => /^\+?[\d\s()-]{7,}$/.test(v) || 'Enter a valid phone number',
-]
-
-const cartItems = computed(() => cartStore.lines)
-const quote = computed(() => cartStore.quote)
-const loading = computed(() => cartStore.status === 'loading')
-const error = computed(() => cartStore.error)
-
-const submitOrder = async () => {
-    const { valid } = await formRef.value.validate()
-    if (!valid) return
-
-    submitting.value = true
-    try {
-        const order = await ordersStore.createOrder({
-            ...orderData,
-            items: cartItems.value,
-            total: quote.value?.total,
-        })
-        router.push(`/orders/${order._id}`)
-    } catch (error) {
-        // Notification is already handled by the store
-    } finally {
-        submitting.value = false
+async function follow(order) {
+    if (order) {
+        await router.push(localeRoute('OrderDetails', { params: { id: order.id } }))
+        return
+    }
+    placing.value = false
+    if (checkout.error === 'CART_HAS_UNAVAILABLE_ITEMS') {
+        await router.push(localeRoute('Cart'))
+    } else if (checkout.error === 'CART_EMPTY') {
+        await cart.load()
     }
 }
+
+async function send(address, total) {
+    lastRequest.value = { address, total }
+    placing.value = true
+    await follow(await checkout.submit(address, total))
+}
+
+const place = (address) => send(address, cart.quote.total)
+const retry = () => send(lastRequest.value.address, lastRequest.value.total)
+
+async function confirmPrice() {
+    const { address } = lastRequest.value
+    lastRequest.value = { address, total: checkout.priceChange.total }
+    placing.value = true
+    await follow(await checkout.confirmPriceChange(address))
+}
+
+// Each visit is a new checkout with its own idempotency key; the cart is
+// reloaded because prices may have changed
+onMounted(() => {
+    checkout.start()
+    cart.load()
+})
 </script>
 
 <style scoped>
-.checkout-summary-sticky {
-    position: sticky;
-    top: 80px;
+.checkout-lines {
+    list-style: none;
+    padding: 0;
+    overflow-wrap: anywhere;
+}
+
+@media (min-width: 960px) {
+    .checkout-summary {
+        position: sticky;
+        top: 80px;
+    }
 }
 </style>
