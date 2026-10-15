@@ -6,6 +6,7 @@
  * price in geller and whether they can still be bought, plus the quote.
  */
 
+import mongoose from "mongoose";
 import { config } from "../config/index.js";
 import Book from "../models/Book.js";
 import Cart from "../models/Cart.js";
@@ -87,39 +88,63 @@ async function readEntries(userId) {
   }));
 }
 
-/**
- * Stores the entries and answers their view. A cart saved by the previous
- * version kept prices and totals; the write drops them (strict: false, or
- * Mongoose would leave fields out of the schema untouched).
- */
-async function writeEntries(userId, entries) {
-  const update = () =>
-    Cart.findOneAndUpdate(
-      { user: userId },
-      {
-        $set: { items: entries.map(({ bookId, quantity }) => ({ book: bookId, quantity })) },
-        $unset: { totalItems: 1, totalPrice: 1 },
-      },
-      { upsert: true, new: true, strict: false }
-    );
+// Every change is an atomic update of one line, so changes made at the same
+// moment (two tabs, a merge during an addition, an order emptying the cart)
+// never undo each other. A cart saved by the previous version kept prices and
+// totals; each write drops them (strict: false, or Mongoose would leave fields
+// out of the schema untouched).
+const DROP_OLD_FIELDS = { $unset: { totalItems: 1, totalPrice: 1 } };
 
+function updateCart(filter, update) {
+  return Cart.updateOne(filter, { ...update, ...DROP_OLD_FIELDS }, { strict: false });
+}
+
+async function ensureCart(user) {
+  const create = () =>
+    Cart.updateOne({ user }, { $setOnInsert: { items: [] } }, { upsert: true });
   try {
-    await update();
+    await create();
   } catch (error) {
-    // Two first writes of one user race on the unique index; the loser
-    // updates the cart the winner created
+    // Two first writes of one user race on the unique index; the loser finds
+    // the cart the winner created
     if (error.code !== 11000) throw error;
-    await update();
+    await create();
   }
-
-  return buildCartView(entries);
 }
 
-function entryOf(entries, bookId) {
-  const entry = entries.find((e) => e.bookId === bookId);
-  if (!entry) throw new NotFoundError("Book is not in the cart", "CART_ITEM_NOT_FOUND");
-  return entry;
+/**
+ * Adds copies of a book to the cart. A line that would pass 99 copies is
+ * refused ("overflow") or, with overflow "cap", set to 99.
+ */
+async function putLine(user, book, quantity, { overflow }) {
+  for (let round = 0; round < 2; round += 1) {
+    const added = await updateCart(
+      { user, items: { $elemMatch: { book, quantity: { $lte: MAX_QUANTITY - quantity } } } },
+      { $inc: { "items.$.quantity": quantity } }
+    );
+    if (added.matchedCount) return "merged";
+
+    if (overflow === "cap") {
+      const capped = await updateCart(
+        { user, items: { $elemMatch: { book, quantity: { $gt: MAX_QUANTITY - quantity } } } },
+        { $set: { "items.$.quantity": MAX_QUANTITY } }
+      );
+      if (capped.matchedCount) return "merged";
+    }
+
+    const pushed = await updateCart(
+      { user, "items.book": { $ne: book } },
+      { $push: { items: { book, quantity } } }
+    );
+    if (pushed.matchedCount) return "added";
+    // The book is in the cart now: either it was added at the same moment,
+    // and the next round adds to it, or it is already over the limit
+  }
+  return "overflow";
 }
+
+const objectId = (id) => new mongoose.Types.ObjectId(id);
+const notInCart = () => new NotFoundError("Book is not in the cart", "CART_ITEM_NOT_FOUND");
 
 export async function getCartView(userId) {
   return buildCartView(await readEntries(userId));
@@ -130,37 +155,42 @@ export async function addItem(userId, { bookId, quantity }) {
   if (!book) throw new NotFoundError("Book not found");
   if (!inStock(book)) throw new ConflictError("Book is out of stock", "BOOK_UNAVAILABLE");
 
-  const entries = await readEntries(userId);
-  const existing = entries.find((e) => e.bookId === bookId);
-  const total = (existing?.quantity ?? 0) + quantity;
-  if (total > MAX_QUANTITY) {
+  await ensureCart(userId);
+  const result = await putLine(userId, objectId(bookId), quantity, { overflow: "reject" });
+  if (result === "overflow") {
     throw new ValidationError("A cart holds at most 99 copies of a book", {
       quantity: "too_big",
     });
   }
-
-  if (existing) existing.quantity = total;
-  else entries.push({ bookId, quantity });
-  return writeEntries(userId, entries);
+  return getCartView(userId);
 }
 
 export async function setItemQuantity(userId, bookId, quantity) {
-  const entries = await readEntries(userId);
-  entryOf(entries, bookId).quantity = quantity;
-  return writeEntries(userId, entries);
+  const book = objectId(bookId);
+  // The whole line is replaced, so a line saved by the previous version loses
+  // its stored price
+  const result = await updateCart(
+    { user: userId, "items.book": book },
+    { $set: { "items.$": { book, quantity } } }
+  );
+  if (!result.matchedCount) throw notInCart();
+  return getCartView(userId);
 }
 
 export async function removeItem(userId, bookId) {
-  const entries = await readEntries(userId);
-  entryOf(entries, bookId);
-  return writeEntries(
-    userId,
-    entries.filter((e) => e.bookId !== bookId)
+  const book = objectId(bookId);
+  const result = await updateCart(
+    { user: userId, "items.book": book },
+    { $pull: { items: { book } } }
   );
+  if (!result.matchedCount) throw notInCart();
+  return getCartView(userId);
 }
 
 export async function clearCart(userId) {
-  return writeEntries(userId, []);
+  // No cart yet means it is already empty
+  await updateCart({ user: userId }, { $set: { items: [] } });
+  return getCartView(userId);
 }
 
 /**
@@ -177,7 +207,6 @@ export async function quoteItems(items) {
  */
 export async function mergeItems(userId, items) {
   const incoming = await buildCartView(combineEntries(items));
-  const entries = await readEntries(userId);
   const report = { added: [], merged: [], skipped: [] };
 
   for (const line of incoming.items) {
@@ -185,17 +214,12 @@ export async function mergeItems(userId, items) {
       report.skipped.push({ bookId: line.bookId, reason: line.unavailableReason });
       continue;
     }
-    const existing = entries.find((e) => e.bookId === line.bookId);
-    if (existing) {
-      existing.quantity = Math.min(MAX_QUANTITY, existing.quantity + line.quantity);
-      report.merged.push(line.bookId);
-    } else {
-      entries.push({ bookId: line.bookId, quantity: line.quantity });
-      report.added.push(line.bookId);
-    }
+    await ensureCart(userId);
+    const result = await putLine(userId, objectId(line.bookId), line.quantity, {
+      overflow: "cap",
+    });
+    report[result === "added" ? "added" : "merged"].push(line.bookId);
   }
 
-  const changed = report.added.length > 0 || report.merged.length > 0;
-  const cart = changed ? await writeEntries(userId, entries) : await buildCartView(entries);
-  return { cart, report };
+  return { cart: await getCartView(userId), report };
 }
