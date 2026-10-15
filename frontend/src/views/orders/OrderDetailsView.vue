@@ -123,7 +123,7 @@ import { localeRoute } from '@/router/locale'
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore, useOrdersStore } from '@/stores'
-import { formatPrice } from '@/utils'
+import { formatPrice, formatDate } from '@/utils'
 
 const route = useRoute()
 const ordersStore = useOrdersStore()
@@ -141,19 +141,6 @@ const breadcrumbItems = computed(() => [
         disabled: true,
     },
 ])
-
-const formatDate = (date) => {
-    if (!date) return 'Unknown'
-    try {
-        return new Date(date).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        })
-    } catch {
-        return String(date)
-    }
-}
 
 const getStatusColor = (status) => {
     const statusColors = {

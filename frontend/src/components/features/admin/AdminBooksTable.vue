@@ -85,7 +85,7 @@
 
         <!-- Custom price column -->
         <template #[`item.price`]="{ item }">
-            <span class="text-primary font-weight-medium"> ${{ item.price?.toFixed(2) }} </span>
+            <span class="text-primary font-weight-medium"> {{ formatPrice(item.price) }} </span>
         </template>
 
         <!-- Custom stock column -->
@@ -103,6 +103,7 @@
 </template>
 
 <script setup>
+import { formatPrice } from '@/utils'
 import AdminDataTable from '@/components/features/admin/AdminDataTable.vue'
 import { computed } from 'vue'
 

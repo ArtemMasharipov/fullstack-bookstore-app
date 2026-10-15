@@ -1,6 +1,7 @@
 {
     "common": {
-        "notAvailable": "Není k dispozici"
+        "notAvailable": "Není k dispozici",
+        "priceLabel": "Cena ({currency})"
     },
     "loading": {
         "language": "Načítání jazyka…"
@@ -62,5 +63,8 @@
             "orders": "Objednávky zákazníků",
             "users": "Uživatelské účty"
         }
+    },
+    "shipping": {
+        "freeOver": "Doprava zdarma při objednávce nad {amount}"
     }
 }

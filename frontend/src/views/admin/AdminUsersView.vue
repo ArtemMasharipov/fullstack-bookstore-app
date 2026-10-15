@@ -22,6 +22,10 @@
                 <v-btn color="primary" prepend-icon="mdi-plus" @click="openUserDialog()"> Add New User </v-btn>
             </template>
 
+            <template #[`item.createdAt`]="{ item }">
+                {{ formatDate((item.raw || item).createdAt) }}
+            </template>
+
             <!-- Role column -->
             <template #[`item.role`]="{ item }">
                 <v-chip size="small" :color="getRoleColor(getRoleName(item))" variant="tonal">
@@ -87,6 +91,7 @@
 </template>
 
 <script setup>
+import { formatDate } from '@/utils'
 import { computed } from 'vue'
 
 // Components

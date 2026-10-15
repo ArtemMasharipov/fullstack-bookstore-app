@@ -37,7 +37,7 @@
             </p>
             <div class="d-flex align-center justify-space-between mt-3">
                 <div class="text-subtitle-1 font-weight-bold text-secondary">
-                    {{ formatPriceMethod(book.price) }}
+                    {{ formatPrice(book.price) }}
                 </div>
 
                 <v-chip :color="book.inStock ? 'success' : 'error'" size="small" variant="tonal">
@@ -134,13 +134,6 @@ const added = ref(false)
 const canAddToCart = computed(() => !loading.value && props.book.inStock)
 
 // Methods
-/**
- * Format the book price with currency
- */
-const formatPriceMethod = (price) => {
-    return price ? formatPrice(price) : 'Price not available'
-}
-
 /**
  * Handle adding the book to cart
  */

@@ -121,9 +121,9 @@
 <script setup>
 import { localeRoute } from '@/router/locale'
 import { useAuthorsStore, useBooksStore, useOrdersStore, useUsersStore } from '@/stores'
-import { formatPrice } from '@/utils'
+import { formatPrice, formatDate } from '@/utils'
 import { logger } from '@/utils/logger'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 const booksStore = useBooksStore()
 const authorsStore = useAuthorsStore()
@@ -139,7 +139,15 @@ const stats = ref({
 })
 
 // Recent orders
-const recentOrders = ref([])
+const recentOrders = computed(() =>
+    (ordersStore.ordersList || []).slice(0, 5).map((order) => ({
+        _id: order._id ? order._id.slice(-6) : 'N/A',
+        customer: order.user ? order.user.name || order.user.email || 'Guest' : 'Guest',
+        date: formatDate(order.createdAt),
+        total: formatPrice(order.total),
+        status: order.status || 'pending',
+    }))
+)
 
 // Order table headers
 const orderHeaders = [
@@ -200,19 +208,6 @@ const loadDashboardData = async () => {
             orders: ordersStore.ordersList?.length || 0,
             users: usersStore.usersList?.length || 0,
         }
-
-        // Process recent orders
-        const processedOrders = ordersStore.ordersList
-            ? ordersStore.ordersList.slice(0, 5).map((order) => ({
-                  _id: order._id ? order._id.slice(-6) : 'N/A',
-                  customer: order.user ? order.user.name || order.user.email || 'Guest' : 'Guest',
-                  date: order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A',
-                  total: order.total !== undefined ? formatPrice(order.total) : formatPrice(0),
-                  status: order.status || 'pending',
-              }))
-            : []
-
-        recentOrders.value = processedOrders
     } catch (error) {
         logger.error('Failed to load dashboard data', error, 'admin-dashboard')
     }

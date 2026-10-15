@@ -1,6 +1,7 @@
 {
     "common": {
-        "notAvailable": "Not available"
+        "notAvailable": "Not available",
+        "priceLabel": "Price ({currency})"
     },
     "loading": {
         "language": "Loading language…"
@@ -62,5 +63,8 @@
             "orders": "Customer orders",
             "users": "User accounts"
         }
+    },
+    "shipping": {
+        "freeOver": "Free shipping over {amount}"
     }
 }

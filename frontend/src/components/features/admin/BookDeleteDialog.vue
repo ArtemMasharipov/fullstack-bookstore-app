@@ -29,7 +29,7 @@
                                     <v-chip size="small" variant="flat" :color="getStockColor(book.stock)" class="me-2">
                                         {{ book.stock }} in stock
                                     </v-chip>
-                                    <span class="text-primary font-weight-medium"> ${{ book.price?.toFixed(2) }} </span>
+                                    <span class="text-primary font-weight-medium"> {{ formatPrice(book.price) }} </span>
                                 </div>
                             </div>
                         </div>
@@ -54,6 +54,7 @@
 </template>
 
 <script setup>
+import { formatPrice } from '@/utils'
 import { computed } from 'vue'
 
 // Props

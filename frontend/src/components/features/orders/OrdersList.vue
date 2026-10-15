@@ -93,7 +93,7 @@
                         </v-card-title>
 
                         <v-card-subtitle>
-                            {{ formatDate(order.createdAt) }}
+                            {{ formatDateTime(order.createdAt) }}
                         </v-card-subtitle>
                     </v-card-item>
 
@@ -173,7 +173,7 @@
 import { localeRoute } from '@/router/locale'
 import ErrorMessage from '@/components/ui/ErrorMessage.vue'
 import { useAuthStore, useOrdersStore } from '@/stores'
-import { formatPrice } from '@/utils'
+import { formatPrice, formatDateTime } from '@/utils'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
@@ -301,21 +301,6 @@ const getStatusIcon = (status) => {
         cancelled: 'mdi-close-circle-outline',
     }
     return statusIcons[status] || 'mdi-help-circle'
-}
-
-const formatDate = (date) => {
-    if (!date) return 'Unknown date'
-    try {
-        return new Date(date).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        })
-    } catch (err) {
-        return String(date)
-    }
 }
 
 const clearError = () => {

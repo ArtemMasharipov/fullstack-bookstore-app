@@ -7,16 +7,7 @@ export * from './currency.js'
 // export * from './errorHandling.js' // file removed
 // export * from './formatters.js' // file removed
 
-// Date utilities
-export const formatDate = (date, locale = 'ru-RU') => {
-    if (!date) return ''
-    return new Date(date).toLocaleDateString(locale)
-}
-
-export const formatDateTime = (date, locale = 'ru-RU') => {
-    if (!date) return ''
-    return new Date(date).toLocaleString(locale)
-}
+export { formatDate, formatDateTime } from '../date.js'
 
 // Array utilities
 export const uniqueBy = (array, key) => {

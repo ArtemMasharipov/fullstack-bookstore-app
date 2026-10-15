@@ -107,7 +107,7 @@
                     <div class="d-flex flex-wrap ga-4 mt-2">
                         <div class="d-flex align-center ga-1 text-caption text-medium-emphasis">
                             <v-icon size="16">mdi-truck-delivery-outline</v-icon>
-                            Free shipping over $50
+                            {{ t('shipping.freeOver', { amount: formatPrice(50) }) }}
                         </div>
                         <div class="d-flex align-center ga-1 text-caption text-medium-emphasis">
                             <v-icon size="16">mdi-autorenew</v-icon>
@@ -148,6 +148,7 @@
 </template>
 
 <script setup>
+import { t } from '@/i18n'
 import { localeRoute } from '@/router/locale'
 import BookCard from '@/components/features/books/BookCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'

@@ -67,7 +67,7 @@
                                 :rules="[rules.required, rules.price]"
                                 variant="outlined"
                                 density="comfortable"
-                                prefix="$"
+                                :prefix="CURRENCY_CODE"
                             ></v-text-field>
                         </v-col>
 
@@ -155,6 +155,7 @@
 </template>
 
 <script setup>
+import { CURRENCY_CODE } from '@/utils'
 import { computed, ref, watch } from 'vue'
 
 // Props

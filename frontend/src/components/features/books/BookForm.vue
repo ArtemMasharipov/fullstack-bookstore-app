@@ -73,7 +73,7 @@
                     <v-text-field
                         id="price"
                         v-model.number="form.price"
-                        label="Price (грн)"
+                        :label="t('common.priceLabel', { currency: CURRENCY_CODE })"
                         variant="outlined"
                         type="number"
                         step="0.01"
@@ -192,6 +192,8 @@
 </template>
 
 <script setup>
+import { t } from '@/i18n'
+import { CURRENCY_CODE } from '@/utils'
 import { useImageUpload } from '@/composables/useImageUpload'
 import { useAuthorsStore } from '@/stores'
 import { computed, onMounted, reactive, ref, watch } from 'vue'

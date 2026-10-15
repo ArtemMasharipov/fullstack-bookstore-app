@@ -22,6 +22,10 @@
                 <v-btn color="primary" prepend-icon="mdi-reload" @click="loadOrders"> Refresh Orders </v-btn>
             </template>
 
+            <template #item.createdAt="{ item }">
+                {{ formatDate((item.raw || item).createdAt) }}
+            </template>
+
             <!-- Status column -->
             <template #item.status="{ item }">
                 <v-chip size="small" :color="getStatusColor(item.raw?.status)" class="text-uppercase">
@@ -74,7 +78,7 @@
                     <v-row>
                         <v-col cols="12" md="6">
                             <p><strong>Customer:</strong> {{ detailsOrder.userId?.username || 'Unknown' }}</p>
-                            <p><strong>Date:</strong> {{ new Date(detailsOrder.createdAt).toLocaleString() }}</p>
+                            <p><strong>Date:</strong> {{ formatDateTime(detailsOrder.createdAt) }}</p>
                             <p>
                                 <strong>Status:</strong>
                                 <v-chip
@@ -170,7 +174,7 @@ import AdminDataTable from '@/components/features/admin/AdminDataTable.vue'
 import { useOrdersStore } from '@/stores'
 
 // Utilities
-import { formatPrice } from '@/utils'
+import { formatPrice, formatDate, formatDateTime } from '@/utils'
 import { logger } from '@/utils/logger'
 
 // Store instance
@@ -213,7 +217,6 @@ const orders = computed(() => {
         ordersStore.ordersList.map((order) => ({
             ...order,
             customer: order.userId?.username || order.userId?.email || 'Unknown',
-            createdAt: new Date(order.createdAt).toLocaleDateString(),
         })) || []
     )
 })
