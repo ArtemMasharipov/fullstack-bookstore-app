@@ -57,11 +57,12 @@ baseApi.interceptors.response.use(
             }
         }
 
-        // Create error with message
-        const message = data?.message || data?.error || 'An error occurred'
-        const apiError = new Error(message)
+        // Error envelope: { success: false, error: { code, message, fields?, details? } }
+        const apiError = new Error(data?.error?.message || 'An error occurred')
         apiError.status = status
         apiError.data = data
+        apiError.fields = data?.error?.fields
+        apiError.details = data?.error?.details
         const messageKey = resolveErrorKey(error)
         if (messageKey !== 'errors.UNKNOWN') apiError.code = messageKey.slice(7)
 

@@ -49,6 +49,49 @@ describe('baseApi rejection metadata', () => {
         expect(error).toBeInstanceOf(Error)
         expect(error).toMatchObject({ status: 409, data, code: 'PRICE_CHANGED' })
     })
+    it('takes the message and the details from the error envelope', async () => {
+        const { default: baseApi } = await import('./baseApi')
+        const data = {
+            success: false,
+            error: { code: 'BOOK_UNAVAILABLE', message: 'Book is out of stock', details: { x: 1 } },
+        }
+        const error = await baseApi
+            .get('/books', {
+                adapter: async (config) => {
+                    throw new AxiosError('Request failed', AxiosError.ERR_BAD_REQUEST, config, null, {
+                        status: 409,
+                        data,
+                        headers: {},
+                        config,
+                    })
+                },
+            })
+            .catch((e) => e)
+        expect(error.message).toBe('Book is out of stock')
+        expect(error.details).toEqual({ x: 1 })
+        expect(error.status).toBe(409)
+    })
+    it('carries the invalid fields of a validation error', async () => {
+        const { default: baseApi } = await import('./baseApi')
+        const data = {
+            success: false,
+            error: { code: 'VALIDATION_FAILED', message: 'Validation failed', fields: { quantity: 'too_big' } },
+        }
+        const error = await baseApi
+            .get('/books', {
+                adapter: async (config) => {
+                    throw new AxiosError('Request failed', AxiosError.ERR_BAD_REQUEST, config, null, {
+                        status: 400,
+                        data,
+                        headers: {},
+                        config,
+                    })
+                },
+            })
+            .catch((e) => e)
+        expect(error.fields).toEqual({ quantity: 'too_big' })
+        expect(error.code).toBe('VALIDATION_FAILED')
+    })
     it('retains successful response envelopes and the existing NETWORK_ERROR marker', async () => {
         const { default: baseApi } = await import('./baseApi')
         const data = { success: true, data: { books: [] }, message: 'Loaded' }

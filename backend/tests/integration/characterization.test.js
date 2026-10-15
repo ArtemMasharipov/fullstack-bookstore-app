@@ -45,7 +45,10 @@ describe("auth", () => {
       .send({ emailOrUsername: alice.email, password: "wrong-pass" });
 
     expect(res.status).toBe(401);
-    expect(res.body.error).toBe("Invalid credentials");
+    expect(res.body.error).toEqual({
+      code: "UNAUTHORIZED",
+      message: "Invalid credentials",
+    });
   });
 
   it("GET /api/v1/auth/me without a token answers 401", async () => {
@@ -82,11 +85,15 @@ describe("books", () => {
     );
   });
 
-  it("GET /api/v1/books/:id answers 400 Invalid ID format for a malformed id", async () => {
+  it("GET /api/v1/books/:id answers 400 VALIDATION_FAILED for a malformed id", async () => {
     const res = await request(app).get("/api/v1/books/not-an-id");
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe("Invalid ID format");
+    expect(res.body.error).toEqual({
+      code: "VALIDATION_FAILED",
+      message: "Invalid value",
+      fields: { _id: "invalid" },
+    });
   });
 
   it("GET /api/v1/books/:id answers 404 for a well-formed id that does not exist", async () => {

@@ -4,6 +4,7 @@
  */
 
 import * as orderService from "../services/orderService.js";
+import { ValidationError } from "../utils/errors.js";
 
 /**
  * @route   POST /api/v1/orders
@@ -92,10 +93,7 @@ export async function updateOrderStatus(req, res) {
   const { status } = req.body;
 
   if (!status) {
-    return res.status(400).json({
-      success: false,
-      error: "Status is required",
-    });
+    throw new ValidationError("Status is required", { status: "required" });
   }
 
   const order = await orderService.updateOrderStatus(req.params.id, status);

@@ -14,6 +14,7 @@ import { config } from "./config/index.js";
 // Middleware
 import { errorHandler } from "./middleware/errorHandler.js";
 import { createRequestLogger } from "./middleware/requestLogger.js";
+import { NotFoundError } from "./utils/errors.js";
 
 // Routes
 import routes from "./routes/index.js";
@@ -55,12 +56,7 @@ app.get("/", (req, res) => {
 });
 
 // 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error: "Route not found",
-  });
-});
+app.use((req, res, next) => next(new NotFoundError("Route not found")));
 
 // =============================================================================
 // ERROR HANDLER (MUST BE LAST!)

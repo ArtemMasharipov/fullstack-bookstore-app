@@ -4,6 +4,7 @@
  */
 
 import * as userService from "../services/userService.js";
+import { ValidationError } from "../utils/errors.js";
 
 /**
  * @route   GET /api/v1/users
@@ -133,9 +134,8 @@ export async function toggleUserStatus(req, res) {
   const { isActive } = req.body;
 
   if (typeof isActive !== "boolean") {
-    return res.status(400).json({
-      success: false,
-      error: "isActive must be a boolean value",
+    throw new ValidationError("isActive must be a boolean value", {
+      isActive: "invalid_type",
     });
   }
 

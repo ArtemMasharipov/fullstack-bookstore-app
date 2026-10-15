@@ -5,6 +5,7 @@
  */
 
 import * as bookService from "../services/bookService.js";
+import { ValidationError } from "../utils/errors.js";
 
 /**
  * @route   GET /api/v1/books
@@ -118,9 +119,8 @@ export async function updateBookStock(req, res) {
   const { inStock } = req.body;
 
   if (typeof inStock !== "boolean") {
-    return res.status(400).json({
-      success: false,
-      error: "inStock must be a boolean value",
+    throw new ValidationError("inStock must be a boolean value", {
+      inStock: "invalid_type",
     });
   }
 

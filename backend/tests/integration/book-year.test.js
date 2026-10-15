@@ -49,16 +49,15 @@ describe("POST /api/v1/books: publication year", () => {
     }
   );
 
-  it("rejects next year: 400 Publication year cannot be in the future", async () => {
+  it("rejects next year: 400 VALIDATION_FAILED on publicationYear", async () => {
     const token = await loginAs(app, admin);
 
     const res = await postBook(token, bookWithYear(currentYear + 1));
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.errors).toContain(
-      "Publication year cannot be in the future"
-    );
+    expect(res.body.error.code).toBe("VALIDATION_FAILED");
+    expect(Object.keys(res.body.error.fields)).toEqual(["publicationYear"]);
   });
 
   it("accepts 2031 once the clock reads 1 January 2031: the bound is read at validation time", async () => {
