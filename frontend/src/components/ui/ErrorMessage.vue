@@ -1,30 +1,42 @@
 <template>
     <v-alert
-        v-if="message"
         :type="type"
         :variant="variant"
         :color="color"
         :closable="closable"
         :class="classes"
-        @close="$emit('close')"
+        @click:close="$emit('close')"
         :icon="icon"
         :density="density"
         border
     >
-        {{ message }}
+        {{ safeMessage }}
+        <div class="mt-3 d-flex ga-2">
+            <v-btn v-if="onRetry" variant="text" @click="onRetry()">{{ t('errors.retry') }}</v-btn>
+            <v-btn variant="text" @click="showContact = true">{{ t('errors.contact') }}</v-btn>
+        </div>
+        <p v-if="showContact" role="status" class="mt-2">{{ t('errors.supportUnavailable') }}</p>
     </v-alert>
 </template>
 
 <script setup>
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { resolveErrorKey } from '@/utils/errorResolver'
+const { t } = useI18n()
+const showContact = ref(false)
 /**
  * Generic message component for displaying alerts
  * Wraps Vuetify v-alert with common defaults
  */
 
-defineProps({
+const props = defineProps({
+    error: Object,
+    code: String,
+    onRetry: Function,
     message: {
         type: String,
-        required: true,
+        default: undefined,
     },
     type: {
         type: String,
@@ -60,4 +72,5 @@ defineProps({
 })
 
 defineEmits(['close'])
+const safeMessage = computed(() => t(resolveErrorKey(props.code ? { code: props.code } : props.error)))
 </script>

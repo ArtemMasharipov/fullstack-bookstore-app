@@ -1,4 +1,5 @@
 import { useNotifications } from '@/composables/useNotifications'
+import { resolveErrorKey } from '@/utils/errorResolver'
 
 /**
  * Professional notification service based on Vuetify
@@ -13,27 +14,25 @@ class NotificationService {
         this.info = info
         this.show = show
 
-        // Common notifications
-        this.loginSuccess = () => this.success('Успешный вход в систему')
-        this.logoutSuccess = () => this.success('Вы вышли из системы')
-        this.registrationSuccess = () => this.success('Регистрация успешно завершена')
-
-        // Cart notifications
-        this.addedToCart = (title) => this.success(`"${title}" добавлен в корзину`)
-        this.removedFromCart = (title) => this.info(`"${title}" удален из корзины`)
-        this.cartUpdated = () => this.info('Корзина обновлена')
-        this.cartCleared = () => this.info('Корзина очищена')
-        this.orderPlaced = () => this.success('Заказ успешно оформлен')
-
-        // API notifications
-        this.apiError = (message) => this.error(message || 'Произошла ошибка. Попробуйте позже.')
-        this.apiSuccess = (message) => this.success(message || 'Операция выполнена успешно')
-        this.dataLoaded = () => this.success('Данные успешно загружены')
-
-        // CRUD operations
-        this.itemCreated = (item) => this.success(`${item} успешно создан`)
-        this.itemUpdated = (item) => this.success(`${item} успешно обновлен`)
-        this.itemDeleted = (item) => this.info(`${item} удален`)
+        this.loginSuccess = () => this.success(undefined, { messageKey: 'notifications.loginSuccess' })
+        this.logoutSuccess = () => this.success(undefined, { messageKey: 'notifications.logoutSuccess' })
+        this.registrationSuccess = () => this.success(undefined, { messageKey: 'notifications.registrationSuccess' })
+        this.addedToCart = (title) =>
+            this.success(undefined, { messageKey: 'notifications.cartAdded', messageParams: { title } })
+        this.removedFromCart = (title) =>
+            this.info(undefined, { messageKey: 'notifications.cartRemoved', messageParams: { title } })
+        this.cartUpdated = () => this.info(undefined, { messageKey: 'notifications.cartUpdated' })
+        this.cartCleared = () => this.info(undefined, { messageKey: 'notifications.cartCleared' })
+        this.orderPlaced = () => this.success(undefined, { messageKey: 'notifications.orderPlaced' })
+        this.apiError = (error) => this.error(undefined, { messageKey: resolveErrorKey(error) })
+        this.apiSuccess = (message) => this.success(message, message ? {} : { messageKey: 'notifications.apiSuccess' })
+        this.dataLoaded = () => this.success(undefined, { messageKey: 'notifications.dataLoaded' })
+        this.itemCreated = (item) =>
+            this.success(undefined, { messageKey: 'notifications.itemCreated', messageParams: { item } })
+        this.itemUpdated = (item) =>
+            this.success(undefined, { messageKey: 'notifications.itemUpdated', messageParams: { item } })
+        this.itemDeleted = (item) =>
+            this.info(undefined, { messageKey: 'notifications.itemDeleted', messageParams: { item } })
     }
 }
 

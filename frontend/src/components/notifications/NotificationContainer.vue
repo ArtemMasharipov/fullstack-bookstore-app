@@ -7,8 +7,8 @@
                 size="small"
                 variant="text"
                 color="grey"
-                title="Clear all notifications"
-                aria-label="Clear all notifications"
+                :title="t('notifications.clearAll')"
+                :aria-label="t('notifications.clearAll')"
                 @click="clear"
             >
                 <v-icon icon="mdi-close-circle" />
@@ -22,37 +22,35 @@
                     :color="getColor(notification.type)"
                     :timeout="-1"
                     location="top right"
-                    :multi-line="isMultiLine(notification.message)"
+                    :multi-line="isMultiLine(messageText(notification))"
                     :vertical="notification.actions?.length > 0"
                     class="notification-snackbar"
                     @update:model-value="(value) => !value && hide(notification.id)"
                 >
                     <div class="d-flex align-center">
                         <v-icon :icon="getIcon(notification.type)" class="me-2" size="20" />
-                        <span class="notification-message" v-if="!notification.html">
-                            {{ notification.message }}
-                        </span>
-                        <span class="notification-message" v-else v-html="notification.message"></span>
+                        <span class="notification-message">{{ messageText(notification) }}</span>
                     </div>
 
-                    <template v-if="notification.actions?.length > 0" #action>
+                    <template v-if="notification.actions?.length > 0" #actions>
                         <v-btn
                             v-for="action in notification.actions"
-                            :key="action.label"
+                            :key="action.labelKey || action.label"
                             :color="action.color || 'white'"
                             variant="text"
                             size="small"
                             @click="() => handleAction(action, notification)"
                         >
-                            {{ action.label }}
+                            {{ action.labelKey ? t(action.labelKey, action.labelParams || {}) : action.label }}
                         </v-btn>
                     </template>
 
-                    <template v-else #action>
+                    <template v-else #actions>
                         <v-btn
                             color="white"
                             variant="text"
                             size="small"
+                            :aria-label="t('errors.close')"
                             icon="mdi-close"
                             @click="hide(notification.id)"
                         />
@@ -64,9 +62,17 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { useNotifications } from '@/composables/useNotifications'
 
 const { notifications, hide, clear } = useNotifications()
+const { t } = useI18n()
+const messageText = (notification) =>
+    notification.messageKey
+        ? t(notification.messageKey, notification.messageParams || {})
+        : typeof notification.message === 'string'
+        ? notification.message
+        : t('errors.UNKNOWN')
 
 /**
  * Get color based on notification type

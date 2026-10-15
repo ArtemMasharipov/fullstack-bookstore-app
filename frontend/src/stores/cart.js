@@ -1,4 +1,5 @@
 import { useNotifications } from '@/composables/useNotifications'
+import { resolveErrorKey } from '@/utils/errorResolver'
 import { cartApi } from '@/services/api/cartApi'
 import { withLoading } from './storeHelpers'
 import { defineStore } from 'pinia'
@@ -96,11 +97,15 @@ export const useCartStore = defineStore('cart', {
                     this._persist()
                 }
 
-                showSuccess(`"${title}" added to cart`, { icon: 'mdi-cart-plus' })
+                showSuccess(undefined, {
+                    messageKey: 'notifications.cartAdded',
+                    messageParams: { title },
+                    icon: 'mdi-cart-plus',
+                })
             })
         },
 
-        async removeFromCart(bookId, title = 'Item') {
+        async removeFromCart(bookId, title) {
             const { showSuccess } = useNotifications()
 
             return withLoading(this, async () => {
@@ -113,11 +118,15 @@ export const useCartStore = defineStore('cart', {
                     this._persist()
                 }
 
-                showSuccess(`"${title}" removed from cart`, { icon: 'mdi-cart-minus' })
+                showSuccess(undefined, {
+                    messageKey: title ? 'notifications.cartRemoved' : 'notifications.cartRemovedGeneric',
+                    messageParams: title ? { title } : undefined,
+                    icon: 'mdi-cart-minus',
+                })
             })
         },
 
-        async updateQuantity({ itemId, quantity, title = 'Item' }) {
+        async updateQuantity({ itemId, quantity }) {
             const { showError } = useNotifications()
 
             if (isLoggedIn()) {
@@ -132,11 +141,11 @@ export const useCartStore = defineStore('cart', {
 
                 try {
                     await cartApi.updateQuantity(itemId, quantity)
-                } catch {
+                } catch (error) {
                     // Rollback on failure
                     item.quantity = prev
                     this._persist()
-                    showError(`Could not update "${title}" quantity`)
+                    showError(undefined, { messageKey: resolveErrorKey(error) })
                 }
             } else {
                 const id = String(itemId)
@@ -157,7 +166,7 @@ export const useCartStore = defineStore('cart', {
                 }
                 this.items = []
                 localStorage.removeItem('cart')
-                showSuccess('Cart cleared successfully', { icon: 'mdi-cart-off' })
+                showSuccess(undefined, { messageKey: 'notifications.cartCleared', icon: 'mdi-cart-off' })
             })
         },
 

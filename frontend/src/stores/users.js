@@ -56,8 +56,10 @@ export const useUsersStore = defineStore('users', {
                 this.list.unshift(result)
                 this.total += 1
 
-                const userName = result.name || result.username || result.email || 'New user'
-                showSuccess(`User "${userName}" created successfully`, {
+                const userName = result.name || result.username || result.email
+                showSuccess(undefined, {
+                    messageKey: userName ? 'notifications.userCreated' : 'notifications.userCreatedGeneric',
+                    messageParams: userName ? { name: userName } : undefined,
                     icon: 'mdi-account-plus',
                 })
                 return result
@@ -78,8 +80,10 @@ export const useUsersStore = defineStore('users', {
                     this.list[index] = result
                 }
 
-                const userName = result.name || result.username || result.email || 'User'
-                showSuccess(`User "${userName}" updated successfully`, {
+                const userName = result.name || result.username || result.email
+                showSuccess(undefined, {
+                    messageKey: userName ? 'notifications.userUpdated' : 'notifications.userUpdatedGeneric',
+                    messageParams: userName ? { name: userName } : undefined,
                     icon: 'mdi-account-edit',
                 })
                 return result
@@ -94,14 +98,16 @@ export const useUsersStore = defineStore('users', {
 
             return withLoading(this, async () => {
                 const userToDelete = this.list.find((user) => user.id === id || user._id === id)
-                const userName = userToDelete?.name || userToDelete?.username || userToDelete?.email || 'User'
+                const userName = userToDelete?.name || userToDelete?.username || userToDelete?.email
 
                 await usersApi.deleteUser(id)
 
                 this.list = this.list.filter((user) => user.id !== id && user._id !== id)
                 this.total = Math.max(0, this.total - 1)
 
-                showWarning(`User "${userName}" deleted successfully`, {
+                showWarning(undefined, {
+                    messageKey: userName ? 'notifications.userDeleted' : 'notifications.userDeletedGeneric',
+                    messageParams: userName ? { name: userName } : undefined,
                     icon: 'mdi-account-remove',
                 })
             })

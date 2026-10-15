@@ -10,6 +10,8 @@
  */
 
 import { logger } from './logger'
+import { resolveErrorKey } from './errorResolver'
+import { t } from '@/i18n'
 
 /**
  * Error types
@@ -79,53 +81,47 @@ export class ErrorHandler {
      * @returns {Object} - Normalized error
      */
     static normalizeError(error) {
-        // If this is already an AppError
+        const messageKey = resolveErrorKey(error)
+        const common = {
+            messageKey,
+            get userMessage() {
+                return t(messageKey)
+            },
+            timestamp: error?.timestamp || new Date().toISOString(),
+        }
         if (error instanceof AppError) {
-            return {
+            return Object.assign(common, {
                 type: error.type,
                 message: error.message,
                 statusCode: error.statusCode,
                 details: error.details,
-                timestamp: error.timestamp,
-                userMessage: this.getUserMessage(error.type, error.message),
-            }
+            })
         }
 
-        // Handle network errors
-        if (error.message === 'Network Error' || !error.response) {
-            return {
+        const status = error?.response?.status ?? error?.status
+        const data = error?.response?.data ?? error?.data
+        if (status != null) {
+            return Object.assign(common, {
+                type: this.getErrorType(status),
+                message: error?.message || 'Server error',
+                statusCode: status,
+                details: data,
+            })
+        }
+        if (error?.code === 'NETWORK_ERROR' || error?.message === 'Network Error') {
+            return Object.assign(common, {
                 type: ERROR_TYPES.NETWORK,
                 message: 'Network connection error',
                 statusCode: 0,
-                details: error.message,
-                timestamp: new Date().toISOString(),
-                userMessage: 'Проблема с подключением к интернету. Проверьте соединение и попробуйте снова.',
-            }
+                details: error?.message,
+            })
         }
-
-        // Handle HTTP errors
-        if (error.response) {
-            const { status, data } = error.response
-
-            return {
-                type: this.getErrorType(status),
-                message: data?.message || data?.error || 'Server error',
-                statusCode: status,
-                details: data,
-                timestamp: new Date().toISOString(),
-                userMessage: this.getUserMessage(this.getErrorType(status), data?.message),
-            }
-        }
-
-        // Unknown error
-        return {
+        return Object.assign(common, {
             type: ERROR_TYPES.UNKNOWN,
-            message: error.message || 'Unknown error occurred',
+            message: error?.message || 'Unknown error occurred',
             statusCode: 500,
-            details: error.stack,
-            timestamp: new Date().toISOString(),
-            userMessage: 'Произошла неизвестная ошибка. Попробуйте обновить страницу.',
-        }
+            details: error?.stack,
+        })
     }
 
     /**
@@ -161,17 +157,7 @@ export class ErrorHandler {
      * @returns {string} - User-facing message
      */
     static getUserMessage(type, message) {
-        const messages = {
-            [ERROR_TYPES.NETWORK]: 'Проблема с подключением к интернету. Проверьте соединение и попробуйте снова.',
-            [ERROR_TYPES.VALIDATION]: message || 'Проверьте правильность введенных данных.',
-            [ERROR_TYPES.AUTHENTICATION]: 'Необходимо войти в систему.',
-            [ERROR_TYPES.AUTHORIZATION]: 'У вас нет прав для выполнения этого действия.',
-            [ERROR_TYPES.NOT_FOUND]: 'Запрашиваемый ресурс не найден.',
-            [ERROR_TYPES.SERVER]: 'Временные проблемы с сервером. Попробуйте позже.',
-            [ERROR_TYPES.UNKNOWN]: 'Произошла неизвестная ошибка. Попробуйте обновить страницу.',
-        }
-
-        return messages[type] || messages[ERROR_TYPES.UNKNOWN]
+        return t(resolveErrorKey(message))
     }
 
     /**

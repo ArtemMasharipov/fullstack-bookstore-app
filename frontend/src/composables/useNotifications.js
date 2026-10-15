@@ -47,6 +47,8 @@ export function useNotifications() {
      */
     const show = ({
         message,
+        messageKey,
+        messageParams,
         type = 'info',
         timeout = 4000,
         persistent = false,
@@ -62,6 +64,8 @@ export function useNotifications() {
         const notification = {
             id: createId(),
             message,
+            messageKey,
+            messageParams,
             type,
             timeout,
             persistent,

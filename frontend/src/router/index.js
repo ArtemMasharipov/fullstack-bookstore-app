@@ -36,5 +36,8 @@ installLocaleRouting(router, {
     },
 })
 router.beforeEach(unifiedGuard)
+router.afterEach((_to, _from, failure) => {
+    if (!failure) document.getElementById('locale-load-error')?.remove()
+})
 
 export default router

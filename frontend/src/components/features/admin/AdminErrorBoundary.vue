@@ -4,33 +4,33 @@
             <v-card color="error" theme="dark" class="mx-auto my-8" max-width="600">
                 <v-card-title class="text-h5">
                     <v-icon icon="mdi-alert" class="mr-2"></v-icon>
-                    Error in Admin Panel
+                    {{ t('errors.adminTitle') }}
                 </v-card-title>
                 <v-card-text>
                     <p class="text-subtitle-1">
-                        An unexpected error occurred. This could be due to missing or invalid data in the admin view.
+                        {{ t('errors.UNKNOWN') }}
                     </p>
                     <v-alert
                         color="white"
                         variant="tonal"
                         class="mt-4"
                         icon="mdi-code-json"
-                        :title="errorInfo ? errorInfo.componentName : 'Unknown component'"
+                        :title="t('errors.adminTitle')"
                         density="compact"
                         border
                     >
-                        <pre class="error-message">{{ errorMessage }}</pre>
+                        <pre class="error-message">{{ t(resolveErrorKey(error)) }}</pre>
                     </v-alert>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
                     <v-btn color="white" variant="tonal" @click="handleReset">
                         <v-icon start icon="mdi-refresh"></v-icon>
-                        Reset View
+                        {{ t('errors.resetView') }}
                     </v-btn>
                     <v-btn color="white" variant="tonal" @click="navigateToDashboard">
                         <v-icon start icon="mdi-view-dashboard"></v-icon>
-                        Go to Dashboard
+                        {{ t('errors.dashboard') }}
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -41,8 +41,12 @@
 
 <script setup>
 import { localeRoute } from '@/router/locale'
-import { ref } from 'vue'
+import { ref, onErrorCaptured as registerErrorCaptured } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { resolveErrorKey } from '@/utils/errorResolver'
 import { useRouter } from 'vue-router'
+
+const { t } = useI18n()
 
 // Router
 const router = useRouter()
@@ -90,6 +94,9 @@ const navigateToDashboard = () => {
     errorMessage.value = ''
     router.push(localeRoute('AdminDashboard'))
 }
+
+// Register the existing capture handler for real descendant errors.
+registerErrorCaptured(onErrorCaptured)
 
 // Define error captured lifecycle hook
 defineExpose({

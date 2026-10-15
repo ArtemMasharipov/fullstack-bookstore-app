@@ -3,10 +3,10 @@
         <v-row justify="center" align="center">
             <v-col cols="12" sm="8" md="6" class="text-center">
                 <v-icon icon="mdi-alert-circle-outline" size="80" color="error" class="mb-4" />
-                <h1 class="text-h2 font-weight-bold mb-2">Oops!</h1>
-                <h2 class="text-h5 text-medium-emphasis mb-4">Something went wrong</h2>
+                <h1 class="text-h2 font-weight-bold mb-2">{{ t('errors.oops') }}</h1>
+                <h2 class="text-h5 text-medium-emphasis mb-4">{{ t('errors.title') }}</h2>
                 <p class="text-body-1 text-medium-emphasis mb-6">
-                    An unexpected error occurred. We're already working on fixing it.
+                    {{ t('errors.UNKNOWN') }}
                 </p>
 
                 <v-expand-transition>
@@ -25,8 +25,12 @@
                 </v-expand-transition>
 
                 <div class="d-flex justify-center ga-3">
-                    <v-btn color="primary" :to="localeRoute('Home')" prepend-icon="mdi-home-outline"> Go Home </v-btn>
-                    <v-btn variant="outlined" prepend-icon="mdi-refresh" @click="reloadPage"> Reload Page </v-btn>
+                    <v-btn color="primary" :to="localeRoute('Home')" prepend-icon="mdi-home-outline">
+                        {{ t('errors.home') }}
+                    </v-btn>
+                    <v-btn variant="outlined" prepend-icon="mdi-refresh" @click="reloadPage">
+                        {{ t('errors.reload') }}
+                    </v-btn>
                 </div>
             </v-col>
         </v-row>
@@ -35,15 +39,15 @@
 
 <script setup>
 import { localeRoute } from '@/router/locale'
-import { onMounted, ref } from 'vue'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { resolveErrorKey } from '@/utils/errorResolver'
 import { useRoute } from 'vue-router'
 
-const route = useRoute()
-const errorMessage = ref('')
+const { t } = useI18n()
 
-onMounted(() => {
-    errorMessage.value = route.query.message || route.params.error || ''
-})
+const route = useRoute()
+const errorMessage = computed(() => t(resolveErrorKey({ code: route.query.code })))
 
 const reloadPage = () => {
     window.location.reload()

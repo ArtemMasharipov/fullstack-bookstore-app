@@ -44,7 +44,9 @@ export const useOrdersStore = defineStore('orders', {
                 await cartStore.clearCart()
 
                 // Show success notification
-                showSuccess(`Order #${order._id || order.id || 'New'} placed successfully!`, {
+                showSuccess(undefined, {
+                    messageKey: 'notifications.orderCreated',
+                    messageParams: { id: order._id || order.id || '' },
                     sound: 'success',
                     icon: 'mdi-check-circle',
                 })
@@ -100,7 +102,9 @@ export const useOrdersStore = defineStore('orders', {
                 }
 
                 // Notify user
-                showSuccess(`Order #${id} status updated to "${status}"`, {
+                showSuccess(undefined, {
+                    messageKey: 'notifications.orderStatus',
+                    messageParams: { id, status },
                     sound: 'success',
                     icon: 'mdi-clipboard-check',
                 })
@@ -131,7 +135,9 @@ export const useOrdersStore = defineStore('orders', {
                 }
 
                 // Notify user
-                showWarning(`Order #${id} has been cancelled`, {
+                showWarning(undefined, {
+                    messageKey: 'notifications.orderCancelled',
+                    messageParams: { id },
                     sound: 'warning',
                     icon: 'mdi-cancel',
                 })

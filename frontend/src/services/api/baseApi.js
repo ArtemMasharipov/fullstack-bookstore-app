@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { resolveErrorKey } from '@/utils/errorResolver'
 import { ROUTE_PATHS } from '@/utils/constants/routes'
 
 /**
@@ -61,6 +62,8 @@ baseApi.interceptors.response.use(
         const apiError = new Error(message)
         apiError.status = status
         apiError.data = data
+        const messageKey = resolveErrorKey(error)
+        if (messageKey !== 'errors.UNKNOWN') apiError.code = messageKey.slice(7)
 
         return Promise.reject(apiError)
     }

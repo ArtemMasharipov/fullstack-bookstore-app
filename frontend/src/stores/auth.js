@@ -1,5 +1,6 @@
 import { useNotifications } from '@/composables/useNotifications'
 import { authApi } from '@/services/api/authService'
+import { resolveErrorKey } from '@/utils/errorResolver'
 import { jwtDecode } from 'jwt-decode'
 import { defineStore } from 'pinia'
 import { withLoading } from './storeHelpers'
@@ -89,7 +90,9 @@ export const useAuthStore = defineStore('auth', {
                 const cartStore = useCartStore()
                 await cartStore.syncCart()
 
-                showSuccess(`Welcome back, ${user.name || user.email || 'User'}!`, {
+                showSuccess(undefined, {
+                    messageKey: 'notifications.welcomeBack',
+                    messageParams: { name: user.name || user.email || '' },
                     icon: 'mdi-account-check',
                 })
 
@@ -116,7 +119,9 @@ export const useAuthStore = defineStore('auth', {
                 localStorage.setItem('token', token)
                 localStorage.setItem('userData', JSON.stringify(user))
 
-                showSuccess(`Welcome to Bookstore, ${user.name || user.email || 'User'}!`, {
+                showSuccess(undefined, {
+                    messageKey: 'notifications.welcome',
+                    messageParams: { name: user.name || user.email || '' },
                     icon: 'mdi-account-plus',
                 })
 
@@ -128,7 +133,6 @@ export const useAuthStore = defineStore('auth', {
          * Logout user
          */
         async logout() {
-            const userName = this.user?.name || this.user?.email || 'User'
             const { showSuccess, showError } = useNotifications()
 
             this.loading = true
@@ -136,13 +140,9 @@ export const useAuthStore = defineStore('auth', {
             try {
                 await authApi.logout()
 
-                showSuccess(`${userName} has been logged out`, {
-                    icon: 'mdi-logout',
-                })
+                showSuccess(undefined, { messageKey: 'notifications.logoutSuccess', icon: 'mdi-logout' })
             } catch (error) {
-                showError(`Logout failed: ${error.message}`, {
-                    icon: 'mdi-logout-variant',
-                })
+                showError(undefined, { messageKey: resolveErrorKey(error), icon: 'mdi-logout-variant' })
             } finally {
                 this.clearAuth()
                 this.loading = false
