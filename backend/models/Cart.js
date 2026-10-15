@@ -1,15 +1,10 @@
 /**
  * Cart Model
- * Schema for shopping cart with items
+ * A cart stores which books a user wants and how many. Prices and totals are
+ * never stored: the cart service reads them from the books on every request.
  */
 
 import mongoose from "mongoose";
-
-/** Reusable populate config for book references */
-const POPULATE_BOOKS = {
-  path: "items.book",
-  select: "title author price image inStock category",
-};
 
 const cartItemSchema = new mongoose.Schema(
   {
@@ -24,11 +19,6 @@ const cartItemSchema = new mongoose.Schema(
       min: [1, "Quantity must be at least 1"],
       max: [99, "Quantity cannot exceed 99"],
       default: 1,
-    },
-    price: {
-      type: Number,
-      required: [true, "Price is required"],
-      min: [0, "Price cannot be negative"],
     },
   },
   { _id: false }
@@ -47,16 +37,6 @@ const cartSchema = new mongoose.Schema(
       type: [cartItemSchema],
       default: [],
     },
-    totalItems: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    totalPrice: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
   },
   {
     timestamps: true,
@@ -66,46 +46,6 @@ const cartSchema = new mongoose.Schema(
 );
 
 cartSchema.index({ user: 1, updatedAt: -1 });
-
-// Pre-save — recalculate totals
-cartSchema.pre("save", function (next) {
-  this.totalItems = this.items.reduce((sum, item) => sum + item.quantity, 0);
-  this.totalPrice = Math.round(
-    this.items.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100
-  ) / 100;
-  next();
-});
-
-/**
- * Find cart with populated books (for reading/returning to client)
- */
-cartSchema.statics.findByUser = function (userId) {
-  return this.findOne({ user: userId }).populate(POPULATE_BOOKS);
-};
-
-/**
- * Get or create cart WITHOUT populate (for write operations).
- * items.book stays as raw ObjectId so .toString() comparisons work.
- */
-cartSchema.statics.getOrCreate = async function (userId) {
-  try {
-    return await this.findOneAndUpdate(
-      { user: userId },
-      { $setOnInsert: { user: userId, items: [] } },
-      { upsert: true, new: true }
-    );
-  } catch (err) {
-    if (err.code === 11000) {
-      return this.findOne({ user: userId });
-    }
-    throw err;
-  }
-};
-
-/**
- * Populate config getter — used by services after save
- */
-cartSchema.statics.POPULATE_BOOKS = POPULATE_BOOKS;
 
 // Clean up stale indexes from old schema versions
 cartSchema.statics.cleanupIndexes = async function () {

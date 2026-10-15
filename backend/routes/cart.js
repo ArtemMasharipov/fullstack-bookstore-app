@@ -7,67 +7,46 @@ import express from "express";
 import * as cartController from "../controllers/cartController.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { protect } from "../middleware/auth.js";
+import { validate } from "../middleware/validate.js";
+import {
+  addItemBody,
+  bookIdParams,
+  cartItemsBody,
+  setQuantityBody,
+} from "../schemas/cart.js";
 
 const router = express.Router();
 
-// =============================================================================
-// ALL ROUTES REQUIRE AUTHENTICATION
-// =============================================================================
+// Public: prices a guest cart without storing it
+router.post(
+  "/quote",
+  validate({ body: cartItemsBody }),
+  asyncHandler(cartController.quote)
+);
 
-// Apply protect middleware to all routes
+// Everything below requires authentication
 router.use(protect);
 
-/**
- * @route   GET /api/v1/cart
- * @desc    Get user's cart
- * @access  Private
- */
 router.get("/", asyncHandler(cartController.getCart));
 
-/**
- * @route   GET /api/v1/cart/validate
- * @desc    Validate cart before checkout
- * @access  Private
- */
-router.get("/validate", asyncHandler(cartController.validateCart));
+router.post(
+  "/",
+  validate({ body: addItemBody }),
+  asyncHandler(cartController.addItem)
+);
 
-/**
- * @route   POST /api/v1/cart
- * @desc    Add item to cart
- * @body    { bookId, quantity? }
- * @access  Private
- */
-router.post("/", asyncHandler(cartController.addToCart));
+router.put(
+  "/:bookId",
+  validate({ params: bookIdParams, body: setQuantityBody }),
+  asyncHandler(cartController.setItemQuantity)
+);
 
-/**
- * @route   POST /api/v1/cart/sync
- * @desc    Sync cart with current prices and availability
- * @access  Private
- */
-router.post("/sync", asyncHandler(cartController.syncCart));
+router.delete(
+  "/:bookId",
+  validate({ params: bookIdParams }),
+  asyncHandler(cartController.removeItem)
+);
 
-/**
- * @route   PUT /api/v1/cart/:bookId
- * @desc    Update item quantity in cart
- * @params  :bookId (required)
- * @body    { quantity: number }
- * @access  Private
- */
-router.put("/:bookId", asyncHandler(cartController.updateCartItem));
-
-/**
- * @route   DELETE /api/v1/cart/:bookId
- * @desc    Remove item from cart
- * @params  :bookId (required)
- * @access  Private
- */
-router.delete("/:bookId", asyncHandler(cartController.removeFromCart));
-
-/**
- * @route   DELETE /api/v1/cart
- * @desc    Clear entire cart
- * @access  Private
- */
 router.delete("/", asyncHandler(cartController.clearCart));
 
 export default router;

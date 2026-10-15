@@ -1,125 +1,60 @@
 /**
  * Cart Controller Layer
- * Handles HTTP requests/responses for shopping cart
+ * Every answer is a cart view: { items, quote }
  */
 
 import * as cartService from "../services/cartService.js";
+import { ok } from "../utils/respond.js";
 
 /**
  * @route   GET /api/v1/cart
- * @desc    Get user's cart
  * @access  Private
  */
 export async function getCart(req, res) {
-  const cart = await cartService.getCart(req.user.id);
-
-  res.status(200).json({
-    success: true,
-    data: cart,
-  });
+  ok(res, await cartService.getCartView(req.user.id));
 }
 
 /**
  * @route   POST /api/v1/cart
- * @desc    Add item to cart
+ * @body    { bookId, quantity = 1 }
  * @access  Private
  */
-export async function addToCart(req, res) {
-  const cart = await cartService.addToCart(req.user.id, req.body);
-
-  res.status(200).json({
-    success: true,
-    data: cart,
-    message: "Item added to cart",
-  });
+export async function addItem(req, res) {
+  ok(res, await cartService.addItem(req.user.id, req.valid.body));
 }
 
 /**
  * @route   PUT /api/v1/cart/:bookId
- * @desc    Update item quantity in cart
+ * @body    { quantity }
  * @access  Private
  */
-export async function updateCartItem(req, res) {
-  const { quantity } = req.body;
-
-  if (!quantity || typeof quantity !== "number") {
-    return res.status(400).json({
-      success: false,
-      error: "Quantity must be a number",
-    });
-  }
-
-  const cart = await cartService.updateCartItem(
-    req.user.id,
-    req.params.bookId,
-    quantity
-  );
-
-  res.status(200).json({
-    success: true,
-    data: cart,
-    message: "Cart updated",
-  });
+export async function setItemQuantity(req, res) {
+  const { bookId } = req.valid.params;
+  const { quantity } = req.valid.body;
+  ok(res, await cartService.setItemQuantity(req.user.id, bookId, quantity));
 }
 
 /**
  * @route   DELETE /api/v1/cart/:bookId
- * @desc    Remove item from cart
  * @access  Private
  */
-export async function removeFromCart(req, res) {
-  const cart = await cartService.removeFromCart(req.user.id, req.params.bookId);
-
-  res.status(200).json({
-    success: true,
-    data: cart,
-    message: "Item removed from cart",
-  });
+export async function removeItem(req, res) {
+  ok(res, await cartService.removeItem(req.user.id, req.valid.params.bookId));
 }
 
 /**
  * @route   DELETE /api/v1/cart
- * @desc    Clear entire cart
  * @access  Private
  */
 export async function clearCart(req, res) {
-  const cart = await cartService.clearCart(req.user.id);
-
-  res.status(200).json({
-    success: true,
-    data: cart,
-    message: "Cart cleared",
-  });
+  ok(res, await cartService.clearCart(req.user.id));
 }
 
 /**
- * @route   POST /api/v1/cart/sync
- * @desc    Sync cart with current prices and availability
- * @access  Private
+ * @route   POST /api/v1/cart/quote
+ * @body    { items: [{ bookId, quantity }] }
+ * @access  Public
  */
-export async function syncCart(req, res) {
-  const result = await cartService.syncCart(req.user.id);
-
-  res.status(200).json({
-    success: true,
-    data: result.cart,
-    updates: result.updates,
-    message: "Cart synced successfully",
-  });
-}
-
-/**
- * @route   GET /api/v1/cart/validate
- * @desc    Validate cart before checkout
- * @access  Private
- */
-export async function validateCart(req, res) {
-  const result = await cartService.validateCart(req.user.id);
-
-  res.status(200).json({
-    success: result.valid,
-    data: result.cart,
-    issues: result.issues,
-    message: result.valid ? "Cart is valid" : "Cart has issues",
-  });
+export async function quote(req, res) {
+  ok(res, await cartService.quoteItems(req.valid.body.items));
 }
