@@ -8,6 +8,8 @@ test('catalog shows a seeded book and opens its page', async ({ page }) => {
     expect((await booksResponse).url()).toMatch(/^http:\/\/localhost:4173\/api\//)
     const card = page.locator('.book-card').filter({ hasText: SMOKE_BOOK_TITLE })
     await expect(card).toBeVisible()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'cs')
+    await expect(page).toHaveTitle('Knihy | Bookstore')
     await card.click()
     await expect(page).toHaveURL(/\/books\/[a-f0-9]{24}$/)
     await expect(page.getByRole('heading', { level: 1, name: SMOKE_BOOK_TITLE })).toBeVisible()
