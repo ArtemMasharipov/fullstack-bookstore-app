@@ -39,6 +39,16 @@ function writeGuestItems(items) {
 
 const tooManyCopies = () => Object.assign(new Error('Too many copies'), { code: 'VALIDATION_FAILED' })
 
+// Cart changes run one after another: each starts from the cart the previous
+// one left, so two quick additions, or a refresh during a change, never
+// overwrite each other. The tasks report their own errors.
+let queue = Promise.resolve()
+function serial(task) {
+    const run = queue.then(task)
+    queue = run.catch(() => {})
+    return run
+}
+
 /**
  * Cart Store
  * The server owns prices and totals: a signed-in cart lives on the server, a
@@ -79,34 +89,44 @@ export const useCartStore = defineStore('cart', {
             return view
         },
 
-        /** Runs a change of one line, with that line marked pending; false on failure */
+        /** Runs a change of one line, with that line marked pending from the start; false on failure */
         async _changeLine(bookId, request) {
             const { showError } = useNotifications()
             this.pending.push(bookId)
             try {
-                this._apply(await request())
-                return true
-            } catch (error) {
-                showError(undefined, { messageKey: resolveErrorKey(error) })
-                return false
+                return await serial(async () => {
+                    try {
+                        this._apply(await request())
+                        return true
+                    } catch (error) {
+                        showError(undefined, { messageKey: resolveErrorKey(error) })
+                        return false
+                    }
+                })
             } finally {
-                this.pending = this.pending.filter((id) => id !== bookId)
+                this.pending.splice(this.pending.indexOf(bookId), 1)
             }
         },
 
         /** Loads the cart; a cart already on screen stays there while it refreshes */
-        async load() {
+        load() {
             if (this.status !== 'ready') this.status = 'loading'
-            try {
-                if (isLoggedIn()) this._apply(await cartApi.fetch())
-                else this._apply(await this._guestView(() => {}))
-            } catch (error) {
-                this.status = 'error'
-                this.error = resolveErrorKey(error)
-            }
+            return serial(async () => {
+                try {
+                    if (isLoggedIn()) this._apply(await cartApi.fetch())
+                    else this._apply(await this._guestView(() => {}))
+                } catch (error) {
+                    this.status = 'error'
+                    this.error = resolveErrorKey(error)
+                }
+            })
         },
 
-        async add(bookId, quantity = 1) {
+        add(bookId, quantity = 1) {
+            return serial(() => this._add(bookId, quantity))
+        },
+
+        async _add(bookId, quantity) {
             const { showSuccess, showError } = useNotifications()
             try {
                 const view = isLoggedIn()
@@ -164,17 +184,19 @@ export const useCartStore = defineStore('cart', {
             return removed
         },
 
-        async clear() {
+        clear() {
             const { showSuccess, showError } = useNotifications()
-            try {
-                if (isLoggedIn()) this._apply(await cartApi.clear())
-                else this._apply(await this._guestView((items) => items.splice(0)))
-                showSuccess(undefined, { messageKey: 'notifications.cartCleared', icon: 'mdi-cart-off' })
-                return true
-            } catch (error) {
-                showError(undefined, { messageKey: resolveErrorKey(error) })
-                return false
-            }
+            return serial(async () => {
+                try {
+                    if (isLoggedIn()) this._apply(await cartApi.clear())
+                    else this._apply(await this._guestView((items) => items.splice(0)))
+                    showSuccess(undefined, { messageKey: 'notifications.cartCleared', icon: 'mdi-cart-off' })
+                    return true
+                } catch (error) {
+                    showError(undefined, { messageKey: resolveErrorKey(error) })
+                    return false
+                }
+            })
         },
 
         /**
@@ -182,7 +204,11 @@ export const useCartStore = defineStore('cart', {
          * is forgotten only once the server took it. Answers the report, or
          * null when there was nothing to merge or the merge failed.
          */
-        async mergeGuestCart() {
+        mergeGuestCart() {
+            return serial(() => this._mergeGuestCart())
+        },
+
+        async _mergeGuestCart() {
             const items = readGuestItems()
             if (!items.length) return null
 

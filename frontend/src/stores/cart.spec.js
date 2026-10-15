@@ -77,6 +77,65 @@ describe('guest cart', () => {
     })
 })
 
+describe('changes that overlap', () => {
+    // The answer of quote(items), resolved when the test says so
+    const deferredQuotes = () => {
+        const calls = []
+        api.quote.mockImplementation(
+            (items) =>
+                new Promise((resolve) => {
+                    calls.push(() => resolve(view(...items.map((item) => line(item.bookId, item.quantity)))))
+                })
+        )
+        return calls
+    }
+    const flush = () => new Promise((resolve) => setTimeout(resolve))
+
+    it('keeps both of two guest additions started together', async () => {
+        api.quote.mockImplementation(async (items) => view(...items.map((item) => line(item.bookId, item.quantity))))
+
+        await Promise.all([cart.add(A), cart.add(B)])
+
+        expect(guestCart()).toEqual([
+            { bookId: A, quantity: 1 },
+            { bookId: B, quantity: 1 },
+        ])
+        expect(cart.lines.map((l) => l.bookId)).toEqual([A, B])
+    })
+
+    it('does not let a refresh started during a change undo it', async () => {
+        localStorage.setItem('cart', JSON.stringify([{ bookId: B, quantity: 1 }]))
+        const answers = deferredQuotes()
+
+        const adding = cart.add(A)
+        const refreshing = cart.load()
+        await flush()
+        answers.shift()()
+        await flush()
+        answers.shift()?.()
+        await Promise.all([adding, refreshing])
+
+        expect(guestCart()).toEqual([
+            { bookId: B, quantity: 1 },
+            { bookId: A, quantity: 1 },
+        ])
+        expect(cart.lines.map((l) => l.bookId)).toEqual([B, A])
+    })
+
+    it('marks a line pending for exactly as long as its change runs, failure included', async () => {
+        localStorage.setItem('token', 'token')
+        let fail
+        api.setQuantity.mockReturnValue(new Promise((resolve, reject) => (fail = reject)))
+
+        const changing = cart.setQuantity(A, 2)
+        expect(cart.pending).toEqual([A])
+        fail(new Error('Network'))
+        await changing
+
+        expect(cart.pending).toEqual([])
+    })
+})
+
 describe('readGuestItems', () => {
     it('keeps valid entries of the old or a broken shape and drops the rest', () => {
         localStorage.setItem(
