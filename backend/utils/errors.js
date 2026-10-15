@@ -46,3 +46,9 @@ export class ConflictError extends AppError {
     super(message, 409, code, { details });
   }
 }
+
+export class UnprocessableError extends AppError {
+  constructor(message, code = "UNPROCESSABLE", details) {
+    super(message, 422, code, { details });
+  }
+}

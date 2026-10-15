@@ -7,6 +7,9 @@ import express from "express";
 import * as orderController from "../controllers/orderController.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { authorize, protect } from "../middleware/auth.js";
+import { requireIdempotencyKey } from "../middleware/idempotencyKey.js";
+import { validate } from "../middleware/validate.js";
+import { createOrderBody } from "../schemas/order.js";
 
 const router = express.Router();
 
@@ -72,11 +75,17 @@ router.patch(
 
 /**
  * @route   POST /api/v1/orders
- * @desc    Create order from cart
- * @body    { shippingAddress, paymentMethod? }
+ * @desc    Place an order from the cart, once per Idempotency-Key
+ * @header  Idempotency-Key: <uuid>
+ * @body    { shippingAddress, expectedTotal }
  * @access  Private
  */
-router.post("/", asyncHandler(orderController.createOrder));
+router.post(
+  "/",
+  requireIdempotencyKey,
+  validate({ body: createOrderBody }),
+  asyncHandler(orderController.createOrder)
+);
 
 /**
  * @route   GET /api/v1/orders

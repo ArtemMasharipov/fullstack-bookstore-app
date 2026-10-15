@@ -69,7 +69,7 @@ describe("loadConfig result", () => {
         origin: "https://shop.example",
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
         credentials: false,
-        allowedHeaders: ["Content-Type", "Authorization"],
+        allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key"],
       },
       exposeErrorDetails: false,
       commerce: {

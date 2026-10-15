@@ -117,7 +117,7 @@ export function loadConfig(env) {
       origin: corsOrigin,
       methods: read(env, "CORS_METHODS", "GET,POST,PUT,PATCH,DELETE").split(","),
       credentials: env.CORS_CREDENTIALS === "true",
-      allowedHeaders: ["Content-Type", "Authorization"],
+      allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key"],
     },
 
     // Never in production, whatever EXPOSE_ERROR_DETAILS says

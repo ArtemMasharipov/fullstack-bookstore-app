@@ -5,20 +5,23 @@
 
 import * as orderService from "../services/orderService.js";
 import { ValidationError } from "../utils/errors.js";
+import { ok } from "../utils/respond.js";
 
 /**
  * @route   POST /api/v1/orders
- * @desc    Create order from cart
+ * @header  Idempotency-Key: <uuid>
+ * @body    { shippingAddress, expectedTotal }
+ * @desc    Place an order from the cart: 201 when created, 200 with the same
+ *          order when the request repeats an earlier one
  * @access  Private
  */
 export async function createOrder(req, res) {
-  const order = await orderService.createOrder(req.user.id, req.body);
-
-  res.status(201).json({
-    success: true,
-    data: order,
-    message: "Order created successfully",
-  });
+  const { order, created } = await orderService.createOrder(
+    req.user.id,
+    req.valid.body,
+    req.idempotencyKey
+  );
+  ok(res, order, { status: created ? 201 : 200 });
 }
 
 /**
