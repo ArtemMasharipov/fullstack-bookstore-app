@@ -7,16 +7,10 @@ import { createHash } from "node:crypto";
 import mongoose from "mongoose";
 import Cart from "../models/Cart.js";
 import Order from "../models/Order.js";
-import {
-  ConflictError,
-  ForbiddenError,
-  NotFoundError,
-  UnprocessableError,
-  ValidationError,
-} from "../utils/errors.js";
+import { ConflictError, NotFoundError, UnprocessableError } from "../utils/errors.js";
 import { getCartView } from "./cartService.js";
 import { nextOrderNumber } from "./orderNumber.js";
-import { toOrderSummary, toOrderView } from "./orderView.js";
+import { paymentStatusOf, toOrderSummary, toOrderView } from "./orderView.js";
 
 // JSON with the keys of every object sorted, so equal bodies hash equally
 function canonicalJson(value) {
@@ -201,156 +195,134 @@ export async function cancelOrder(userId, orderId) {
 // ADMIN OPERATIONS
 // =============================================================================
 
+// Older orders have no paymentStatus: theirs is read from isPaid
+const PAYMENT_FILTERS = {
+  paid: { $or: [{ paymentStatus: "paid" }, { paymentStatus: { $exists: false }, isPaid: true }] },
+  unpaid: {
+    $or: [{ paymentStatus: "unpaid" }, { paymentStatus: { $exists: false }, isPaid: { $ne: true } }],
+  },
+  failed: { paymentStatus: "failed" },
+};
+
+const customerOf = (user) =>
+  user ? { id: user._id.toString(), email: user.email, username: user.username } : null;
+
 /**
- * Get all orders (admin)
- * @param {Object} filters - Filter options (status, isPaid, isDelivered, page, limit)
- * @returns {Object} { orders, pagination }
+ * A page of all orders, newest first, with their customer (null when the
+ * account no longer exists)
  */
-export async function getAllOrders(filters = {}) {
-  const { status, isPaid, isDelivered, page = 1, limit = 20 } = filters;
-
-  // Validate pagination
-  if (page < 1 || limit < 1) {
-    throw new ValidationError("Page and limit must be greater than 0");
-  }
-
-  if (limit > 100) {
-    throw new ValidationError("Maximum limit is 100");
-  }
-
-  // Build query
-  const query = {};
-  if (status) query.status = status;
-  if (isPaid !== undefined) query.isPaid = isPaid === "true";
-  if (isDelivered !== undefined) query.isDelivered = isDelivered === "true";
-
-  const skip = (page - 1) * limit;
-
-  // Execute queries in parallel
+export async function listAllOrders({ page, limit, status, paymentStatus }) {
+  const filter = {
+    ...(status && { status }),
+    ...(paymentStatus && PAYMENT_FILTERS[paymentStatus]),
+  };
   const [orders, total] = await Promise.all([
-    Order.find(query)
+    Order.find(filter)
       .populate("user", "username email")
-      .populate("items.book", "title")
-      .sort("-createdAt")
-      .skip(skip)
-      .limit(Number(limit))
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
       .lean(),
-    Order.countDocuments(query),
+    Order.countDocuments(filter),
   ]);
 
   return {
-    orders,
-    pagination: {
-      page: Number(page),
-      limit: Number(limit),
-      total,
-      pages: Math.ceil(total / limit),
-      hasNext: page * limit < total,
-      hasPrev: page > 1,
-    },
+    items: orders.map((order) => ({ ...toOrderView(order), customer: customerOf(order.user) })),
+    pagination: { page, limit, total, pages: Math.ceil(total / limit) },
   };
 }
 
-/**
- * Update order status (admin)
- * @param {string} orderId - Order ID
- * @param {string} status - New status
- * @returns {Object} Updated order
- */
-export async function updateOrderStatus(orderId, status) {
-  const validStatuses = [
-    "pending",
-    "processing",
-    "shipped",
-    "delivered",
-    "cancelled",
-  ];
+const invalidTransition = (message) => new ConflictError(message, "INVALID_TRANSITION");
+const changedMeanwhile = () =>
+  new ConflictError("The order changed meanwhile, reload it", "CONFLICT");
 
-  if (!validStatuses.includes(status)) {
-    throw new ValidationError(
-      `Status must be one of: ${validStatuses.join(", ")}`
-    );
-  }
-
-  const order = await Order.findById(orderId);
-
-  if (!order) {
-    throw new NotFoundError("Order not found");
-  }
-
-  // Cannot change status of cancelled order
-  if (order.status === "cancelled" && status !== "cancelled") {
-    throw new ValidationError("Cannot change status of cancelled order");
-  }
-
-  order.status = status;
-
-  // Auto-mark as delivered if status is delivered
-  if (status === "delivered") {
-    order.markAsDelivered();
-  }
-
-  await order.save();
-
-  await order.populate("items.book", "title author image");
-  await order.populate("user", "username email");
-
+async function findOrder(orderId) {
+  const order = await Order.findById(orderId).lean();
+  if (!order) throw orderNotFound();
   return order;
 }
 
 /**
- * Mark order as paid (admin)
- * @param {string} orderId - Order ID
- * @returns {Object} Updated order
+ * Sets the status of an order. The only rule until the admin stage: a
+ * cancelled order keeps its status. The update applies only if the status is
+ * still the one read, so two admins cannot overwrite each other unnoticed.
  */
-export async function markOrderAsPaid(orderId) {
-  const order = await Order.findById(orderId);
+export async function setOrderStatus(orderId, status) {
+  const order = await findOrder(orderId);
+  if (order.status === "cancelled") throw invalidTransition("A cancelled order keeps its status");
+  if (order.status === status) throw invalidTransition(`The order is already ${status}`);
 
-  if (!order) {
-    throw new NotFoundError("Order not found");
-  }
-
-  if (order.isPaid) {
-    throw new ValidationError("Order is already marked as paid");
-  }
-
-  order.markAsPaid();
-  await order.save();
-
-  await order.populate("items.book", "title author image");
-  await order.populate("user", "username email");
-
-  return order;
+  const updated = await Order.findOneAndUpdate(
+    { _id: orderId, status: order.status },
+    {
+      $set: { status, ...(status === "cancelled" && { cancelledAt: new Date() }) },
+      $push: {
+        statusHistory: { axis: "status", from: order.status, to: status, by: "admin", at: new Date() },
+      },
+    },
+    { new: true, strict: false }
+  ).lean();
+  if (!updated) throw changedMeanwhile();
+  return toOrderView(updated);
 }
 
 /**
- * Get order statistics (admin)
- * @returns {Object} Order statistics
+ * Records the payment of an order; a pending order moves on to processing.
+ * Until online payment exists this is the admin's manual confirmation.
  */
-export async function getOrderStats() {
-  const [total, byStatus, totalRevenue, paidOrders, deliveredOrders] =
-    await Promise.all([
-      Order.countDocuments(),
-      Order.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
-      Order.aggregate([
-        { $match: { isPaid: true } },
-        { $group: { _id: null, total: { $sum: "$totalPrice" } } },
-      ]),
-      Order.countDocuments({ isPaid: true }),
-      Order.countDocuments({ isDelivered: true }),
-    ]);
+export async function markOrderPaid(orderId) {
+  const order = await findOrder(orderId);
+  const payment = paymentStatusOf(order);
+  if (payment === "paid") throw invalidTransition("The order is already paid");
 
-  const statusStats = {};
-  byStatus.forEach((item) => {
-    statusStats[item._id] = item.count;
-  });
+  const at = new Date();
+  const history = [{ axis: "payment", from: payment, to: "paid", by: "admin", at }];
+  const set = { paymentStatus: "paid" };
+  if (order.status === "pending") {
+    set.status = "processing";
+    history.push({ axis: "status", from: "pending", to: "processing", by: "admin", at });
+  }
 
+  const updated = await Order.findOneAndUpdate(
+    { _id: orderId, status: order.status, ...unpaid },
+    { $set: set, $push: { statusHistory: { $each: history } } },
+    { new: true, strict: false }
+  ).lean();
+  if (!updated) throw changedMeanwhile();
+  return toOrderView(updated);
+}
+
+// An older order's total is a float in crowns; it counts in geller
+const totalInGeller = {
+  $cond: [
+    { $eq: ["$schemaVersion", 2] },
+    "$quote.total",
+    { $round: [{ $multiply: ["$totalPrice", 100] }, 0] },
+  ],
+};
+
+/**
+ * Order counts and the revenue of paid orders, in geller
+ */
+export async function orderStats() {
+  const [total, byStatus, paidOrders, revenue] = await Promise.all([
+    Order.countDocuments(),
+    Order.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
+    Order.countDocuments(PAYMENT_FILTERS.paid),
+    Order.aggregate([
+      { $match: PAYMENT_FILTERS.paid },
+      { $group: { _id: null, total: { $sum: totalInGeller } } },
+    ]),
+  ]);
+
+  const counts = Object.fromEntries(byStatus.map(({ _id, count }) => [_id, count]));
   return {
     total,
-    byStatus: statusStats,
-    totalRevenue: totalRevenue[0]?.total || 0,
+    byStatus: counts,
     paidOrders,
-    deliveredOrders,
-    pendingOrders: statusStats.pending || 0,
+    pendingOrders: counts.pending ?? 0,
+    deliveredOrders: counts.delivered ?? 0,
+    totalRevenue: revenue[0]?.total ?? 0,
+    currency: "CZK",
   };
 }

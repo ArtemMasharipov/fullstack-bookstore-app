@@ -112,16 +112,52 @@ geller (1/100 CZK). A quantity is a JSON integer from 1 to 99 per book; `quote` 
 
 ### Orders (`/orders`, every route needs a token)
 
-| Method | Path                  | Access | Description              |
-| ------ | --------------------- | ------ | ------------------------ |
-| POST   | `/orders`             | User   | Create an order from the cart |
-| GET    | `/orders`             | User   | The user's orders        |
-| GET    | `/orders/:id`         | User   | One order                |
-| PATCH  | `/orders/:id/cancel`  | User   | Cancel an order          |
-| GET    | `/orders/admin/all`   | Admin  | All orders               |
-| GET    | `/orders/admin/stats` | Admin  | Order statistics         |
-| PATCH  | `/orders/:id/status`  | Admin  | Change the order status  |
-| PATCH  | `/orders/:id/pay`     | Admin  | Mark an order as paid    |
+| Method | Path                  | Access | Description                                                                  |
+| ------ | --------------------- | ------ | ---------------------------------------------------------------------------- |
+| POST   | `/orders`             | User   | Place an order from the cart (`Idempotency-Key` header, see below)           |
+| GET    | `/orders`             | User   | The user's orders, newest first (`page = 1`, `limit = 10`, at most 50)       |
+| GET    | `/orders/:id`         | User   | One of the user's orders; another user's order is `NOT_FOUND`               |
+| PATCH  | `/orders/:id/cancel`  | User   | Cancel a `pending` order that is `unpaid` or `failed`                        |
+| GET    | `/orders/admin/all`   | Admin  | All orders with their `customer` (`page`, `limit = 20`, `status`, `paymentStatus`) |
+| GET    | `/orders/admin/stats` | Admin  | Order counts and `totalRevenue` of paid orders, in geller                    |
+| PATCH  | `/orders/:id/status`  | Admin  | Set the status (`{ status }`); a cancelled order keeps its status            |
+| PATCH  | `/orders/:id/pay`     | Admin  | Record the payment; a `pending` order moves on to `processing`               |
+
+`POST /orders` takes the address and the total the customer saw, in geller:
+
+```json
+{
+  "shippingAddress": {
+    "fullName": "Jan Novák", "line1": "Vodičkova 12", "city": "Praha",
+    "postalCode": "110 00", "country": "CZ", "phone": "+420 777 123 456"
+  },
+  "expectedTotal": 29800
+}
+```
+
+The server orders the cart as it is now and answers in this order:
+
+| Status | Code                         | When                                                                  |
+| ------ | ---------------------------- | --------------------------------------------------------------------- |
+| 400    | `VALIDATION_FAILED`          | the body or the `Idempotency-Key` header is invalid (`fields`)        |
+| 422    | `CART_EMPTY`                 | the cart is empty                                                     |
+| 422    | `CART_HAS_UNAVAILABLE_ITEMS` | a book can no longer be bought (`details.items: [{ bookId, reason }]`) |
+| 409    | `PRICE_CHANGED`              | `expectedTotal` is not the current total (`details.quote`)            |
+| 201    |                              | the order is placed; its lines leave the cart                         |
+
+The `Idempotency-Key` header is a UUID the client creates per checkout. The same key with the same body answers
+200 with the order it placed, also after the cart was emptied; the same key with another body is
+`IDEMPOTENCY_CONFLICT` (409). Only a placed order takes the key: after `PRICE_CHANGED` or a 422 the same key can be
+sent again. A unique index on the user and the key settles two requests arriving at the same moment.
+
+An order is `{ id, orderNumber, status, paymentStatus, items: [{ bookId, title, unitPrice, quantity, lineTotal }],
+shippingAddress, quote, statusHistory: [{ axis, from, to, by, at }], createdAt }`. The number is
+`ORD-YYYYMMDD-NNNNNN` from a counter per UTC day; gaps are possible. A new order is `pending` and `unpaid`: there is
+no online payment yet. A status change that is not allowed is `INVALID_TRANSITION` (409).
+
+Orders stored by the previous version (amounts as floats in crowns, the street in `address`, `isPaid`) are read in
+the same shape without changing the stored document: amounts are converted to geller, their quote says
+`vatIncluded: false` because their tax was added on top, and `isPaid` becomes `paymentStatus`.
 
 ### Users (`/users`, every route needs an admin token)
 
@@ -175,8 +211,9 @@ Error, from every endpoint:
 ```
 
 - `code` is stable and meant for the client, which translates it: `VALIDATION_FAILED` 400, `UNAUTHORIZED` 401,
-  `FORBIDDEN` 403, `NOT_FOUND` 404, `CONFLICT` 409, `INTERNAL` 500, and per endpoint `BOOK_UNAVAILABLE` 409 and
-  `CART_ITEM_NOT_FOUND` 404.
+  `FORBIDDEN` 403, `NOT_FOUND` 404, `CONFLICT` 409, `INTERNAL` 500, and per endpoint `BOOK_UNAVAILABLE` 409,
+  `CART_ITEM_NOT_FOUND` 404, `CART_EMPTY` 422, `CART_HAS_UNAVAILABLE_ITEMS` 422, `PRICE_CHANGED` 409,
+  `IDEMPOTENCY_CONFLICT` 409 and `INVALID_TRANSITION` 409.
 - `message` is English for developers; the client does not show it.
 - `fields` maps each invalid request field to the rule it broke; `details` carries the payload of some codes.
 

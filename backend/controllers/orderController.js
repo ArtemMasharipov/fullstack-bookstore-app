@@ -4,7 +4,6 @@
  */
 
 import * as orderService from "../services/orderService.js";
-import { ValidationError } from "../utils/errors.js";
 import { ok } from "../utils/respond.js";
 
 /**
@@ -59,65 +58,39 @@ export async function cancelOrder(req, res) {
 
 /**
  * @route   GET /api/v1/orders/admin/all
- * @desc    Get all orders
+ * @query   page = 1, limit = 20 (at most 100), status?, paymentStatus?
+ * @desc    All orders, newest first, each with its customer
  * @access  Private/Admin
  */
-export async function getAllOrders(req, res) {
-  const result = await orderService.getAllOrders(req.query);
-
-  res.status(200).json({
-    success: true,
-    data: result.orders,
-    pagination: result.pagination,
-  });
+export async function listAllOrders(req, res) {
+  const { items, pagination } = await orderService.listAllOrders(req.valid.query);
+  ok(res, items, { pagination });
 }
 
 /**
  * @route   PATCH /api/v1/orders/:id/status
- * @desc    Update order status
+ * @body    { status }
+ * @desc    Set the status of an order
  * @access  Private/Admin
  */
-export async function updateOrderStatus(req, res) {
-  const { status } = req.body;
-
-  if (!status) {
-    throw new ValidationError("Status is required", { status: "required" });
-  }
-
-  const order = await orderService.updateOrderStatus(req.params.id, status);
-
-  res.status(200).json({
-    success: true,
-    data: order,
-    message: "Order status updated successfully",
-  });
+export async function setOrderStatus(req, res) {
+  ok(res, await orderService.setOrderStatus(req.valid.params.id, req.valid.body.status));
 }
 
 /**
  * @route   PATCH /api/v1/orders/:id/pay
- * @desc    Mark order as paid
+ * @desc    Record the payment of an order
  * @access  Private/Admin
  */
-export async function markOrderAsPaid(req, res) {
-  const order = await orderService.markOrderAsPaid(req.params.id);
-
-  res.status(200).json({
-    success: true,
-    data: order,
-    message: "Order marked as paid",
-  });
+export async function markOrderPaid(req, res) {
+  ok(res, await orderService.markOrderPaid(req.valid.params.id));
 }
 
 /**
  * @route   GET /api/v1/orders/admin/stats
- * @desc    Get order statistics
+ * @desc    Order counts and the revenue of paid orders in geller
  * @access  Private/Admin
  */
-export async function getOrderStats(req, res) {
-  const stats = await orderService.getOrderStats();
-
-  res.status(200).json({
-    success: true,
-    data: stats,
-  });
+export async function orderStats(req, res) {
+  ok(res, await orderService.orderStats());
 }

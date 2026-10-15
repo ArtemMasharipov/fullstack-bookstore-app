@@ -37,7 +37,7 @@ describe("error envelope", () => {
 
     it.each([
       ["/api/v1/books", "stock", { inStock: "yes" }, { inStock: "invalid_type" }],
-      ["/api/v1/orders", "status", {}, { status: "required" }],
+      ["/api/v1/orders", "status", {}, { status: "invalid_value" }],
       ["/api/v1/users", "status", { isActive: "x" }, { isActive: "invalid_type" }],
     ])("%s/:id/%s answers a bad body with VALIDATION_FAILED", async (base, action, body, fields) => {
       const res = await request(app)

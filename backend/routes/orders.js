@@ -9,7 +9,13 @@ import { asyncHandler } from "../middleware/asyncHandler.js";
 import { authorize, protect } from "../middleware/auth.js";
 import { requireIdempotencyKey } from "../middleware/idempotencyKey.js";
 import { validate } from "../middleware/validate.js";
-import { createOrderBody, listOrdersQuery, orderIdParams } from "../schemas/order.js";
+import {
+  adminListOrdersQuery,
+  createOrderBody,
+  listOrdersQuery,
+  orderIdParams,
+  orderStatusBody,
+} from "../schemas/order.js";
 
 const router = express.Router();
 
@@ -26,47 +32,51 @@ router.use(protect);
 
 /**
  * @route   GET /api/v1/orders/admin/all
- * @desc    Get all orders
+ * @desc    All orders, newest first, each with its customer
+ * @query   page = 1, limit = 20 (at most 100), status?, paymentStatus?
  * @access  Private/Admin
  */
 router.get(
   "/admin/all",
   authorize("admin"),
-  asyncHandler(orderController.getAllOrders)
+  validate({ query: adminListOrdersQuery }),
+  asyncHandler(orderController.listAllOrders)
 );
 
 /**
  * @route   GET /api/v1/orders/admin/stats
- * @desc    Get order statistics
+ * @desc    Order counts and the revenue of paid orders in geller
  * @access  Private/Admin
  */
 router.get(
   "/admin/stats",
   authorize("admin"),
-  asyncHandler(orderController.getOrderStats)
+  asyncHandler(orderController.orderStats)
 );
 
 /**
  * @route   PATCH /api/v1/orders/:id/status
- * @desc    Update order status
- * @body    { status: string }
+ * @desc    Set the status of an order
+ * @body    { status }
  * @access  Private/Admin
  */
 router.patch(
   "/:id/status",
   authorize("admin"),
-  asyncHandler(orderController.updateOrderStatus)
+  validate({ params: orderIdParams, body: orderStatusBody }),
+  asyncHandler(orderController.setOrderStatus)
 );
 
 /**
  * @route   PATCH /api/v1/orders/:id/pay
- * @desc    Mark order as paid
+ * @desc    Record the payment of an order
  * @access  Private/Admin
  */
 router.patch(
   "/:id/pay",
   authorize("admin"),
-  asyncHandler(orderController.markOrderAsPaid)
+  validate({ params: orderIdParams }),
+  asyncHandler(orderController.markOrderPaid)
 );
 
 // =============================================================================
