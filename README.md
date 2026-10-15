@@ -122,6 +122,9 @@ if (-not (Test-Path backend/.env)) { Copy-Item backend/.env.example backend/.env
 | `CORS_ORIGIN`                                  | Allowed browser origin; default `http://localhost:8080`; in production **required and not `*`** |
 | `CORS_METHODS`, `CORS_CREDENTIALS`             | Optional; defaults `GET,POST,PUT,PATCH,DELETE` and `false`                                      |
 | `EXPOSE_ERROR_DETAILS`                         | `true` puts error messages and stack traces into responses; ignored in production               |
+| `COMMERCE_VAT_RATE_PERCENT`                    | VAT rate included in prices, whole percent; demo default `0` (books are zero-rated in Czechia)  |
+| `COMMERCE_SHIPPING_FEE`                        | Shipping fee in geller (1/100 CZK); demo default `9900`                                         |
+| `COMMERCE_FREE_SHIPPING_THRESHOLD`             | Order total in geller from which shipping is free; demo default `100000`                        |
 | `SEED_ADMIN_PASSWORD`, `SEED_USER_PASSWORD`    | Passwords for `npm run seed` (see [Seed demo data](#seed-demo-data))                            |
 | `SEED_ALLOW_REMOTE`                            | Allows seeding a non-local database; set it in the shell for one run, never in `backend/.env`   |
 

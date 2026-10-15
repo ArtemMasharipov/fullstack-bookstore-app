@@ -28,10 +28,11 @@ backend/
 ├── config/          # default.js (validated configuration), database.js, load-env.js, mongo-guard.js
 ├── routes/          # Route definitions and the access rules of each endpoint
 ├── controllers/     # HTTP handlers: read the request, call a service, send the response
-├── services/        # Business logic; throws the errors of utils/errors.js
+├── services/        # Business logic; throws the errors of utils/errors.js; pricing.js computes cart quotes
 ├── models/          # Mongoose schemas
-├── middleware/      # auth (protect, authorize), errorHandler, requestLogger, asyncHandler
-├── utils/           # Error classes
+├── schemas/         # zod schemas of the request params, query and body that validate() checks
+├── middleware/      # auth (protect, authorize), validate, errorHandler, requestLogger, asyncHandler
+├── utils/           # Error classes and the success response helper
 ├── scripts/         # seed.js, seed-data.js, e2e-server.js
 └── tests/           # unit and integration tests (vitest)
 ```
@@ -46,10 +47,11 @@ role is `admin`.
 
 ### Service
 
-| Method | Path      | Access | Description                              |
-| ------ | --------- | ------ | ---------------------------------------- |
-| GET    | `/health` | Public | Health check                             |
-| GET    | `/`       | Public | API info with the list of resource paths |
+| Method | Path             | Access | Description                                                              |
+| ------ | ---------------- | ------ | ------------------------------------------------------------------------ |
+| GET    | `/health`        | Public | Health check                                                             |
+| GET    | `/`              | Public | API info with the list of resource paths                                 |
+| GET    | `/config/public` | Public | Shop settings: currency, VAT rate, shipping fee, free-shipping threshold |
 
 `GET /` outside `/api/v1` also answers with a short info message.
 
@@ -90,17 +92,23 @@ role is `admin`.
 | PUT    | `/authors/:id`               | Admin  | Update an author             |
 | DELETE | `/authors/:id`               | Admin  | Delete an author             |
 
-### Cart (`/cart`, every route needs a token)
+### Cart (`/cart`, every route except `/cart/quote` needs a token)
 
-| Method | Path             | Access | Description                                  |
-| ------ | ---------------- | ------ | -------------------------------------------- |
-| GET    | `/cart`          | User   | The user's cart                              |
-| GET    | `/cart/validate` | User   | Validate the cart before checkout            |
-| POST   | `/cart`          | User   | Add an item                                  |
-| POST   | `/cart/sync`     | User   | Sync with current prices and availability    |
-| PUT    | `/cart/:bookId`  | User   | Change the quantity of an item               |
-| DELETE | `/cart/:bookId`  | User   | Remove an item                               |
-| DELETE | `/cart`          | User   | Clear the cart                               |
+| Method | Path            | Access | Description                                                                   |
+| ------ | --------------- | ------ | ----------------------------------------------------------------------------- |
+| GET    | `/cart`         | User   | The user's cart                                                               |
+| POST   | `/cart`         | User   | Add copies of a book (`{ bookId, quantity = 1 }`)                             |
+| PUT    | `/cart/:bookId` | User   | Set the quantity of a line (`{ quantity }`)                                   |
+| DELETE | `/cart/:bookId` | User   | Remove a line                                                                 |
+| DELETE | `/cart`         | User   | Empty the cart                                                                |
+| POST   | `/cart/quote`   | Public | Price a guest cart (`{ items: [{ bookId, quantity }] }`); stores nothing      |
+| POST   | `/cart/merge`   | User   | Add a guest cart to the user's cart after sign-in; answers `{ cart, report }` |
+
+A cart stores book ids and quantities only. Every answer is `{ items, quote }`, built from the books as they are now:
+each line has the title, author, image, `unitPrice` and `lineTotal`, and `available: false` with an
+`unavailableReason` (`DELETED`, `OUT_OF_STOCK`) when the book can no longer be bought. The quote holds `itemsTotal`,
+`shipping`, `vatAmount` (included, never added on top), `total` and `freeShippingThreshold`. Amounts are whole
+geller (1/100 CZK). A quantity is a JSON integer from 1 to 99 per book; `quote` and `merge` take at most 50 lines.
 
 ### Orders (`/orders`, every route needs a token)
 
@@ -157,6 +165,22 @@ default), `admin` and `moderator`; the routes check for `admin` only.
 
 Success: `{ "success": true, "data": ..., "message": "..." }` (`data` and `message` are not on every response).
 
-Error: `{ "success": false, "error": "Description" }`. A validation error also has an `errors` array with one message
-per invalid field. An unexpected server error answers `Internal server error`; with `EXPOSE_ERROR_DETAILS=true`
-(not in production) the response carries the real message and a `stack`.
+Error, from every endpoint:
+
+```json
+{
+  "success": false,
+  "error": { "code": "VALIDATION_FAILED", "message": "Validation failed", "fields": { "quantity": "too_big" } }
+}
+```
+
+- `code` is stable and meant for the client, which translates it: `VALIDATION_FAILED` 400, `UNAUTHORIZED` 401,
+  `FORBIDDEN` 403, `NOT_FOUND` 404, `CONFLICT` 409, `INTERNAL` 500, and per endpoint `BOOK_UNAVAILABLE` 409 and
+  `CART_ITEM_NOT_FOUND` 404.
+- `message` is English for developers; the client does not show it.
+- `fields` maps each invalid request field to the rule it broke; `details` carries the payload of some codes.
+
+Requests with params, query or body are checked with zod before the controller runs: an object where a string
+belongs, a quantity sent as a string or an unknown key answers 400 with `fields`, never 500. An unexpected server
+error answers `Internal server error`; with `EXPOSE_ERROR_DETAILS=true` (not in production) `error` carries the real
+message and a `stack`.

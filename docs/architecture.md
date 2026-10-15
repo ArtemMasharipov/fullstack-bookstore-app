@@ -39,13 +39,17 @@ README lists them.
   with validation, indexes and hooks.
 - **Middleware** (`middleware/`). In `auth.js`, `protect` verifies the `Authorization: Bearer <token>` JWT with
   `JWT_SECRET` and puts its payload (user id, username, email, role) on `req.user`; `authorize(...roles)` checks the
-  role. `errorHandler.js` comes last: Mongoose validation errors and malformed ids become 400, duplicate keys 409, and
-  the app's own errors keep their status. Any other error keeps its own status code or gets 500, and its message is
-  replaced with `Internal server error`. The handler logs 5xx errors with their stack and 4xx errors as one warning
-  line. `requestLogger.js` logs one line per response: method, path without the query string, status and duration.
+  role. `validate.js` checks the params, query and body of a route against its zod schemas (`schemas/`) and puts the
+  parsed values on `req.valid`. `errorHandler.js` comes last and answers every error as
+  `{ success: false, error: { code, message, fields?, details? } }`: failed validation, Mongoose validation errors and
+  malformed ids become 400 `VALIDATION_FAILED` with the invalid `fields`, duplicate keys 409 `CONFLICT`, and the app's
+  own errors keep their status and code. Any other error keeps its own status code or gets 500 `INTERNAL`, and its
+  message is replaced with `Internal server error`. The handler logs 5xx errors with their stack and 4xx errors as one
+  warning line with the status and the code, never a value from the request. `requestLogger.js` logs one line per
+  response: method, path without the query string, status and duration.
   `asyncHandler.js` passes errors of async handlers on to the error handler.
 - **API.** `routes/index.js` mounts the routers under `/api/v1`, grouped as `/books`, `/authors`, `/auth`, `/users`,
-  `/cart` and `/orders`. `GET /api/v1/health` answers 200 with `API is running`.
+  `/cart`, `/orders` and `/config`. `GET /api/v1/health` answers 200 with `API is running`.
 - **Shutdown.** On SIGTERM or SIGINT the server stops accepting connections, waits for open requests, closes the
   MongoDB connection and exits with 0. An unhandled rejection or an uncaught exception takes the same path and exits
   with 1. If the cleanup has not finished after 10 seconds, the process prints `shutdown timed out` and exits with 1.
@@ -59,10 +63,14 @@ Five Mongoose models live in `backend/models/`. Each has `createdAt` and `update
 | `Author` | `firstName`, `lastName`, `bio`, `birthYear`, `country`, `website` | `books`: ids of the author's books |
 | `Book` | `title`, `publicationYear` (1450 up to the current year), `category`, `description`, `price`, `image`, `inStock` | `author` (an `Author`, required) |
 | `User` | `username` and `email` (both unique), `password` (bcrypt hash, left out of query results by default), `role` (`user`, `admin`, `moderator`), `isActive`, `lastLogin` | none |
-| `Cart` | `items` (`book`, `quantity` from 1 to 99, `price`), `totalItems`, `totalPrice` | `user` (a `User`, one cart each); `items.book` (a `Book`) |
+| `Cart` | `items` (`book`, `quantity` from 1 to 99) | `user` (a `User`, one cart each); `items.book` (a `Book`) |
 | `Order` | `orderNumber` (`ORD-YYYYMMDD-NNNN`), `items` (`book`, `title`, `quantity`, `price`, `subtotal`), `shippingAddress`, `paymentMethod`, `itemsPrice`, `shippingPrice`, `taxPrice`, `totalPrice`, `status`, `isPaid`, `isDelivered` | `user` (a `User`); `items.book` (a `Book`) |
 
 - Saving a book adds it to its author's `books` list.
+- A cart keeps no prices. `services/cartService.js` prices it on every request from the books as they are now, in
+  whole geller (1/100 CZK), and `services/pricing.js` builds the quote: lines of deleted or out-of-stock books do not
+  count, shipping is free from a threshold, and VAT is part of the total. The VAT rate, the shipping fee and the
+  threshold come from `config.commerce` (demo defaults: 0 %, 99 Kč, 1000 Kč).
 - An order is built from the user's cart. Each item keeps the title and the price the book had when the order was
   placed. A pre-save hook computes the totals: shipping is free when the items cost 50 or more and 10 otherwise, and
   tax is 10%. `status` is one of `pending`, `processing`, `shipped`, `delivered` or `cancelled`.
@@ -91,7 +99,7 @@ How the catalogue page gets its books, from the browser to MongoDB and back:
 10. The store keeps the books, and `BookList` renders them as cards.
 
 If any step throws, for example because `limit` is above 100, `asyncHandler` passes the error to the error handler,
-which answers `{ success: false, error: "<message>" }` with the matching status.
+which answers `{ success: false, error: { code, message } }` with the matching status.
 
 ## Frontend
 
@@ -105,11 +113,14 @@ the three plugins.
   the user to the login page, the home page or the "access denied" page as the policy requires. The API checks every
   protected request on its own.
 - **State** (`src/stores/`). One Pinia store per area: `auth`, `authors`, `books`, `cart`, `orders` and `users`. Each
-  calls its API module and tracks loading and error state through a shared helper.
+  calls its API module and tracks loading and error state through a shared helper. The cart store holds the server's
+  lines and quote and runs its changes one after another; a guest cart keeps only book ids and quantities in
+  `localStorage`, is priced by `POST /cart/quote` and is merged into the account cart on sign-in.
 - **API client** (`src/services/api/`). One module per resource (`booksApi.js`, `authorsApi.js`, `cartApi.js`,
   `orderApi.js`, `usersApi.js`, `rolesApi.js`, `authService.js`), all on the Axios instance in `baseApi.js`. It sets
   the base URL and a 15-second timeout, adds the token from `localStorage` to protected requests, turns failures into
-  `Error` objects with a readable message, and sends the user to the login page after a 401.
+  `Error` objects that carry the status and the `code`, `fields` and `details` of the error envelope, and sends the
+  user to the login page after a 401.
 - **Components and views.** `src/components/features/` holds the components of each area: `admin`, `auth`, `authors`,
   `books`, `cart`, `orders`. Shared pieces live in `components/ui`, `components/layout` and
   `components/notifications`. `src/views/` holds the pages that the router loads, grouped as `public`, `auth`,
