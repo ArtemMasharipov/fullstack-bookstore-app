@@ -4,12 +4,12 @@
             <!-- Mobile hamburger -->
             <v-app-bar-nav-icon
                 class="d-md-none text-white"
-                aria-label="Open navigation menu"
+                :aria-label="t('nav.openMenu')"
                 @click="drawer = !drawer"
             />
 
             <!-- Logo/Brand -->
-            <router-link to="/" class="text-decoration-none text-white d-flex align-center">
+            <router-link :to="localeRoute('Home')" class="text-decoration-none text-white d-flex align-center">
                 <v-btn variant="text" size="large" class="text-h6 font-weight-bold text-white"> Bookstore </v-btn>
             </router-link>
 
@@ -17,25 +17,27 @@
 
             <!-- Desktop Navigation Links -->
             <div class="d-none d-md-flex align-center ga-1">
-                <v-btn variant="text" to="/books" class="text-white">Books</v-btn>
-                <v-btn variant="text" to="/authors" class="text-white">Authors</v-btn>
+                <v-btn variant="text" :to="localeRoute('Books')" class="text-white">{{ t('routes.Books') }}</v-btn>
+                <v-btn variant="text" :to="localeRoute('Authors')" class="text-white">{{ t('routes.Authors') }}</v-btn>
             </div>
 
             <v-spacer class="d-none d-md-block" />
+
+            <LanguageSwitcher class="text-white mr-1" />
 
             <!-- Dark mode toggle -->
             <v-btn
                 variant="text"
                 icon
                 class="text-white"
-                :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+                :aria-label="t(isDark ? 'nav.lightMode' : 'nav.darkMode')"
                 @click="toggleTheme"
             >
                 <v-icon>{{ isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
             </v-btn>
 
             <!-- Cart Icon (visible for all users) -->
-            <v-btn variant="text" to="/cart" icon class="text-white" aria-label="Shopping cart">
+            <v-btn variant="text" :to="localeRoute('Cart')" icon class="text-white" :aria-label="t('nav.cart')">
                 <v-badge :content="cartItemsCount" color="secondary" v-if="cartItemsCount > 0">
                     <v-icon>mdi-cart</v-icon>
                 </v-badge>
@@ -56,26 +58,32 @@
                             </v-btn>
                         </template>
                         <v-list density="compact" rounded="lg" elevation="3" min-width="180">
-                            <v-list-item to="/profile" prepend-icon="mdi-account-outline">
-                                <v-list-item-title>Profile</v-list-item-title>
+                            <v-list-item :to="localeRoute('Profile')" prepend-icon="mdi-account-outline">
+                                <v-list-item-title>{{ t('routes.Profile') }}</v-list-item-title>
                             </v-list-item>
-                            <v-list-item to="/orders" prepend-icon="mdi-package-variant-closed">
-                                <v-list-item-title>My Orders</v-list-item-title>
+                            <v-list-item :to="localeRoute('Orders')" prepend-icon="mdi-package-variant-closed">
+                                <v-list-item-title>{{ t('routes.Orders') }}</v-list-item-title>
                             </v-list-item>
-                            <v-list-item v-if="isAdmin" to="/admin" prepend-icon="mdi-shield-crown-outline">
-                                <v-list-item-title>Admin Panel</v-list-item-title>
+                            <v-list-item
+                                v-if="isAdmin"
+                                :to="localeRoute('AdminDashboard')"
+                                prepend-icon="mdi-shield-crown-outline"
+                            >
+                                <v-list-item-title>{{ t('nav.admin') }}</v-list-item-title>
                             </v-list-item>
                             <v-divider class="my-1" />
                             <v-list-item @click="logout" prepend-icon="mdi-logout">
-                                <v-list-item-title>Logout</v-list-item-title>
+                                <v-list-item-title>{{ t('nav.logout') }}</v-list-item-title>
                             </v-list-item>
                         </v-list>
                     </v-menu>
                 </template>
 
                 <template v-else>
-                    <v-btn variant="text" to="/login" class="text-white">Login</v-btn>
-                    <v-btn variant="outlined" to="/register" class="text-white ml-1">Register</v-btn>
+                    <v-btn variant="text" :to="localeRoute('Login')" class="text-white">{{ t('routes.Login') }}</v-btn>
+                    <v-btn variant="outlined" :to="localeRoute('Register')" class="text-white ml-1">{{
+                        t('routes.Register')
+                    }}</v-btn>
                 </template>
             </div>
         </v-container>
@@ -84,47 +92,62 @@
     <!-- Mobile Navigation Drawer -->
     <v-navigation-drawer v-model="drawer" temporary location="left">
         <v-list density="compact" nav>
-            <v-list-item prepend-icon="mdi-home-outline" title="Home" to="/" @click="drawer = false" />
+            <v-list-item
+                prepend-icon="mdi-home-outline"
+                :title="t('routes.Home')"
+                :to="localeRoute('Home')"
+                @click="drawer = false"
+            />
             <v-list-item
                 prepend-icon="mdi-book-open-page-variant-outline"
-                title="Books"
-                to="/books"
+                :title="t('routes.Books')"
+                :to="localeRoute('Books')"
                 @click="drawer = false"
             />
             <v-list-item
                 prepend-icon="mdi-account-group-outline"
-                title="Authors"
-                to="/authors"
+                :title="t('routes.Authors')"
+                :to="localeRoute('Authors')"
                 @click="drawer = false"
             />
 
             <v-divider class="my-2" />
 
             <template v-if="isAuthenticated">
-                <v-list-item prepend-icon="mdi-account-outline" title="Profile" to="/profile" @click="drawer = false" />
+                <v-list-item
+                    prepend-icon="mdi-account-outline"
+                    :title="t('routes.Profile')"
+                    :to="localeRoute('Profile')"
+                    @click="drawer = false"
+                />
                 <v-list-item
                     prepend-icon="mdi-package-variant-closed"
-                    title="My Orders"
-                    to="/orders"
+                    :title="t('routes.Orders')"
+                    :to="localeRoute('Orders')"
                     @click="drawer = false"
                 />
                 <v-list-item
                     v-if="isAdmin"
                     prepend-icon="mdi-shield-crown-outline"
-                    title="Admin Panel"
-                    to="/admin"
+                    :title="t('nav.admin')"
+                    :to="localeRoute('AdminDashboard')"
                     @click="drawer = false"
                 />
                 <v-divider class="my-2" />
-                <v-list-item prepend-icon="mdi-logout" title="Logout" @click="handleLogout" />
+                <v-list-item prepend-icon="mdi-logout" :title="t('nav.logout')" @click="handleLogout" />
             </template>
 
             <template v-else>
-                <v-list-item prepend-icon="mdi-login" title="Login" to="/login" @click="drawer = false" />
+                <v-list-item
+                    prepend-icon="mdi-login"
+                    :title="t('routes.Login')"
+                    :to="localeRoute('Login')"
+                    @click="drawer = false"
+                />
                 <v-list-item
                     prepend-icon="mdi-account-plus-outline"
-                    title="Register"
-                    to="/register"
+                    :title="t('routes.Register')"
+                    :to="localeRoute('Register')"
                     @click="drawer = false"
                 />
             </template>
@@ -133,6 +156,9 @@
 </template>
 
 <script setup>
+import LanguageSwitcher from '@/components/layout/LanguageSwitcher.vue'
+import { t } from '@/i18n'
+import { localeRoute } from '@/router/locale'
 import { useAuthStore, useCartStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
@@ -176,7 +202,7 @@ const userInitials = computed(() => {
 
 const logout = async () => {
     await authStore.logout()
-    router.push('/')
+    router.push(localeRoute('Home'))
 }
 
 const handleLogout = () => {

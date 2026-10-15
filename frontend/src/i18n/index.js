@@ -1,8 +1,18 @@
 import { createI18n } from 'vue-i18n'
+import csUrl from './locales/cs.json?url&no-inline'
+import enUrl from './locales/en.json?url&no-inline'
+
+const localeUrls = { cs: csUrl, en: enUrl }
+
+async function loadMessages(locale) {
+    const response = await fetch(localeUrls[locale])
+    if (!response.ok) throw new Error('Could not load locale: ' + locale)
+    return { default: await response.json() }
+}
 
 const defaultLoaders = {
-    cs: () => import('./locales/cs.json'),
-    en: () => import('./locales/en.json'),
+    cs: () => loadMessages('cs'),
+    en: () => loadMessages('en'),
 }
 
 export function createLocaleRuntime({ loaders = defaultLoaders } = {}) {

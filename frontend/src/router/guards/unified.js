@@ -14,6 +14,7 @@
  */
 
 import { useAuthStore } from '@/stores/auth'
+import { localeRoute, routeLocale } from '../locale'
 import { ROUTE_NAMES } from '@/utils/constants/routes'
 
 const unifiedGuard = async (to, from, next) => {
@@ -40,17 +41,17 @@ const unifiedGuard = async (to, from, next) => {
     // 1. Route requires authentication.
     if (access.auth && !isAuthenticated) {
         localStorage.setItem('redirectPath', to.fullPath)
-        return next({ name: ROUTE_NAMES.LOGIN })
+        return next(localeRoute(ROUTE_NAMES.LOGIN, {}, routeLocale(to)))
     }
 
     // 2. Route is guest-only (Login / Register).
     if (access.guestOnly && isAuthenticated) {
-        return next({ name: ROUTE_NAMES.HOME })
+        return next(localeRoute(ROUTE_NAMES.HOME, {}, routeLocale(to)))
     }
 
     // 3. Route requires a specific permission.
     if (access.permission && !authStore.hasPermission(access.permission)) {
-        return next({ name: ROUTE_NAMES.UNAUTHORIZED })
+        return next(localeRoute(ROUTE_NAMES.UNAUTHORIZED, {}, routeLocale(to)))
     }
 
     next()

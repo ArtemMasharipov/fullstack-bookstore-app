@@ -37,7 +37,11 @@
                         lg="3"
                         class="d-flex align-stretch"
                     >
-                        <book-card :book="book" class="w-100" @click="$router.push(`/books/${book.id}`)" />
+                        <book-card
+                            :book="book"
+                            class="w-100"
+                            @click="$router.push(localeRoute('BookDetails', { params: { id: book.id } }))"
+                        />
                     </v-col>
                 </v-row>
             </template>
@@ -53,6 +57,7 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import BookCard from '@/components/features/books/BookCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { useAuthorsStore } from '@/stores'

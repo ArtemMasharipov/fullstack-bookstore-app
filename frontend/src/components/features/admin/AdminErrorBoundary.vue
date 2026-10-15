@@ -40,6 +40,7 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -87,7 +88,7 @@ const navigateToDashboard = () => {
     error.value = null
     errorInfo.value = null
     errorMessage.value = ''
-    router.push('/admin')
+    router.push(localeRoute('AdminDashboard'))
 }
 
 // Define error captured lifecycle hook

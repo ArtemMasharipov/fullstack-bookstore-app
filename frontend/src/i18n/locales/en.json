@@ -8,5 +8,59 @@
     "bootstrap": {
         "loadError": "Could not load the language. Try again.",
         "retry": "Retry"
+    },
+    "routes": {
+        "Home": "Home",
+        "Books": "Books",
+        "BookDetails": "Book Details",
+        "Authors": "Authors",
+        "AuthorDetails": "Author Details",
+        "Cart": "Cart",
+        "Checkout": "Checkout",
+        "Login": "Login",
+        "Register": "Register",
+        "Profile": "Profile",
+        "Orders": "My Orders",
+        "OrderDetails": "Order Details",
+        "OrderStatus": "Order Status",
+        "AdminDashboard": "Dashboard",
+        "AdminBooks": "Books",
+        "AdminAuthors": "Authors",
+        "AdminOrders": "Orders",
+        "AdminUsers": "Users",
+        "AdminSettings": "Settings",
+        "Error": "Error",
+        "Unauthorized": "Access Denied",
+        "NotFound": "Page Not Found"
+    },
+    "language": {
+        "label": "Language",
+        "cs": "Czech",
+        "en": "English"
+    },
+    "nav": {
+        "openMenu": "Open navigation menu",
+        "lightMode": "Switch to light mode",
+        "darkMode": "Switch to dark mode",
+        "cart": "Shopping cart",
+        "admin": "Admin Panel",
+        "logout": "Logout",
+        "quickLinks": "Quick Links",
+        "customerService": "Customer Service",
+        "account": "My Account",
+        "returnStore": "Return to Store",
+        "search": "Search…",
+        "system": "System",
+        "adminAccess": "Admin Access",
+        "adminDashboard": "Admin Dashboard"
+    },
+    "admin": {
+        "nav": {
+            "dashboard": "Overview & stats",
+            "books": "Manage inventory",
+            "authors": "Author profiles",
+            "orders": "Customer orders",
+            "users": "User accounts"
+        }
     }
 }

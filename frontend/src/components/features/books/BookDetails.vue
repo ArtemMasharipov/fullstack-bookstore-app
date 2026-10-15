@@ -23,7 +23,7 @@
 
                     <v-btn
                         v-if="book.author?.id"
-                        :to="`/authors/${book.author.id}`"
+                        :to="localeRoute('AuthorDetails', { params: { id: book.author.id } })"
                         variant="text"
                         color="primary"
                         class="px-0 mb-4 text-h6"
@@ -148,6 +148,7 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import BookCard from '@/components/features/books/BookCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { useBooksStore, useCartStore } from '@/stores'
@@ -209,7 +210,7 @@ const handleAddToCart = async () => {
 
 const navigateToBook = (navBook) => {
     if (navBook.id === props.bookId) return
-    router.push(`/books/${navBook.id}`)
+    router.push(localeRoute('BookDetails', { params: { id: navBook.id } }))
     fetchBook(navBook.id)
     quantity.value = 1
     added.value = false

@@ -26,7 +26,9 @@
         <v-container v-else-if="orders.length === 0" class="py-8">
             <v-alert type="info" variant="tonal" class="text-center" icon="mdi-package-variant" border="start">
                 <p class="mb-2">No orders found</p>
-                <v-btn color="primary" variant="text" to="/books" prepend-icon="mdi-shopping"> Start shopping </v-btn>
+                <v-btn color="primary" variant="text" :to="localeRoute('Books')" prepend-icon="mdi-shopping">
+                    Start shopping
+                </v-btn>
             </v-alert>
         </v-container>
 
@@ -134,7 +136,7 @@
                         <v-btn
                             color="primary"
                             variant="text"
-                            :to="`/orders/${order._id}`"
+                            :to="localeRoute('OrderDetails', { params: { id: order._id } })"
                             prepend-icon="mdi-eye"
                             density="comfortable"
                         >
@@ -144,7 +146,7 @@
                             v-if="authStore && authStore.hasPermission('update:order')"
                             color="warning"
                             variant="text"
-                            :to="`/orders/${order._id}/status`"
+                            :to="localeRoute('OrderStatus', { params: { id: order._id } })"
                             prepend-icon="mdi-pencil"
                             density="comfortable"
                         >
@@ -168,6 +170,7 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import ErrorMessage from '@/components/ui/ErrorMessage.vue'
 import { useAuthStore, useOrdersStore } from '@/stores'
 import { formatPrice } from '@/utils'

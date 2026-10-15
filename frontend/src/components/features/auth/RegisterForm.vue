@@ -52,6 +52,7 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import { useAuthStore } from '@/stores'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
@@ -81,7 +82,7 @@ const handleSubmit = async () => {
             password: password.value,
             confirmPassword: confirmPassword.value,
         })
-        router.push('/')
+        router.push(localeRoute('Home'))
     } catch (error) {
         logger.error('Registration failed', error, 'RegisterForm')
     }

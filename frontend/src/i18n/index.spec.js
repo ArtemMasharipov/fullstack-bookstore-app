@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createLocaleRuntime } from './index'
+import enMessages from './locales/en.json'
+import csMessages from './locales/cs.json'
 import { startWithLocaleRetry } from './bootstrap'
 
 const messages = (ready) => ({ default: { common: { ready, greeting: 'Hello, {name}!' } } })
@@ -172,5 +174,55 @@ describe('locale bootstrap', () => {
         )
         expect(start).toHaveBeenCalledTimes(1)
         expect(target.querySelector('[role="alert"]')).toBeNull()
+    })
+})
+
+describe('default locale asset loader', () => {
+    afterEach(() => vi.unstubAllGlobals())
+
+    it('retries a failed requested dictionary fetch without loading the inactive language', async () => {
+        const requests = []
+        let fail = true
+        vi.stubGlobal('fetch', async (url, options) => {
+            const path = new URL(url, 'http://localhost').pathname
+            requests.push({ path, options })
+            if (!path.endsWith('/en.json')) throw new Error('Unexpected inactive dictionary request')
+            const response = new Response(JSON.stringify(enMessages), { status: fail ? 503 : 200 })
+            fail = false
+            return response
+        })
+        const runtime = createLocaleRuntime()
+        await expect(runtime.loadLocale('en')).rejects.toThrow()
+        expect(runtime.i18n.global.availableLocales).toEqual([])
+        expect(runtime.locale.value).toBe('cs')
+        await runtime.loadLocale('en')
+        runtime.activateLocale('en')
+        expect(runtime.t('routes.Books')).toBe('Books')
+        await runtime.loadLocale('en')
+        expect(requests).toEqual([
+            { path: '/src/i18n/locales/en.json', options: undefined },
+            { path: '/src/i18n/locales/en.json', options: undefined },
+        ])
+    })
+
+    it('fetches only CS on first load and requests EN when it is explicitly loaded', async () => {
+        const requests = []
+        vi.stubGlobal('fetch', async (url) => {
+            const path = new URL(url, 'http://localhost').pathname
+            requests.push(path)
+            if (path.endsWith('/cs.json')) return new Response(JSON.stringify(csMessages), { status: 200 })
+            if (path.endsWith('/en.json')) return new Response(JSON.stringify(enMessages), { status: 200 })
+            throw new Error('Unexpected dictionary URL')
+        })
+        const runtime = createLocaleRuntime()
+        await runtime.loadLocale('cs')
+        runtime.activateLocale('cs')
+        expect(runtime.t('routes.Books')).toBe('Knihy')
+        expect(requests).toEqual(['/src/i18n/locales/cs.json'])
+        await runtime.loadLocale('en')
+        expect(runtime.locale.value).toBe('cs')
+        runtime.activateLocale('en')
+        expect(runtime.t('routes.Books')).toBe('Books')
+        expect(requests).toEqual(['/src/i18n/locales/cs.json', '/src/i18n/locales/en.json'])
     })
 })

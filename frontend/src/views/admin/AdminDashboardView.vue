@@ -8,7 +8,7 @@
                         <div class="text-subtitle-2 font-weight-regular">Books</div>
                     </v-card-text>
                     <v-card-actions class="justify-center">
-                        <v-btn variant="text" :to="{ path: '/admin/books' }">
+                        <v-btn variant="text" :to="localeRoute('AdminBooks')">
                             Manage Books
                             <v-icon end>mdi-arrow-right</v-icon>
                         </v-btn>
@@ -23,7 +23,7 @@
                         <div class="text-subtitle-2 font-weight-regular">Authors</div>
                     </v-card-text>
                     <v-card-actions class="justify-center">
-                        <v-btn variant="text" :to="{ path: '/admin/authors' }">
+                        <v-btn variant="text" :to="localeRoute('AdminAuthors')">
                             Manage Authors
                             <v-icon end>mdi-arrow-right</v-icon>
                         </v-btn>
@@ -38,7 +38,7 @@
                         <div class="text-subtitle-2 font-weight-regular">Orders</div>
                     </v-card-text>
                     <v-card-actions class="justify-center">
-                        <v-btn variant="text" :to="{ path: '/admin/orders' }">
+                        <v-btn variant="text" :to="localeRoute('AdminOrders')">
                             View Orders
                             <v-icon end>mdi-arrow-right</v-icon>
                         </v-btn>
@@ -53,7 +53,7 @@
                         <div class="text-subtitle-2 font-weight-regular">Users</div>
                     </v-card-text>
                     <v-card-actions class="justify-center">
-                        <v-btn variant="text" :to="{ path: '/admin/users' }">
+                        <v-btn variant="text" :to="localeRoute('AdminUsers')">
                             Manage Users
                             <v-icon end>mdi-arrow-right</v-icon>
                         </v-btn>
@@ -80,7 +80,7 @@
                         density="compact"
                         icon
                         variant="text"
-                        :to="{ path: item.raw && item.raw._id ? `/admin/orders/${item.raw._id}` : '/admin/orders' }"
+                        :to="localeRoute('AdminOrders')"
                         :disabled="!item.raw || !item.raw._id"
                     >
                         <v-icon>mdi-eye</v-icon>
@@ -119,6 +119,7 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import { useAuthorsStore, useBooksStore, useOrdersStore, useUsersStore } from '@/stores'
 import { formatPrice } from '@/utils'
 import { logger } from '@/utils/logger'

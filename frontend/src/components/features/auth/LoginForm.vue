@@ -52,7 +52,7 @@
 
                             <div class="text-center mt-6">
                                 <span class="text-medium-emphasis">Don't have an account?</span>
-                                <v-btn variant="text" color="primary" to="/register" density="compact">
+                                <v-btn variant="text" color="primary" :to="localeRoute('Register')" density="compact">
                                     Register
                                 </v-btn>
                             </div>
@@ -65,6 +65,7 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import { useAuthStore } from '@/stores'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
@@ -97,7 +98,7 @@ const handleSubmit = async () => {
                 localStorage.removeItem('redirectPath')
                 router.push(redirectPath)
             } else {
-                router.push('/')
+                router.push(localeRoute('Home'))
             }
         }
     } catch (error) {

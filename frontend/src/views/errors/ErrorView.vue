@@ -25,7 +25,7 @@
                 </v-expand-transition>
 
                 <div class="d-flex justify-center ga-3">
-                    <v-btn color="primary" :to="{ name: 'Home' }" prepend-icon="mdi-home-outline"> Go Home </v-btn>
+                    <v-btn color="primary" :to="localeRoute('Home')" prepend-icon="mdi-home-outline"> Go Home </v-btn>
                     <v-btn variant="outlined" prepend-icon="mdi-refresh" @click="reloadPage"> Reload Page </v-btn>
                 </div>
             </v-col>
@@ -34,6 +34,7 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 

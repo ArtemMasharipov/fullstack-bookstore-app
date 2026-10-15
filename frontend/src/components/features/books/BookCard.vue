@@ -58,7 +58,7 @@
                             block
                             density="comfortable"
                             prepend-icon="mdi-shield-account"
-                            @click.stop="router.push('/admin/books')"
+                            @click.stop="router.push(localeRoute('AdminBooks'))"
                         >
                             Manage in Admin
                         </v-btn>
@@ -84,6 +84,7 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import { useAuthStore, useCartStore } from '@/stores'
 import { formatPrice } from '@/utils'
 import { computed, ref } from 'vue'

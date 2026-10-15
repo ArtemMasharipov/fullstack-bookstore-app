@@ -68,7 +68,7 @@
                     color="primary"
                     variant="text"
                     density="comfortable"
-                    to="/admin/books"
+                    :to="localeRoute('AdminBooks')"
                     prepend-icon="mdi-shield-account"
                 >
                     Manage Books
@@ -91,7 +91,11 @@
                         lg="3"
                         class="d-flex align-stretch"
                     >
-                        <book-card :book="book" @click="router.push(`/books/${book.id ?? book._id}`)" class="w-100" />
+                        <book-card
+                            :book="book"
+                            @click="router.push(localeRoute('BookDetails', { params: { id: book.id ?? book._id } }))"
+                            class="w-100"
+                        />
                     </v-col>
                 </v-row>
             </v-container>
@@ -113,6 +117,7 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import { useAuthStore, useBooksStore } from '@/stores'
 import { BOOK_CATEGORIES } from '@/utils/constants/app'
 import { useDisplay } from 'vuetify'

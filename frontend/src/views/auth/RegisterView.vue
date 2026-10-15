@@ -20,7 +20,9 @@
                         <register-form />
                         <div class="text-center mt-4">
                             <span class="text-medium-emphasis">Already have an account?</span>
-                            <v-btn variant="text" color="primary" to="/login" density="compact"> Login </v-btn>
+                            <v-btn variant="text" color="primary" :to="localeRoute('Login')" density="compact">
+                                Login
+                            </v-btn>
                         </div>
                     </v-card-text>
                 </v-card>
@@ -30,5 +32,6 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import RegisterForm from '@/components/features/auth/RegisterForm.vue'
 </script>

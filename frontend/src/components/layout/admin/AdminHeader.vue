@@ -4,7 +4,7 @@
             <v-row align="center" no-gutters>
                 <!-- Admin Panel Title -->
                 <v-col cols="auto">
-                    <h2 class="text-h6 font-weight-medium">Admin Panel</h2>
+                    <h2 class="text-h6 font-weight-medium">{{ t('nav.admin') }}</h2>
                 </v-col>
 
                 <v-spacer></v-spacer>
@@ -13,7 +13,7 @@
                 <v-col cols="auto" class="mr-4">
                     <v-text-field
                         v-model="searchQuery"
-                        placeholder="Search..."
+                        :placeholder="t('nav.search')"
                         prepend-inner-icon="mdi-magnify"
                         variant="outlined"
                         density="compact"
@@ -23,6 +23,8 @@
                         @input="handleSearch"
                     ></v-text-field>
                 </v-col>
+
+                <v-col cols="auto" class="mr-2"><LanguageSwitcher /></v-col>
 
                 <!-- User Menu -->
                 <v-col cols="auto">
@@ -36,27 +38,27 @@
                         </template>
 
                         <v-list>
-                            <v-list-item to="/profile">
+                            <v-list-item :to="localeRoute('Profile')">
                                 <template v-slot:prepend>
                                     <v-icon>mdi-account</v-icon>
                                 </template>
-                                <v-list-item-title>Profile</v-list-item-title>
+                                <v-list-item-title>{{ t('routes.Profile') }}</v-list-item-title>
                             </v-list-item>
 
-                            <v-list-item to="/admin/settings">
+                            <v-list-item :to="localeRoute('AdminSettings')">
                                 <template v-slot:prepend>
                                     <v-icon>mdi-cog</v-icon>
                                 </template>
-                                <v-list-item-title>Settings</v-list-item-title>
+                                <v-list-item-title>{{ t('routes.AdminSettings') }}</v-list-item-title>
                             </v-list-item>
 
                             <v-divider></v-divider>
 
-                            <v-list-item to="/">
+                            <v-list-item :to="localeRoute('Home')">
                                 <template v-slot:prepend>
                                     <v-icon>mdi-home</v-icon>
                                 </template>
-                                <v-list-item-title>Return to Store</v-list-item-title>
+                                <v-list-item-title>{{ t('nav.returnStore') }}</v-list-item-title>
                             </v-list-item>
 
                             <v-divider></v-divider>
@@ -65,7 +67,7 @@
                                 <template v-slot:prepend>
                                     <v-icon>mdi-logout</v-icon>
                                 </template>
-                                <v-list-item-title>Logout</v-list-item-title>
+                                <v-list-item-title>{{ t('nav.logout') }}</v-list-item-title>
                             </v-list-item>
                         </v-list>
                     </v-menu>
@@ -76,6 +78,9 @@
 </template>
 
 <script setup>
+import LanguageSwitcher from '@/components/layout/LanguageSwitcher.vue'
+import { t } from '@/i18n'
+import { localeRoute } from '@/router/locale'
 import { useAuthStore } from '@/stores'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
@@ -105,7 +110,7 @@ const handleSearch = (query) => {
 
 const logout = async () => {
     await authStore.logout()
-    router.push('/login')
+    router.push(localeRoute('Login'))
 }
 </script>
 

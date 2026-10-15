@@ -15,7 +15,7 @@
                 icon="mdi-cart-off"
             >
                 <template v-slot:append>
-                    <v-btn variant="text" to="/books" prepend-icon="mdi-book-open-page-variant-outline">
+                    <v-btn variant="text" :to="localeRoute('Books')" prepend-icon="mdi-book-open-page-variant-outline">
                         Browse Books
                     </v-btn>
                 </template>
@@ -57,14 +57,21 @@
                                 <v-btn
                                     v-if="isAuthenticated"
                                     color="primary"
-                                    to="/checkout"
+                                    :to="localeRoute('Checkout')"
                                     block
                                     size="large"
                                     prepend-icon="mdi-cart-check"
                                 >
                                     Proceed to Checkout
                                 </v-btn>
-                                <v-btn v-else color="primary" to="/login" block size="large" prepend-icon="mdi-login">
+                                <v-btn
+                                    v-else
+                                    color="primary"
+                                    :to="localeRoute('Login')"
+                                    block
+                                    size="large"
+                                    prepend-icon="mdi-login"
+                                >
                                     Login to Checkout
                                 </v-btn>
                             </v-card-text>
@@ -84,6 +91,7 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import { useAuthStore, useCartStore } from '@/stores'
 import { formatPrice } from '@/utils'
 import { logger } from '@/utils/logger'

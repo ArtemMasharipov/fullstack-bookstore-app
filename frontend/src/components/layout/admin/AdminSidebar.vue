@@ -5,7 +5,9 @@
             <template v-slot:prepend>
                 <v-icon color="white" size="large">mdi-view-dashboard</v-icon>
             </template>
-            <v-list-item-title class="text-white text-h6 font-weight-medium"> Admin Dashboard </v-list-item-title>
+            <v-list-item-title class="text-white text-h6 font-weight-medium">
+                {{ t('nav.adminDashboard') }}
+            </v-list-item-title>
         </v-list-item>
 
         <v-divider></v-divider>
@@ -15,10 +17,10 @@
             <v-list-item
                 v-for="item in mainItems"
                 :key="item.id"
-                :to="item.to"
+                :to="localeRoute(item.id)"
                 :prepend-icon="item.icon"
-                :title="item.title"
-                :subtitle="item.subtitle"
+                :title="t(item.titleKey)"
+                :subtitle="item.subtitleKey ? t(item.subtitleKey) : undefined"
                 class="mb-1"
                 rounded="xl"
             ></v-list-item>
@@ -28,14 +30,14 @@
 
         <!-- System Navigation -->
         <v-list density="compact" nav>
-            <v-list-subheader>System</v-list-subheader>
+            <v-list-subheader>{{ t('nav.system') }}</v-list-subheader>
 
             <v-list-item
                 v-for="item in systemItems"
                 :key="item.id"
-                :to="item.to"
+                :to="localeRoute(item.id)"
                 :prepend-icon="item.icon"
-                :title="item.title"
+                :title="t(item.titleKey)"
                 class="mb-1"
                 rounded="xl"
             ></v-list-item>
@@ -45,7 +47,7 @@
         <template v-slot:append>
             <div class="pa-4 text-center">
                 <v-chip color="primary" variant="tonal" size="small" prepend-icon="mdi-shield-check">
-                    Admin Access
+                    {{ t('nav.adminAccess') }}
                 </v-chip>
                 <div class="text-caption text-grey mt-2">Bookstore v2.0</div>
             </div>
@@ -54,6 +56,8 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
+import { t } from '@/i18n'
 import { computed, ref } from 'vue'
 import { buildAdminNav } from '@/router/buildRoutes'
 

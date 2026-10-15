@@ -100,12 +100,14 @@
 
                 <!-- Actions -->
                 <v-card-actions class="pa-4">
-                    <v-btn variant="text" to="/orders" prepend-icon="mdi-arrow-left"> Back to Orders </v-btn>
+                    <v-btn variant="text" :to="localeRoute('Orders')" prepend-icon="mdi-arrow-left">
+                        Back to Orders
+                    </v-btn>
                     <v-spacer />
                     <v-btn
                         v-if="authStore.hasPermission('update:order')"
                         color="primary"
-                        :to="`/orders/${order._id}/status`"
+                        :to="localeRoute('OrderStatus', { params: { id: order._id } })"
                         prepend-icon="mdi-pencil"
                     >
                         Update Status
@@ -117,6 +119,7 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore, useOrdersStore } from '@/stores'

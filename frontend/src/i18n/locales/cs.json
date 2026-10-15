@@ -8,5 +8,59 @@
     "bootstrap": {
         "loadError": "Jazyk se nepodařilo načíst. Zkuste to znovu.",
         "retry": "Zkusit znovu"
+    },
+    "routes": {
+        "Home": "Domů",
+        "Books": "Knihy",
+        "BookDetails": "Detail knihy",
+        "Authors": "Autoři",
+        "AuthorDetails": "Detail autora",
+        "Cart": "Košík",
+        "Checkout": "Pokladna",
+        "Login": "Přihlášení",
+        "Register": "Registrace",
+        "Profile": "Profil",
+        "Orders": "Moje objednávky",
+        "OrderDetails": "Detail objednávky",
+        "OrderStatus": "Stav objednávky",
+        "AdminDashboard": "Přehled",
+        "AdminBooks": "Knihy",
+        "AdminAuthors": "Autoři",
+        "AdminOrders": "Objednávky",
+        "AdminUsers": "Uživatelé",
+        "AdminSettings": "Nastavení",
+        "Error": "Chyba",
+        "Unauthorized": "Přístup odepřen",
+        "NotFound": "Stránka nenalezena"
+    },
+    "language": {
+        "label": "Jazyk",
+        "cs": "Čeština",
+        "en": "Angličtina"
+    },
+    "nav": {
+        "openMenu": "Otevřít navigační nabídku",
+        "lightMode": "Přepnout na světlý režim",
+        "darkMode": "Přepnout na tmavý režim",
+        "cart": "Nákupní košík",
+        "admin": "Administrace",
+        "logout": "Odhlásit se",
+        "quickLinks": "Rychlé odkazy",
+        "customerService": "Zákaznický servis",
+        "account": "Můj účet",
+        "returnStore": "Zpět do obchodu",
+        "search": "Hledat…",
+        "system": "Systém",
+        "adminAccess": "Přístup správce",
+        "adminDashboard": "Přehled administrace"
+    },
+    "admin": {
+        "nav": {
+            "dashboard": "Přehled a statistiky",
+            "books": "Správa knih",
+            "authors": "Profily autorů",
+            "orders": "Objednávky zákazníků",
+            "users": "Uživatelské účty"
+        }
     }
 }

@@ -53,7 +53,11 @@
             </v-card-text>
 
             <v-card-actions class="px-4 pb-4">
-                <v-btn variant="text" :to="`/orders/${route.params.id}`" prepend-icon="mdi-arrow-left">
+                <v-btn
+                    variant="text"
+                    :to="localeRoute('OrderDetails', { params: { id: route.params.id } })"
+                    prepend-icon="mdi-arrow-left"
+                >
                     Back to Order Details
                 </v-btn>
             </v-card-actions>
@@ -62,6 +66,7 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useOrdersStore } from '@/stores'
@@ -88,7 +93,7 @@ const updateStatus = async () => {
             id: route.params.id,
             status: newStatus.value,
         })
-        router.push(`/orders/${route.params.id}`)
+        router.push(localeRoute('OrderDetails', { params: { id: route.params.id } }))
     } catch (error) {
         // Notification is already handled by the store
     }

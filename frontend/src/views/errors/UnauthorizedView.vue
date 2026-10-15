@@ -9,7 +9,7 @@
                     You don't have permission to view this page. Please sign in or contact support.
                 </p>
                 <div class="d-flex justify-center ga-3">
-                    <v-btn color="primary" :to="{ name: 'Home' }" prepend-icon="mdi-home-outline"> Go Home </v-btn>
+                    <v-btn color="primary" :to="localeRoute('Home')" prepend-icon="mdi-home-outline"> Go Home </v-btn>
                     <v-btn variant="outlined" prepend-icon="mdi-arrow-left" @click="goBack"> Go Back </v-btn>
                 </div>
             </v-col>
@@ -18,6 +18,7 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()

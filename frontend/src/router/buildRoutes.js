@@ -18,12 +18,12 @@ import { routeManifest } from './manifest.js'
  * @returns {object} Vue Router route record
  */
 function buildRoute(entry, parentAccess = {}) {
-    const { id, path, view, layout, title, access = {}, children } = entry
+    const { id, path, view, layout, titleKey, access = {}, children } = entry
 
     // Child access is the parent policy overridden by the entry's own policy.
     const mergedAccess = { ...parentAccess, ...access }
 
-    const meta = { title, access: mergedAccess }
+    const meta = { titleKey, access: mergedAccess }
 
     if (children) {
         // Layout route — uses `layout` component, no name of its own.
@@ -49,7 +49,10 @@ function buildRoute(entry, parentAccess = {}) {
  * @returns {object[]}
  */
 export function buildRoutes() {
-    return routeManifest.map((entry) => buildRoute(entry))
+    return routeManifest.map((entry) => ({
+        ...buildRoute(entry),
+        path: '/:locale(en)?' + (entry.path === '/' ? '' : entry.path),
+    }))
 }
 
 /**
@@ -73,15 +76,15 @@ export function buildAdminNav() {
 
     for (const child of adminEntry.children) {
         if (!child.nav) continue
-        const { section, order, icon, subtitle } = child.nav
+        const { section, order, icon, subtitleKey } = child.nav
 
         if (!groups[section]) groups[section] = []
 
         groups[section].push({
             id: child.id,
-            title: child.title,
+            titleKey: child.titleKey,
             icon,
-            subtitle: subtitle ?? null,
+            subtitleKey: subtitleKey ?? null,
             order,
             to: { name: child.id },
         })

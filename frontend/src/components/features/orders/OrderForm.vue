@@ -15,6 +15,7 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import { useOrdersStore } from '@/stores'
 import { ROUTE_NAMES } from '@/utils/constants/routes'
 import { computed, reactive } from 'vue'
@@ -49,7 +50,7 @@ const handleSubmit = async () => {
         await ordersStore.createOrder({
             shippingAddress: { ...form },
         })
-        router.push({ name: ROUTE_NAMES.ORDERS })
+        router.push(localeRoute(ROUTE_NAMES.ORDERS))
     } catch (error) {
         // Notification is already handled by the store
     }

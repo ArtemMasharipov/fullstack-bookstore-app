@@ -105,7 +105,7 @@
                                     <v-list-item-subtitle>View purchase history</v-list-item-subtitle>
                                 </template>
                                 <template v-slot:append>
-                                    <v-btn variant="outlined" size="small" :to="{ name: 'Orders' }">View</v-btn>
+                                    <v-btn variant="outlined" size="small" :to="localeRoute('Orders')">View</v-btn>
                                 </template>
                             </v-list-item>
 
@@ -145,6 +145,7 @@
 </template>
 
 <script setup>
+import { localeRoute } from '@/router/locale'
 import ConfirmModal from '@/components/ui/ConfirmModal.vue'
 import { useAuthStore } from '@/stores'
 import { computed, onMounted, ref } from 'vue'
@@ -203,7 +204,7 @@ const updateProfile = async () => {
 const deleteAccount = async () => {
     try {
         await authStore.deleteAccount()
-        router.push({ name: 'Home' })
+        router.push(localeRoute('Home'))
     } catch (error) {
         // Error deleting account
     }
