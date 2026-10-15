@@ -72,8 +72,15 @@ describe("loadConfig result", () => {
         allowedHeaders: ["Content-Type", "Authorization"],
       },
       exposeErrorDetails: false,
+      commerce: {
+        currency: "CZK",
+        vatRatePercent: 0,
+        shippingFee: 9900,
+        freeShippingThreshold: 100000,
+      },
     });
     expect(Object.isFrozen(config)).toBe(true);
+    expect(Object.isFrozen(config.commerce)).toBe(true);
   });
 
   it("passes JWT_EXPIRATION, JWT_AUDIENCE, JWT_ISSUER, CORS_METHODS and CORS_CREDENTIALS through", () => {
@@ -174,6 +181,9 @@ describe("empty strings", () => {
     MONGODB_URL: "mongodb://127.0.0.1:27018",
     DATABASE_NAME: "b",
     EXPOSE_ERROR_DETAILS: "true",
+    COMMERCE_VAT_RATE_PERCENT: "21",
+    COMMERCE_SHIPPING_FEE: "4900",
+    COMMERCE_FREE_SHIPPING_THRESHOLD: "50000",
   };
 
   it.each(Object.keys(everything))('treat %s="" as not set', (name) => {
@@ -376,5 +386,44 @@ describe("EXPOSE_ERROR_DETAILS", () => {
     const config = loadConfig(inDevelopment({ EXPOSE_ERROR_DETAILS: value }));
 
     expect(config.exposeErrorDetails).toBe(false);
+  });
+});
+
+describe("commerce settings", () => {
+  it("defaults to the demo values: CZK, 0 % VAT, 99 Kč shipping, free from 1000 Kč", () => {
+    expect(loadConfig(inDevelopment()).commerce).toEqual({
+      currency: "CZK",
+      vatRatePercent: 0,
+      shippingFee: 9900,
+      freeShippingThreshold: 100000,
+    });
+  });
+
+  it("reads the amounts from the environment", () => {
+    const { commerce } = loadConfig(
+      inDevelopment({
+        COMMERCE_VAT_RATE_PERCENT: "12",
+        COMMERCE_SHIPPING_FEE: "0",
+        COMMERCE_FREE_SHIPPING_THRESHOLD: "250000",
+      })
+    );
+
+    expect(commerce).toMatchObject({
+      vatRatePercent: 12,
+      shippingFee: 0,
+      freeShippingThreshold: 250000,
+    });
+  });
+
+  it.each([
+    ["COMMERCE_VAT_RATE_PERCENT", ["-1", "101", "1.5", "abc"]],
+    ["COMMERCE_SHIPPING_FEE", ["-1", "99.5", "abc"]],
+    ["COMMERCE_FREE_SHIPPING_THRESHOLD", ["-1", "0.5", "abc"]],
+  ])("rejects a bad %s", (name, values) => {
+    for (const value of values) {
+      expect(outcome(inDevelopment({ [name]: value })).problems).toEqual([
+        about(name),
+      ]);
+    }
   });
 });

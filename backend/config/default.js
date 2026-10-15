@@ -77,6 +77,25 @@ export function loadConfig(env) {
     problems.push("MONGODB_URI (or MONGODB_URL) is required in production");
   }
 
+  // Shop amounts in geller (1/100 CZK). The defaults are demo values for a
+  // portfolio shop: books are zero-rated in Czechia, shipping follows them
+  const wholeNumber = (key, fallback, max) => {
+    const text = read(env, key, String(fallback));
+    const value = Number(text);
+    if (!/^\d+$/.test(text) || (max !== undefined && value > max)) {
+      problems.push(
+        `${key} must be a whole number from 0${max === undefined ? "" : ` to ${max}`}`
+      );
+    }
+    return value;
+  };
+  const commerce = Object.freeze({
+    currency: "CZK",
+    vatRatePercent: wholeNumber("COMMERCE_VAT_RATE_PERCENT", 0, 100),
+    shippingFee: wholeNumber("COMMERCE_SHIPPING_FEE", 9900),
+    freeShippingThreshold: wholeNumber("COMMERCE_FREE_SHIPPING_THRESHOLD", 100000),
+  });
+
   if (problems.length > 0) throw new ConfigError(problems);
 
   return Object.freeze({
@@ -103,6 +122,8 @@ export function loadConfig(env) {
 
     // Never in production, whatever EXPOSE_ERROR_DETAILS says
     exposeErrorDetails: !isProduction && env.EXPOSE_ERROR_DETAILS === "true",
+
+    commerce,
   });
 }
 

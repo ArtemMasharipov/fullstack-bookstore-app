@@ -8,6 +8,7 @@ import authRoutes from "./auth.js";
 import authorRoutes from "./authors.js";
 import bookRoutes from "./books.js";
 import cartRoutes from "./cart.js";
+import configRoutes from "./config.js";
 import orderRoutes from "./orders.js";
 import userRoutes from "./users.js";
 
@@ -20,6 +21,7 @@ router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
 router.use("/cart", cartRoutes);
 router.use("/orders", orderRoutes);
+router.use("/config", configRoutes);
 
 // Health check route
 router.get("/health", (req, res) => {
@@ -43,6 +45,7 @@ router.get("/", (req, res) => {
       users: "/api/v1/users",
       cart: "/api/v1/cart",
       orders: "/api/v1/orders",
+      config: "/api/v1/config/public",
       health: "/api/v1/health",
     },
   });
