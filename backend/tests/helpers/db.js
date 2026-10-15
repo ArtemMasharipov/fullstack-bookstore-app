@@ -7,6 +7,7 @@
 
 import mongoose from "mongoose";
 import { afterAll, afterEach, beforeAll, inject } from "vitest";
+import { ensureIndexes } from "../../config/database.js";
 import {
   assertLocalConnection,
   assertLocalMongoUri,
@@ -31,6 +32,8 @@ export function useTestDatabase() {
     assertLocalConnection(mongoose.connection);
 
     await clearCollections();
+    // As the server does on start: no test runs before the unique indexes exist
+    await ensureIndexes();
   });
 
   afterEach(clearCollections);
