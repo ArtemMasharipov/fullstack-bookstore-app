@@ -60,18 +60,6 @@ export const useCartStore = defineStore('cart', {
         isEmpty: (state) => state.lines.length === 0,
 
         hasUnavailable: (state) => state.lines.some((line) => !line.available),
-
-        // Temporary: the cart page reads these until it is rebuilt on lines and quote
-        cartItems: (state) =>
-            state.lines.map((line) => ({
-                id: line.bookId,
-                _id: line.bookId,
-                bookId: { id: line.bookId, _id: line.bookId, title: line.title ?? '', image: line.image },
-                quantity: line.quantity,
-                price: line.unitPrice / 100,
-            })),
-        cartTotal: (state) => (state.quote?.total ?? 0) / 100,
-        loading: (state) => state.status === 'loading',
     },
 
     actions: {
@@ -106,8 +94,9 @@ export const useCartStore = defineStore('cart', {
             }
         },
 
+        /** Loads the cart; a cart already on screen stays there while it refreshes */
         async load() {
-            this.status = 'loading'
+            if (this.status !== 'ready') this.status = 'loading'
             try {
                 if (isLoggedIn()) this._apply(await cartApi.fetch())
                 else this._apply(await this._guestView(() => {}))
@@ -213,20 +202,6 @@ export const useCartStore = defineStore('cart', {
                 showError(undefined, { messageKey: resolveErrorKey(error) })
                 return null
             }
-        },
-
-        // Temporary: the cart page calls these until it is rebuilt
-        fetchCart() {
-            return this.load()
-        },
-        removeFromCart(bookId) {
-            return this.remove(bookId)
-        },
-        updateQuantity({ itemId, quantity }) {
-            return this.setQuantity(itemId, quantity)
-        },
-        clearError() {
-            this.error = null
         },
     },
 })

@@ -26,8 +26,13 @@
                                 </div>
                                 <div class="text-caption text-medium-emphasis">ISBN: {{ book.isbn }}</div>
                                 <div class="text-caption">
-                                    <v-chip size="small" variant="flat" :color="getStockColor(book.stock)" class="me-2">
-                                        {{ book.stock }} in stock
+                                    <v-chip
+                                        size="small"
+                                        variant="flat"
+                                        :color="book.inStock ? 'success' : 'error'"
+                                        class="me-2"
+                                    >
+                                        {{ book.inStock ? 'In stock' : 'Out of stock' }}
                                     </v-chip>
                                     <span class="text-primary font-weight-medium"> {{ formatPrice(book.price) }} </span>
                                 </div>
@@ -35,9 +40,9 @@
                         </div>
                     </v-card>
 
-                    <v-alert v-if="book.stock > 0" type="warning" variant="text" class="mt-4" density="compact">
+                    <v-alert v-if="book.inStock" type="warning" variant="text" class="mt-4" density="compact">
                         <template #prepend><v-icon>mdi-information</v-icon></template>
-                        This book currently has {{ book.stock }} {{ book.stock === 1 ? 'copy' : 'copies' }} in stock.
+                        This book is currently in stock.
                     </v-alert>
                 </div>
             </v-card-text>
@@ -87,12 +92,6 @@ const localVisible = computed({
 })
 
 // Methods
-const getStockColor = (stock) => {
-    if (stock <= 0) return 'error'
-    if (stock <= 5) return 'warning'
-    return 'success'
-}
-
 const confirmDelete = () => {
     emit('confirm', props.book)
 }

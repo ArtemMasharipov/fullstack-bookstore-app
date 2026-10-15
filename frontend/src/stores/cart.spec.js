@@ -127,6 +127,21 @@ describe('signed-in cart', () => {
         expect(cart.error).toBe('errors.UNKNOWN')
     })
 
+    it('refreshes a loaded cart without going back to loading', async () => {
+        api.fetch.mockResolvedValueOnce(view(line(A, 1)))
+        await cart.load()
+        let answer
+        api.fetch.mockReturnValueOnce(new Promise((resolve) => (answer = resolve)))
+
+        const refreshing = cart.load()
+
+        expect(cart.status).toBe('ready')
+        expect(cart.lines).toEqual([line(A, 1)])
+        answer(view(line(A, 2)))
+        await refreshing
+        expect(cart.lines).toEqual([line(A, 2)])
+    })
+
     it('counts every copy of every line', async () => {
         api.fetch.mockResolvedValue(view(line(A, 2), line(B, 3)))
 

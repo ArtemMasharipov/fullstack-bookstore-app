@@ -89,8 +89,10 @@
         </template>
 
         <!-- Custom stock column -->
-        <template #[`item.stock`]="{ item }">
-            <v-chip :color="getStockColor(item.stock)" size="small" variant="flat"> {{ item.stock }} in stock </v-chip>
+        <template #[`item.inStock`]="{ item }">
+            <v-chip :color="item.inStock ? 'success' : 'error'" size="small" variant="flat">
+                {{ item.inStock ? 'In stock' : 'Out of stock' }}
+            </v-chip>
         </template>
 
         <!-- Custom status column -->
@@ -182,7 +184,7 @@ const headers = computed(() => [
     },
     {
         title: 'Stock',
-        key: 'stock',
+        key: 'inStock',
         sortable: true,
         align: 'center',
     },
@@ -217,12 +219,6 @@ const categoryOptions = computed(() => {
 })
 
 // Methods
-const getStockColor = (stock) => {
-    if (stock <= 0) return 'error'
-    if (stock <= 5) return 'warning'
-    return 'success'
-}
-
 const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
         case 'published':

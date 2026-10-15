@@ -14,8 +14,6 @@
     "src/components/features/books/BookDetails.vue",
     "src/components/features/books/BookForm.vue",
     "src/components/features/books/BookList.vue",
-    "src/components/features/cart/CartItem.vue",
-    "src/components/features/cart/CartList.vue",
     "src/components/features/orders/OrderForm.vue",
     "src/components/features/orders/OrdersList.vue",
     "src/views/admin/AdminAuthorsView.vue",
@@ -28,7 +26,6 @@
     "src/views/orders/OrderDetailsView.vue",
     "src/views/orders/OrderStatusView.vue",
     "src/views/orders/OrdersView.vue",
-    "src/views/public/CartView.vue",
     "src/views/public/CheckoutView.vue",
     "src/views/public/HomeView.vue"
 ]

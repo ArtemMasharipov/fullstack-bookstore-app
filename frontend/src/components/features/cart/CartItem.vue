@@ -1,176 +1,103 @@
 <template>
-    <v-card variant="outlined" class="mb-4">
-        <v-row no-gutters align="center">
-            <v-col cols="12" sm="3" md="2">
-                <v-img
-                    :src="bookImage"
-                    :alt="bookTitle"
-                    @error="handleImageError"
-                    height="160"
-                    cover
-                    class="rounded-ss-md rounded-es-md"
-                ></v-img>
-            </v-col>
+    <v-card variant="outlined" class="cart-line mb-4">
+        <div class="d-flex ga-4 pa-4">
+            <v-img
+                :src="line.image || placeholderImage"
+                alt=""
+                width="72"
+                height="108"
+                cover
+                class="flex-grow-0 flex-shrink-0 rounded"
+            />
 
-            <v-col cols="12" sm="7" md="8">
-                <v-card-item>
-                    <v-card-title>{{ bookTitle }}</v-card-title>
-                    <v-card-subtitle class="mt-1"> Price: {{ formatPrice(item.price) }} </v-card-subtitle>
+            <div class="cart-line__body flex-grow-1">
+                <h2 class="text-subtitle-1 font-weight-bold">{{ title }}</h2>
+                <p v-if="line.authorName" class="text-body-2 text-medium-emphasis">{{ line.authorName }}</p>
 
-                    <div class="mt-3 d-flex align-center">
-                        <span class="text-caption me-2">Quantity:</span>
+                <template v-if="line.available">
+                    <p class="text-body-2 mt-1">
+                        {{ formatMoney(line.unitPrice) }}
+                        <v-chip size="x-small" color="success" variant="tonal" class="ms-2">
+                            {{ t('cart.inStock') }}
+                        </v-chip>
+                    </p>
+                    <div class="d-flex align-center ga-2 mt-2" role="group" :aria-label="t('cart.quantity')">
                         <v-btn
                             icon="mdi-minus"
-                            density="compact"
                             variant="outlined"
-                            size="small"
-                            class="mr-1"
-                            :disabled="localQuantity <= 1"
-                            aria-label="Decrease quantity"
-                            @click="decrement"
-                        ></v-btn>
-
-                        <span class="text-body-1 mx-2" aria-live="polite">{{ localQuantity }}</span>
-
+                            :aria-label="t('cart.decrease', { title })"
+                            :disabled="busy || line.quantity <= 1"
+                            @click="cart.setQuantity(line.bookId, line.quantity - 1)"
+                        />
+                        <span class="cart-line__quantity text-body-1" aria-live="polite">{{ line.quantity }}</span>
                         <v-btn
                             icon="mdi-plus"
-                            density="compact"
                             variant="outlined"
-                            size="small"
-                            class="ml-1"
-                            aria-label="Increase quantity"
-                            @click="increment"
-                        ></v-btn>
+                            :aria-label="t('cart.increase', { title })"
+                            :disabled="busy || line.quantity >= MAX_QUANTITY"
+                            @click="cart.setQuantity(line.bookId, line.quantity + 1)"
+                        />
                     </div>
+                    <p class="text-subtitle-1 font-weight-bold mt-2">{{ formatMoney(line.lineTotal) }}</p>
+                </template>
+                <p v-else class="text-error mt-1">{{ t(`cart.unavailable.${line.unavailableReason}`) }}</p>
+            </div>
 
-                    <div class="text-subtitle-1 font-weight-bold mt-3">
-                        Total: {{ formatPrice(localQuantity * item.price) }}
-                    </div>
-                </v-card-item>
-            </v-col>
-
-            <v-col cols="12" sm="2" md="2" class="d-flex align-center justify-end pr-4">
-                <v-btn
-                    color="error"
-                    variant="text"
-                    icon="mdi-delete"
-                    size="small"
-                    aria-label="Remove item"
-                    @click="confirmRemove"
-                    :loading="removing"
-                ></v-btn>
-            </v-col>
-        </v-row>
+            <v-btn
+                icon="mdi-delete"
+                variant="text"
+                color="error"
+                class="flex-shrink-0"
+                :aria-label="t('cart.remove', { title })"
+                :disabled="busy"
+                @click="confirming = true"
+            />
+        </div>
 
         <confirm-modal
-            v-model="showDeleteConfirm"
-            title="Remove Item"
-            :message="`Are you sure you want to remove '${bookTitle}' from your cart?`"
-            confirm-text="Remove"
-            @confirm="remove"
+            v-model="confirming"
+            :message="t('cart.removeConfirm', { title })"
+            @confirm="cart.remove(line.bookId)"
         />
     </v-card>
 </template>
 
 <script setup>
 import placeholderImage from '@/assets/images/placeholder.svg'
+import ConfirmModal from '@/components/ui/ConfirmModal.vue'
 import { useCartStore } from '@/stores'
-import { formatPrice } from '@/utils'
-import { debounce } from '@/utils/helpers/debounce'
-import { computed, ref, watch } from 'vue'
-import ConfirmModal from '../../ui/ConfirmModal.vue'
+import { formatMoney } from '@/utils'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-/**
- * Cart item component for displaying a single cart item
- */
+const MAX_QUANTITY = 99
 
-// Props
 const props = defineProps({
-    /**
-     * Cart item object with book details, quantity and price
-     */
-    item: {
+    /** A cart line as the server answers it: { bookId, title, unitPrice, quantity, lineTotal, available, ... } */
+    line: {
         type: Object,
         required: true,
-        validator: ({ bookId, book, quantity, price }) =>
-            (bookId || book) && Number.isFinite(quantity) && Number.isFinite(price),
     },
 })
 
-// Store setup
-const cartStore = useCartStore()
+const { t } = useI18n()
+const cart = useCartStore()
+const confirming = ref(false)
 
-// Reactive state
-const removing = ref(false)
-const showDeleteConfirm = ref(false)
-// Local quantity for instant display — synced from store on external changes (rollback, fetchCart)
-const localQuantity = ref(props.item.quantity)
-watch(
-    () => props.item.quantity,
-    (val) => {
-        localQuantity.value = val
-    }
-)
-
-// Computed properties
-const bookTitle = computed(() => {
-    return props.item.bookId?.title ?? props.item.book?.title ?? 'Unknown Book'
-})
-
-const bookImage = computed(() => {
-    return props.item?.bookId?.image ?? props.item?.book?.image ?? placeholderImage
-})
-
-const bookIdForApi = computed(() => {
-    const b = props.item.bookId || props.item.book
-    return b?._id ?? b?.id
-})
-
-// Methods
-/**
- * Show confirmation dialog before removing item
- */
-const confirmRemove = () => {
-    showDeleteConfirm.value = true
-}
-
-/**
- * Remove item from cart
- */
-const remove = async () => {
-    if (removing.value) return
-
-    removing.value = true
-    try {
-        await cartStore.removeFromCart(bookIdForApi.value ?? props.item._id, bookTitle.value)
-    } catch (error) {
-        // Failed to remove item
-    } finally {
-        removing.value = false
-    }
-}
-
-/**
- * Handle image loading errors
- */
-const handleImageError = (e) => {
-    e.target.src = placeholderImage
-}
-
-// Debounced sync to store — batches rapid clicks into one API call
-const syncToStore = debounce((quantity) => {
-    const id = bookIdForApi.value ?? props.item._id
-    cartStore.updateQuantity({ itemId: id, quantity, title: bookTitle.value })
-}, 300)
-
-const increment = () => {
-    localQuantity.value++
-    syncToStore(localQuantity.value)
-}
-
-const decrement = () => {
-    if (localQuantity.value <= 1) return
-    localQuantity.value--
-    syncToStore(localQuantity.value)
-}
+// A deleted book has no title any more; the reason stands in for it
+const title = computed(() => props.line.title ?? t('cart.unavailable.DELETED'))
+// Changes wait for the server; meanwhile the line takes no other action
+const busy = computed(() => cart.pending.includes(props.line.bookId))
 </script>
+
+<style scoped>
+.cart-line__body {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.cart-line__quantity {
+    min-width: 2ch;
+    text-align: center;
+}
+</style>

@@ -68,7 +68,30 @@
         "version": "Bookstore v{version}"
     },
     "cart": {
-        "mergeSkipped": "Some books from your earlier cart are no longer available and were not added ({count})."
+        "mergeSkipped": "Some books from your earlier cart are no longer available and were not added ({count}).",
+        "title": "Your cart",
+        "continueShopping": "Continue shopping",
+        "empty": "Your cart is empty.",
+        "browse": "Browse books",
+        "summary": "Order summary",
+        "subtotal": "Books",
+        "shipping": "Shipping",
+        "shippingFree": "Free",
+        "vatIncluded": "Including VAT {amount}",
+        "total": "Total",
+        "freeShippingFrom": "Free shipping from {amount}",
+        "checkout": "Proceed to checkout",
+        "loginToCheckout": "Sign in to check out",
+        "quantity": "Quantity",
+        "increase": "Increase quantity of “{title}”",
+        "decrease": "Decrease quantity of “{title}”",
+        "remove": "Remove “{title}” from the cart",
+        "removeConfirm": "Remove “{title}” from your cart?",
+        "unavailable": {
+            "DELETED": "This book is no longer available.",
+            "OUT_OF_STOCK": "Out of stock. Remove it to continue."
+        },
+        "inStock": "In stock"
     },
     "shipping": {
         "freeOver": "Free shipping over {amount}"

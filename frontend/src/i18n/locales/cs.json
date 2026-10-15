@@ -68,7 +68,30 @@
         "version": "Bookstore v{version}"
     },
     "cart": {
-        "mergeSkipped": "Některé knihy z dřívějšího košíku už nejsou dostupné a nebyly přidány ({count})."
+        "mergeSkipped": "Některé knihy z dřívějšího košíku už nejsou dostupné a nebyly přidány ({count}).",
+        "title": "Váš košík",
+        "continueShopping": "Pokračovat v nákupu",
+        "empty": "Košík je prázdný.",
+        "browse": "Procházet knihy",
+        "summary": "Souhrn objednávky",
+        "subtotal": "Knihy",
+        "shipping": "Doprava",
+        "shippingFree": "Zdarma",
+        "vatIncluded": "Včetně DPH {amount}",
+        "total": "Celkem",
+        "freeShippingFrom": "Doprava zdarma od {amount}",
+        "checkout": "Pokračovat k objednávce",
+        "loginToCheckout": "Pro objednání se přihlaste",
+        "quantity": "Počet kusů",
+        "increase": "Zvýšit počet „{title}“",
+        "decrease": "Snížit počet „{title}“",
+        "remove": "Odebrat „{title}“ z košíku",
+        "removeConfirm": "Odebrat „{title}“ z košíku?",
+        "unavailable": {
+            "DELETED": "Tato kniha už není k dispozici.",
+            "OUT_OF_STOCK": "Není skladem. Pro pokračování ji odeberte."
+        },
+        "inStock": "Skladem"
     },
     "shipping": {
         "freeOver": "Doprava zdarma při objednávce nad {amount}"
