@@ -56,7 +56,7 @@ README lists them.
 
 ## Data model
 
-Five Mongoose models live in `backend/models/`. Each has `createdAt` and `updatedAt` timestamps.
+Six Mongoose models live in `backend/models/`. All but `Counter` have `createdAt` and `updatedAt` timestamps.
 
 | Model | Key fields | Relations |
 | --- | --- | --- |
@@ -64,16 +64,34 @@ Five Mongoose models live in `backend/models/`. Each has `createdAt` and `update
 | `Book` | `title`, `publicationYear` (1450 up to the current year), `category`, `description`, `price`, `image`, `inStock` | `author` (an `Author`, required) |
 | `User` | `username` and `email` (both unique), `password` (bcrypt hash, left out of query results by default), `role` (`user`, `admin`, `moderator`), `isActive`, `lastLogin` | none |
 | `Cart` | `items` (`book`, `quantity` from 1 to 99) | `user` (a `User`, one cart each); `items.book` (a `Book`) |
-| `Order` | `orderNumber` (`ORD-YYYYMMDD-NNNN`), `items` (`book`, `title`, `quantity`, `price`, `subtotal`), `shippingAddress`, `paymentMethod`, `itemsPrice`, `shippingPrice`, `taxPrice`, `totalPrice`, `status`, `isPaid`, `isDelivered` | `user` (a `User`); `items.book` (a `Book`) |
+| `Order` | `orderNumber` (`ORD-YYYYMMDD-NNNNNN`), `items` (`book`, `title`, `unitPrice`, `quantity`, `lineTotal`), `shippingAddress`, `quote`, `status`, `paymentStatus`, `statusHistory`, `idempotencyKey`, `requestHash`, `schemaVersion: 2` | `user` (a `User`); `items.book` (a `Book`) |
+| `Counter` | `_id` (the sequence name, `order:YYYYMMDD`), `seq` | none |
 
 - Saving a book adds it to its author's `books` list.
 - A cart keeps no prices. `services/cartService.js` prices it on every request from the books as they are now, in
   whole geller (1/100 CZK), and `services/pricing.js` builds the quote: lines of deleted or out-of-stock books do not
   count, shipping is free from a threshold, and VAT is part of the total. The VAT rate, the shipping fee and the
   threshold come from `config.commerce` (demo defaults: 0 %, 99 Kč, 1000 Kč).
-- An order is built from the user's cart. Each item keeps the title and the price the book had when the order was
-  placed. A pre-save hook computes the totals: shipping is free when the items cost 50 or more and 10 otherwise, and
-  tax is 10%. `status` is one of `pending`, `processing`, `shipped`, `delivered` or `cancelled`.
+- Every cart change is one atomic update of one line (`$inc`, `$push`, `$pull` on the cart document), so changes made
+  at the same moment from two tabs, a merge or an order never undo each other.
+- An order is placed from the user's cart (`services/orderService.js`):
+  1. The client creates an `Idempotency-Key` (a UUID) for each checkout and sends it with the address and the total
+     the customer saw. A request that repeats an earlier one (same key, same body) answers the order it placed; the
+     same key with another body is refused.
+  2. The server prices the cart again. An empty cart, an unavailable book or a total that is no longer the current
+     one is refused before anything is stored; a changed total comes back with the new quote for the customer to
+     confirm with the same key.
+  3. The number comes from an atomic counter per UTC day (`Counter`), the order stores its lines, the quote and the
+     address, and a unique index on the user and the key settles two identical requests at the same moment.
+  4. The ordered lines leave the cart, but only while their quantity is the ordered one: a line changed meanwhile
+     stays. There is no transaction yet; a retry with the same key answers the order if this step did not run.
+- `status` is one of `pending`, `processing`, `shipped`, `delivered` or `cancelled`; `paymentStatus` is `unpaid`,
+  `paid` or `failed`, and every change of either is added to `statusHistory`. A customer can cancel a pending order
+  that is not paid.
+- Orders stored before `schemaVersion: 2` (float amounts in crowns, `isPaid`, the street in `address`) are never
+  rewritten. `services/orderView.js` reads both shapes into the same order view, converting the old amounts to geller.
+- The server builds every declared index before it takes requests (`ensureIndexes` in `config/database.js`); the
+  order idempotency key depends on its unique index.
 
 ## Request path
 
@@ -112,10 +130,11 @@ the three plugins.
   `beforeEach` guard: public routes pass at once; otherwise it checks that the stored token has not expired and sends
   the user to the login page, the home page or the "access denied" page as the policy requires. The API checks every
   protected request on its own.
-- **State** (`src/stores/`). One Pinia store per area: `auth`, `authors`, `books`, `cart`, `orders` and `users`. Each
-  calls its API module and tracks loading and error state through a shared helper. The cart store holds the server's
+- **State** (`src/stores/`). One Pinia store per area: `auth`, `authors`, `books`, `cart`, `checkout`, `orders` and
+  `users`. Each calls its API module and tracks its loading and error state. The cart store holds the server's
   lines and quote and runs its changes one after another; a guest cart keeps only book ids and quantities in
-  `localStorage`, is priced by `POST /cart/quote` and is merged into the account cart on sign-in.
+  `localStorage`, is priced by `POST /cart/quote` and is merged into the account cart on sign-in. The checkout store
+  holds the idempotency key of the current checkout and keeps it for every retry of the same order.
 - **API client** (`src/services/api/`). One module per resource (`booksApi.js`, `authorsApi.js`, `cartApi.js`,
   `orderApi.js`, `usersApi.js`, `rolesApi.js`, `authService.js`), all on the Axios instance in `baseApi.js`. It sets
   the base URL and a 15-second timeout, adds the token from `localStorage` to protected requests, turns failures into
@@ -169,12 +188,13 @@ a production web server has to forward `/api` to the API; the other option is to
 - **Characterization tests** (`tests/integration/characterization.test.js`) record the API's correct behavior before
   the refactoring: health, registration and login, `/auth/me`, the book list and lookup, admin-only book creation.
   They must not pin known defects.
-- **Frontend.** Vitest on happy-dom runs `src/**/*.spec.js`: today the API client's base URL and the debounce helper.
-- **End-to-end.** A Playwright smoke test in Chromium (`frontend/e2e/smoke.spec.js`) opens the catalogue, checks that
-  the books came through the preview's `/api` proxy, opens a seeded book and checks its title. Playwright starts its
-  own servers on dedicated ports: the API on 3100 (`npm run e2e:server`, an in-memory MongoDB with the demo data) and
-  `vite preview` on 4173. Existing servers are never reused, so a busy port fails the run instead of testing a dev
-  stack.
+- **Frontend.** Vitest on happy-dom runs `src/**/*.spec.js`: the API modules, the stores, the utilities and the
+  components and views of the cart, checkout and orders, mounted with the real router, i18n and Vuetify.
+- **End-to-end.** Playwright in Chromium runs `frontend/e2e/`: the catalogue smoke test, the Czech and English flows
+  with accessibility checks, the server cart, and checkout with retries, price changes and order cancellation.
+  Playwright starts its own servers on dedicated ports: the API on 3100 (`npm run e2e:server`, an in-memory MongoDB
+  with the demo data) and `vite preview` on 4173. Existing servers are never reused, so a busy port fails the run
+  instead of testing a dev stack.
 
 ## CI
 

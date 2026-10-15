@@ -188,7 +188,7 @@ npm test                            # Vitest, Supertest, in-memory MongoDB
 # in frontend/
 npm test                            # Vitest, happy-dom
 npx playwright install chromium     # once; on Linux add --with-deps
-npm run test:e2e                    # Playwright smoke test
+npm run test:e2e                    # Playwright end-to-end tests
 npm run lint                        # ESLint, only checks (the backend has no linter yet)
 npm run format:check                # Prettier, only checks
 npm run lint:fix                    # ESLint --fix, changes files
@@ -200,7 +200,7 @@ npm run preview                     # serves the build on port 4173, proxies /ap
 - **Backend tests** need neither `backend/.env` nor a MongoDB of your own. The first run downloads a `mongod` binary
   (8.2.6, pinned in `backend/package.json`) into `~/.cache/mongodb-binaries`, so it needs network access. The SIGTERM
   and SIGINT shutdown tests are skipped on Windows.
-- **End-to-end test.** The catalogue shows a seeded book and opens its page. Playwright starts its own stack: the API
+- **End-to-end tests.** The catalogue, both languages, the cart, checkout and orders. Playwright starts its own stack: the API
   on port 3100 (in-memory MongoDB with the seed data) and `vite preview` of a fresh build on port 4173. It needs
   `npm ci` in `backend/` as well, fails if either port is busy and never reuses a running dev server.
 - **CI** (`.github/workflows/ci.yml`) runs on pull requests and pushes to `main`: a `backend` job (`npm ci`,

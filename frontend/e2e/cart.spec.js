@@ -81,7 +81,8 @@ test.describe('server cart', () => {
         await page.route('**/api/v1/cart/quote', (route) => route.abort())
 
         await page.goto('/cart')
-        const alert = page.getByRole('alert')
+        // Vuetify marks loading skeletons as alerts too: take the one with the retry
+        const alert = page.getByRole('alert').filter({ has: page.getByRole('button', { name: cs.errors.retry }) })
         await expect(alert).toBeVisible()
 
         await page.unroute('**/api/v1/cart/quote')
