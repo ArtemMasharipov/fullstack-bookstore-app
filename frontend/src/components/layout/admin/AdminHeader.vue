@@ -31,23 +31,23 @@
                     <v-menu>
                         <template v-slot:activator="{ props }">
                             <v-btn variant="text" v-bind="props" class="text-none">
-                                <v-icon left>mdi-account-circle</v-icon>
-                                {{ user?.name || user?.username || 'Admin' }}
-                                <v-icon right>mdi-chevron-down</v-icon>
+                                <v-icon left icon="mdi-account-circle"></v-icon>
+                                {{ user?.name || user?.username || t('admin.userFallback') }}
+                                <v-icon right icon="mdi-chevron-down"></v-icon>
                             </v-btn>
                         </template>
 
                         <v-list>
                             <v-list-item :to="localeRoute('Profile')">
                                 <template v-slot:prepend>
-                                    <v-icon>mdi-account</v-icon>
+                                    <v-icon icon="mdi-account"></v-icon>
                                 </template>
                                 <v-list-item-title>{{ t('routes.Profile') }}</v-list-item-title>
                             </v-list-item>
 
                             <v-list-item :to="localeRoute('AdminSettings')">
                                 <template v-slot:prepend>
-                                    <v-icon>mdi-cog</v-icon>
+                                    <v-icon icon="mdi-cog"></v-icon>
                                 </template>
                                 <v-list-item-title>{{ t('routes.AdminSettings') }}</v-list-item-title>
                             </v-list-item>
@@ -56,7 +56,7 @@
 
                             <v-list-item :to="localeRoute('Home')">
                                 <template v-slot:prepend>
-                                    <v-icon>mdi-home</v-icon>
+                                    <v-icon icon="mdi-home"></v-icon>
                                 </template>
                                 <v-list-item-title>{{ t('nav.returnStore') }}</v-list-item-title>
                             </v-list-item>
@@ -65,7 +65,7 @@
 
                             <v-list-item @click="logout">
                                 <template v-slot:prepend>
-                                    <v-icon>mdi-logout</v-icon>
+                                    <v-icon icon="mdi-logout"></v-icon>
                                 </template>
                                 <v-list-item-title>{{ t('nav.logout') }}</v-list-item-title>
                             </v-list-item>

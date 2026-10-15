@@ -3,7 +3,7 @@
         <!-- Sidebar Header -->
         <v-list-item class="pa-4 bg-primary">
             <template v-slot:prepend>
-                <v-icon color="white" size="large">mdi-view-dashboard</v-icon>
+                <v-icon color="white" size="large" icon="mdi-view-dashboard"></v-icon>
             </template>
             <v-list-item-title class="text-white text-h6 font-weight-medium">
                 {{ t('nav.adminDashboard') }}
@@ -19,8 +19,8 @@
                 :key="item.id"
                 :to="localeRoute(item.id)"
                 :prepend-icon="item.icon"
-                :title="t(item.titleKey)"
-                :subtitle="item.subtitleKey ? t(item.subtitleKey) : undefined"
+                :title="item.title"
+                :subtitle="item.subtitle"
                 class="mb-1"
                 rounded="xl"
             ></v-list-item>
@@ -49,7 +49,7 @@
                 <v-chip color="primary" variant="tonal" size="small" prepend-icon="mdi-shield-check">
                     {{ t('nav.adminAccess') }}
                 </v-chip>
-                <div class="text-caption text-grey mt-2">Bookstore v2.0</div>
+                <div class="text-caption text-grey mt-2">{{ t('admin.version', { version: '2.0' }) }}</div>
             </div>
         </template>
     </v-navigation-drawer>
@@ -69,10 +69,21 @@ import { buildAdminNav } from '@/router/buildRoutes'
 
 const drawer = ref(true)
 
-const adminNav = buildAdminNav()
+const adminNav = computed(() =>
+    Object.fromEntries(
+        Object.entries(buildAdminNav()).map(([section, items]) => [
+            section,
+            items.map((item) => ({
+                ...item,
+                title: t(item.titleKey),
+                subtitle: item.subtitleKey ? t(item.subtitleKey) : undefined,
+            })),
+        ])
+    )
+)
 
-const mainItems = computed(() => adminNav.main ?? [])
-const systemItems = computed(() => adminNav.system ?? [])
+const mainItems = computed(() => adminNav.value.main ?? [])
+const systemItems = computed(() => adminNav.value.system ?? [])
 </script>
 
 <style scoped>

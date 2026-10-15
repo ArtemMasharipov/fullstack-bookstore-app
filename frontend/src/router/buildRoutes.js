@@ -61,8 +61,8 @@ export function buildRoutes() {
  *
  * Shape of the return value:
  * {
- *   main:   [{ id, title, icon, subtitle, to: { name } }, ...],
- *   system: [{ id, title, icon, subtitle, to: { name } }, ...],
+ *   main:   [{ id, titleKey, icon, subtitleKey, order, to: { name } }, ...],
+ *   system: [{ id, titleKey, icon, subtitleKey, order, to: { name } }, ...],
  * }
  *
  * @returns {Record<string, object[]>}

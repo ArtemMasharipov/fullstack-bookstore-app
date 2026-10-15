@@ -36,10 +36,9 @@
 
                 <!-- About -->
                 <v-col cols="12" sm="4">
-                    <h3 class="text-subtitle-1 font-weight-bold text-white mb-3">About</h3>
+                    <h3 class="text-subtitle-1 font-weight-bold text-white mb-3">{{ t('footer.about') }}</h3>
                     <p class="text-body-2 text-white" style="opacity: 0.8">
-                        Discover your next great read at Bookstore. We offer a curated collection of books across every
-                        genre, with fast delivery and easy returns.
+                        {{ t('footer.description') }}
                     </p>
                 </v-col>
             </v-row>
@@ -47,7 +46,7 @@
             <v-divider class="my-4" color="white" opacity="0.2" />
 
             <div class="text-caption text-center text-white" style="opacity: 0.7">
-                &copy; {{ currentYear }} Bookstore App. All rights reserved.
+                {{ t('footer.copyright', { year: currentYear }) }}
             </div>
         </v-container>
     </v-footer>

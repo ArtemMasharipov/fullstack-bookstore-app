@@ -15,7 +15,7 @@
  *   section  {string} — sidebar section key, e.g. 'main' | 'system'
  *   order    {number} — sort order within the section
  *   icon     {string} — Material Design Icon name
- *   subtitle {string} — optional second line shown in the sidebar item
+ *   subtitleKey {string} - optional translation key for the sidebar second line
  */
 
 export const routeManifest = [

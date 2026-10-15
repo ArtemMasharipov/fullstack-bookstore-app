@@ -3,7 +3,7 @@
         <v-row justify="center" align="center">
             <v-col cols="12" sm="8" md="6" class="text-center">
                 <v-icon icon="mdi-book-off-outline" size="80" color="primary" class="mb-4" />
-                <h1 class="text-h2 font-weight-bold mb-2">404</h1>
+                <h1 class="text-h2 font-weight-bold mb-2">{{ 404 }}</h1>
                 <h2 class="text-h5 text-medium-emphasis mb-4">{{ t('errors.notFoundTitle') }}</h2>
                 <p class="text-body-1 text-medium-emphasis mb-8">
                     {{ t('errors.notFoundDescription') }}

@@ -53,7 +53,8 @@
         "search": "Search…",
         "system": "System",
         "adminAccess": "Admin Access",
-        "adminDashboard": "Admin Dashboard"
+        "adminDashboard": "Admin Dashboard",
+        "userInitial": "U"
     },
     "admin": {
         "nav": {
@@ -62,7 +63,9 @@
             "authors": "Author profiles",
             "orders": "Customer orders",
             "users": "User accounts"
-        }
+        },
+        "userFallback": "Admin",
+        "version": "Bookstore v{version}"
     },
     "shipping": {
         "freeOver": "Free shipping over {amount}"
@@ -122,5 +125,16 @@
         "userCreatedGeneric": "User created successfully",
         "userUpdatedGeneric": "User updated successfully",
         "userDeletedGeneric": "User deleted successfully"
+    },
+    "modal": {
+        "confirmTitle": "Confirm action",
+        "confirm": "Confirm",
+        "cancel": "Cancel",
+        "close": "Close dialog"
+    },
+    "footer": {
+        "about": "About",
+        "description": "Discover your next great read at Bookstore. We offer a curated collection of books across every genre, with fast delivery and easy returns.",
+        "copyright": "© {year} Bookstore. All rights reserved."
     }
 }

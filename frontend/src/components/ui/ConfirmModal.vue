@@ -3,7 +3,7 @@
         <v-card>
             <v-card-title>
                 <v-icon v-if="icon" :icon="icon" class="me-2" :color="iconColor"></v-icon>
-                {{ title }}
+                {{ resolvedTitle }}
             </v-card-title>
 
             <v-card-text>
@@ -15,11 +15,11 @@
             <v-card-actions>
                 <v-spacer></v-spacer>
                 <v-btn :variant="cancelVariant" :color="cancelColor" @click="handleCancel" :disabled="loading">
-                    {{ cancelText }}
+                    {{ resolvedCancelText }}
                 </v-btn>
 
                 <v-btn :color="confirmColor" @click="handleConfirm" :loading="loading">
-                    {{ confirmText }}
+                    {{ resolvedConfirmText }}
                 </v-btn>
             </v-card-actions>
         </v-card>
@@ -28,6 +28,9 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 /**
  * Reusable confirmation dialog component
@@ -43,7 +46,7 @@ const props = defineProps({
      */
     title: {
         type: String,
-        default: 'Confirm Action',
+        default: '',
     },
     /**
      * Message content
@@ -57,14 +60,14 @@ const props = defineProps({
      */
     confirmText: {
         type: String,
-        default: 'Confirm',
+        default: '',
     },
     /**
      * Text for the cancel button
      */
     cancelText: {
         type: String,
-        default: 'Cancel',
+        default: '',
     },
     /**
      * Controls modal visibility (v-model)
@@ -133,6 +136,9 @@ const emit = defineEmits(['confirm', 'cancel', 'update:modelValue'])
  * Reactive data
  */
 const loading = ref(false)
+const resolvedTitle = computed(() => props.title || t('modal.confirmTitle'))
+const resolvedConfirmText = computed(() => props.confirmText || t('modal.confirm'))
+const resolvedCancelText = computed(() => props.cancelText || t('modal.cancel'))
 
 /**
  * Computed property for v-model dialog control

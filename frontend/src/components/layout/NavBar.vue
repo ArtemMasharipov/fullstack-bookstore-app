@@ -39,9 +39,9 @@
             <!-- Cart Icon (visible for all users) -->
             <v-btn variant="text" :to="localeRoute('Cart')" icon class="text-white" :aria-label="t('nav.cart')">
                 <v-badge :content="cartItemsCount" color="secondary" v-if="cartItemsCount > 0">
-                    <v-icon>mdi-cart</v-icon>
+                    <v-icon icon="mdi-cart"></v-icon>
                 </v-badge>
-                <v-icon v-else>mdi-cart-outline</v-icon>
+                <v-icon v-else icon="mdi-cart-outline"></v-icon>
             </v-btn>
 
             <!-- Auth Section (Desktop) -->
@@ -54,7 +54,7 @@
                                     <span class="text-caption font-weight-bold">{{ userInitials }}</span>
                                 </v-avatar>
                                 {{ user?.name }}
-                                <v-icon end size="small">mdi-chevron-down</v-icon>
+                                <v-icon end size="small" icon="mdi-chevron-down"></v-icon>
                             </v-btn>
                         </template>
                         <v-list density="compact" rounded="lg" elevation="3" min-width="180">
@@ -196,7 +196,7 @@ const userInitials = computed(() => {
             .map((w) => w[0])
             .join('')
             .toUpperCase()
-            .slice(0, 2) || 'U'
+            .slice(0, 2) || t('nav.userInitial')
     )
 })
 

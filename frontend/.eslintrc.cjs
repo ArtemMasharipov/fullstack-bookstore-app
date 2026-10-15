@@ -1,3 +1,5 @@
+const legacySfc = require('./eslint-legacy-sfc.json')
+
 module.exports = {
     root: true,
     env: {
@@ -13,7 +15,60 @@ module.exports = {
     parserOptions: {
         ecmaVersion: 2020,
     },
+    overrides: [{ files: legacySfc, rules: { 'vue/no-bare-strings-in-template': 'off' } }],
     rules: {
+        'vue/no-bare-strings-in-template': [
+            'error',
+            {
+                allowlist: [
+                    '(',
+                    ')',
+                    ',',
+                    '.',
+                    '&',
+                    '+',
+                    '-',
+                    '=',
+                    '*',
+                    '/',
+                    '#',
+                    '%',
+                    '!',
+                    '?',
+                    ':',
+                    '[',
+                    ']',
+                    '{',
+                    '}',
+                    '<',
+                    '>',
+                    '·',
+                    '•',
+                    '‐',
+                    '–',
+                    '—',
+                    '−',
+                    '|',
+                    '©',
+                    'Bookstore',
+                ],
+                attributes: {
+                    '/.+/': [
+                        'label',
+                        'subtitle',
+                        'placeholder',
+                        'title',
+                        'hint',
+                        'alt',
+                        'aria-label',
+                        'aria-placeholder',
+                        'aria-roledescription',
+                        'aria-valuetext',
+                    ],
+                },
+                directives: ['v-text'],
+            },
+        ],
         'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
         'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
         'vue/valid-v-slot': ['error', { allowModifiers: true }],

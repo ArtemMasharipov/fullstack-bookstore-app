@@ -53,7 +53,8 @@
         "search": "Hledat…",
         "system": "Systém",
         "adminAccess": "Přístup správce",
-        "adminDashboard": "Přehled administrace"
+        "adminDashboard": "Přehled administrace",
+        "userInitial": "U"
     },
     "admin": {
         "nav": {
@@ -62,7 +63,9 @@
             "authors": "Profily autorů",
             "orders": "Objednávky zákazníků",
             "users": "Uživatelské účty"
-        }
+        },
+        "userFallback": "Správce",
+        "version": "Bookstore v{version}"
     },
     "shipping": {
         "freeOver": "Doprava zdarma při objednávce nad {amount}"
@@ -122,5 +125,16 @@
         "userCreatedGeneric": "Uživatel byl vytvořen",
         "userUpdatedGeneric": "Uživatel byl aktualizován",
         "userDeletedGeneric": "Uživatel byl odstraněn"
+    },
+    "modal": {
+        "confirmTitle": "Potvrdit akci",
+        "confirm": "Potvrdit",
+        "cancel": "Zrušit",
+        "close": "Zavřít dialog"
+    },
+    "footer": {
+        "about": "O nás",
+        "description": "Objevte svou další oblíbenou knihu v Bookstore. Nabízíme pečlivě vybrané knihy všech žánrů, rychlé doručení a snadné vrácení.",
+        "copyright": "© {year} Bookstore. Všechna práva vyhrazena."
     }
 }
