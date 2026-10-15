@@ -1,198 +1,230 @@
 import { useNotifications } from '@/composables/useNotifications'
 import { resolveErrorKey } from '@/utils/errorResolver'
 import { cartApi } from '@/services/api/cartApi'
-import { withLoading } from './storeHelpers'
 import { defineStore } from 'pinia'
 
 /** Check auth without importing auth store (avoids circular dep) */
 const isLoggedIn = () => !!localStorage.getItem('token')
 
+const GUEST_KEY = 'cart'
+const MAX_QUANTITY = 99
+const OBJECT_ID = /^[0-9a-fA-F]{24}$/
+
+const isGuestItem = (item) =>
+    typeof item?.bookId === 'string' &&
+    OBJECT_ID.test(item.bookId) &&
+    Number.isInteger(item.quantity) &&
+    item.quantity >= 1 &&
+    item.quantity <= MAX_QUANTITY
+
+/**
+ * The guest cart in localStorage: only { bookId, quantity }. Entries of the
+ * previous shape keep their id and quantity; anything invalid is dropped.
+ */
+export function readGuestItems() {
+    let stored
+    try {
+        stored = JSON.parse(localStorage.getItem(GUEST_KEY))
+    } catch {
+        return []
+    }
+    if (!Array.isArray(stored)) return []
+    return stored.filter(isGuestItem).map(({ bookId, quantity }) => ({ bookId, quantity }))
+}
+
+function writeGuestItems(items) {
+    if (items.length) localStorage.setItem(GUEST_KEY, JSON.stringify(items))
+    else localStorage.removeItem(GUEST_KEY)
+}
+
+const tooManyCopies = () => Object.assign(new Error('Too many copies'), { code: 'VALIDATION_FAILED' })
+
 /**
  * Cart Store
- * Manages shopping cart: server-side for authenticated users, localStorage for guests.
+ * The server owns prices and totals: a signed-in cart lives on the server, a
+ * guest cart keeps only ids and quantities locally and is priced by the
+ * server's quote. lines and quote are always the server's answer.
  */
 export const useCartStore = defineStore('cart', {
     state: () => ({
-        items: JSON.parse(localStorage.getItem('cart')) || [],
-        loading: false,
+        lines: [],
+        quote: null,
+        status: 'idle',
         error: null,
+        pending: [],
     }),
 
     getters: {
-        /**
-         * Normalize items for display.
-         * Server items have `book` (populated object), local items have `bookId` (string) + title/image.
-         */
+        totalQuantity: (state) => state.lines.reduce((sum, line) => sum + line.quantity, 0),
+
+        isEmpty: (state) => state.lines.length === 0,
+
+        hasUnavailable: (state) => state.lines.some((line) => !line.available),
+
+        // Temporary: the cart page reads these until it is rebuilt on lines and quote
         cartItems: (state) =>
-            state.items.map((item) => {
-                const bookData = typeof item.book === 'object' && item.book ? item.book : null
-                const bookId = bookData?._id || bookData?.id || item.book || item.bookId
-
-                return {
-                    id: bookId,
-                    _id: bookId,
-                    bookId: {
-                        id: bookId,
-                        _id: bookId,
-                        title: bookData?.title || item.title || 'Unknown Book',
-                        image: bookData?.image || item.image,
-                    },
-                    quantity: Number(item.quantity) || 1,
-                    price: Number(item.price) || 0,
-                }
-            }),
-
-        cartTotal: (state) => state.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
-
-        itemCount: (state) => state.items.length,
-
-        totalQuantity: (state) => state.items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0),
+            state.lines.map((line) => ({
+                id: line.bookId,
+                _id: line.bookId,
+                bookId: { id: line.bookId, _id: line.bookId, title: line.title ?? '', image: line.image },
+                quantity: line.quantity,
+                price: line.unitPrice / 100,
+            })),
+        cartTotal: (state) => (state.quote?.total ?? 0) / 100,
+        loading: (state) => state.status === 'loading',
     },
 
     actions: {
-        // -- Server/local routing helpers --
-
-        /** Extract items from API response: { success, data: { items }, message } */
-        _extractItems(response) {
-            return response?.data?.items ?? []
+        _apply(view) {
+            this.lines = view.items
+            this.quote = view.quote
+            this.status = 'ready'
+            this.error = null
         },
 
-        /** Get book ID string from any item shape */
-        _getBookId(item) {
-            if (typeof item.book === 'object' && item.book) {
-                return String(item.book._id || item.book.id)
+        /** Applies a change to the guest cart and stores it once the server priced it */
+        async _guestView(change) {
+            const items = readGuestItems()
+            change(items)
+            const view = items.length ? await cartApi.quote(items) : { items: [], quote: null }
+            writeGuestItems(items)
+            return view
+        },
+
+        /** Runs a change of one line, with that line marked pending; false on failure */
+        async _changeLine(bookId, request) {
+            const { showError } = useNotifications()
+            this.pending.push(bookId)
+            try {
+                this._apply(await request())
+                return true
+            } catch (error) {
+                showError(undefined, { messageKey: resolveErrorKey(error) })
+                return false
+            } finally {
+                this.pending = this.pending.filter((id) => id !== bookId)
             }
-            return String(item.bookId || item.book)
         },
 
-        /** Persist items to state + localStorage */
-        _persist() {
-            localStorage.setItem('cart', JSON.stringify(this.items))
+        async load() {
+            this.status = 'loading'
+            try {
+                if (isLoggedIn()) this._apply(await cartApi.fetch())
+                else this._apply(await this._guestView(() => {}))
+            } catch (error) {
+                this.status = 'error'
+                this.error = resolveErrorKey(error)
+            }
         },
 
-        // -- Public actions --
-
-        async fetchCart() {
-            return withLoading(this, async () => {
-                const response = await cartApi.fetchCart()
-                this.setItems(this._extractItems(response))
-            })
-        },
-
-        async addToCart({ bookId, quantity = 1, price, title = 'Book', image }) {
-            const { showSuccess } = useNotifications()
-
-            return withLoading(this, async () => {
-                if (isLoggedIn()) {
-                    const response = await cartApi.addToCart({ bookId, quantity, price })
-                    this.setItems(this._extractItems(response))
-                } else {
-                    const id = String(bookId)
-                    const existing = this.items.find((i) => this._getBookId(i) === id)
-                    if (existing) {
-                        existing.quantity += quantity
-                    } else {
-                        this.items.push({ bookId: id, quantity, price, title, image })
-                    }
-                    this._persist()
-                }
-
+        async add(bookId, quantity = 1) {
+            const { showSuccess, showError } = useNotifications()
+            try {
+                const view = isLoggedIn()
+                    ? await cartApi.add(bookId, quantity)
+                    : await this._guestView((items) => {
+                          const existing = items.find((item) => item.bookId === bookId)
+                          const total = (existing?.quantity ?? 0) + quantity
+                          if (total > MAX_QUANTITY) throw tooManyCopies()
+                          if (existing) existing.quantity = total
+                          else items.push({ bookId, quantity })
+                      })
+                this._apply(view)
+                const title = view.items.find((line) => line.bookId === bookId)?.title ?? ''
                 showSuccess(undefined, {
                     messageKey: 'notifications.cartAdded',
                     messageParams: { title },
                     icon: 'mdi-cart-plus',
                 })
-            })
+                return true
+            } catch (error) {
+                showError(undefined, { messageKey: resolveErrorKey(error) })
+                return false
+            }
         },
 
-        async removeFromCart(bookId, title) {
+        setQuantity(bookId, quantity) {
+            return this._changeLine(bookId, () =>
+                isLoggedIn()
+                    ? cartApi.setQuantity(bookId, quantity)
+                    : this._guestView((items) => {
+                          const item = items.find((entry) => entry.bookId === bookId)
+                          if (item) item.quantity = quantity
+                      })
+            )
+        },
+
+        async remove(bookId) {
             const { showSuccess } = useNotifications()
-
-            return withLoading(this, async () => {
-                if (isLoggedIn()) {
-                    const response = await cartApi.removeFromCart(bookId)
-                    this.setItems(this._extractItems(response))
-                } else {
-                    const id = String(bookId)
-                    this.items = this.items.filter((i) => this._getBookId(i) !== id)
-                    this._persist()
-                }
-
+            const title = this.lines.find((line) => line.bookId === bookId)?.title
+            const removed = await this._changeLine(bookId, () =>
+                isLoggedIn()
+                    ? cartApi.remove(bookId)
+                    : this._guestView((items) => {
+                          const index = items.findIndex((entry) => entry.bookId === bookId)
+                          if (index >= 0) items.splice(index, 1)
+                      })
+            )
+            if (removed) {
                 showSuccess(undefined, {
                     messageKey: title ? 'notifications.cartRemoved' : 'notifications.cartRemovedGeneric',
                     messageParams: title ? { title } : undefined,
                     icon: 'mdi-cart-minus',
                 })
-            })
+            }
+            return removed
         },
 
-        async updateQuantity({ itemId, quantity }) {
-            const { showError } = useNotifications()
-
-            if (isLoggedIn()) {
-                const id = String(itemId)
-                const item = this.items.find((i) => this._getBookId(i) === id)
-                if (!item) return
-
-                const prev = item.quantity
-                // Optimistic update — instant UI, no loading spinner
-                item.quantity = quantity
-                this._persist()
-
-                try {
-                    await cartApi.updateQuantity(itemId, quantity)
-                } catch (error) {
-                    // Rollback on failure
-                    item.quantity = prev
-                    this._persist()
-                    showError(undefined, { messageKey: resolveErrorKey(error) })
-                }
-            } else {
-                const id = String(itemId)
-                const item = this.items.find((i) => this._getBookId(i) === id)
-                if (item) {
-                    item.quantity = quantity
-                    this._persist()
-                }
+        async clear() {
+            const { showSuccess, showError } = useNotifications()
+            try {
+                if (isLoggedIn()) this._apply(await cartApi.clear())
+                else this._apply(await this._guestView((items) => items.splice(0)))
+                showSuccess(undefined, { messageKey: 'notifications.cartCleared', icon: 'mdi-cart-off' })
+                return true
+            } catch (error) {
+                showError(undefined, { messageKey: resolveErrorKey(error) })
+                return false
             }
         },
 
-        async clearCart() {
-            const { showSuccess } = useNotifications()
+        /**
+         * After sign-in: adds the guest cart to the user's cart. The guest cart
+         * is forgotten only once the server took it. Answers the report, or
+         * null when there was nothing to merge or the merge failed.
+         */
+        async mergeGuestCart() {
+            const items = readGuestItems()
+            if (!items.length) return null
 
-            return withLoading(this, async () => {
-                if (isLoggedIn()) {
-                    await cartApi.clearCart()
+            const { showWarning, showError } = useNotifications()
+            try {
+                const { cart, report } = await cartApi.merge(items)
+                localStorage.removeItem(GUEST_KEY)
+                this._apply(cart)
+                if (report.skipped.length) {
+                    showWarning(undefined, {
+                        messageKey: 'cart.mergeSkipped',
+                        messageParams: { count: report.skipped.length },
+                    })
                 }
-                this.items = []
-                localStorage.removeItem('cart')
-                showSuccess(undefined, { messageKey: 'notifications.cartCleared', icon: 'mdi-cart-off' })
-            })
+                return report
+            } catch (error) {
+                showError(undefined, { messageKey: resolveErrorKey(error) })
+                return null
+            }
         },
 
-        async syncCart() {
-            return withLoading(this, async () => {
-                const localCart = JSON.parse(localStorage.getItem('cart')) || []
-                if (localCart.length === 0) return
-
-                const response = await cartApi.syncCart(localCart)
-                const items = this._extractItems(response)
-                if (items.length > 0) {
-                    this.setItems(items)
-                }
-                localStorage.removeItem('cart')
-            })
+        // Temporary: the cart page calls these until it is rebuilt
+        fetchCart() {
+            return this.load()
         },
-
-        setItems(items) {
-            this.items = items || []
-            this._persist()
+        removeFromCart(bookId) {
+            return this.remove(bookId)
         },
-
-        setError(message) {
-            this.error = message
+        updateQuantity({ itemId, quantity }) {
+            return this.setQuantity(itemId, quantity)
         },
-
         clearError() {
             this.error = null
         },

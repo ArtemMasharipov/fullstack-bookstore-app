@@ -39,9 +39,9 @@ export const useOrdersStore = defineStore('orders', {
                 // Add to the beginning of the list
                 this.orders.unshift(order)
 
-                // Clear the cart after order is created
+                // The server empties the ordered lines; show the cart it kept
                 const cartStore = useCartStore()
-                await cartStore.clearCart()
+                await cartStore.load()
 
                 // Show success notification
                 showSuccess(undefined, {

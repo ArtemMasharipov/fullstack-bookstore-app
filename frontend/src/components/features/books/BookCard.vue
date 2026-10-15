@@ -142,20 +142,13 @@ const handleAddToCart = async () => {
 
     loading.value = true
     try {
-        await cartStore.addToCart({
-            bookId: props.book.id || props.book._id,
-            quantity: 1,
-            price: props.book.price,
-            title: props.book.title || 'Book',
-            image: props.book.image,
-        })
+        // The store notifies about success and failure itself
+        if (!(await cartStore.add(props.book.id || props.book._id, 1))) return
         emit('add-to-cart')
         added.value = true
         setTimeout(() => {
             added.value = false
         }, 2000)
-    } catch (error) {
-        // Failed to add to cart
     } finally {
         loading.value = false
     }

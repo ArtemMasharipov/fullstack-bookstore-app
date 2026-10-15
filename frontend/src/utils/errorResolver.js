@@ -8,6 +8,8 @@ export const ERROR_CODES = Object.freeze([
     'UNPROCESSABLE',
     'RATE_LIMITED',
     'INTERNAL',
+    'BOOK_UNAVAILABLE',
+    'CART_ITEM_NOT_FOUND',
 ])
 
 export function resolveErrorKey(error) {

@@ -24,18 +24,21 @@ import { DialogLayout, FooterLayout, NavBarLayout } from './components/layout'
 import NotificationContainer from './components/notifications/NotificationContainer.vue'
 
 // Stores
-import { useAuthStore } from './stores'
+import { useAuthStore, useCartStore } from './stores'
 
 // Composition API imports
 import { onMounted } from 'vue'
 
-// Store instance
+// Store instances
 const authStore = useAuthStore()
+const cartStore = useCartStore()
 
 // Lifecycle hooks
-onMounted(() => {
+onMounted(async () => {
     // Initialize auth store to restore user data from localStorage and validate token
-    authStore.initialize()
+    await authStore.initialize()
+    // The cart badge needs the cart on every page, not only on the cart page
+    await cartStore.load()
 })
 </script>
 

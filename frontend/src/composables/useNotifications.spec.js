@@ -70,7 +70,7 @@ describe('notification state and compatibility', () => {
     })
 })
 
-it('cart and auth producers pass descriptors while retaining string store errors and rollback', async () => {
+it('cart and auth producers pass descriptors, keep string store errors and leave a line as it was on failure', async () => {
     const { createPinia, setActivePinia } = await import('pinia')
     const { useCartStore } = await import('@/stores/cart')
     const { useAuthStore } = await import('@/stores/auth')
@@ -78,13 +78,21 @@ it('cart and auth producers pass descriptors while retaining string store errors
     setActivePinia(createPinia())
     localStorage.clear()
     const cart = useCartStore()
-    await cart.addToCart({ bookId: 'book', title: 'Local book', price: 299.9 })
+    const bookId = 'a'.repeat(24)
+    const line = { bookId, title: 'Local book', quantity: 1, unitPrice: 29990, lineTotal: 29990, available: true }
+    const adapter = baseApi.defaults.adapter
+    baseApi.defaults.adapter = async (config) => ({
+        status: 200,
+        data: { success: true, data: { items: [line], quote: { currency: 'CZK', total: 29990 } } },
+        config,
+        headers: {},
+    })
+    await cart.add(bookId)
     expect(notices.notifications.value[0]).toMatchObject({
         messageKey: 'notifications.cartAdded',
         messageParams: { title: 'Local book' },
     })
     localStorage.setItem('token', 'local-demo-token')
-    const adapter = baseApi.defaults.adapter
     baseApi.defaults.adapter = async (config) => {
         throw {
             response: {
@@ -96,11 +104,12 @@ it('cart and auth producers pass descriptors while retaining string store errors
         }
     }
     try {
-        await cart.updateQuantity({ itemId: 'book', quantity: 2 })
-        expect(cart.items[0].quantity).toBe(1)
+        await expect(cart.setQuantity(bookId, 2)).resolves.toBe(false)
+        expect(cart.lines[0].quantity).toBe(1)
         expect(notices.notifications.value.at(-1).messageKey).toBe('errors.CONFLICT')
-        await expect(cart.fetchCart()).rejects.toBeInstanceOf(Error)
-        expect(typeof cart.error).toBe('string')
+        await cart.load()
+        expect(cart.status).toBe('error')
+        expect(cart.error).toBe('errors.CONFLICT')
         const auth = useAuthStore()
         await auth.logout()
         expect(notices.notifications.value.at(-1).messageKey).toBe('errors.CONFLICT')

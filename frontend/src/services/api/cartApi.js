@@ -1,25 +1,26 @@
 import baseApi from './baseApi'
 
 /**
- * Cart API - direct axios implementation
- * No factory abstractions (PHASE 3)
+ * Cart API
+ * Every call answers the cart view { items, quote } from the envelope's data;
+ * merge answers { cart, report }.
  */
+const unwrap = (response) => response.data.data
+
 export const cartApi = {
-    fetchCart: () => baseApi.get('/cart').then((res) => res.data),
+    fetch: () => baseApi.get('/cart').then(unwrap),
 
-    addToCart: (item) => baseApi.post('/cart', item).then((res) => res.data),
+    add: (bookId, quantity) => baseApi.post('/cart', { bookId, quantity }).then(unwrap),
 
-    removeFromCart: (bookId) => {
-        if (!bookId) throw new Error('Book ID is required')
-        return baseApi.delete(`/cart/${bookId}`).then((res) => res.data)
-    },
+    setQuantity: (bookId, quantity) => baseApi.put(`/cart/${bookId}`, { quantity }).then(unwrap),
 
-    updateQuantity: (bookId, quantity) => {
-        if (!bookId) throw new Error('Book ID is required')
-        return baseApi.put(`/cart/${bookId}`, { quantity }).then((res) => res.data)
-    },
+    remove: (bookId) => baseApi.delete(`/cart/${bookId}`).then(unwrap),
 
-    clearCart: () => baseApi.delete('/cart').then((res) => res.data),
+    clear: () => baseApi.delete('/cart').then(unwrap),
 
-    syncCart: (cart) => baseApi.post('/cart/sync', { items: cart }).then((res) => res.data),
+    /** Prices a guest cart; nothing is stored */
+    quote: (items) => baseApi.post('/cart/quote', { items }).then(unwrap),
+
+    /** Adds the guest cart to the signed-in user's cart */
+    merge: (items) => baseApi.post('/cart/merge', { items }).then(unwrap),
 }

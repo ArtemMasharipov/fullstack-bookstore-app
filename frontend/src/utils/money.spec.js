@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import cs from '@/i18n/locales/cs.json'
 import en from '@/i18n/locales/en.json'
 import { activateLocale, loadLocale, t } from '@/i18n'
-import { formatPrice } from './helpers/currency'
+import { formatMoney, formatPrice } from './helpers/currency'
 
 beforeAll(async () => {
     vi.stubGlobal('fetch', async (url) => {
@@ -17,6 +17,27 @@ beforeAll(async () => {
     vi.unstubAllGlobals()
 })
 beforeEach(() => activateLocale('cs'))
+
+describe('CZK display of server amounts in geller', () => {
+    it.each([
+        ['cs', 'cs-CZ'],
+        ['en', 'en-GB'],
+    ])('formats 29900 geller as 299 crowns in %s', (language, tag) => {
+        const expected = new Intl.NumberFormat(tag, {
+            style: 'currency',
+            currency: 'CZK',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(299)
+
+        expect(formatMoney(29900, 'CZK', language)).toBe(expected)
+        expect(formatMoney(29900, 'CZK', language)).toBe(formatPrice(299, language))
+    })
+
+    it.each([1.5, '100', NaN])('shows a placeholder for %j, never a number', (amount) => {
+        expect(formatMoney(amount)).toBe(t('common.notAvailable'))
+    })
+})
 
 describe('CZK display in major units', () => {
     it.each(['cs', 'en'])('formats 299.90 without conversion in %s', (locale) => {

@@ -62,6 +62,16 @@ export const useAuthStore = defineStore('auth', {
         },
 
         /**
+         * After sign-in: the guest cart joins the account cart; without one,
+         * the account cart is loaded
+         */
+        async _takeOverCart() {
+            const { useCartStore } = await import('@/stores/cart')
+            const cartStore = useCartStore()
+            if (!(await cartStore.mergeGuestCart())) await cartStore.load()
+        },
+
+        /**
          * Login user
          */
         async login(credentials) {
@@ -85,10 +95,7 @@ export const useAuthStore = defineStore('auth', {
                 localStorage.setItem('token', token)
                 localStorage.setItem('userData', JSON.stringify(user))
 
-                // Sync cart after login
-                const { useCartStore } = await import('@/stores/cart')
-                const cartStore = useCartStore()
-                await cartStore.syncCart()
+                await this._takeOverCart()
 
                 showSuccess(undefined, {
                     messageKey: 'notifications.welcomeBack',
@@ -118,6 +125,8 @@ export const useAuthStore = defineStore('auth', {
                 // Save to localStorage
                 localStorage.setItem('token', token)
                 localStorage.setItem('userData', JSON.stringify(user))
+
+                await this._takeOverCart()
 
                 showSuccess(undefined, {
                     messageKey: 'notifications.welcome',

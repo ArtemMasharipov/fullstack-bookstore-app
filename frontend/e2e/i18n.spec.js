@@ -79,7 +79,8 @@ for (const initial of ['cs', 'en']) {
         await page.getByRole('button', { name: 'Add to Cart', exact: true }).click()
         await expect(page.getByRole('button', { name: 'Added!', exact: true })).toBeVisible()
         const cart = await page.evaluate(() => localStorage.getItem('cart'))
-        expect(JSON.parse(cart)[0]).toMatchObject({ bookId: id, quantity: 1, price: seeded.price })
+        // The guest cart keeps ids and quantities only; prices come from the server
+        expect(JSON.parse(cart)).toEqual([{ bookId: id, quantity: 1 }])
         const before = page.url()
         await language(page, other).focus()
         await language(page, other).press('Enter')

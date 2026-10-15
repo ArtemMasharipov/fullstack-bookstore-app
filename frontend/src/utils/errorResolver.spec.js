@@ -24,6 +24,8 @@ describe('safe error code resolution', () => {
         'UNPROCESSABLE',
         'RATE_LIMITED',
         'INTERNAL',
+        'BOOK_UNAVAILABLE',
+        'CART_ITEM_NOT_FOUND',
     ]
     it.each(codes)('resolves stable %s from each supported boundary', (code) => {
         expect(ERROR_CODES).toContain(code)

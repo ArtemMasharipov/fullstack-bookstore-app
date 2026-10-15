@@ -21,7 +21,7 @@ baseApi.interceptors.request.use(
         const token = localStorage.getItem('token')
 
         // Public endpoints that don't require auth
-        const publicEndpoints = ['/auth/login', '/auth/register', '/books', '/authors']
+        const publicEndpoints = ['/auth/login', '/auth/register', '/books', '/authors', '/cart/quote', '/config/public']
         const isPublic = publicEndpoints.some((ep) => config.url.includes(ep))
 
         if (token && (!isPublic || config.headers.Authorization)) {

@@ -67,6 +67,9 @@
         "userFallback": "Admin",
         "version": "Bookstore v{version}"
     },
+    "cart": {
+        "mergeSkipped": "Some books from your earlier cart are no longer available and were not added ({count})."
+    },
     "shipping": {
         "freeOver": "Free shipping over {amount}"
     },
@@ -81,6 +84,8 @@
         "RATE_LIMITED": "Too many requests. Please try again later.",
         "INTERNAL": "The service is temporarily unavailable. Please try again later.",
         "UNKNOWN": "Something went wrong. Please try again later.",
+        "BOOK_UNAVAILABLE": "This book is not available right now.",
+        "CART_ITEM_NOT_FOUND": "This book is no longer in your cart.",
         "retry": "Retry",
         "contact": "Contact support",
         "supportUnavailable": "Support channel is not configured in this demo. No message has been sent.",

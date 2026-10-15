@@ -90,7 +90,12 @@ it.each([false, true])(
         setActivePinia(createPinia())
         localStorage.clear()
         const cart = useCartStore()
-        cart.setItems([{ bookId: 'removed', quantity: 1, price: 299.9 }])
+        // A book deleted from the catalogue comes back without a title
+        const removed = 'a'.repeat(24)
+        const another = 'b'.repeat(24)
+        const line = (bookId, title) => ({ bookId, title, quantity: 1, available: title !== null })
+        localStorage.setItem('cart', JSON.stringify([{ bookId: removed, quantity: 1 }]))
+        cart.$patch({ lines: [line(removed, null)], status: 'ready' })
         if (queued) {
             for (let i = 0; i < 5; i++) notices.show({ message: 'Existing notice', persistent: true })
         }
@@ -101,9 +106,9 @@ it.each([false, true])(
             .use(createVuetify({ components }))
         app.mount(root)
         await nextTick()
-        await cart.removeFromCart('removed')
-        expect(cart.items).toEqual([])
-        expect(JSON.parse(localStorage.getItem('cart'))).toEqual([])
+        await cart.remove(removed)
+        expect(cart.lines).toEqual([])
+        expect(localStorage.getItem('cart')).toBeNull()
         if (queued) {
             expect(document.body.textContent).not.toContain('removed from cart')
             activateLocale('cs')
@@ -121,7 +126,9 @@ it.each([false, true])(
         expect(document.body.textContent).toContain('Polo\u017eka odebr\u00e1na z ko\u0161\u00edku')
         expect(document.body.textContent).not.toContain('Item')
         notices.clear()
-        await cart.removeFromCart('another', 'Provided title')
+        localStorage.setItem('cart', JSON.stringify([{ bookId: another, quantity: 1 }]))
+        cart.$patch({ lines: [line(another, 'Provided title')] })
+        await cart.remove(another)
         await nextTick()
         expect(document.body.textContent).toContain('Provided title')
         localStorage.clear()

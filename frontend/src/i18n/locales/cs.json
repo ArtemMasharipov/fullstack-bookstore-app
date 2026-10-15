@@ -67,6 +67,9 @@
         "userFallback": "Správce",
         "version": "Bookstore v{version}"
     },
+    "cart": {
+        "mergeSkipped": "Některé knihy z dřívějšího košíku už nejsou dostupné a nebyly přidány ({count})."
+    },
     "shipping": {
         "freeOver": "Doprava zdarma při objednávce nad {amount}"
     },
@@ -81,6 +84,8 @@
         "RATE_LIMITED": "Příliš mnoho požadavků. Zkuste to později.",
         "INTERNAL": "Služba je dočasně nedostupná. Zkuste to později.",
         "UNKNOWN": "Něco se pokazilo. Zkuste to později.",
+        "BOOK_UNAVAILABLE": "Tato kniha teď není dostupná.",
+        "CART_ITEM_NOT_FOUND": "Tato kniha už v košíku není.",
         "retry": "Zkusit znovu",
         "contact": "Kontaktovat podporu",
         "supportUnavailable": "Kanál podpory není v této ukázce nastaven. Žádná zpráva nebyla odeslána.",

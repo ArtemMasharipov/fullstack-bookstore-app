@@ -62,16 +62,16 @@
                         </v-card-title>
                         <v-card-text>
                             <v-list density="compact" class="pa-0 bg-transparent">
-                                <v-list-item v-for="item in cartItems" :key="item.id" class="px-0">
+                                <v-list-item v-for="item in cartItems" :key="item.bookId" class="px-0">
                                     <v-list-item-title class="text-body-2">
-                                        {{ item.bookId?.title || item.book?.title || 'Unknown Book' }}
+                                        {{ item.title }}
                                     </v-list-item-title>
                                     <v-list-item-subtitle class="text-caption">
-                                        {{ item.quantity }} x {{ formatPrice(item.price) }}
+                                        {{ item.quantity }} x {{ formatMoney(item.unitPrice) }}
                                     </v-list-item-subtitle>
                                     <template v-slot:append>
                                         <span class="text-body-2 font-weight-medium">
-                                            {{ formatPrice(item.quantity * item.price) }}
+                                            {{ formatMoney(item.lineTotal) }}
                                         </span>
                                     </template>
                                 </v-list-item>
@@ -81,11 +81,11 @@
 
                             <div class="d-flex justify-space-between mb-2">
                                 <span class="text-medium-emphasis">Subtotal</span>
-                                <span>{{ formatPrice(cartTotal) }}</span>
+                                <span>{{ formatMoney(quote?.itemsTotal) }}</span>
                             </div>
                             <div class="d-flex justify-space-between mb-3">
                                 <span class="text-medium-emphasis">Shipping</span>
-                                <span class="text-success">Free</span>
+                                <span>{{ formatMoney(quote?.shipping) }}</span>
                             </div>
 
                             <v-divider class="mb-3" />
@@ -93,7 +93,7 @@
                             <div class="d-flex justify-space-between">
                                 <span class="text-subtitle-1 font-weight-bold">Total</span>
                                 <span class="text-subtitle-1 font-weight-bold text-primary">
-                                    {{ formatPrice(cartTotal) }}
+                                    {{ formatMoney(quote?.total) }}
                                 </span>
                             </div>
                         </v-card-text>
@@ -110,7 +110,7 @@ import { useRouter } from 'vue-router'
 import ErrorMessage from '@/components/ui/ErrorMessage.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { useCartStore, useOrdersStore } from '@/stores'
-import { formatPrice } from '@/utils'
+import { formatMoney } from '@/utils'
 
 const router = useRouter()
 const cartStore = useCartStore()
@@ -130,9 +130,9 @@ const phoneRules = [
     (v) => /^\+?[\d\s()-]{7,}$/.test(v) || 'Enter a valid phone number',
 ]
 
-const cartItems = computed(() => cartStore.cartItems)
-const cartTotal = computed(() => cartStore.cartTotal)
-const loading = computed(() => cartStore.loading)
+const cartItems = computed(() => cartStore.lines)
+const quote = computed(() => cartStore.quote)
+const loading = computed(() => cartStore.status === 'loading')
 const error = computed(() => cartStore.error)
 
 const submitOrder = async () => {
@@ -144,7 +144,7 @@ const submitOrder = async () => {
         const order = await ordersStore.createOrder({
             ...orderData,
             items: cartItems.value,
-            total: cartTotal.value,
+            total: quote.value?.total,
         })
         router.push(`/orders/${order._id}`)
     } catch (error) {
