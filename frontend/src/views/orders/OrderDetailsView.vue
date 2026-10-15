@@ -1,170 +1,209 @@
 <template>
-    <v-container>
+    <v-container class="py-6">
         <v-breadcrumbs :items="breadcrumbItems" class="pa-0 mb-4" />
 
-        <v-card class="mx-auto" max-width="800">
-            <v-card-text v-if="loading" class="text-center py-8">
-                <v-progress-circular indeterminate color="primary" size="48" />
-                <p class="text-medium-emphasis mt-4">Loading order details...</p>
-            </v-card-text>
+        <v-row v-if="orders.currentStatus === 'idle' || orders.currentStatus === 'loading'">
+            <v-col cols="12" md="7">
+                <v-skeleton-loader type="heading, list-item-two-line, list-item-two-line, paragraph" />
+            </v-col>
+            <v-col cols="12" md="5">
+                <v-skeleton-loader type="article" />
+            </v-col>
+        </v-row>
 
-            <v-card-text v-else-if="error">
-                <v-alert type="error" variant="tonal">{{ error }}</v-alert>
-            </v-card-text>
+        <v-alert
+            v-else-if="orders.currentError === 'NOT_FOUND'"
+            type="info"
+            variant="tonal"
+            icon="mdi-package-variant-remove"
+        >
+            {{ t('orders.notFound') }}
+            <div class="mt-2">
+                <v-btn variant="text" :to="localeRoute('Orders')" prepend-icon="mdi-arrow-left">
+                    {{ t('orders.backToList') }}
+                </v-btn>
+            </div>
+        </v-alert>
 
-            <template v-else>
-                <!-- Header -->
-                <v-card-item>
-                    <template v-slot:prepend>
-                        <v-avatar color="primary" size="48">
-                            <v-icon icon="mdi-package-variant" color="white" />
-                        </v-avatar>
-                    </template>
-                    <v-card-title class="text-h5">
-                        Order #{{ order._id?.substring(order._id.length - 8) }}
+        <error-message
+            v-else-if="orders.currentStatus === 'error'"
+            :code="orders.currentError"
+            :on-retry="load"
+            :closable="false"
+        />
+
+        <template v-else-if="order">
+            <div class="d-flex flex-wrap align-center ga-2 mb-6">
+                <div class="mr-auto">
+                    <h1 class="text-h4 font-weight-bold text-break">
+                        {{ t('orders.number', { number: order.orderNumber }) }}
+                    </h1>
+                    <p class="text-medium-emphasis mb-0">
+                        {{ t('orders.placedOn', { date: formatDate(order.createdAt) }) }}
+                    </p>
+                </div>
+                <v-chip :color="STATUS_COLORS[order.status]" variant="tonal">
+                    {{ t(`orders.status.${order.status}`) }}
+                </v-chip>
+                <v-chip variant="outlined">{{ t(`orders.payment.${order.paymentStatus}`) }}</v-chip>
+                <v-btn
+                    v-if="isCancellable(order)"
+                    color="error"
+                    variant="outlined"
+                    prepend-icon="mdi-close-circle-outline"
+                    @click="confirming = true"
+                >
+                    {{ t('orders.cancel') }}
+                </v-btn>
+            </div>
+
+            <v-row>
+                <v-col cols="12" md="7">
+                    <v-card variant="outlined" class="mb-4">
+                        <v-card-title class="text-subtitle-1 font-weight-bold">
+                            {{ t('orders.itemsTitle') }}
+                        </v-card-title>
+                        <v-card-text>
+                            <ul class="order-lines">
+                                <li
+                                    v-for="item in order.items"
+                                    :key="item.bookId"
+                                    class="d-flex justify-space-between ga-2 mb-2"
+                                >
+                                    <span>
+                                        <span class="d-block">{{ item.title }}</span>
+                                        <span class="text-caption text-medium-emphasis">
+                                            {{
+                                                t('checkout.lineQuantity', {
+                                                    quantity: item.quantity,
+                                                    price: formatMoney(item.unitPrice, order.quote.currency),
+                                                })
+                                            }}
+                                        </span>
+                                    </span>
+                                    <span class="text-no-wrap">
+                                        {{ formatMoney(item.lineTotal, order.quote.currency) }}
+                                    </span>
+                                </li>
+                            </ul>
+                        </v-card-text>
+                    </v-card>
+
+                    <v-card variant="outlined" class="mb-4">
+                        <v-card-title class="text-subtitle-1 font-weight-bold">
+                            {{ t('orders.addressTitle') }}
+                        </v-card-title>
+                        <v-card-text>
+                            <address class="order-address">
+                                <span class="d-block">{{ order.shippingAddress.fullName }}</span>
+                                <span class="d-block">{{ order.shippingAddress.line1 }}</span>
+                                <span class="d-block">
+                                    {{ `${order.shippingAddress.postalCode} ${order.shippingAddress.city}` }}
+                                </span>
+                                <span class="d-block">{{ order.shippingAddress.country }}</span>
+                                <span v-if="order.shippingAddress.phone" class="d-block">
+                                    {{ order.shippingAddress.phone }}
+                                </span>
+                            </address>
+                        </v-card-text>
+                    </v-card>
+
+                    <v-card v-if="order.statusHistory.length" variant="outlined">
+                        <v-card-title class="text-subtitle-1 font-weight-bold">
+                            {{ t('orders.historyTitle') }}
+                        </v-card-title>
+                        <v-card-text>
+                            <ol class="order-history">
+                                <li v-for="(entry, index) in order.statusHistory" :key="index" class="mb-1">
+                                    <span class="text-medium-emphasis">{{ formatDateTime(entry.at) }}</span>
+                                    <span class="mx-1">·</span>
+                                    <span>{{ changeOf(entry) }}</span>
+                                    <span class="text-medium-emphasis ml-1">{{
+                                        t(`orders.historyBy.${entry.by}`)
+                                    }}</span>
+                                </li>
+                            </ol>
+                        </v-card-text>
+                    </v-card>
+                </v-col>
+
+                <v-col cols="12" md="5">
+                    <v-card variant="outlined">
+                        <v-card-title class="text-subtitle-1 font-weight-bold">
+                            {{ t('orders.summaryTitle') }}
+                        </v-card-title>
+                        <v-card-text>
+                            <order-quote :quote="order.quote" />
+                        </v-card-text>
+                    </v-card>
+                </v-col>
+            </v-row>
+
+            <v-dialog v-model="confirming" max-width="480">
+                <v-card>
+                    <v-card-title class="text-h6 text-wrap">
+                        {{ t('orders.cancelTitle', { number: order.orderNumber }) }}
                     </v-card-title>
-                    <v-card-subtitle> Placed on {{ formatDate(order.createdAt) }} </v-card-subtitle>
-                    <template v-slot:append>
-                        <v-chip
-                            :color="getStatusColor(order.status)"
-                            :prepend-icon="getStatusIcon(order.status)"
-                            class="text-uppercase font-weight-medium"
-                        >
-                            {{ order.status }}
-                        </v-chip>
-                    </template>
-                </v-card-item>
-
-                <v-divider />
-
-                <!-- Items -->
-                <v-card-text>
-                    <h3 class="text-subtitle-1 font-weight-bold mb-3">
-                        <v-icon icon="mdi-book-multiple" size="small" class="mr-1" />
-                        Items ({{ order.items?.length || 0 }})
-                    </h3>
-                    <v-list density="compact" variant="outlined" rounded class="mb-4">
-                        <v-list-item v-for="item in order.items" :key="item.id">
-                            <template v-slot:prepend>
-                                <v-avatar size="40" rounded color="surface-variant">
-                                    <v-icon icon="mdi-book-open-variant" size="small" />
-                                </v-avatar>
-                            </template>
-                            <v-list-item-title>{{ item.title }}</v-list-item-title>
-                            <v-list-item-subtitle>Qty: {{ item.quantity }}</v-list-item-subtitle>
-                            <template v-slot:append>
-                                <span class="font-weight-medium">{{ formatPrice(item.price) }}</span>
-                            </template>
-                        </v-list-item>
-                    </v-list>
-
-                    <!-- Order info -->
-                    <v-row>
-                        <v-col cols="12" sm="6">
-                            <v-card variant="tonal" color="surface-variant" flat>
-                                <v-card-text>
-                                    <div class="text-caption text-medium-emphasis mb-1">Delivery Address</div>
-                                    <div class="d-flex align-center">
-                                        <v-icon icon="mdi-map-marker-outline" size="small" class="mr-2" />
-                                        <span class="text-body-2">{{ order.address || 'N/A' }}</span>
-                                    </div>
-                                    <div class="d-flex align-center mt-2">
-                                        <v-icon icon="mdi-phone-outline" size="small" class="mr-2" />
-                                        <span class="text-body-2">{{ order.phone || 'N/A' }}</span>
-                                    </div>
-                                </v-card-text>
-                            </v-card>
-                        </v-col>
-                        <v-col cols="12" sm="6">
-                            <v-card variant="tonal" color="surface-variant" flat>
-                                <v-card-text>
-                                    <div class="text-caption text-medium-emphasis mb-1">Order Summary</div>
-                                    <div class="d-flex justify-space-between mb-1">
-                                        <span class="text-body-2 text-medium-emphasis">Date</span>
-                                        <span class="text-body-2">{{ formatDate(order.createdAt) }}</span>
-                                    </div>
-                                    <v-divider class="my-2" />
-                                    <div class="d-flex justify-space-between">
-                                        <span class="text-subtitle-1 font-weight-bold">Total</span>
-                                        <span class="text-subtitle-1 font-weight-bold text-secondary">{{
-                                            formatPrice(order.total)
-                                        }}</span>
-                                    </div>
-                                </v-card-text>
-                            </v-card>
-                        </v-col>
-                    </v-row>
-                </v-card-text>
-
-                <v-divider />
-
-                <!-- Actions -->
-                <v-card-actions class="pa-4">
-                    <v-btn variant="text" :to="localeRoute('Orders')" prepend-icon="mdi-arrow-left">
-                        Back to Orders
-                    </v-btn>
-                    <v-spacer />
-                    <v-btn
-                        v-if="authStore.hasPermission('update:order')"
-                        color="primary"
-                        :to="localeRoute('OrderStatus', { params: { id: order._id } })"
-                        prepend-icon="mdi-pencil"
-                    >
-                        Update Status
-                    </v-btn>
-                </v-card-actions>
-            </template>
-        </v-card>
+                    <v-card-text>{{ t('orders.cancelText') }}</v-card-text>
+                    <v-card-actions class="flex-wrap">
+                        <v-spacer />
+                        <v-btn variant="text" @click="confirming = false">{{ t('orders.keep') }}</v-btn>
+                        <v-btn color="error" variant="flat" :loading="orders.cancelling" @click="cancelOrder">
+                            {{ t('orders.cancelConfirm') }}
+                        </v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+        </template>
     </v-container>
 </template>
 
 <script setup>
+import OrderQuote from '@/components/features/orders/OrderQuote.vue'
+import ErrorMessage from '@/components/ui/ErrorMessage.vue'
 import { localeRoute } from '@/router/locale'
-import { computed, onMounted } from 'vue'
+import { useOrdersStore } from '@/stores'
+import { formatDate, formatDateTime, formatMoney } from '@/utils'
+import { isCancellable, STATUS_COLORS } from '@/utils/orderStatus'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { useAuthStore, useOrdersStore } from '@/stores'
-import { formatPrice, formatDate } from '@/utils'
 
+const { t } = useI18n()
 const route = useRoute()
-const ordersStore = useOrdersStore()
-const authStore = useAuthStore()
+const orders = useOrdersStore()
+const confirming = ref(false)
 
-const currentOrder = computed(() => ordersStore.current)
-const loading = computed(() => ordersStore.currentStatus === 'loading')
-const error = computed(() => ordersStore.currentError)
-const order = computed(() => currentOrder.value || {})
+const order = computed(() => orders.current)
 
 const breadcrumbItems = computed(() => [
-    { title: 'Orders', to: localeRoute('Orders') },
-    {
-        title: order.value?.orderNumber || 'Details',
-        disabled: true,
-    },
+    { title: t('routes.Orders'), to: localeRoute('Orders') },
+    { title: order.value?.orderNumber ?? t('routes.OrderDetails'), disabled: true },
 ])
 
-const getStatusColor = (status) => {
-    const statusColors = {
-        pending: 'orange',
-        processing: 'blue',
-        shipped: 'cyan',
-        delivered: 'success',
-        cancelled: 'error',
-    }
-    return statusColors[status] || 'grey'
+const changeOf = (entry) =>
+    entry.axis === 'payment' ? t(`orders.payment.${entry.to}`) : t(`orders.status.${entry.to}`)
+
+const load = () => orders.fetchOne(route.params.id)
+
+async function cancelOrder() {
+    if (await orders.cancel(order.value.id)) confirming.value = false
 }
 
-const getStatusIcon = (status) => {
-    const statusIcons = {
-        pending: 'mdi-clock-outline',
-        processing: 'mdi-cog-outline',
-        shipped: 'mdi-truck-delivery-outline',
-        delivered: 'mdi-check-circle-outline',
-        cancelled: 'mdi-close-circle-outline',
-    }
-    return statusIcons[status] || 'mdi-help-circle'
-}
-
-onMounted(async () => {
-    await ordersStore.fetchOne(route.params.id)
-})
+// A switch of language keeps the id; another order in the URL loads that one
+watch(() => route.params.id, load, { immediate: true })
 </script>
+
+<style scoped>
+.order-lines,
+.order-history {
+    list-style: none;
+    padding: 0;
+    overflow-wrap: anywhere;
+}
+
+.order-address {
+    font-style: normal;
+    overflow-wrap: anywhere;
+}
+</style>

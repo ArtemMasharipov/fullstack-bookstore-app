@@ -18,7 +18,16 @@ import { routeManifest } from './manifest.js'
  * @returns {object} Vue Router route record
  */
 function buildRoute(entry, parentAccess = {}) {
-    const { id, path, view, layout, titleKey, access = {}, children } = entry
+    const { id, path, view, layout, titleKey, access = {}, children, redirectTo } = entry
+
+    if (redirectTo) {
+        // params include the language prefix, so the target keeps the language
+        return {
+            path,
+            name: id,
+            redirect: (to) => ({ name: redirectTo, params: to.params, query: to.query }),
+        }
+    }
 
     // Child access is the parent policy overridden by the entry's own policy.
     const mergedAccess = { ...parentAccess, ...access }

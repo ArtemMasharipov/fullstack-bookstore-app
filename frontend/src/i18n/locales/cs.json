@@ -23,7 +23,6 @@
         "Profile": "Profil",
         "Orders": "Moje objednávky",
         "OrderDetails": "Detail objednávky",
-        "OrderStatus": "Stav objednávky",
         "AdminDashboard": "Přehled",
         "AdminBooks": "Knihy",
         "AdminAuthors": "Autoři",
@@ -139,7 +138,39 @@
         }
     },
     "orders": {
-        "tax": "Daň"
+        "tax": "Daň",
+        "title": "Moje objednávky",
+        "empty": "Zatím nemáte žádné objednávky.",
+        "number": "Objednávka {number}",
+        "placedOn": "Vytvořena {date}",
+        "bookCount": "Počet knih: {count}",
+        "status": {
+            "pending": "Čeká na zpracování",
+            "processing": "Zpracovává se",
+            "shipped": "Odesláno",
+            "delivered": "Doručeno",
+            "cancelled": "Zrušeno"
+        },
+        "payment": {
+            "unpaid": "Čeká na platbu",
+            "paid": "Zaplaceno",
+            "failed": "Platba se nezdařila"
+        },
+        "itemsTitle": "Knihy",
+        "addressTitle": "Doručovací adresa",
+        "summaryTitle": "Celkem",
+        "historyTitle": "Historie",
+        "historyBy": {
+            "user": "vámi",
+            "admin": "obchodem"
+        },
+        "cancel": "Zrušit objednávku",
+        "cancelTitle": "Zrušit objednávku {number}?",
+        "cancelText": "Objednávka nebude zpracována. Tuto akci nelze vrátit.",
+        "cancelConfirm": "Ano, zrušit objednávku",
+        "keep": "Ponechat objednávku",
+        "notFound": "Objednávka nebyla nalezena.",
+        "backToList": "Zpět na moje objednávky"
     },
     "shipping": {
         "freeOver": "Doprava zdarma při objednávce nad {amount}"

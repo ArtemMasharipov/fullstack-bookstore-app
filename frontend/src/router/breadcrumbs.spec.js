@@ -24,7 +24,7 @@ beforeEach(() => {
         async (url) =>
             new Response(
                 JSON.stringify(
-                    String(url).includes('/en-') || String(url).endsWith('/en.json') ? enMessages : csMessages
+                    String(url).includes('/en-') || String(url).includes('/en.json') ? enMessages : csMessages
                 )
             )
     )

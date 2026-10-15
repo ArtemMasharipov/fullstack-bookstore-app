@@ -14,7 +14,6 @@
     "src/components/features/books/BookDetails.vue",
     "src/components/features/books/BookForm.vue",
     "src/components/features/books/BookList.vue",
-    "src/components/features/orders/OrdersList.vue",
     "src/views/admin/AdminAuthorsView.vue",
     "src/views/admin/AdminDashboardView.vue",
     "src/views/admin/AdminOrdersView.vue",
@@ -22,8 +21,5 @@
     "src/views/admin/AdminUsersView.vue",
     "src/views/auth/ProfileView.vue",
     "src/views/auth/RegisterView.vue",
-    "src/views/orders/OrderDetailsView.vue",
-    "src/views/orders/OrderStatusView.vue",
-    "src/views/orders/OrdersView.vue",
     "src/views/public/HomeView.vue"
 ]

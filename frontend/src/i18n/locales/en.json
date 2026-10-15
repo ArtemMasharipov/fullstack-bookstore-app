@@ -23,7 +23,6 @@
         "Profile": "Profile",
         "Orders": "My Orders",
         "OrderDetails": "Order Details",
-        "OrderStatus": "Order Status",
         "AdminDashboard": "Dashboard",
         "AdminBooks": "Books",
         "AdminAuthors": "Authors",
@@ -139,7 +138,39 @@
         }
     },
     "orders": {
-        "tax": "Tax"
+        "tax": "Tax",
+        "title": "My orders",
+        "empty": "You have no orders yet.",
+        "number": "Order {number}",
+        "placedOn": "Placed on {date}",
+        "bookCount": "Books: {count}",
+        "status": {
+            "pending": "Pending",
+            "processing": "Processing",
+            "shipped": "Shipped",
+            "delivered": "Delivered",
+            "cancelled": "Cancelled"
+        },
+        "payment": {
+            "unpaid": "Awaiting payment",
+            "paid": "Paid",
+            "failed": "Payment failed"
+        },
+        "itemsTitle": "Books",
+        "addressTitle": "Delivery address",
+        "summaryTitle": "Total",
+        "historyTitle": "History",
+        "historyBy": {
+            "user": "by you",
+            "admin": "by the shop"
+        },
+        "cancel": "Cancel order",
+        "cancelTitle": "Cancel order {number}?",
+        "cancelText": "The order will not be processed. This cannot be undone.",
+        "cancelConfirm": "Yes, cancel the order",
+        "keep": "Keep the order",
+        "notFound": "This order was not found.",
+        "backToList": "Back to my orders"
     },
     "shipping": {
         "freeOver": "Free shipping over {amount}"

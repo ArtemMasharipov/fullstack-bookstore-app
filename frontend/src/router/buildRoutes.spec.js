@@ -37,6 +37,18 @@ describe('localized route manifest', () => {
         expect(routes.getRoutes().find((r) => r.path.endsWith('/admin') && r.children.length)?.name).toBeUndefined()
     })
 
+    it('sends the old order status page to the order details in the same language', async () => {
+        for (const [from, to] of [
+            ['/orders/abc/status', '/orders/abc'],
+            ['/en/orders/abc/status', '/en/orders/abc'],
+        ]) {
+            const routes = router()
+            await routes.push(from)
+            expect(routes.currentRoute.value.name).toBe('OrderDetails')
+            expect(routes.currentRoute.value.fullPath).toBe(to)
+        }
+    })
+
     it('recognizes EN unknown paths and treats an explicit CS prefix as a CS 404', () => {
         const routes = router()
         expect(routes.resolve('/en/unknown/a').params).toEqual({ locale: 'en', pathMatch: ['unknown', 'a'] })

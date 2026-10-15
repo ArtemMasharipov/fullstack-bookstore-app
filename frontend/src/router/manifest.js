@@ -11,6 +11,9 @@
  *   guestOnly   {boolean} — redirect to Home when user is already logged in
  *   permission  {string}  — user must pass authStore.hasPermission(permission)
  *
+ * redirectTo {string} — instead of a view: the id of the route this path now
+ *   opens, with the same params, query and language
+ *
  * Nav shape (admin children only):
  *   section  {string} — sidebar section key, e.g. 'main' | 'system'
  *   order    {number} — sort order within the section
@@ -109,11 +112,10 @@ export const routeManifest = [
         access: { auth: true },
     },
     {
+        // Changing a status is an admin task; old links open the order
         id: 'OrderStatus',
         path: '/orders/:id/status',
-        view: () => import('@/views/orders/OrderStatusView.vue'),
-        titleKey: 'routes.OrderStatus',
-        access: { auth: true },
+        redirectTo: 'OrderDetails',
     },
 
     // ── Admin (layout group) ────────────────────────────────────────────
