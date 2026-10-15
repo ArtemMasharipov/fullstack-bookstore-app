@@ -10,6 +10,10 @@ export const ERROR_CODES = Object.freeze([
     'INTERNAL',
     'BOOK_UNAVAILABLE',
     'CART_ITEM_NOT_FOUND',
+    'CART_EMPTY',
+    'CART_HAS_UNAVAILABLE_ITEMS',
+    'INVALID_TRANSITION',
+    'IDEMPOTENCY_CONFLICT',
 ])
 
 export function resolveErrorKey(error) {

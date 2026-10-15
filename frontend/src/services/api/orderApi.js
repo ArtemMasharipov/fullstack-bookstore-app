@@ -1,56 +1,32 @@
 import baseApi from './baseApi'
 
 /**
- * Orders API - direct axios implementation
- * No factory abstractions (PHASE 3)
+ * Orders API
+ * Unwraps the envelope: single orders come back as the order, lists as
+ * { items, pagination }.
  */
+const unwrap = (response) => response.data.data
+const page = (response) => ({ items: response.data.data, pagination: response.data.pagination })
+
 export const orderApi = {
-    fetchAll: (params) => baseApi.get('/orders', { params }).then((res) => res.data),
+    /**
+     * Places an order from the cart. The same key repeats the same request:
+     * the server answers 200 with the order it placed before.
+     */
+    create: (body, idempotencyKey) =>
+        baseApi
+            .post('/orders', body, { headers: { 'Idempotency-Key': idempotencyKey } })
+            .then((response) => ({ order: unwrap(response), replayed: response.status === 200 })),
 
-    fetchById: (id) => {
-        if (!id) throw new Error('Order ID is required')
-        return baseApi.get(`/orders/${id}`).then((res) => res.data)
-    },
+    list: (params) => baseApi.get('/orders', { params }).then(page),
 
-    create: (data) => baseApi.post('/orders', data).then((res) => res.data),
+    get: (id) => baseApi.get(`/orders/${id}`).then(unwrap),
 
-    update: (id, data) => {
-        if (!id) throw new Error('Order ID is required')
-        return baseApi.put(`/orders/${id}`, data).then((res) => res.data)
-    },
+    cancel: (id) => baseApi.patch(`/orders/${id}/cancel`).then(unwrap),
 
-    delete: (id) => {
-        if (!id) throw new Error('Order ID is required')
-        return baseApi.delete(`/orders/${id}`).then((res) => res.data)
-    },
+    adminList: (params) => baseApi.get('/orders/admin/all', { params }).then(page),
 
-    // Custom methods
-    createOrder: (orderData) => baseApi.post('/orders', orderData).then((res) => res.data),
+    adminStats: () => baseApi.get('/orders/admin/stats').then(unwrap),
 
-    getOrders: () => baseApi.get('/orders').then((res) => res.data),
-
-    getOrderById: (id) => {
-        if (!id) throw new Error('Order ID is required')
-        return baseApi.get(`/orders/${id}`).then((res) => res.data)
-    },
-
-    updateOrderStatus: (id, status) => {
-        if (!id) throw new Error('Order ID is required')
-        return baseApi.put(`/orders/${id}/status`, { status }).then((res) => res.data)
-    },
-
-    getOrderStatus: (id) => {
-        if (!id) throw new Error('Order ID is required')
-        return baseApi.get(`/orders/${id}/status`).then((res) => res.data)
-    },
-
-    updateTracking: (id, trackingNumber) => {
-        if (!id) throw new Error('Order ID is required')
-        return baseApi.put(`/orders/${id}/tracking`, { trackingNumber }).then((res) => res.data)
-    },
-
-    getOrderHistory: (id) => {
-        if (!id) throw new Error('Order ID is required')
-        return baseApi.get(`/orders/${id}/history`).then((res) => res.data)
-    },
+    adminSetStatus: (id, status) => baseApi.patch(`/orders/${id}/status`, { status }).then(unwrap),
 }

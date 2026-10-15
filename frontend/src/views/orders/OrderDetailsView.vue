@@ -129,15 +129,15 @@ const route = useRoute()
 const ordersStore = useOrdersStore()
 const authStore = useAuthStore()
 
-const currentOrder = computed(() => ordersStore.getOrder)
-const loading = computed(() => ordersStore.loading)
-const error = computed(() => ordersStore.error)
+const currentOrder = computed(() => ordersStore.current)
+const loading = computed(() => ordersStore.currentStatus === 'loading')
+const error = computed(() => ordersStore.currentError)
 const order = computed(() => currentOrder.value || {})
 
 const breadcrumbItems = computed(() => [
     { title: 'Orders', to: localeRoute('Orders') },
     {
-        title: order.value?._id ? `#${order.value._id.substring(order.value._id.length - 8)}` : 'Details',
+        title: order.value?.orderNumber || 'Details',
         disabled: true,
     },
 ])
@@ -165,6 +165,6 @@ const getStatusIcon = (status) => {
 }
 
 onMounted(async () => {
-    await ordersStore.fetchOrderById(route.params.id)
+    await ordersStore.fetchOne(route.params.id)
 })
 </script>

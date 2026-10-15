@@ -40,11 +40,23 @@ beforeEach(() => {
         },
     })
     vi.spyOn(authorsApi, 'fetchById').mockResolvedValue({ _id: 'fixture-author', name: 'Fixture Author', books: [] })
-    vi.spyOn(orderApi, 'getOrderById').mockResolvedValue({
-        _id: 'fixture-order',
-        items: [],
-        total: 299.9,
+    vi.spyOn(orderApi, 'get').mockResolvedValue({
+        id: 'fixture-order',
+        orderNumber: 'ORD-20261015-000001',
         status: 'pending',
+        paymentStatus: 'unpaid',
+        items: [],
+        shippingAddress: {
+            fullName: 'Jan Novák',
+            line1: 'Vodičkova 12',
+            city: 'Praha',
+            postalCode: '110 00',
+            country: 'CZ',
+            phone: '+420 777 123 456',
+        },
+        quote: { currency: 'CZK', itemsTotal: 29990, shipping: 0, vatIncluded: true, vatAmount: 0, total: 29990 },
+        statusHistory: [],
+        createdAt: '2026-10-15T10:00:00.000Z',
     })
 })
 afterEach(() => {

@@ -26,6 +26,10 @@ describe('safe error code resolution', () => {
         'INTERNAL',
         'BOOK_UNAVAILABLE',
         'CART_ITEM_NOT_FOUND',
+        'CART_EMPTY',
+        'CART_HAS_UNAVAILABLE_ITEMS',
+        'INVALID_TRANSITION',
+        'IDEMPOTENCY_CONFLICT',
     ]
     it.each(codes)('resolves stable %s from each supported boundary', (code) => {
         expect(ERROR_CODES).toContain(code)

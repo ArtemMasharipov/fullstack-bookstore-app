@@ -1,163 +1,116 @@
 import { useNotifications } from '@/composables/useNotifications'
 import { orderApi } from '@/services/api/orderApi'
-import { useCartStore } from '@/stores'
-import { withLoading } from './storeHelpers'
+import { resolveErrorKey } from '@/utils/errorResolver'
 import { defineStore } from 'pinia'
+
+const PAGE_SIZE = 10
+
+const codeOf = (error) => error?.code ?? 'UNKNOWN'
 
 /**
  * Orders Store
- * Manages orders data and operations
- *
- * Simplified version without factory - direct Pinia implementation
+ * The user's orders (a page of the list and one order's details) and the
+ * admin's view of all orders. Each part keeps its own status
+ * (idle | loading | ready | error) and the code of its last error.
  */
 export const useOrdersStore = defineStore('orders', {
     state: () => ({
-        // Orders list
-        orders: [],
-        currentOrder: null,
+        list: [],
+        pagination: null,
+        listStatus: 'idle',
+        listError: null,
 
-        // Loading & error states
-        loading: false,
-        error: null,
+        current: null,
+        currentStatus: 'idle',
+        currentError: null,
+        cancelling: false,
+
+        admin: {
+            list: [],
+            pagination: null,
+            status: 'idle',
+            error: null,
+            stats: null,
+        },
     }),
 
-    getters: {
-        // All removed - use storeToRefs for direct state access
-    },
-
     actions: {
-        /**
-         * Create a new order and clear the cart after success
-         * @param {Object} orderData - Data for the new order
-         */
-        async createOrder(orderData) {
-            const { showSuccess } = useNotifications()
+        async fetchList(page = 1) {
+            this.listStatus = 'loading'
+            this.listError = null
+            try {
+                const { items, pagination } = await orderApi.list({ page, limit: PAGE_SIZE })
+                this.list = items
+                this.pagination = pagination
+                this.listStatus = 'ready'
+            } catch (error) {
+                this.listStatus = 'error'
+                this.listError = codeOf(error)
+            }
+        },
 
-            return withLoading(this, async () => {
-                const order = await orderApi.createOrder(orderData)
-
-                // Add to the beginning of the list
-                this.orders.unshift(order)
-
-                // The server empties the ordered lines; show the cart it kept
-                const cartStore = useCartStore()
-                await cartStore.load()
-
-                // Show success notification
-                showSuccess(undefined, {
-                    messageKey: 'notifications.orderCreated',
-                    messageParams: { id: order._id || order.id || '' },
-                    sound: 'success',
-                    icon: 'mdi-check-circle',
-                })
-
-                return order
-            })
+        async fetchOne(id) {
+            this.current = null
+            this.currentStatus = 'loading'
+            this.currentError = null
+            try {
+                this.current = await orderApi.get(id)
+                this.currentStatus = 'ready'
+            } catch (error) {
+                this.currentStatus = 'error'
+                this.currentError = codeOf(error)
+            }
         },
 
         /**
-         * Fetch all orders
+         * Cancels an order; the details and the list show the new status
+         * @returns {Promise<boolean>} whether the order was cancelled
          */
-        async fetchOrders() {
-            return withLoading(this, async () => {
-                const orders = await orderApi.getOrders()
-                this.orders = Array.isArray(orders) ? orders : []
-                return orders
-            })
-        },
-
-        /**
-         * Fetch order by ID
-         * @param {string} id - Order ID
-         */
-        async fetchOrderById(id) {
-            return withLoading(this, async () => {
-                const order = await orderApi.getOrderById(id)
-                this.currentOrder = order
-                return order
-            })
-        },
-
-        /**
-         * Update order status - domain-specific action
-         * @param {Object} params - Parameters object
-         * @param {string} params.id - Order ID
-         * @param {string} params.status - New status
-         */
-        async updateOrderStatus({ id, status }) {
-            const { showSuccess } = useNotifications()
-
-            return withLoading(this, async () => {
-                const updatedOrder = await orderApi.updateOrderStatus(id, status)
-
-                // Update the order in our list
-                const orderIndex = this.orders.findIndex((o) => o._id === id)
-                if (orderIndex !== -1) {
-                    this.orders[orderIndex].status = updatedOrder.status
-                }
-
-                // Update current order if it's the same
-                if (this.currentOrder && this.currentOrder._id === id) {
-                    this.currentOrder.status = updatedOrder.status
-                }
-
-                // Notify user
-                showSuccess(undefined, {
-                    messageKey: 'notifications.orderStatus',
-                    messageParams: { id, status },
-                    sound: 'success',
-                    icon: 'mdi-clipboard-check',
-                })
-
-                return updatedOrder
-            })
-        },
-
-        /**
-         * Cancel an order - domain-specific action
-         * @param {string} id - Order ID
-         */
-        async cancelOrder(id) {
-            const { showWarning } = useNotifications()
-
-            return withLoading(this, async () => {
-                const updatedOrder = await orderApi.cancelOrder(id)
-
-                // Update the order in our list
-                const orderIndex = this.orders.findIndex((o) => o._id === id)
-                if (orderIndex !== -1) {
-                    this.orders[orderIndex].status = updatedOrder.status
-                }
-
-                // Update current order if it's the same
-                if (this.currentOrder && this.currentOrder._id === id) {
-                    this.currentOrder.status = updatedOrder.status
-                }
-
-                // Notify user
-                showWarning(undefined, {
+        async cancel(id) {
+            if (this.cancelling) return false
+            this.cancelling = true
+            try {
+                const order = await orderApi.cancel(id)
+                if (this.current?.id === id) this.current = order
+                const row = this.list.find((item) => item.id === id)
+                if (row) row.status = order.status
+                useNotifications().showSuccess(undefined, {
                     messageKey: 'notifications.orderCancelled',
-                    messageParams: { id },
-                    sound: 'warning',
+                    messageParams: { number: order.orderNumber },
                     icon: 'mdi-cancel',
                 })
-
-                return updatedOrder
-            })
+                return true
+            } catch (error) {
+                useNotifications().showError(undefined, { messageKey: resolveErrorKey(error) })
+                return false
+            } finally {
+                this.cancelling = false
+            }
         },
 
-        /**
-         * Set error message
-         */
-        setError(message) {
-            this.error = message
+        async fetchAdminList(params = {}) {
+            this.admin.status = 'loading'
+            this.admin.error = null
+            try {
+                const { items, pagination } = await orderApi.adminList(params)
+                this.admin.list = items
+                this.admin.pagination = pagination
+                this.admin.status = 'ready'
+            } catch (error) {
+                this.admin.status = 'error'
+                this.admin.error = codeOf(error)
+            }
         },
 
-        /**
-         * Clear error message
-         */
-        clearError() {
-            this.error = null
+        async fetchAdminStats() {
+            this.admin.stats = await orderApi.adminStats()
+        },
+
+        async setAdminStatus(id, status) {
+            const order = await orderApi.adminSetStatus(id, status)
+            const index = this.admin.list.findIndex((item) => item.id === id)
+            if (index !== -1) this.admin.list[index] = { ...this.admin.list[index], ...order }
+            return order
         },
     },
 })
