@@ -1,0 +1,12 @@
+{
+    "common": {
+        "notAvailable": "Not available"
+    },
+    "loading": {
+        "language": "Loading language…"
+    },
+    "bootstrap": {
+        "loadError": "Could not load the language. Try again.",
+        "retry": "Retry"
+    }
+}

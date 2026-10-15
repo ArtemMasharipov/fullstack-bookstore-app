@@ -1,0 +1,12 @@
+{
+    "common": {
+        "notAvailable": "Není k dispozici"
+    },
+    "loading": {
+        "language": "Načítání jazyka…"
+    },
+    "bootstrap": {
+        "loadError": "Jazyk se nepodařilo načíst. Zkuste to znovu.",
+        "retry": "Zkusit znovu"
+    }
+}
