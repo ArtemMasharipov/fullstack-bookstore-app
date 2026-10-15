@@ -64,10 +64,15 @@ describe('CartItem', () => {
         expect(byLabel(t('cart.decrease', { title: 'Babička' }))).not.toBeNull()
     })
 
-    it('cannot go below one copy', async () => {
+    it('cannot go below one copy, and keeps the button focusable', async () => {
         await mount(lineOf({ quantity: 1, lineTotal: 29900 }))
+        const decrease = byLabel(t('cart.decrease', { title: 'Babička' }))
 
-        expect(byLabel(t('cart.decrease', { title: 'Babička' })).disabled).toBe(true)
+        decrease.click()
+
+        expect(decrease.getAttribute('aria-disabled')).toBe('true')
+        expect(decrease.disabled).toBe(false)
+        expect(cart.setQuantity).not.toHaveBeenCalled()
     })
 
     it('asks the store once for one more copy', async () => {
@@ -79,13 +84,20 @@ describe('CartItem', () => {
         expect(cart.setQuantity).toHaveBeenCalledWith(BOOK, 3)
     })
 
-    it('disables every action of the line while its change is pending', async () => {
+    it('ignores every action of the line while its change is pending, without dropping the focus', async () => {
         cart.$patch({ pending: [BOOK] })
         await mount(lineOf())
+        const buttons = ['increase', 'decrease', 'remove'].map((key) => byLabel(t(`cart.${key}`, { title: 'Babička' })))
 
-        expect(byLabel(t('cart.increase', { title: 'Babička' })).disabled).toBe(true)
-        expect(byLabel(t('cart.decrease', { title: 'Babička' })).disabled).toBe(true)
-        expect(byLabel(t('cart.remove', { title: 'Babička' })).disabled).toBe(true)
+        buttons.forEach((button) => button.click())
+        await nextTick()
+
+        for (const button of buttons) {
+            expect(button.getAttribute('aria-disabled')).toBe('true')
+            expect(button.disabled).toBe(false)
+        }
+        expect(cart.setQuantity).not.toHaveBeenCalled()
+        expect(document.body.textContent).not.toContain(t('cart.removeConfirm', { title: 'Babička' }))
     })
 
     it('explains why a line cannot be bought and offers only its removal', async () => {

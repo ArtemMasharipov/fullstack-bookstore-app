@@ -26,16 +26,16 @@
                             icon="mdi-minus"
                             variant="outlined"
                             :aria-label="t('cart.decrease', { title })"
-                            :disabled="busy || line.quantity <= 1"
-                            @click="cart.setQuantity(line.bookId, line.quantity - 1)"
+                            v-bind="inactive(!canDecrease)"
+                            @click="canDecrease && cart.setQuantity(line.bookId, line.quantity - 1)"
                         />
                         <span class="cart-line__quantity text-body-1" aria-live="polite">{{ line.quantity }}</span>
                         <v-btn
                             icon="mdi-plus"
                             variant="outlined"
                             :aria-label="t('cart.increase', { title })"
-                            :disabled="busy || line.quantity >= MAX_QUANTITY"
-                            @click="cart.setQuantity(line.bookId, line.quantity + 1)"
+                            v-bind="inactive(!canIncrease)"
+                            @click="canIncrease && cart.setQuantity(line.bookId, line.quantity + 1)"
                         />
                     </div>
                     <p class="text-subtitle-1 font-weight-bold mt-2">{{ formatMoney(line.lineTotal) }}</p>
@@ -49,8 +49,8 @@
                 color="error"
                 class="flex-shrink-0"
                 :aria-label="t('cart.remove', { title })"
-                :disabled="busy"
-                @click="confirming = true"
+                v-bind="inactive(busy)"
+                @click="confirming = !busy"
             />
         </div>
 
@@ -88,6 +88,12 @@ const confirming = ref(false)
 const title = computed(() => props.line.title ?? t('cart.unavailable.DELETED'))
 // Changes wait for the server; meanwhile the line takes no other action
 const busy = computed(() => cart.pending.includes(props.line.bookId))
+const canDecrease = computed(() => !busy.value && props.line.quantity > 1)
+const canIncrease = computed(() => !busy.value && props.line.quantity < MAX_QUANTITY)
+
+// An inactive button stays focusable: a native disabled button would drop
+// the keyboard focus after every change. Its clicks are ignored instead.
+const inactive = (off) => ({ 'aria-disabled': String(off), class: { 'cart-line__control--off': off } })
 </script>
 
 <style scoped>
@@ -99,5 +105,10 @@ const busy = computed(() => cart.pending.includes(props.line.bookId))
 .cart-line__quantity {
     min-width: 2ch;
     text-align: center;
+}
+
+.cart-line__control--off {
+    opacity: 0.38;
+    cursor: not-allowed;
 }
 </style>

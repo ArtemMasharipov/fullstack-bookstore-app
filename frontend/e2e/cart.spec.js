@@ -89,6 +89,23 @@ test.describe('server cart', () => {
         await expect(page.locator('.cart-line')).toContainText(SMOKE_BOOK_TITLE)
     })
 
+    test('keyboard user keeps the focus on the quantity button between changes', async ({ page, request }) => {
+        const book = await seededBook(request)
+        await guestCartWith(page, book.id)
+        await page.goto('/cart')
+        const increase = page.getByRole('button', { name: named(cs.cart.increase, SMOKE_BOOK_TITLE) })
+        const quantity = page.locator('.cart-line__quantity')
+
+        await increase.focus()
+        await page.keyboard.press('Enter')
+        await expect(quantity).toHaveText('2')
+        await expect(increase).toBeFocused()
+        await page.keyboard.press('Enter')
+
+        await expect(quantity).toHaveText('3')
+        await expect(increase).toBeFocused()
+    })
+
     test('cart fits a 320 px screen without horizontal scrolling', async ({ page, request }) => {
         const book = await seededBook(request)
         await page.setViewportSize({ width: 320, height: 800 })
