@@ -92,6 +92,12 @@ describe('readGuestItems', () => {
         expect(readGuestItems()).toEqual([{ bookId: A, quantity: 1 }])
     })
 
+    it('lower-cases ids the way the server prints them', () => {
+        localStorage.setItem('cart', JSON.stringify([{ bookId: A.toUpperCase(), quantity: 1 }]))
+
+        expect(readGuestItems()).toEqual([{ bookId: A, quantity: 1 }])
+    })
+
     it.each(['{', '{}', 'null'])('reads %j as an empty cart', (stored) => {
         localStorage.setItem('cart', stored)
 

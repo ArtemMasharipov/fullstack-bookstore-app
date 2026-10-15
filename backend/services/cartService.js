@@ -29,6 +29,9 @@ export function combineEntries(items) {
   return [...quantities].map(([bookId, quantity]) => ({ bookId, quantity }));
 }
 
+// lean() skips the schema default, so a book stored without the flag is in stock
+const inStock = (book) => book.inStock !== false;
+
 function lineFor({ bookId, quantity }, book) {
   if (!book) {
     return {
@@ -45,6 +48,7 @@ function lineFor({ bookId, quantity }, book) {
   }
 
   const unitPrice = toMinorUnits(book.price);
+  const available = inStock(book);
   const authorName = book.author
     ? [book.author.firstName, book.author.lastName].filter(Boolean).join(" ")
     : "";
@@ -57,8 +61,8 @@ function lineFor({ bookId, quantity }, book) {
     unitPrice,
     quantity,
     lineTotal: unitPrice * quantity,
-    available: book.inStock,
-    unavailableReason: book.inStock ? null : "OUT_OF_STOCK",
+    available,
+    unavailableReason: available ? null : "OUT_OF_STOCK",
   };
 }
 
@@ -124,7 +128,7 @@ export async function getCartView(userId) {
 export async function addItem(userId, { bookId, quantity }) {
   const book = await Book.findById(bookId).lean();
   if (!book) throw new NotFoundError("Book not found");
-  if (!book.inStock) throw new ConflictError("Book is out of stock", "BOOK_UNAVAILABLE");
+  if (!inStock(book)) throw new ConflictError("Book is out of stock", "BOOK_UNAVAILABLE");
 
   const entries = await readEntries(userId);
   const existing = entries.find((e) => e.bookId === bookId);

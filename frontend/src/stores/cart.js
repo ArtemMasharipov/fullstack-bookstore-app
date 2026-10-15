@@ -29,7 +29,7 @@ export function readGuestItems() {
         return []
     }
     if (!Array.isArray(stored)) return []
-    return stored.filter(isGuestItem).map(({ bookId, quantity }) => ({ bookId, quantity }))
+    return stored.filter(isGuestItem).map(({ bookId, quantity }) => ({ bookId: bookId.toLowerCase(), quantity }))
 }
 
 function writeGuestItems(items) {

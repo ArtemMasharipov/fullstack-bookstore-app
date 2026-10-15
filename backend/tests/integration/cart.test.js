@@ -275,6 +275,59 @@ describe("POST /api/v1/cart/quote", () => {
   });
 });
 
+describe("book ids in upper case", () => {
+  it("name the same book: one line, still capped at 99", async () => {
+    const bookId = (await createBook())._id.toString();
+    await addItem({ bookId, quantity: 99 });
+
+    const res = await addItem({ bookId: bookId.toUpperCase(), quantity: 1 });
+    const cart = await getCart();
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.fields.quantity).toBe("too_big");
+    expect(cart.body.data.items).toHaveLength(1);
+    expect(cart.body.data.items[0]).toMatchObject({ bookId, quantity: 99 });
+  });
+
+  it("are priced as the same book in a guest quote", async () => {
+    const bookId = (await createBook())._id.toString();
+
+    const res = await request(app)
+      .post("/api/v1/cart/quote")
+      .send({
+        items: [
+          { bookId: bookId.toUpperCase(), quantity: 1 },
+          { bookId, quantity: 1 },
+        ],
+      });
+
+    expect(res.body.data.items).toEqual([
+      expect.objectContaining({ bookId, quantity: 2, available: true }),
+    ]);
+  });
+});
+
+describe("a book stored without an inStock flag", () => {
+  it("is in stock, as the model's default says", async () => {
+    const author = await Author.create({ firstName: "Jan", lastName: "Neruda" });
+    const { insertedId } = await Book.collection.insertOne({
+      title: "Povídky malostranské",
+      author: author._id,
+      publicationYear: 1878,
+      price: 199,
+    });
+
+    const res = await addItem({ bookId: insertedId.toString() });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.items[0]).toMatchObject({
+      available: true,
+      unavailableReason: null,
+      lineTotal: 19900,
+    });
+  });
+});
+
 describe("access and removed routes", () => {
   it.each([
     ["get", "/api/v1/cart"],
