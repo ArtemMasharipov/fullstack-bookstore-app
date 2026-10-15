@@ -51,6 +51,15 @@ export async function clearCart(req, res) {
 }
 
 /**
+ * @route   POST /api/v1/cart/merge
+ * @body    { items: [{ bookId, quantity }] }
+ * @access  Private
+ */
+export async function merge(req, res) {
+  ok(res, await cartService.mergeItems(req.user.id, req.valid.body.items));
+}
+
+/**
  * @route   POST /api/v1/cart/quote
  * @body    { items: [{ bookId, quantity }] }
  * @access  Public

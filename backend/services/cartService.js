@@ -165,3 +165,33 @@ export async function clearCart(userId) {
 export async function quoteItems(items) {
   return buildCartView(combineEntries(items));
 }
+
+/**
+ * Adds a guest cart to the user's cart after sign-in. Quantities of a book
+ * already there are added up to 99; books that can no longer be bought are
+ * not stored and come back in report.skipped with the reason.
+ */
+export async function mergeItems(userId, items) {
+  const incoming = await buildCartView(combineEntries(items));
+  const entries = await readEntries(userId);
+  const report = { added: [], merged: [], skipped: [] };
+
+  for (const line of incoming.items) {
+    if (!line.available) {
+      report.skipped.push({ bookId: line.bookId, reason: line.unavailableReason });
+      continue;
+    }
+    const existing = entries.find((e) => e.bookId === line.bookId);
+    if (existing) {
+      existing.quantity = Math.min(MAX_QUANTITY, existing.quantity + line.quantity);
+      report.merged.push(line.bookId);
+    } else {
+      entries.push({ bookId: line.bookId, quantity: line.quantity });
+      report.added.push(line.bookId);
+    }
+  }
+
+  const changed = report.added.length > 0 || report.merged.length > 0;
+  const cart = changed ? await writeEntries(userId, entries) : await buildCartView(entries);
+  return { cart, report };
+}

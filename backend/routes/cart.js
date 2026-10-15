@@ -35,6 +35,13 @@ router.post(
   asyncHandler(cartController.addItem)
 );
 
+// After sign-in: adds the guest cart to the user's cart
+router.post(
+  "/merge",
+  validate({ body: cartItemsBody }),
+  asyncHandler(cartController.merge)
+);
+
 router.put(
   "/:bookId",
   validate({ params: bookIdParams, body: setQuantityBody }),
