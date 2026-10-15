@@ -16,7 +16,7 @@ import {
 } from "../utils/errors.js";
 import { getCartView } from "./cartService.js";
 import { nextOrderNumber } from "./orderNumber.js";
-import { toOrderView } from "./orderView.js";
+import { toOrderSummary, toOrderView } from "./orderView.js";
 
 // JSON with the keys of every object sorted, so equal bodies hash equally
 function canonicalJson(value) {
@@ -139,111 +139,62 @@ export async function createOrder(userId, body, idempotencyKey) {
 }
 
 /**
- * Get user's orders
- * @param {string} userId - User ID
- * @param {Object} filters - Filter options (status, page, limit)
- * @returns {Object} { orders, pagination }
+ * A page of the user's orders, newest first
+ * @returns {{ items: Object[], pagination: { page, limit, total, pages } }}
  */
-export async function getUserOrders(userId, filters = {}) {
-  const { status, page = 1, limit = 10 } = filters;
-
-  // Validate pagination
-  if (page < 1 || limit < 1) {
-    throw new ValidationError("Page and limit must be greater than 0");
-  }
-
-  if (limit > 50) {
-    throw new ValidationError("Maximum limit is 50");
-  }
-
-  const query = { user: userId };
-  if (status) {
-    query.status = status;
-  }
-
-  const skip = (page - 1) * limit;
-
-  // Execute queries in parallel
+export async function listOrders(userId, { page, limit }) {
+  const filter = { user: userId };
   const [orders, total] = await Promise.all([
-    Order.find(query)
-      .populate("items.book", "title author image")
-      .sort("-createdAt")
-      .skip(skip)
-      .limit(Number(limit))
+    Order.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
       .lean(),
-    Order.countDocuments(query),
+    Order.countDocuments(filter),
   ]);
 
   return {
-    orders,
-    pagination: {
-      page: Number(page),
-      limit: Number(limit),
-      total,
-      pages: Math.ceil(total / limit),
-      hasNext: page * limit < total,
-      hasPrev: page > 1,
-    },
+    items: orders.map(toOrderSummary),
+    pagination: { page, limit, total, pages: Math.ceil(total / limit) },
   };
 }
 
-/**
- * Get order by ID
- * @param {string} orderId - Order ID
- * @param {string} userId - User ID (for authorization)
- * @returns {Object} Order
- */
-export async function getOrderById(orderId, userId) {
-  const order = await Order.findById(orderId)
-    .populate("items.book", "title author image category price")
-    .populate("user", "username email")
-    .lean();
+// Another user's order answers like a missing one, so its existence stays hidden
+const orderNotFound = () => new NotFoundError("Order not found");
 
-  if (!order) {
-    throw new NotFoundError("Order not found");
-  }
-
-  // Check if user owns this order (unless admin check is added later)
-  if (order.user._id.toString() !== userId) {
-    throw new ForbiddenError("You do not have access to this order");
-  }
-
-  return order;
+export async function getOrder(userId, orderId) {
+  const order = await Order.findOne({ _id: orderId, user: userId }).lean();
+  if (!order) throw orderNotFound();
+  return toOrderView(order);
 }
 
+// Older orders have no paymentStatus; theirs is read from isPaid
+const unpaid = {
+  $or: [
+    { paymentStatus: { $in: ["unpaid", "failed"] } },
+    { paymentStatus: { $exists: false }, isPaid: { $ne: true } },
+  ],
+};
+
 /**
- * Cancel order
- * @param {string} orderId - Order ID
- * @param {string} userId - User ID
- * @returns {Object} Updated order
+ * Cancels a pending order that is not paid. One conditional update, so a
+ * payment or a status change arriving at the same moment cannot be overwritten.
  */
-export async function cancelOrder(orderId, userId) {
-  const order = await Order.findById(orderId);
+export async function cancelOrder(userId, orderId) {
+  const order = await Order.findOneAndUpdate(
+    { _id: orderId, user: userId, status: "pending", ...unpaid },
+    {
+      $set: { status: "cancelled", cancelledAt: new Date() },
+      $push: {
+        statusHistory: { axis: "status", from: "pending", to: "cancelled", by: "user", at: new Date() },
+      },
+    },
+    { new: true, strict: false }
+  ).lean();
+  if (order) return toOrderView(order);
 
-  if (!order) {
-    throw new NotFoundError("Order not found");
-  }
-
-  // Check ownership
-  if (order.user.toString() !== userId) {
-    throw new ForbiddenError("You do not have access to this order");
-  }
-
-  // Check if can be cancelled
-  if (order.status === "delivered") {
-    throw new ValidationError("Cannot cancel delivered order");
-  }
-
-  if (order.status === "cancelled") {
-    throw new ValidationError("Order is already cancelled");
-  }
-
-  order.cancel();
-  await order.save();
-
-  await order.populate("items.book", "title author image");
-
-  return order;
+  if (!(await Order.exists({ _id: orderId, user: userId }))) throw orderNotFound();
+  throw new ConflictError("Only a pending unpaid order can be cancelled", "INVALID_TRANSITION");
 }
 
 // =============================================================================

@@ -3,6 +3,15 @@
  */
 
 import { z } from "zod";
+import { objectId } from "./common.js";
+
+export const orderIdParams = z.strictObject({ id: objectId });
+
+// Query values arrive as strings; anything that is not a whole number fails
+export const listOrdersQuery = z.strictObject({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+});
 
 // Trimmed first; then the length and no control characters (line breaks, NUL)
 const text = (min, max) =>

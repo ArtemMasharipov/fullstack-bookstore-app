@@ -9,7 +9,7 @@ import { asyncHandler } from "../middleware/asyncHandler.js";
 import { authorize, protect } from "../middleware/auth.js";
 import { requireIdempotencyKey } from "../middleware/idempotencyKey.js";
 import { validate } from "../middleware/validate.js";
-import { createOrderBody } from "../schemas/order.js";
+import { createOrderBody, listOrdersQuery, orderIdParams } from "../schemas/order.js";
 
 const router = express.Router();
 
@@ -89,26 +89,38 @@ router.post(
 
 /**
  * @route   GET /api/v1/orders
- * @desc    Get user's orders
- * @query   page?, limit?, status?
+ * @desc    The user's orders, newest first
+ * @query   page = 1, limit = 10 (at most 50)
  * @access  Private
  */
-router.get("/", asyncHandler(orderController.getUserOrders));
+router.get(
+  "/",
+  validate({ query: listOrdersQuery }),
+  asyncHandler(orderController.listOrders)
+);
 
 /**
  * @route   GET /api/v1/orders/:id
- * @desc    Get order by ID
+ * @desc    One of the user's orders
  * @params  :id (required)
  * @access  Private
  */
-router.get("/:id", asyncHandler(orderController.getOrder));
+router.get(
+  "/:id",
+  validate({ params: orderIdParams }),
+  asyncHandler(orderController.getOrder)
+);
 
 /**
  * @route   PATCH /api/v1/orders/:id/cancel
- * @desc    Cancel order
+ * @desc    Cancel a pending order that is not paid
  * @params  :id (required)
  * @access  Private
  */
-router.patch("/:id/cancel", asyncHandler(orderController.cancelOrder));
+router.patch(
+  "/:id/cancel",
+  validate({ params: orderIdParams }),
+  asyncHandler(orderController.cancelOrder)
+);
 
 export default router;

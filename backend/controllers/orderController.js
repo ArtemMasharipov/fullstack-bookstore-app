@@ -26,46 +26,31 @@ export async function createOrder(req, res) {
 
 /**
  * @route   GET /api/v1/orders
- * @desc    Get user's orders
+ * @query   page = 1, limit = 10 (at most 50)
+ * @desc    The user's orders, newest first
  * @access  Private
  */
-export async function getUserOrders(req, res) {
-  const result = await orderService.getUserOrders(req.user.id, req.query);
-
-  res.status(200).json({
-    success: true,
-    data: result.orders,
-    pagination: result.pagination,
-  });
+export async function listOrders(req, res) {
+  const { items, pagination } = await orderService.listOrders(req.user.id, req.valid.query);
+  ok(res, items, { pagination });
 }
 
 /**
  * @route   GET /api/v1/orders/:id
- * @desc    Get order by ID
+ * @desc    One of the user's orders; another user's order is NOT_FOUND
  * @access  Private
  */
 export async function getOrder(req, res) {
-  const order = await orderService.getOrderById(req.params.id, req.user.id);
-
-  res.status(200).json({
-    success: true,
-    data: order,
-  });
+  ok(res, await orderService.getOrder(req.user.id, req.valid.params.id));
 }
 
 /**
  * @route   PATCH /api/v1/orders/:id/cancel
- * @desc    Cancel order
+ * @desc    Cancel a pending order that is not paid
  * @access  Private
  */
 export async function cancelOrder(req, res) {
-  const order = await orderService.cancelOrder(req.params.id, req.user.id);
-
-  res.status(200).json({
-    success: true,
-    data: order,
-    message: "Order cancelled successfully",
-  });
+  ok(res, await orderService.cancelOrder(req.user.id, req.valid.params.id));
 }
 
 // =============================================================================

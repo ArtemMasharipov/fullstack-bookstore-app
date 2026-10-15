@@ -29,6 +29,47 @@ export async function createBook(overrides = {}) {
   });
 }
 
+let orderSequence = 0;
+
+/**
+ * A current (schemaVersion 2) order of one book, in any state the overrides
+ * give. Validated by the model, then inserted as is, so createdAt can be set.
+ * Returns the stored document.
+ */
+export async function createPlacedOrder(user, overrides = {}) {
+  orderSequence += 1;
+  const book = (await createBook({ price: 199 }))._id;
+  const at = overrides.createdAt ?? new Date();
+  const order = new Order({
+    orderNumber: `ORD-20261015-${String(orderSequence).padStart(6, "0")}`,
+    user: user._id,
+    items: [{ book, title: "R.U.R.", unitPrice: 19900, quantity: 1, lineTotal: 19900 }],
+    shippingAddress: {
+      fullName: "Jan Novák",
+      line1: "Vodičkova 12",
+      city: "Praha",
+      postalCode: "110 00",
+      country: "CZ",
+      phone: "+420 777 123 456",
+    },
+    quote: {
+      currency: "CZK",
+      itemsTotal: 19900,
+      shipping: 9900,
+      vatIncluded: true,
+      vatAmount: 0,
+      total: 29800,
+    },
+    statusHistory: [{ axis: "status", from: null, to: "pending", by: "user", at }],
+    createdAt: at,
+    updatedAt: at,
+    ...overrides,
+  });
+  await order.validate();
+  await Order.collection.insertOne(order.toObject());
+  return order.toObject();
+}
+
 /**
  * An order stored by the previous version of the app: float amounts in
  * crowns, the street in `address`, `isPaid` and a payment method, no
