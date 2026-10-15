@@ -245,3 +245,87 @@ test('controlled real auth store preserves permission guard and renders real adm
     await expect(header.locator('button[lang="cs"]')).toHaveAttribute('aria-pressed', 'true')
     await capture(page, testInfo, 'cs-admin-header-controlled-store')
 })
+
+test('narrow public and controlled-store admin headers keep full language controls visible and fitted', async ({
+    page,
+}, testInfo) => {
+    await page.setViewportSize({ width: 375, height: 812 })
+    const checkHeader = async (header, locale, name) => {
+        const labels = locale === 'en' ? ['Czech', 'English'] : ['\u010ce\u0161tina', 'Angli\u010dtina']
+        const bounds = await header.boundingBox()
+        await testInfo.attach(`${name}-bounds`, {
+            body: JSON.stringify(
+                await header.evaluate((el) => ({
+                    header: el.getBoundingClientRect().toJSON(),
+                    controls: [...el.querySelectorAll('button, a, input')].map((control) => ({
+                        text: control.textContent,
+                        bounds: control.getBoundingClientRect().toJSON(),
+                    })),
+                })),
+                null,
+                2
+            ),
+            contentType: 'application/json',
+        })
+        for (const [index, code] of ['cs', 'en'].entries()) {
+            const button = header.locator(`button[lang="${code}"]`)
+            await expect(button).toBeVisible()
+            await expect(button).toHaveText(labels[index])
+            const box = await button.boundingBox()
+            expect(box.x).toBeGreaterThanOrEqual(Math.max(0, bounds.x))
+            expect(box.x + box.width).toBeLessThanOrEqual(Math.min(375, bounds.x + bounds.width))
+            expect(box.y).toBeGreaterThanOrEqual(bounds.y)
+            expect(box.y + box.height).toBeLessThanOrEqual(bounds.y + bounds.height)
+            expect(
+                await button.evaluate((el) => {
+                    const r = el.getBoundingClientRect()
+                    const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)
+                    return hit === el || el.contains(hit)
+                })
+            ).toBe(true)
+        }
+        for (const control of await header.locator('button:visible, a:visible, input:visible').all()) {
+            const box = await control.boundingBox()
+            expect(box.x).toBeGreaterThanOrEqual(0)
+            expect(box.x + box.width).toBeLessThanOrEqual(375)
+            expect(box.y).toBeGreaterThanOrEqual(bounds.y)
+            expect(box.y + box.height).toBeLessThanOrEqual(bounds.y + bounds.height)
+            expect(
+                await control.evaluate((el) => {
+                    const r = el.getBoundingClientRect()
+                    const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)
+                    return hit === el || el.contains(hit) || hit?.contains(el)
+                })
+            ).toBe(true)
+        }
+        const offset = await page
+            .locator('main')
+            .last()
+            .evaluate((el) => parseFloat(getComputedStyle(el).paddingTop))
+        expect(offset).toBeGreaterThanOrEqual(bounds.height)
+        await capture(page, testInfo, name)
+    }
+    await page.goto('/en/books')
+    const publicHeader = page.getByRole('banner')
+    await checkHeader(publicHeader, 'en', 'en-public-header-375')
+    await publicHeader.locator('button[lang="cs"]').click()
+    await expect(page).toHaveURL('http://localhost:4173/books')
+    await checkHeader(publicHeader, 'cs', 'cs-public-header-375')
+    // Controlled component/guard rendering only; live server authorization is unavailable.
+    await page.evaluate(async () => {
+        const app = document.querySelector('#app').__vue_app__
+        const auth = app.config.globalProperties.$pinia._s.get('auth')
+        const token = `fixture.${btoa(JSON.stringify({ exp: 4102444800 }))}.fixture`
+        localStorage.setItem('token', token)
+        auth.$patch({ token, user: { name: 'Controlled Admin', role: 'admin' }, permissions: ['admin:access'] })
+        await app.config.globalProperties.$router.push('/en/admin/settings')
+    })
+    const adminHeader = page.locator('.admin-content header')
+    await expect(adminHeader).toBeVisible()
+    await checkHeader(adminHeader, 'en', 'en-admin-header-controlled-store-375')
+    await adminHeader.locator('button[lang="cs"]').focus()
+    await adminHeader.locator('button[lang="cs"]').press('Enter')
+    await expect(page).toHaveURL('http://localhost:4173/admin/settings')
+    await checkHeader(adminHeader, 'cs', 'cs-admin-header-controlled-store-375')
+    await expect(adminHeader.locator('button[lang="cs"]')).toBeFocused()
+})

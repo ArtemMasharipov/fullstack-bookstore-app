@@ -10,7 +10,7 @@
             class="language-button"
             @click="router.push(switchLocaleTarget(route, language.locale))"
         >
-            {{ language.text }}
+            {{ t(language.labelKey) }}
         </button>
     </div>
 </template>
@@ -23,8 +23,8 @@ import { useRoute, useRouter } from 'vue-router'
 const route = useRoute()
 const router = useRouter()
 const languages = [
-    { locale: 'cs', labelKey: 'language.cs', text: 'CS' },
-    { locale: 'en', labelKey: 'language.en', text: 'EN' },
+    { locale: 'cs', labelKey: 'language.cs' },
+    { locale: 'en', labelKey: 'language.en' },
 ]
 </script>
 

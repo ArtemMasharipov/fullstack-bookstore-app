@@ -101,7 +101,7 @@
                         <v-row align="center">
                             <v-col cols="12" sm="6" md="4">
                                 <div class="d-flex align-center">
-                                    <v-icon icon="mdi-currency-uah" size="small" class="mr-1"></v-icon>
+                                    <v-icon icon="mdi-receipt-text-outline" size="small" class="mr-1"></v-icon>
                                     <span class="text-body-1 font-weight-medium">
                                         Total: {{ formatPrice(order.total) }}
                                     </span>

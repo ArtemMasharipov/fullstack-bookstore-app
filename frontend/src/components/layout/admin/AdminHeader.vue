@@ -1,16 +1,16 @@
 <template>
-    <v-app-bar color="primary" dark flat>
+    <v-app-bar color="primary" dark flat :height="xs ? 160 : 64" :order="xs ? -1 : 0">
         <v-container class="py-0">
-            <v-row align="center" no-gutters>
+            <v-row align="center" no-gutters class="admin-header-row">
                 <!-- Admin Panel Title -->
-                <v-col cols="auto">
+                <v-col cols="auto" class="admin-title">
                     <h2 class="text-h6 font-weight-medium">{{ t('nav.admin') }}</h2>
                 </v-col>
 
                 <v-spacer></v-spacer>
 
                 <!-- Search Bar -->
-                <v-col cols="auto" class="mr-4">
+                <v-col cols="auto" class="admin-search mr-4">
                     <v-text-field
                         v-model="searchQuery"
                         :placeholder="t('nav.search')"
@@ -24,10 +24,10 @@
                     ></v-text-field>
                 </v-col>
 
-                <v-col cols="auto" class="mr-2"><LanguageSwitcher /></v-col>
+                <v-col cols="auto" class="admin-languages mr-2"><LanguageSwitcher /></v-col>
 
                 <!-- User Menu -->
-                <v-col cols="auto">
+                <v-col cols="auto" class="admin-user">
                     <v-menu>
                         <template v-slot:activator="{ props }">
                             <v-btn variant="text" v-bind="props" class="text-none">
@@ -85,6 +85,7 @@ import { useAuthStore } from '@/stores'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useRouter } from 'vue-router'
 
 /**
@@ -93,6 +94,7 @@ import { useRouter } from 'vue-router'
 
 // Router
 const router = useRouter()
+const { xs } = useDisplay()
 
 // Stores
 const authStore = useAuthStore()
@@ -117,5 +119,36 @@ const logout = async () => {
 <style scoped>
 .v-app-bar {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+@media (max-width: 599px) {
+    .admin-header-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 4px;
+    }
+
+    .admin-header-row > .v-spacer {
+        display: none;
+    }
+
+    .admin-title {
+        grid-area: 1 / 1;
+    }
+
+    .admin-user {
+        grid-area: 1 / 2;
+    }
+
+    .admin-search {
+        grid-area: 2 / 1 / 3 / 3;
+        width: 100%;
+        margin-right: 0 !important;
+    }
+
+    .admin-languages {
+        grid-area: 3 / 1 / 4 / 3;
+        justify-self: center;
+        margin-right: 0 !important;
+    }
 }
 </style>

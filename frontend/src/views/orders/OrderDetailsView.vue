@@ -135,7 +135,7 @@ const error = computed(() => ordersStore.error)
 const order = computed(() => currentOrder.value || {})
 
 const breadcrumbItems = computed(() => [
-    { title: 'Orders', to: '/orders' },
+    { title: 'Orders', to: localeRoute('Orders') },
     {
         title: order.value?._id ? `#${order.value._id.substring(order.value._id.length - 8)}` : 'Details',
         disabled: true,

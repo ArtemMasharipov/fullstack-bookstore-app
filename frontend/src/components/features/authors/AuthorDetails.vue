@@ -85,7 +85,7 @@ const authorInitials = computed(() => {
 })
 
 const breadcrumbItems = computed(() => [
-    { title: 'Authors', to: '/authors' },
+    { title: 'Authors', to: localeRoute('Authors') },
     { title: author.value?.name || 'Unknown Author', disabled: true },
 ])
 

@@ -1,6 +1,6 @@
 <template>
-    <v-app-bar app color="primary" elevation="2">
-        <v-container class="py-0 px-2 d-flex align-center">
+    <v-app-bar app color="primary" elevation="2" :height="xs ? 112 : 64" :order="xs ? -2 : 0">
+        <v-container class="public-header-content py-0 px-2 d-flex align-center">
             <!-- Mobile hamburger -->
             <v-app-bar-nav-icon
                 class="d-md-none text-white"
@@ -23,7 +23,7 @@
 
             <v-spacer class="d-none d-md-block" />
 
-            <LanguageSwitcher class="text-white mr-1" />
+            <LanguageSwitcher class="header-languages text-white mr-1" />
 
             <!-- Dark mode toggle -->
             <v-btn
@@ -163,10 +163,11 @@ import { useAuthStore, useCartStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useTheme } from 'vuetify'
+import { useDisplay, useTheme } from 'vuetify'
 
 const router = useRouter()
 const theme = useTheme()
+const { xs } = useDisplay()
 const authStore = useAuthStore()
 const cartStore = useCartStore()
 
@@ -212,6 +213,19 @@ const handleLogout = () => {
 </script>
 
 <style scoped>
+@media (max-width: 599px) {
+    .public-header-content {
+        flex-wrap: wrap;
+    }
+
+    .header-languages {
+        order: 1;
+        flex-basis: 100%;
+        justify-content: center;
+        margin-right: 0 !important;
+    }
+}
+
 .v-app-bar .v-btn.text-white {
     color: white !important;
 }

@@ -143,9 +143,10 @@ for (const locale of ['cs', 'en']) {
                 description:
                     'Evidence only: set BOOKSTORE_QUALITY_BASELINE and BOOKSTORE_QUALITY_MAPPING for regression acceptance.',
             })
-        expect(
-            Object.fromEntries(Object.entries(report.routes).map(([name, result]) => [name, result.added])),
-            'new serious/critical rule-node fingerprints'
-        ).toEqual({ home: [], books: [], 'book-details': [], login: [], 404: [] })
+        else
+            expect(
+                Object.fromEntries(Object.entries(report.routes).map(([name, result]) => [name, result.added])),
+                'new serious/critical rule-node fingerprints'
+            ).toEqual({ home: [], books: [], 'book-details': [], login: [], 404: [] })
     })
 }

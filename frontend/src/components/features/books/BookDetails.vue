@@ -180,7 +180,7 @@ const book = computed(() => currentBook.value)
 const relatedBooks = computed(() => (book.value ? book.value.relatedBooks || [] : []))
 
 const breadcrumbItems = computed(() => [
-    { title: 'Books', to: '/books' },
+    { title: 'Books', to: localeRoute('Books') },
     { title: book.value?.title || 'Unknown Title', disabled: true },
 ])
 
