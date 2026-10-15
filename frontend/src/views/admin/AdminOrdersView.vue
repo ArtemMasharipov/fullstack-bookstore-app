@@ -3,17 +3,15 @@
         <!-- Orders management data table -->
         <admin-data-table
             :headers="headers"
-            :items="orders"
+            :items="rows"
             :loading="loading"
             :total-items="totalItems"
             :page="page"
             :items-per-page="itemsPerPage"
-            :sort-by="sortBy"
             :search="search"
             title="Orders Management"
             @update:page="updatePage"
             @update:items-per-page="updateItemsPerPage"
-            @update:sort-by="updateSortBy"
             @update:search="updateSearch"
             @reset-filters="resetFilters"
         >
@@ -23,19 +21,23 @@
             </template>
 
             <template #item.createdAt="{ item }">
-                {{ formatDate((item.raw || item).createdAt) }}
+                {{ formatDate(rowOf(item).createdAt) }}
             </template>
 
             <!-- Status column -->
             <template #item.status="{ item }">
-                <v-chip size="small" :color="getStatusColor(item.raw?.status)" class="text-uppercase">
-                    {{ item.raw?.status || 'Unknown' }}
+                <v-chip size="small" :color="STATUS_COLORS[rowOf(item).status] || 'grey'" class="text-uppercase">
+                    {{ rowOf(item).status }}
                 </v-chip>
             </template>
 
-            <!-- Total Price column -->
-            <template #item.totalPrice="{ item }">
-                {{ formatOrderPrice(item.raw?.totalPrice) }}
+            <template #item.paymentStatus="{ item }">
+                <v-chip size="small" variant="outlined">{{ rowOf(item).paymentStatus }}</v-chip>
+            </template>
+
+            <!-- Total column -->
+            <template #item.total="{ item }">
+                {{ formatMoney(rowOf(item).quote.total, rowOf(item).quote.currency) }}
             </template>
 
             <!-- Actions column -->
@@ -47,7 +49,8 @@
                         size="small"
                         color="primary"
                         class="mr-1"
-                        @click="viewOrderDetails(item.raw)"
+                        aria-label="View Details"
+                        @click="viewOrderDetails(rowOf(item))"
                     >
                         <v-icon>mdi-eye</v-icon>
                         <v-tooltip activator="parent" location="top">View Details</v-tooltip>
@@ -57,8 +60,9 @@
                         variant="text"
                         size="small"
                         color="warning"
-                        class="mr-1"
-                        @click="updateOrderStatus(item.raw)"
+                        class="mr-1 edit-status"
+                        aria-label="Update Status"
+                        @click="updateOrderStatus(rowOf(item))"
                     >
                         <v-icon>mdi-pencil</v-icon>
                         <v-tooltip activator="parent" location="top">Update Status</v-tooltip>
@@ -70,33 +74,38 @@
         <!-- Order details dialog -->
         <v-dialog v-model="detailsDialogOpen" max-width="800px">
             <v-card v-if="detailsOrder">
-                <v-card-title class="text-h5 bg-primary text-white">
-                    Order Details: #{{ detailsOrder._id }}
+                <v-card-title class="text-h5 bg-primary text-white text-wrap">
+                    Order Details: {{ detailsOrder.orderNumber }}
                 </v-card-title>
 
                 <v-card-text class="pt-4">
                     <v-row>
                         <v-col cols="12" md="6">
-                            <p><strong>Customer:</strong> {{ detailsOrder.userId?.username || 'Unknown' }}</p>
+                            <p><strong>Customer:</strong> {{ customerOf(detailsOrder) }}</p>
                             <p><strong>Date:</strong> {{ formatDateTime(detailsOrder.createdAt) }}</p>
                             <p>
                                 <strong>Status:</strong>
                                 <v-chip
                                     size="small"
-                                    :color="getStatusColor(detailsOrder.status)"
+                                    :color="STATUS_COLORS[detailsOrder.status] || 'grey'"
                                     class="text-uppercase"
                                 >
                                     {{ detailsOrder.status }}
                                 </v-chip>
                             </p>
-                            <p><strong>Total Amount:</strong> {{ formatOrderPrice(detailsOrder.totalPrice) }}</p>
+                            <p><strong>Payment:</strong> {{ detailsOrder.paymentStatus }}</p>
+                            <p><strong>Total Amount:</strong> {{ money(detailsOrder, detailsOrder.quote.total) }}</p>
                         </v-col>
 
-                        <v-col cols="12" md="6" v-if="detailsOrder.shippingAddress">
+                        <v-col cols="12" md="6">
                             <p><strong>Shipping Address:</strong></p>
-                            <p>{{ detailsOrder.shippingAddress.street }}</p>
-                            <p>{{ detailsOrder.shippingAddress.city }}, {{ detailsOrder.shippingAddress.zipCode }}</p>
+                            <p>{{ detailsOrder.shippingAddress.fullName }}</p>
+                            <p>{{ detailsOrder.shippingAddress.line1 }}</p>
+                            <p>
+                                {{ `${detailsOrder.shippingAddress.postalCode} ${detailsOrder.shippingAddress.city}` }}
+                            </p>
                             <p>{{ detailsOrder.shippingAddress.country }}</p>
+                            <p v-if="detailsOrder.shippingAddress.phone">{{ detailsOrder.shippingAddress.phone }}</p>
                         </v-col>
                     </v-row>
 
@@ -113,15 +122,15 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(item, i) in detailsOrder.items" :key="i">
-                                <td>{{ item.bookId?.title || 'Unknown Book' }}</td>
-                                <td class="text-right">{{ formatOrderPrice(item.price) }}</td>
+                            <tr v-for="item in detailsOrder.items" :key="item.bookId">
+                                <td>{{ item.title }}</td>
+                                <td class="text-right">{{ money(detailsOrder, item.unitPrice) }}</td>
                                 <td class="text-right">{{ item.quantity }}</td>
-                                <td class="text-right">{{ formatOrderPrice(item.price * item.quantity) }}</td>
+                                <td class="text-right">{{ money(detailsOrder, item.lineTotal) }}</td>
                             </tr>
                             <tr class="font-weight-bold">
                                 <td colspan="3" class="text-right">Total:</td>
-                                <td class="text-right">{{ formatOrderPrice(detailsOrder.totalPrice) }}</td>
+                                <td class="text-right">{{ money(detailsOrder, detailsOrder.quote.total) }}</td>
                             </tr>
                         </tbody>
                     </v-table>
@@ -140,22 +149,20 @@
                 <v-card-title class="text-h5 bg-primary text-white"> Update Order Status </v-card-title>
 
                 <v-card-text class="pt-4">
-                    <v-form ref="statusForm" validate-on="submit" @submit.prevent="handleSaveOrderStatus">
-                        <v-select
-                            v-model="editedStatus"
-                            :items="['pending', 'processing', 'shipped', 'delivered', 'cancelled']"
-                            label="Status"
-                            variant="outlined"
-                            :rules="[(v) => !!v || 'Status is required']"
-                            required
-                        ></v-select>
-                    </v-form>
+                    <v-radio-group v-model="editedStatus" label="Status">
+                        <v-radio v-for="status in ORDER_STATUSES" :key="status" :label="status" :value="status" />
+                    </v-radio-group>
                 </v-card-text>
 
                 <v-card-actions class="pb-4 px-4">
                     <v-spacer></v-spacer>
                     <v-btn variant="text" @click="closeStatusDialog">Cancel</v-btn>
-                    <v-btn color="primary" :loading="saving" type="submit" @click.prevent="handleSaveOrderStatus">
+                    <v-btn
+                        color="primary"
+                        :loading="saving"
+                        :disabled="!editedStatus || editedStatus === statusOrder.status"
+                        @click="handleSaveOrderStatus"
+                    >
                         Save
                     </v-btn>
                 </v-card-actions>
@@ -165,7 +172,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 // Components
 import AdminDataTable from '@/components/features/admin/AdminDataTable.vue'
@@ -174,28 +181,30 @@ import AdminDataTable from '@/components/features/admin/AdminDataTable.vue'
 import { useOrdersStore } from '@/stores'
 
 // Utilities
-import { formatPrice, formatDate, formatDateTime } from '@/utils'
+import { formatDate, formatDateTime, formatMoney } from '@/utils'
 import { logger } from '@/utils/logger'
+import { STATUS_COLORS } from '@/utils/orderStatus'
+
+const ORDER_STATUSES = Object.keys(STATUS_COLORS)
 
 // Store instance
 const ordersStore = useOrdersStore()
 
-// Table configuration
+// Table configuration; the server sorts newest first
 const headers = [
-    { title: 'Order ID', align: 'start', key: '_id' },
-    { title: 'Customer', align: 'start', key: 'customer' },
-    { title: 'Date', align: 'start', key: 'createdAt' },
-    { title: 'Total', align: 'start', key: 'totalPrice' },
-    { title: 'Status', align: 'center', key: 'status' },
+    { title: 'Order', align: 'start', key: 'orderNumber', sortable: false },
+    { title: 'Customer', align: 'start', key: 'customerEmail', sortable: false },
+    { title: 'Date', align: 'start', key: 'createdAt', sortable: false },
+    { title: 'Total', align: 'start', key: 'total', sortable: false },
+    { title: 'Status', align: 'center', key: 'status', sortable: false },
+    { title: 'Payment', align: 'center', key: 'paymentStatus', sortable: false },
     { title: 'Actions', align: 'center', key: 'actions', sortable: false },
 ]
 
 // Data table state
 const page = ref(1)
 const itemsPerPage = ref(10)
-const sortBy = ref([{ key: 'createdAt', order: 'desc' }])
 const search = ref('')
-const totalItems = ref(0)
 
 // Dialog states
 const detailsDialogOpen = ref(false)
@@ -207,21 +216,14 @@ const detailsOrder = ref(null)
 const statusOrder = ref(null)
 const editedStatus = ref('')
 
-// Computed properties
-const orders = computed(() => {
-    if (!ordersStore.ordersList || ordersStore.ordersList.length === 0) {
-        return []
-    }
+// Older Vuetify versions wrap the row in `raw`
+const rowOf = (item) => item.raw ?? item
+const customerOf = (order) => order.customer?.email ?? 'Deleted account'
+const money = (order, amount) => formatMoney(amount, order.quote.currency)
 
-    return (
-        ordersStore.ordersList.map((order) => ({
-            ...order,
-            customer: order.userId?.username || order.userId?.email || 'Unknown',
-        })) || []
-    )
-})
-
-const loading = computed(() => ordersStore.loading)
+const rows = computed(() => ordersStore.admin.list.map((order) => ({ ...order, customerEmail: customerOf(order) })))
+const loading = computed(() => ordersStore.admin.status === 'loading')
+const totalItems = computed(() => ordersStore.admin.pagination?.total ?? 0)
 
 // Data table methods
 const updatePage = (newPage) => {
@@ -233,10 +235,6 @@ const updateItemsPerPage = (newValue) => {
     page.value = 1
 }
 
-const updateSortBy = (newValue) => {
-    sortBy.value = newValue
-}
-
 const updateSearch = (newValue) => {
     search.value = newValue
     page.value = 1
@@ -245,19 +243,10 @@ const updateSearch = (newValue) => {
 const resetFilters = () => {
     search.value = ''
     page.value = 1
-    sortBy.value = [{ key: 'createdAt', order: 'desc' }]
 }
 
 // Order management methods
-const loadOrders = async () => {
-    try {
-        await ordersStore.fetchOrders()
-        totalItems.value = ordersStore.ordersList?.length || 0
-    } catch (error) {
-        // Error loading orders
-        logger.error('Failed to load orders:', error, 'admin-orders')
-    }
-}
+const loadOrders = () => ordersStore.fetchAdminList({ page: page.value, limit: itemsPerPage.value })
 
 // Order details dialog
 const viewOrderDetails = (order) => {
@@ -273,7 +262,7 @@ const closeDetailsDialog = () => {
 // Status update dialog
 const updateOrderStatus = (order) => {
     statusOrder.value = order
-    editedStatus.value = order.status || ''
+    editedStatus.value = order.status
     statusDialogOpen.value = true
 }
 
@@ -287,40 +276,20 @@ const closeStatusDialog = () => {
 const handleSaveOrderStatus = async () => {
     if (!statusOrder.value) return
 
-    // Note: Form validation would need to be handled differently in Composition API
-    // This assumes validation is done elsewhere or simplified for migration
-
     saving.value = true
     try {
-        await ordersStore.updateOrderStatus(statusOrder.value._id, {
-            status: editedStatus.value,
-        })
-
+        await ordersStore.setAdminStatus(statusOrder.value.id, editedStatus.value)
         logger.info(`Order status updated to ${editedStatus.value}`, 'admin-orders')
         closeStatusDialog()
         await loadOrders()
     } catch (error) {
-        logger.error(`Failed to update order status: ${error.message || 'Unknown error'}`, error, 'admin-orders')
+        logger.error('Failed to update order status', error, 'admin-orders')
     } finally {
         saving.value = false
     }
 }
 
-// Utility methods
-const getStatusColor = (status) => {
-    const statusColors = {
-        pending: 'warning',
-        processing: 'info',
-        shipped: 'primary',
-        delivered: 'success',
-        cancelled: 'error',
-    }
-    return statusColors[status] || 'grey'
-}
-
-const formatOrderPrice = (price) => {
-    return formatPrice(price)
-}
+watch([page, itemsPerPage], loadOrders)
 
 onMounted(() => {
     loadOrders()

@@ -67,22 +67,12 @@
         <v-card>
             <v-data-table :headers="orderHeaders" :items="recentOrders" class="elevation-0" density="comfortable">
                 <template v-slot:item.status="{ item }">
-                    <v-chip
-                        :color="item.raw && item.raw.status ? getOrderStatusColor(item.raw.status) : 'grey'"
-                        size="small"
-                        class="text-uppercase"
-                    >
-                        {{ item.raw && item.raw.status ? item.raw.status : 'Unknown' }}
+                    <v-chip :color="getOrderStatusColor((item.raw ?? item).status)" size="small" class="text-uppercase">
+                        {{ (item.raw ?? item).status }}
                     </v-chip>
                 </template>
-                <template v-slot:item.actions="{ item }">
-                    <v-btn
-                        density="compact"
-                        icon
-                        variant="text"
-                        :to="localeRoute('AdminOrders')"
-                        :disabled="!item.raw || !item.raw._id"
-                    >
+                <template v-slot:item.actions>
+                    <v-btn density="compact" icon variant="text" :to="localeRoute('AdminOrders')" aria-label="Orders">
                         <v-icon>mdi-eye</v-icon>
                     </v-btn>
                 </template>
@@ -121,7 +111,7 @@
 <script setup>
 import { localeRoute } from '@/router/locale'
 import { useAuthorsStore, useBooksStore, useOrdersStore, useUsersStore } from '@/stores'
-import { formatPrice, formatDate } from '@/utils'
+import { formatDate, formatMoney } from '@/utils'
 import { logger } from '@/utils/logger'
 import { computed, onMounted, ref } from 'vue'
 
@@ -138,20 +128,20 @@ const stats = ref({
     users: 0,
 })
 
-// Recent orders
+// Recent orders: the newest five from the admin list
 const recentOrders = computed(() =>
-    (ordersStore.ordersList || []).slice(0, 5).map((order) => ({
-        _id: order._id ? order._id.slice(-6) : 'N/A',
-        customer: order.user ? order.user.name || order.user.email || 'Guest' : 'Guest',
+    ordersStore.admin.list.slice(0, 5).map((order) => ({
+        orderNumber: order.orderNumber,
+        customer: order.customer?.email ?? 'Deleted account',
         date: formatDate(order.createdAt),
-        total: formatPrice(order.total),
-        status: order.status || 'pending',
+        total: formatMoney(order.quote.total, order.quote.currency),
+        status: order.status,
     }))
 )
 
 // Order table headers
 const orderHeaders = [
-    { title: 'Order ID', align: 'start', key: '_id' },
+    { title: 'Order', align: 'start', key: 'orderNumber' },
     { title: 'Customer', align: 'start', key: 'customer' },
     { title: 'Date', align: 'start', key: 'date' },
     { title: 'Total', align: 'start', key: 'total' },
@@ -198,14 +188,14 @@ const loadDashboardData = async () => {
         await Promise.all([
             booksStore.fetchBooks(),
             authorsStore.fetchAuthors(),
-            ordersStore.fetchOrders(),
+            ordersStore.fetchAdminList({ limit: 5 }),
             usersStore.fetchUsers(),
         ])
 
         stats.value = {
             books: booksStore.books?.length || 0,
             authors: authorsStore.list?.length || 0,
-            orders: ordersStore.ordersList?.length || 0,
+            orders: ordersStore.admin.pagination?.total ?? 0,
             users: usersStore.usersList?.length || 0,
         }
     } catch (error) {
