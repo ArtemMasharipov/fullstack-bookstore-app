@@ -34,7 +34,8 @@ baseApi.interceptors.request.use(
 
         if (token && (!isPublic || config.headers.Authorization)) {
             config.headers.Authorization = `Bearer ${token}`
-        } else if (!isPublic && !token) {
+        } else if (!isPublic && !config.headers.Authorization) {
+            // A request may bring its own token: sign-out tells the server after the session has ended here
             return Promise.reject(new Error('Authorization required'))
         }
 
@@ -56,10 +57,13 @@ baseApi.interceptors.response.use(
 
         const { status, data } = error.response
 
-        // A 401 to a request sent with a token means the session is over. Without a
-        // token it means wrong credentials, and the guest's session stays as it is.
+        // A 401 to a request sent with the current token means the session is over.
+        // Without a token it means wrong credentials, and the guest's session stays as
+        // it is; with an older token it is about a session that has already ended.
         const sentToken = (error.config ?? error.response.config)?.headers?.Authorization
-        if (status === 401 && sentToken && onUnauthorized && !endingSession) {
+        const currentToken = localStorage.getItem('token')
+        const sessionOver = status === 401 && currentToken && sentToken === `Bearer ${currentToken}`
+        if (sessionOver && onUnauthorized && !endingSession) {
             endingSession = Promise.resolve(onUnauthorized()).finally(() => {
                 endingSession = null
             })

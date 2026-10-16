@@ -28,6 +28,32 @@ export async function fillAddress(page) {
     await page.locator('input[autocomplete="tel"]').fill('+420 777 123 456')
 }
 
+// The WCAG contrast ratio of an element's text against the first opaque background behind it. axe leaves text on
+// Vuetify buttons and gradients as "incomplete", so such text is measured here.
+export async function contrastOf(locator) {
+    return locator.evaluate((element) => {
+        const channels = (value) => value.match(/[\d.]+/g).map(Number)
+        const luminance = ([r, g, b]) => {
+            const linear = [r, g, b].map((v) =>
+                v / 255 <= 0.03928 ? v / 255 / 12.92 : ((v / 255 + 0.055) / 1.055) ** 2.4
+            )
+            return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+        }
+        let background = [255, 255, 255]
+        for (let node = element; node; node = node.parentElement) {
+            const color = channels(getComputedStyle(node).backgroundColor)
+            if (color.length === 3 || color[3] > 0) {
+                background = color
+                break
+            }
+        }
+        const [lighter, darker] = [luminance(channels(getComputedStyle(element).color)), luminance(background)].sort(
+            (a, b) => b - a
+        )
+        return (lighter + 0.05) / (darker + 0.05)
+    })
+}
+
 // WCAG 2.2 A and AA rule violations inside one part of the page
 export async function wcagViolations(page, selector) {
     // Colors measured in the middle of a fade-in are not the colors people read

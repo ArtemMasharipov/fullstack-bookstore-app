@@ -138,19 +138,16 @@ export const useAuthStore = defineStore('auth', {
         },
 
         /**
-         * Logout user. The server keeps no session for a token, so the session
-         * ends on this device whatever the server answers.
+         * Logout user. The session ends on this device at once; the server, which
+         * keeps no session for a token, hears about it afterwards and its answer
+         * changes nothing.
          */
         async logout() {
-            this.loading = true
-            try {
-                await authApi.logout()
-            } catch {
-                // Nothing to undo: the token is forgotten below either way
-            }
+            const token = this.token
             const { resetSession } = await import('@/services/session')
             await resetSession()
             useNotifications().showSuccess(undefined, { messageKey: 'notifications.logoutSuccess', icon: 'mdi-logout' })
+            if (token) authApi.logout(token).catch(() => {})
         },
 
         /**

@@ -17,7 +17,12 @@ export const authApi = {
 
     refreshToken: () => baseApi.post('/auth/refresh-token').then((res) => res.data),
 
-    logout: () => baseApi.post('/auth/logout').then((res) => res.data),
+    /** Tells the server about a sign-out; the token is the one of the session that ended */
+    logout: (token) =>
+        baseApi
+            // No body: a JSON "null" is not a valid request body for the API
+            .post('/auth/logout', undefined, { headers: { Authorization: `Bearer ${token}` } })
+            .then((res) => res.data),
 
     verifyToken: (token) => baseApi.post('/auth/verify-token', { token }).then((res) => res.data),
 

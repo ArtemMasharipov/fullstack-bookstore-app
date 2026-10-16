@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
-import { brokenToken, seededBook, signIn, signUp, wcagViolations } from './support.js'
+import { brokenToken, contrastOf, seededBook, signIn, signUp, wcagViolations } from './support.js'
 
 const en = JSON.parse(readFileSync('src/i18n/locales/en.json', 'utf8'))
 
@@ -58,6 +58,27 @@ for (const locale of ['cs', 'en']) {
         await expect(page.locator('.home-terms')).toBeVisible()
         await expect(page.locator('.book-card').first()).toBeVisible()
         expect(await wcagViolations(page, 'main'), 'home').toEqual([])
+    })
+
+    test(`${locale}: the home call to action and book prices are readable in both themes`, async ({
+        page,
+        request,
+    }) => {
+        const book = await seededBook(request)
+        for (const theme of ['light', 'dark']) {
+            await page.addInitScript((value) => localStorage.setItem('bookstore-theme', value), theme)
+            await page.goto(`${prefix}/`)
+            await expect(page.locator('.book-card').first()).toBeVisible()
+            const cta = page.locator('.hero-section .v-btn .v-btn__content')
+            expect(await contrastOf(cta), `${theme}: home call to action`).toBeGreaterThanOrEqual(4.5)
+            const cardPrice = page.locator('.book-card .text-subtitle-1.font-weight-bold').first()
+            expect(await contrastOf(cardPrice), `${theme}: price on a book card`).toBeGreaterThanOrEqual(4.5)
+
+            await page.goto(`${prefix}/books/${book.id}`)
+            const price = page.locator('main .text-h4.font-weight-bold').first()
+            await expect(price).toBeVisible()
+            expect(await contrastOf(price), `${theme}: price on the book page`).toBeGreaterThanOrEqual(4.5)
+        }
     })
 
     test(`${locale}: a book page meets WCAG 2.2 AA`, async ({ page, request }) => {

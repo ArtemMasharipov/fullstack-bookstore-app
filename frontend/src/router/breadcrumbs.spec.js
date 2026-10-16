@@ -9,6 +9,7 @@ import AuthorDetails from '@/components/features/authors/AuthorDetails.vue'
 import OrderDetailsView from '@/views/orders/OrderDetailsView.vue'
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher.vue'
 import { booksApi } from '@/services/api/booksApi'
+import { configApi } from '@/services/api/configApi'
 import { authorsApi } from '@/services/api/authorsApi'
 import { orderApi } from '@/services/api/orderApi'
 import { i18n } from '@/i18n'
@@ -38,6 +39,15 @@ beforeEach(() => {
             author: null,
             relatedBooks: [],
         },
+    })
+    // The book page loads the shop settings; no test may reach a real server
+    vi.spyOn(configApi, 'fetchPublic').mockResolvedValue({
+        currency: 'CZK',
+        vatIncluded: true,
+        vatRatePercent: 0,
+        shippingFee: 9900,
+        freeShippingThreshold: 100000,
+        paymentMethods: [],
     })
     vi.spyOn(authorsApi, 'fetchById').mockResolvedValue({ _id: 'fixture-author', name: 'Fixture Author', books: [] })
     vi.spyOn(orderApi, 'get').mockResolvedValue({

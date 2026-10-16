@@ -49,7 +49,7 @@
                         </v-chip>
                     </div>
 
-                    <div class="text-h4 font-weight-bold text-primary mb-4">
+                    <div class="text-h4 font-weight-bold mb-4">
                         {{ formatPrice(book.price) }}
                     </div>
 

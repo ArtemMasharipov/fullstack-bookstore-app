@@ -131,4 +131,56 @@ describe('a 401 answer', () => {
         expect(localStorage.getItem('cart')).toBe(guestCart)
         expect(router.currentRoute.value.fullPath).toBe('/en/login')
     })
+
+    it('a late 401 to a request of an earlier session leaves the current session alone', async () => {
+        signedIn()
+        await router.push('/en/orders')
+        let refuse
+        const request = baseApi
+            .get('/orders', {
+                adapter: (config) => new Promise((_, reject) => (refuse = () => answering(401)(config).catch(reject))),
+            })
+            .catch((error) => error)
+        await vi.waitFor(() => expect(refuse).toBeDefined())
+
+        // Signed out and in again while the request was on its way
+        const next = 'eyJhbGciOiJub25lIn0.' + btoa(JSON.stringify({ exp: 4102444800, sub: 'next' })) + '.'
+        localStorage.setItem('token', next)
+        refuse()
+
+        expect((await request).status).toBe(401)
+        expect(localStorage.getItem('token')).toBe(next)
+        expect(router.currentRoute.value.path).toBe('/en/orders')
+    })
+})
+
+describe('signing out', () => {
+    it('ends the session at once, without waiting for the server', async () => {
+        signedIn()
+        useAuthStore().$patch({ token: TOKEN })
+        await router.push('/en/orders')
+        const sent = []
+        const adapter = baseApi.defaults.adapter
+        // The server never answers
+        baseApi.defaults.adapter = (config) => {
+            sent.push(config.headers.Authorization)
+            return new Promise(() => {})
+        }
+        try {
+            const outcome = await Promise.race([
+                useAuthStore()
+                    .logout()
+                    .then(() => 'signed out'),
+                new Promise((resolve) => setTimeout(resolve, 200, 'still waiting')),
+            ])
+
+            expect(outcome).toBe('signed out')
+            expect(localStorage.getItem('token')).toBeNull()
+            expect(router.currentRoute.value.path).toBe('/en/login')
+            // The server still hears about it, with the token of the session that ended
+            await vi.waitFor(() => expect(sent).toEqual([`Bearer ${TOKEN}`]))
+        } finally {
+            baseApi.defaults.adapter = adapter
+        }
+    })
 })

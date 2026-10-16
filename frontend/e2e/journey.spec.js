@@ -65,8 +65,11 @@ for (const locale of ['cs', 'en']) {
         await page.getByRole('button', { name: dict.orders.cancelConfirm }).click()
         await expect(page.getByText(dict.orders.status.cancelled, { exact: true }).first()).toBeVisible()
 
+        const told = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/v1/auth/logout')
         await userMenu(page, dict.nav.logout)
         await expect(page).toHaveURL((url) => url.pathname === `${prefix}/login`)
+        // The server hears about it after the session has ended here
+        expect((await told).status()).toBe(200)
         expect(new URL(page.url()).searchParams.get('redirect')).toBe(orderPath)
         // The snackbar shows its text in an overlay outside the container
         await expect(page.locator('.notification-message')).toHaveText([dict.notifications.logoutSuccess])
