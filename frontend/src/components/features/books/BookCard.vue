@@ -36,7 +36,7 @@
                 {{ book.description }}
             </p>
             <div class="d-flex align-center justify-space-between mt-3">
-                <div class="text-subtitle-1 font-weight-bold text-secondary">
+                <div class="text-subtitle-1 font-weight-bold text-primary">
                     {{ formatPrice(book.price) }}
                 </div>
 

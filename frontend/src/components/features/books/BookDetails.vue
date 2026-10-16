@@ -49,7 +49,7 @@
                         </v-chip>
                     </div>
 
-                    <div class="text-h4 font-weight-bold text-secondary mb-4">
+                    <div class="text-h4 font-weight-bold text-primary mb-4">
                         {{ formatPrice(book.price) }}
                     </div>
 
@@ -178,7 +178,8 @@ const relatedBooks = computed(() => (book.value ? book.value.relatedBooks || [] 
 
 const breadcrumbItems = computed(() => [
     { title: 'Books', to: localeRoute('Books') },
-    { title: book.value?.title || 'Unknown Title', disabled: true },
+    // The current page: marked active, not disabled, which Vuetify fades below readable contrast
+    { title: book.value?.title || 'Unknown Title', disabled: false, active: true },
 ])
 
 const fetchBook = (id) => booksStore.fetchBookById(id)
