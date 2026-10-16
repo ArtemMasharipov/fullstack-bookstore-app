@@ -24,7 +24,8 @@ Known limitations:
 - The catalogue, author pages, the profile and the admin panel are still in English only. The Czech texts are a
   draft.
 - The catalogue shows only the first 12 books, with no pager and a counter that reads "Showing 12 of 12 books".
-- `npm audit` reports vulnerable dependencies in both packages.
+- Development tools (nodemon, ESLint 7) still depend on packages with known vulnerabilities and no fix;
+  [docs/dependency-audit.md](docs/dependency-audit.md) lists them with review dates.
 - The seed data is for checking the layout; there is no real catalogue yet.
 - Books without a cover leave an empty area in the catalogue and on the book page: the placeholder image is missing.
 
@@ -196,9 +197,11 @@ $env:SEED_ADMIN_PASSWORD = 'choose-a-password'; $env:SEED_USER_PASSWORD = 'choos
 ```bash
 # in backend/
 npm test                            # Vitest, Supertest, in-memory MongoDB
+npm audit --omit=dev --audit-level=high   # no high or critical finding in production dependencies
 
 # in frontend/
 npm test                            # Vitest, happy-dom
+npm audit --omit=dev --audit-level=high   # the same check for the frontend
 npx playwright install chromium     # once; on Linux add --with-deps
 npm run test:e2e                    # Playwright end-to-end tests
 npm run lint                        # ESLint, only checks (the backend has no linter yet)
