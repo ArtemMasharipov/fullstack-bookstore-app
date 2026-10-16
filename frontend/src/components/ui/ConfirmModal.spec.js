@@ -113,7 +113,7 @@ it('updates sidebar labels, subtitles and footer copy in place on locale activat
     await nextTick()
     expect(document.body.textContent).toContain('Overview & stats')
     expect(document.body.textContent).toContain('Manage inventory')
-    expect(document.body.textContent).toContain('Discover your next great read at Bookstore.')
+    expect(document.body.textContent).toContain('Discover your next great read at Bookstore')
     expect(document.body.textContent).toContain('All rights reserved.')
     expect(document.body.textContent).not.toContain('Bookstore App')
 })

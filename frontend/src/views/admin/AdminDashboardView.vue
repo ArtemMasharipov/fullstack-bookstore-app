@@ -78,33 +78,6 @@
                 </template>
             </v-data-table>
         </v-card>
-        <!-- Activity section -->
-        <div class="d-flex align-center justify-space-between mt-6 mb-2">
-            <h2 class="text-h5">Recent Activity</h2>
-        </div>
-
-        <v-timeline density="compact" align="start">
-            <v-timeline-item
-                v-for="(activity, i) in recentActivity"
-                :key="i"
-                :dot-color="activity.color || 'grey'"
-                :icon="activity.icon || 'mdi-information'"
-            >
-                <div class="d-flex justify-space-between">
-                    <div>
-                        <div class="text-subtitle-2 font-weight-medium">
-                            {{ activity.title || 'Event' }}
-                        </div>
-                        <div class="text-caption text-medium-emphasis">
-                            {{ activity.description || 'No details available' }}
-                        </div>
-                    </div>
-                    <div class="text-caption text-medium-emphasis">
-                        {{ activity.time || 'Unknown time' }}
-                    </div>
-                </div>
-            </v-timeline-item>
-        </v-timeline>
     </div>
 </template>
 
@@ -147,38 +120,6 @@ const orderHeaders = [
     { title: 'Total', align: 'start', key: 'total' },
     { title: 'Status', align: 'start', key: 'status' },
     { title: 'Actions', align: 'center', key: 'actions', sortable: false },
-]
-
-// Recent activity
-const recentActivity = [
-    {
-        color: 'green',
-        icon: 'mdi-package-variant',
-        title: 'New order #38290',
-        description: 'A new order has been placed',
-        time: '2 minutes ago',
-    },
-    {
-        color: 'blue',
-        icon: 'mdi-account',
-        title: 'New user registration',
-        description: 'John Doe has registered',
-        time: '1 hour ago',
-    },
-    {
-        color: 'amber',
-        icon: 'mdi-book',
-        title: 'Book inventory updated',
-        description: 'Inventory levels have been adjusted',
-        time: '3 hours ago',
-    },
-    {
-        color: 'red',
-        icon: 'mdi-alert-circle',
-        title: 'Stock alert',
-        description: '"To Kill a Mockingbird" is low in stock',
-        time: '5 hours ago',
-    },
 ]
 
 // Load dashboard data

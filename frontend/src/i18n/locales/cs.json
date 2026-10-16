@@ -234,7 +234,7 @@
         "backToList": "Zpět na moje objednávky"
     },
     "shipping": {
-        "freeOver": "Doprava zdarma při objednávce nad {amount}"
+        "freeFrom": "Doprava zdarma od {amount}"
     },
     "errors": {
         "VALIDATION_FAILED": "Zkontrolujte zadané údaje.",
@@ -304,7 +304,7 @@
     },
     "footer": {
         "about": "O nás",
-        "description": "Objevte svou další oblíbenou knihu v Bookstore. Nabízíme pečlivě vybrané knihy všech žánrů, rychlé doručení a snadné vrácení.",
+        "description": "Objevte svou další skvělou knihu v Bookstore: knihy všech žánrů, od klasiky po novinky.",
         "copyright": "© {year} Bookstore. Všechna práva vyhrazena."
     }
 }

@@ -103,15 +103,11 @@
                         This book is currently out of stock.
                     </v-alert>
 
-                    <!-- Trust cues -->
-                    <div class="d-flex flex-wrap ga-4 mt-2">
+                    <!-- Shipping terms come from the shop settings; without them the page states none -->
+                    <div v-if="shop.config" class="d-flex flex-wrap ga-4 mt-2">
                         <div class="d-flex align-center ga-1 text-caption text-medium-emphasis">
                             <v-icon size="16">mdi-truck-delivery-outline</v-icon>
-                            {{ t('shipping.freeOver', { amount: formatPrice(50) }) }}
-                        </div>
-                        <div class="d-flex align-center ga-1 text-caption text-medium-emphasis">
-                            <v-icon size="16">mdi-autorenew</v-icon>
-                            30-day returns
+                            {{ t('shipping.freeFrom', { amount: formatMoney(shop.config.freeShippingThreshold) }) }}
                         </div>
                     </div>
                 </v-col>
@@ -152,8 +148,8 @@ import { t } from '@/i18n'
 import { localeRoute } from '@/router/locale'
 import BookCard from '@/components/features/books/BookCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
-import { useBooksStore, useCartStore } from '@/stores'
-import { formatPrice } from '@/utils'
+import { useBooksStore, useCartStore, useShopConfigStore } from '@/stores'
+import { formatMoney, formatPrice } from '@/utils'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -168,6 +164,7 @@ const props = defineProps({
 const router = useRouter()
 const booksStore = useBooksStore()
 const cartStore = useCartStore()
+const shop = useShopConfigStore()
 
 const { currentBook, loading, error } = storeToRefs(booksStore)
 
@@ -212,5 +209,6 @@ const navigateToBook = (navBook) => {
 
 onMounted(() => {
     fetchBook(props.bookId)
+    shop.load()
 })
 </script>

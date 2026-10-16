@@ -234,7 +234,7 @@
         "backToList": "Back to my orders"
     },
     "shipping": {
-        "freeOver": "Free shipping over {amount}"
+        "freeFrom": "Free shipping from {amount}"
     },
     "errors": {
         "VALIDATION_FAILED": "Please check the information you entered.",
@@ -304,7 +304,7 @@
     },
     "footer": {
         "about": "About",
-        "description": "Discover your next great read at Bookstore. We offer a curated collection of books across every genre, with fast delivery and easy returns.",
+        "description": "Discover your next great read at Bookstore: books across every genre, from classics to new releases.",
         "copyright": "© {year} Bookstore. All rights reserved."
     }
 }
