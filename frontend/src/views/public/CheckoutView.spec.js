@@ -60,6 +60,8 @@ beforeEach(async () => {
     await loadLocale('cs')
     activateLocale('cs')
     vi.clearAllMocks()
+    // clearAllMocks keeps queued mockResolvedValueOnce answers; a test must not inherit them
+    api.create.mockReset()
     setActivePinia(createPinia())
     cart = useCartStore()
     vi.spyOn(cart, 'load').mockResolvedValue()
@@ -106,6 +108,8 @@ async function submit() {
 }
 
 const sentKey = (n) => api.create.mock.calls[n][1]
+const buttonWith = (label) =>
+    [...document.querySelectorAll('button')].find((button) => button.textContent.includes(label))
 
 describe('CheckoutView', () => {
     it('labels the order button with the obligation to pay and disables it while sending', async () => {
@@ -120,6 +124,8 @@ describe('CheckoutView', () => {
         expect(submitButton().textContent).toContain('Objednat s povinností platby')
         expect(submitButton().disabled).toBe(true)
         finish({ order, replayed: false })
+        // Let the order finish here, or its cart reload lands in the next test
+        await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('OrderDetails'))
     })
 
     it('shows every problem of an empty form at its field and in a focused summary, without sending', async () => {
@@ -220,6 +226,81 @@ describe('CheckoutView', () => {
         expect(document.body.textContent).toContain(t('checkout.empty'))
         expect(document.querySelector('a[href="/books"]')).not.toBeNull()
         expect(submitButton()).toBeUndefined()
+    })
+
+    it('never retries with an address other than the one on screen', async () => {
+        api.create.mockRejectedValueOnce(failure('NETWORK_ERROR')).mockResolvedValueOnce({ order, replayed: false })
+        await mount()
+        await fill()
+        await submit()
+        expect(buttonWith(t('errors.retry'))).toBeDefined()
+
+        input('line1').value = 'Vodičkova 14'
+        input('line1').dispatchEvent(new Event('input'))
+        await nextTick()
+
+        expect(buttonWith(t('errors.retry'))).toBeUndefined()
+        await submit()
+        expect(api.create.mock.calls[1][0].shippingAddress.line1).toBe('Vodičkova 14')
+        expect(sentKey(1)).toBe(sentKey(0))
+        await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('OrderDetails'))
+    })
+
+    it('reloads the cart when the total changed, so the summary shows the new prices', async () => {
+        api.create.mockRejectedValueOnce(failure('PRICE_CHANGED', { details: { quote: { ...quote, total: 30800 } } }))
+        await mount()
+        await fill()
+        const loadsBefore = cart.load.mock.calls.length
+
+        await submit()
+
+        await vi.waitFor(() => expect(cart.load).toHaveBeenCalledTimes(loadsBefore + 1))
+    })
+
+    it('shows an error when the server rejects a request that has no address field to point at', async () => {
+        api.create.mockRejectedValueOnce(failure('VALIDATION_FAILED', { fields: { 'Idempotency-Key': 'required' } }))
+        await mount()
+        await fill()
+
+        await submit()
+
+        expect(document.body.textContent).toContain(t('errors.VALIDATION_FAILED'))
+    })
+
+    it('marks every field as required', async () => {
+        await mount()
+
+        expect(document.body.textContent).toContain(t('checkout.requiredNote'))
+        for (const field of Object.keys(ADDRESS)) {
+            expect(input(field).getAttribute('aria-required')).toBe('true')
+        }
+    })
+
+    it('moves the focus from the error summary into the field, and does not re-announce the summary', async () => {
+        await mount()
+        await submit()
+        const summary = document.querySelector('.checkout-errors')
+
+        summary.querySelector('a[href="#checkout-city"]').click()
+
+        expect(document.activeElement).toBe(input('city'))
+        expect(summary.getAttribute('role')).not.toBe('alert')
+    })
+
+    it('names the price dialog and gives the focus back to the order button when it is dismissed', async () => {
+        api.create.mockRejectedValueOnce(failure('PRICE_CHANGED', { details: { quote: { ...quote, total: 30800 } } }))
+        await mount()
+        await fill()
+        await submit()
+        await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull())
+
+        const dialog = document.querySelector('[role="dialog"]')
+        expect(document.getElementById(dialog.getAttribute('aria-labelledby')).textContent).toContain(
+            t('checkout.priceChanged.title')
+        )
+        buttonWith(t('checkout.priceChanged.cancel')).click()
+
+        await vi.waitFor(() => expect(document.activeElement).toBe(submitButton()))
     })
 
     it('blocks the order while a book is unavailable and links to the cart', async () => {

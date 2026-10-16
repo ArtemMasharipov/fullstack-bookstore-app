@@ -35,7 +35,7 @@
         <template v-else-if="order">
             <div class="d-flex flex-wrap align-center ga-2 mb-6">
                 <div class="mr-auto">
-                    <h1 class="text-h4 font-weight-bold text-break">
+                    <h1 ref="heading" class="text-h4 font-weight-bold text-break" tabindex="-1">
                         {{ t('orders.number', { number: order.orderNumber }) }}
                     </h1>
                     <p class="text-medium-emphasis mb-0">
@@ -139,9 +139,9 @@
                 </v-col>
             </v-row>
 
-            <v-dialog v-model="confirming" max-width="480">
+            <v-dialog v-model="confirming" max-width="480" aria-labelledby="cancel-order-title">
                 <v-card>
-                    <v-card-title class="text-h6 text-wrap">
+                    <v-card-title id="cancel-order-title" class="text-h6 text-wrap">
                         {{ t('orders.cancelTitle', { number: order.orderNumber }) }}
                     </v-card-title>
                     <v-card-text>{{ t('orders.cancelText') }}</v-card-text>
@@ -165,7 +165,7 @@ import { localeRoute } from '@/router/locale'
 import { useOrdersStore } from '@/stores'
 import { formatDate, formatDateTime, formatMoney } from '@/utils'
 import { isCancellable, STATUS_COLORS } from '@/utils/orderStatus'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
@@ -173,12 +173,15 @@ const { t } = useI18n()
 const route = useRoute()
 const orders = useOrdersStore()
 const confirming = ref(false)
+const heading = ref(null)
 
 const order = computed(() => orders.current)
 
+// Vuetify fades the last item as disabled; the current page is marked active
+// (aria-current="page") instead, so it stays readable
 const breadcrumbItems = computed(() => [
     { title: t('routes.Orders'), to: localeRoute('Orders') },
-    { title: order.value?.orderNumber ?? t('routes.OrderDetails'), disabled: true },
+    { title: order.value?.orderNumber ?? t('routes.OrderDetails'), disabled: false, active: true },
 ])
 
 const changeOf = (entry) =>
@@ -187,7 +190,12 @@ const changeOf = (entry) =>
 const load = () => orders.fetchOne(route.params.id)
 
 async function cancelOrder() {
-    if (await orders.cancel(order.value.id)) confirming.value = false
+    if (!(await orders.cancel(order.value.id))) return
+    confirming.value = false
+    // The Cancel button is gone with the cancellation: the focus goes to the
+    // heading instead of falling back to the page
+    await nextTick()
+    heading.value?.focus()
 }
 
 // A switch of language keeps the id; another order in the URL loads that one

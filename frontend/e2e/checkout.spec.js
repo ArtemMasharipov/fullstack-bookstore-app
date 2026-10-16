@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { SMOKE_BOOK_TITLE } from '../../backend/scripts/seed-data.js'
@@ -61,6 +62,23 @@ async function readyCheckout(page, path = '/checkout') {
     await page.goto(path)
     await expect(page.locator('input[autocomplete="name"]')).toBeVisible()
     return { token, quote }
+}
+
+// WCAG 2.2 A and AA rule violations inside one part of the page
+async function wcagViolations(page, selector) {
+    // Colors measured in the middle of a fade-in are not the colors people read
+    await page.waitForFunction(() => !document.querySelector('[class*="-enter-active"], [class*="-leave-active"]'))
+    const result = await new AxeBuilder({ page })
+        .include(selector)
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+        .analyze()
+    return result.violations.map((rule) => ({
+        id: rule.id,
+        impact: rule.impact,
+        targets: rule.nodes.map((node) => node.target.join(' ')),
+        // axe's own explanation, so a failure in CI says what to fix
+        why: rule.nodes.map((node) => node.failureSummary),
+    }))
 }
 
 function orderKeys(page) {
@@ -198,6 +216,30 @@ test.describe('checkout and orders', () => {
 
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
         expect(overflow).toBeLessThanOrEqual(0)
+    })
+
+    test('checkout, the order and the order list meet WCAG 2.2 AA', async ({ page }) => {
+        await readyCheckout(page)
+
+        await page.getByRole('button', { name: cs.checkout.submit }).click()
+        await expect(page.locator('.checkout-errors')).toBeFocused()
+        expect(await wcagViolations(page, 'main'), 'checkout with the error summary').toEqual([])
+
+        await fillAddress(page)
+        expect(await wcagViolations(page, 'main'), 'checkout filled in').toEqual([])
+        await page.getByRole('button', { name: cs.checkout.submit }).click()
+        await expect(page).toHaveURL(ORDER_URL)
+        await expect(page.locator('.order-quote')).toBeVisible()
+        expect(await wcagViolations(page, 'main'), 'order details').toEqual([])
+
+        await page.getByRole('button', { name: cs.orders.cancel }).click()
+        await expect(page.getByRole('dialog')).toBeVisible()
+        expect(await wcagViolations(page, '[role="dialog"]'), 'cancel dialog').toEqual([])
+        await page.getByRole('button', { name: cs.orders.keep }).click()
+
+        await page.goto('/orders')
+        await expect(page.locator('.order-row')).toBeVisible()
+        expect(await wcagViolations(page, 'main'), 'order list').toEqual([])
     })
 
     test('English checkout', async ({ page }) => {

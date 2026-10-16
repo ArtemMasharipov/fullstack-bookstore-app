@@ -46,6 +46,22 @@ describe('checkout store', () => {
         expect(checkout.status).toBe('idle')
     })
 
+    it('makes a version 4 key also where crypto.randomUUID is missing (plain HTTP outside localhost)', () => {
+        const realCrypto = crypto
+        vi.stubGlobal('crypto', { getRandomValues: (bytes) => realCrypto.getRandomValues(bytes) })
+        try {
+            checkout.start()
+            const first = checkout.key
+            checkout.start()
+
+            expect(first).toMatch(UUID)
+            expect(checkout.key).toMatch(UUID)
+            expect(checkout.key).not.toBe(first)
+        } finally {
+            vi.unstubAllGlobals()
+        }
+    })
+
     it('places the order, reloads the cart, notifies once and takes a new key', async () => {
         const key = checkout.key
         api.create.mockResolvedValueOnce({ order, replayed: false })

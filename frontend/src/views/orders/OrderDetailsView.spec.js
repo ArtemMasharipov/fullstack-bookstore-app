@@ -126,7 +126,26 @@ describe('OrderDetailsView', () => {
         expect(button(t('orders.cancel'))).toBeUndefined()
     })
 
-    it('says an order that is not found was not found and shows nothing else', async () => {
+    it('names the cancel dialog and puts the focus on the heading once the button is gone', async () => {
+        api.get.mockResolvedValueOnce(order())
+        api.cancel.mockResolvedValueOnce(order({ status: 'cancelled' }))
+        await mount()
+        await vi.waitFor(() => expect(button(t('orders.cancel'))).toBeDefined())
+
+        button(t('orders.cancel')).click()
+        await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull())
+        const dialog = document.querySelector('[role="dialog"]')
+        expect(document.getElementById(dialog.getAttribute('aria-labelledby')).textContent).toContain(
+            t('orders.cancelTitle', { number: 'ORD-20261015-000001' })
+        )
+        button(t('orders.cancelConfirm')).click()
+
+        await vi.waitFor(() => expect(document.activeElement).toBe(document.querySelector('h1')))
+    })
+
+    it('says an order that is not found was not found, shows nothing else and logs nothing', async () => {
+        const errors = vi.spyOn(console, 'error')
+        const warnings = vi.spyOn(console, 'warn')
         api.get.mockRejectedValueOnce(failure('NOT_FOUND'))
 
         await mount()
@@ -135,6 +154,8 @@ describe('OrderDetailsView', () => {
         expect(document.querySelector('a[href="/orders"]')).not.toBeNull()
         expect(document.querySelector('.order-history')).toBeNull()
         expect(button(t('orders.cancel'))).toBeUndefined()
+        expect(errors).not.toHaveBeenCalled()
+        expect(warnings).not.toHaveBeenCalled()
     })
 
     it('offers a retry after a lost connection', async () => {

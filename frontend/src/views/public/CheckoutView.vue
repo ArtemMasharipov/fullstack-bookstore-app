@@ -55,10 +55,12 @@
                     <v-card-title class="text-h6">{{ t('checkout.addressTitle') }}</v-card-title>
                     <v-card-text>
                         <checkout-form
+                            ref="form"
                             :fields="checkout.fields"
                             :submitting="checkout.status === 'submitting'"
                             :blocked="cart.hasUnavailable"
                             @submit="place"
+                            @edit="onEdit"
                         />
                     </v-card-text>
                 </v-card>
@@ -94,15 +96,23 @@
             </v-col>
         </v-row>
 
-        <v-dialog :model-value="!!checkout.priceChange" max-width="480" persistent>
+        <v-dialog
+            :model-value="!!checkout.priceChange"
+            max-width="480"
+            persistent
+            aria-labelledby="price-changed-title"
+            @after-leave="form?.focusSubmit()"
+        >
             <v-card v-if="checkout.priceChange">
-                <v-card-title class="text-h6 text-wrap">{{ t('checkout.priceChanged.title') }}</v-card-title>
+                <v-card-title id="price-changed-title" class="text-h6 text-wrap">
+                    {{ t('checkout.priceChanged.title') }}
+                </v-card-title>
                 <v-card-text>
                     {{ t('checkout.priceChanged.text', { total: formatMoney(checkout.priceChange.total) }) }}
                 </v-card-text>
                 <v-card-actions class="flex-wrap">
                     <v-spacer />
-                    <v-btn variant="text" @click="checkout.priceChange = null">
+                    <v-btn variant="text" @click="dismissPriceChange">
                         {{ t('checkout.priceChanged.cancel') }}
                     </v-btn>
                     <v-btn
@@ -139,10 +149,18 @@ const checkout = useCheckoutStore()
 const lastRequest = ref(null)
 // An order is being placed: the cart empties before the order page opens
 const placing = ref(false)
+const form = ref(null)
 
 const cartErrorCode = computed(() => cart.error?.replace(/^errors\./, ''))
-const HANDLED = ['NETWORK_ERROR', 'PRICE_CHANGED', 'VALIDATION_FAILED', 'CART_HAS_UNAVAILABLE_ITEMS']
-const otherError = computed(() => checkout.error && !HANDLED.includes(checkout.error))
+const HANDLED = ['NETWORK_ERROR', 'PRICE_CHANGED', 'CART_HAS_UNAVAILABLE_ITEMS']
+// A rejected field the form can point at is shown there; anything else gets a message here
+const fieldOnForm = computed(() => Object.keys(checkout.fields).some((path) => path.startsWith('shippingAddress.')))
+const otherError = computed(
+    () =>
+        checkout.error &&
+        !HANDLED.includes(checkout.error) &&
+        !(checkout.error === 'VALIDATION_FAILED' && fieldOnForm.value)
+)
 
 async function follow(order) {
     if (order) {
@@ -152,9 +170,23 @@ async function follow(order) {
     placing.value = false
     if (checkout.error === 'CART_HAS_UNAVAILABLE_ITEMS') {
         await router.push(localeRoute('Cart'))
-    } else if (checkout.error === 'CART_EMPTY') {
+    } else if (checkout.error === 'CART_EMPTY' || checkout.error === 'PRICE_CHANGED') {
+        // The summary must show the prices the server charges now
         await cart.load()
     }
+}
+
+// The retry repeats the last request; once the address on screen differs from
+// it, the customer orders again with the order button (same key: the server
+// answers IDEMPOTENCY_CONFLICT if the lost request did place an order)
+function onEdit() {
+    if (checkout.error === 'NETWORK_ERROR') checkout.error = null
+}
+
+// The dialog's focus trap holds the focus until it has closed; @after-leave
+// then gives it back to the order button
+function dismissPriceChange() {
+    checkout.priceChange = null
 }
 
 async function send(address, total) {

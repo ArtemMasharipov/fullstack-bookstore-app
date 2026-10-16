@@ -1,20 +1,25 @@
 <template>
     <v-form novalidate @submit.prevent="onSubmit">
+        <!-- Not a live region: it updates while the customer types; the focus announces it after a submit -->
         <div
             v-if="problems.length"
             ref="summary"
             class="checkout-errors mb-4 pa-3 rounded"
             tabindex="-1"
-            role="alert"
+            role="group"
             aria-labelledby="checkout-errors-title"
         >
             <p id="checkout-errors-title" class="font-weight-bold mb-1">{{ t('checkout.errorSummary') }}</p>
             <ul class="pl-4">
                 <li v-for="problem in problems" :key="problem.field">
-                    <a :href="`#checkout-${problem.field}`">{{ problem.label }}: {{ problem.message }}</a>
+                    <a :href="`#checkout-${problem.field}`" @click.prevent="focusField(problem.field)">
+                        {{ problem.label }}: {{ problem.message }}
+                    </a>
                 </li>
             </ul>
         </div>
+
+        <p class="text-body-2 text-medium-emphasis mb-3">{{ t('checkout.requiredNote') }}</p>
 
         <v-text-field
             v-for="field in FIELDS"
@@ -28,6 +33,8 @@
             :hint="HINTS.includes(field) ? t(`checkout.hints.${field}`) : undefined"
             :error-messages="messages[field] ? [messages[field]] : []"
             :aria-invalid="messages[field] ? 'true' : 'false'"
+            :aria-label="t(`checkout.fields.${field}`)"
+            aria-required="true"
             class="mb-2"
         />
 
@@ -35,6 +42,7 @@
             id="checkout-country"
             :model-value="t('checkout.countryName')"
             :label="t('checkout.fields.country')"
+            :aria-label="t('checkout.fields.country')"
             :hint="t('checkout.countryHint')"
             autocomplete="country-name"
             persistent-hint
@@ -45,6 +53,7 @@
         <p class="text-body-2 text-medium-emphasis mb-4">{{ t('checkout.paymentNote') }}</p>
 
         <v-btn
+            ref="submitButton"
             type="submit"
             color="primary"
             size="large"
@@ -70,7 +79,8 @@ const props = defineProps({
     /** The cart cannot be ordered as it is */
     blocked: { type: Boolean, default: false },
 })
-const emit = defineEmits(['submit'])
+// edit: the customer changed the address, so an earlier request no longer matches the screen
+const emit = defineEmits(['submit', 'edit'])
 
 const FIELDS = ['fullName', 'line1', 'city', 'postalCode', 'phone']
 const AUTOCOMPLETE = {
@@ -88,6 +98,7 @@ const address = reactive(Object.fromEntries(FIELDS.map((field) => [field, ''])))
 const clientErrors = ref({})
 const attempted = ref(false)
 const summary = ref(null)
+const submitButton = ref(null)
 
 const serverErrors = computed(() => {
     const prefix = 'shippingAddress.'
@@ -130,6 +141,9 @@ async function focusSummary() {
     summary.value?.focus()
 }
 
+// A link to an id only moves the reading position; the customer needs the cursor in the field
+const focusField = (field) => document.getElementById(`checkout-${field}`)?.focus()
+
 function onSubmit() {
     if (props.submitting || props.blocked) return
     attempted.value = true
@@ -141,10 +155,16 @@ function onSubmit() {
 // Once the customer has tried to order, problems go away as they are fixed
 watch(address, () => {
     if (attempted.value) clientErrors.value = validateAddress(filledAddress())
+    emit('edit')
 })
 
 watch(serverErrors, (errors) => {
     if (Object.keys(errors).length) focusSummary()
+})
+
+defineExpose({
+    /** Gives the focus back to the order button, for example after a dialog closed */
+    focusSubmit: () => submitButton.value?.$el.focus(),
 })
 </script>
 
@@ -152,5 +172,12 @@ watch(serverErrors, (errors) => {
 .checkout-errors {
     border: 2px solid rgb(var(--v-theme-error));
     overflow-wrap: anywhere;
+}
+
+/* Each link is a target of its own: at least 24 px high (WCAG 2.5.8) */
+.checkout-errors a {
+    display: inline-block;
+    min-height: 24px;
+    padding-block: 2px;
 }
 </style>

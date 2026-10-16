@@ -123,6 +123,7 @@
             "phone": "Enter a Czech phone number, for example +420 777 123 456."
         },
         "errorSummary": "Please correct these fields:",
+        "requiredNote": "All fields are required.",
         "itemsTitle": "Your order",
         "lineQuantity": "{quantity} × {price}",
         "paymentNote": "The order will wait for payment. Online payment is not available yet.",

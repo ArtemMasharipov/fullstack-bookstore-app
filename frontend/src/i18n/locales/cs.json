@@ -123,6 +123,7 @@
             "phone": "Zadejte české telefonní číslo, například +420 777 123 456."
         },
         "errorSummary": "Opravte prosím tato pole:",
+        "requiredNote": "Všechna pole jsou povinná.",
         "itemsTitle": "Vaše objednávka",
         "lineQuantity": "{quantity} × {price}",
         "paymentNote": "Objednávka bude čekat na zaplacení. Online platba zatím není k dispozici.",

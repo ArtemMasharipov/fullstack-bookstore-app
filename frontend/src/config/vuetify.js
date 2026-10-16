@@ -285,6 +285,12 @@ export const vuetify = createVuetify({
                     'surface-variant': '#F0EDE8',
                     'on-surface-variant': '#5A5A5A',
                 },
+                // Secondary text at Vuetify's default 0.6 is 3.7:1 on this surface. Field
+                // labels and hints apply it on top of the field's 0.87, so 0.8 is what
+                // brings them to 4.8:1 (WCAG AA); text-medium-emphasis gets about 7:1
+                variables: {
+                    'medium-emphasis-opacity': 0.8,
+                },
             },
             dark: {
                 colors: {
