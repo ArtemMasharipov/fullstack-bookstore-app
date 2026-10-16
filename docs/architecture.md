@@ -128,18 +128,26 @@ the three plugins.
   access policy (`auth`, `guestOnly`, `permission`). `buildRoutes.js` turns it into Vue Router records, passes a
   layout's policy down to its children and builds the admin sidebar from the same list. `guards/unified.js` is the one
   `beforeEach` guard: public routes pass at once; otherwise it checks that the stored token has not expired and sends
-  the user to the login page, the home page or the "access denied" page as the policy requires. The API checks every
-  protected request on its own.
-- **State** (`src/stores/`). One Pinia store per area: `auth`, `authors`, `books`, `cart`, `checkout`, `orders` and
-  `users`. Each calls its API module and tracks its loading and error state. The cart store holds the server's
+  the user to the login page, the home page or the "access denied" page as the policy requires. The login page gets
+  the way back in `?redirect`; after signing in, `redirect.js` opens it only if it is a path to a page of this app,
+  and opens it in the current language, otherwise the home page. The API checks every protected request on its own.
+- **State** (`src/stores/`). One Pinia store per area: `auth`, `authors`, `books`, `cart`, `checkout`, `orders`,
+  `shopConfig` and `users`. `shopConfig` loads the shop settings of `GET /config/public` once; the home page and the
+  book page state shipping and VAT only from them. Each calls its API module and tracks its loading and error state. The cart store holds the server's
   lines and quote and runs its changes one after another; a guest cart keeps only book ids and quantities in
   `localStorage`, is priced by `POST /cart/quote` and is merged into the account cart on sign-in. The checkout store
   holds the idempotency key of the current checkout and keeps it for every retry of the same order.
 - **API client** (`src/services/api/`). One module per resource (`booksApi.js`, `authorsApi.js`, `cartApi.js`,
   `orderApi.js`, `usersApi.js`, `rolesApi.js`, `authService.js`), all on the Axios instance in `baseApi.js`. It sets
   the base URL and a 15-second timeout, adds the token from `localStorage` to protected requests, turns failures into
-  `Error` objects that carry the status and the `code`, `fields` and `details` of the error envelope, and sends the
-  user to the login page after a 401.
+  `Error` objects that carry the status and the `code`, `fields` and `details` of the error envelope, and ends the
+  session after a 401 to a request that carried the token. A 401 without a token, such as a wrong password, ends
+  nothing.
+- **Session** (`src/services/session.js`). Signing out, a 401 and an expired token end the session the same way:
+  the token, the user data, the guest cart key, the notifications and every store except the public catalogue and
+  shop settings are cleared. The cart also drops answers of requests that were still running. A page that needs an
+  account is then replaced by the login page in the same language, with the way back in `?redirect`; a public page
+  stays open for the visitor as a guest.
 - **Components and views.** `src/components/features/` holds the components of each area: `admin`, `auth`, `authors`,
   `books`, `cart`, `orders`. Shared pieces live in `components/ui`, `components/layout` and
   `components/notifications`. `src/views/` holds the pages that the router loads, grouped as `public`, `auth`,
@@ -191,7 +199,9 @@ a production web server has to forward `/api` to the API; the other option is to
 - **Frontend.** Vitest on happy-dom runs `src/**/*.spec.js`: the API modules, the stores, the utilities and the
   components and views of the cart, checkout and orders, mounted with the real router, i18n and Vuetify.
 - **End-to-end.** Playwright in Chromium runs `frontend/e2e/`: the catalogue smoke test, the Czech and English flows
-  with accessibility checks, the server cart, and checkout with retries, price changes and order cancellation.
+  with accessibility checks, the server cart, checkout with retries, price changes and order cancellation, the whole
+  purchase journey from a guest cart to a cancelled order and sign-out in both languages, expired sessions, and the
+  shop terms against `GET /config/public`. Shared helpers live in `e2e/support.js`.
   Playwright starts its own servers on dedicated ports: the API on 3100 (`npm run e2e:server`, an in-memory MongoDB
   with the demo data) and `vite preview` on 4173. Existing servers are never reused, so a busy port fails the run
   instead of testing a dev stack.

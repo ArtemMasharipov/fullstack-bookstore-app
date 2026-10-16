@@ -5,15 +5,27 @@ that shows how its author builds and maintains a full-stack application with tes
 
 ## Status
 
-The foundation is done: automated tests, CI, configuration checked at startup, a seed command and an end-to-end smoke
-test. The application itself is unfinished. Known limitations:
+The foundation is done: automated tests, CI, configuration checked at startup, a seed command and end-to-end tests.
+The purchase path works from the catalogue to the order:
 
-- Checkout, order history and the admin panel do not work.
+- The cart lives on the server. A guest cart is priced by the server and joins the account cart on sign-in.
+- Checkout validates the delivery address, orders at the server's total and places an order at most once, also when
+  the request is retried.
+- My Orders lists the user's orders, shows each one with its history and cancels an order that is not paid yet.
+- Signing out and an expired session clear the session the same way; signing in returns to the page that asked for
+  it.
+- The interface is in Czech (default) and English (`/en`), with prices in CZK. Delivery and VAT terms are built from
+  the shop settings (`GET /api/v1/config/public`), which hold demo values.
+
+Known limitations:
+
+- There is no online payment: a new order waits for payment.
+- The admin panel cannot be opened by signing in: the API gives users no permissions, and the panel requires one.
+- The catalogue, author pages, the profile and the admin panel are still in English only. The Czech texts are a
+  draft.
 - The catalogue shows only the first 12 books, with no pager and a counter that reads "Showing 12 of 12 books".
 - `npm audit` reports vulnerable dependencies in both packages.
 - The seed data is for checking the layout; there is no real catalogue yet.
-- The interface is not localized: text is hard-coded in English, prices are shown in ₴, free-shipping notes say `$50`,
-  the page declares `lang="ru"` and its `<noscript>` message is Russian. English and Czech with CZK prices are planned.
 - Books without a cover leave an empty area in the catalogue and on the book page: the placeholder image is missing.
 
 ## Screenshots
