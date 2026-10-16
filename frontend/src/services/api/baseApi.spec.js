@@ -108,19 +108,51 @@ describe('baseApi rejection metadata', () => {
             .catch((e) => e)
         expect(error.code).toBe('NETWORK_ERROR')
     })
-    it('retains the existing 401 login redirect and token clearing', async () => {
-        const { default: baseApi } = await import('./baseApi')
-        window.history.replaceState({}, '', '/books')
+})
+
+describe('baseApi session handler', () => {
+    const answering = (status) => async (config) => {
+        throw { response: { status, data: { error: { code: 'UNAUTHORIZED' } }, headers: {}, config } }
+    }
+
+    afterEach(() => {
+        localStorage.clear()
+    })
+
+    it('calls the session handler once for a 401 to a request sent with a token', async () => {
+        const { default: baseApi, setUnauthorizedHandler } = await import('./baseApi')
+        const handler = vi.fn()
+        setUnauthorizedHandler(handler)
+        window.history.replaceState({}, '', '/orders')
         localStorage.setItem('token', 'local-demo-token')
-        const error = await baseApi
-            .get('/books', {
-                adapter: async (config) => {
-                    throw { response: { status: 401, data: { error: { code: 'UNAUTHORIZED' } }, headers: {}, config } }
-                },
-            })
-            .catch((e) => e)
+
+        const error = await baseApi.get('/orders', { adapter: answering(401) }).catch((e) => e)
+
         expect(error.status).toBe(401)
-        expect(localStorage.getItem('token')).toBeNull()
-        expect(window.location.pathname).toBe('/login')
+        expect(handler).toHaveBeenCalledTimes(1)
+        expect(window.location.pathname).toBe('/orders')
+    })
+
+    it('does not call it for a 401 to a request without a token', async () => {
+        const { default: baseApi, setUnauthorizedHandler } = await import('./baseApi')
+        const handler = vi.fn()
+        setUnauthorizedHandler(handler)
+
+        const error = await baseApi.post('/auth/login', {}, { adapter: answering(401) }).catch((e) => e)
+
+        expect(error.status).toBe(401)
+        expect(handler).not.toHaveBeenCalled()
+    })
+
+    it('does not call it for a 403', async () => {
+        const { default: baseApi, setUnauthorizedHandler } = await import('./baseApi')
+        const handler = vi.fn()
+        setUnauthorizedHandler(handler)
+        localStorage.setItem('token', 'local-demo-token')
+
+        const error = await baseApi.get('/orders', { adapter: answering(403) }).catch((e) => e)
+
+        expect(error.status).toBe(403)
+        expect(handler).not.toHaveBeenCalled()
     })
 })

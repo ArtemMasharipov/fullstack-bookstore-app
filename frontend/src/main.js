@@ -5,6 +5,7 @@ import router from './router'
 import { i18n, loadLocale } from '@/i18n'
 import { startWithLocaleRetry } from '@/i18n/bootstrap'
 import { routeLocale } from '@/router/locale'
+import { installSession } from '@/services/session'
 
 // Import Vuetify styles and optimized config
 import { vuetify } from '@/config/vuetify'
@@ -25,6 +26,8 @@ setupGlobalErrorHandling()
 // Setup application plugins
 app.use(pinia)
 app.use(vuetify)
+// Sign-out and every 401 end the session the same way, on the app's router
+installSession(router)
 
 // Store app instance globally for debugging in development
 if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {

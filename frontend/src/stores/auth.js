@@ -1,6 +1,5 @@
 import { useNotifications } from '@/composables/useNotifications'
 import { authApi } from '@/services/api/authService'
-import { resolveErrorKey } from '@/utils/errorResolver'
 import { jwtDecode } from 'jwt-decode'
 import { defineStore } from 'pinia'
 import { withLoading } from './storeHelpers'
@@ -139,23 +138,19 @@ export const useAuthStore = defineStore('auth', {
         },
 
         /**
-         * Logout user
+         * Logout user. The server keeps no session for a token, so the session
+         * ends on this device whatever the server answers.
          */
         async logout() {
-            const { showSuccess, showError } = useNotifications()
-
             this.loading = true
-
             try {
                 await authApi.logout()
-
-                showSuccess(undefined, { messageKey: 'notifications.logoutSuccess', icon: 'mdi-logout' })
-            } catch (error) {
-                showError(undefined, { messageKey: resolveErrorKey(error), icon: 'mdi-logout-variant' })
-            } finally {
-                this.clearAuth()
-                this.loading = false
+            } catch {
+                // Nothing to undo: the token is forgotten below either way
             }
+            const { resetSession } = await import('@/services/session')
+            await resetSession()
+            useNotifications().showSuccess(undefined, { messageKey: 'notifications.logoutSuccess', icon: 'mdi-logout' })
         },
 
         /**

@@ -112,7 +112,8 @@ it('cart and auth producers pass descriptors, keep string store errors and leave
         expect(cart.error).toBe('errors.CONFLICT')
         const auth = useAuthStore()
         await auth.logout()
-        expect(notices.notifications.value.at(-1).messageKey).toBe('errors.CONFLICT')
+        // Signing out ends the session even when the server refuses; the notices of that session go with it
+        expect(notices.notifications.value.map((notice) => notice.messageKey)).toEqual(['notifications.logoutSuccess'])
         expect(auth.token).toBeNull()
     } finally {
         baseApi.defaults.adapter = adapter

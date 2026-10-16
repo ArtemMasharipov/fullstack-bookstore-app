@@ -1,6 +1,5 @@
 import axios from 'axios'
 import { resolveErrorKey } from '@/utils/errorResolver'
-import { ROUTE_PATHS } from '@/utils/constants/routes'
 
 /**
  * Base Axios instance with interceptors
@@ -14,6 +13,15 @@ const baseApi = axios.create({
         'Content-Type': 'application/json',
     },
 })
+
+let onUnauthorized = null
+// While one session reset runs, further 401 answers of that session do not start another
+let endingSession = null
+
+/** Sets what ends the session after a 401 to a request that carried the token */
+export function setUnauthorizedHandler(handler) {
+    onUnauthorized = handler
+}
 
 // Request interceptor - add auth token
 baseApi.interceptors.request.use(
@@ -48,13 +56,13 @@ baseApi.interceptors.response.use(
 
         const { status, data } = error.response
 
-        // Unauthorized - redirect to login
-        if (status === 401) {
-            const currentPath = window.location.pathname
-            if (currentPath !== ROUTE_PATHS.LOGIN && currentPath !== ROUTE_PATHS.REGISTER) {
-                localStorage.removeItem('token')
-                window.location.href = ROUTE_PATHS.LOGIN
-            }
+        // A 401 to a request sent with a token means the session is over. Without a
+        // token it means wrong credentials, and the guest's session stays as it is.
+        const sentToken = (error.config ?? error.response.config)?.headers?.Authorization
+        if (status === 401 && sentToken && onUnauthorized && !endingSession) {
+            endingSession = Promise.resolve(onUnauthorized()).finally(() => {
+                endingSession = null
+            })
         }
 
         // Error envelope: { success: false, error: { code, message, fields?, details? } }

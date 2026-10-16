@@ -200,6 +200,19 @@ export const useCartStore = defineStore('cart', {
         },
 
         /**
+         * After the session ends: empty at once, and again after the changes
+         * already running, whose answers belong to the old session; then the
+         * guest cart, which the session's end has emptied too.
+         */
+        forget() {
+            this.$reset()
+            return serial(async () => {
+                this.$reset()
+                this._apply(await this._guestView(() => {}))
+            })
+        },
+
+        /**
          * After sign-in: adds the guest cart to the user's cart. The guest cart
          * is forgotten only once the server took it. Answers the report, or
          * null when there was nothing to merge or the merge failed.

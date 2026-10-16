@@ -86,14 +86,11 @@ import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
 import { useDisplay } from 'vuetify'
-import { useRouter } from 'vue-router'
 
 /**
  * AdminHeader component - Admin panel header with navigation and user menu
  */
 
-// Router
-const router = useRouter()
 const { xs } = useDisplay()
 
 // Stores
@@ -110,10 +107,8 @@ const handleSearch = (query) => {
     // Global admin search functionality
 }
 
-const logout = async () => {
-    await authStore.logout()
-    router.push(localeRoute('Login'))
-}
+// Every admin page needs an account, so the session's end opens Login
+const logout = () => authStore.logout()
 </script>
 
 <style scoped>

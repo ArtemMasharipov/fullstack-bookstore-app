@@ -13,6 +13,7 @@
  *   4. Permission    → redirect to Unauthorized if check fails
  */
 
+import { clearSession } from '@/services/session'
 import { useAuthStore } from '@/stores/auth'
 import { localeRoute, routeLocale } from '../locale'
 import { loginRoute } from '../redirect'
@@ -32,11 +33,12 @@ const unifiedGuard = async (to, from, next) => {
     // Validate the stored token only when auth state matters for this route.
     if (isAuthenticated) {
         try {
-            const isValid = await authStore.checkAuthStatus()
-            if (!isValid) isAuthenticated = false
+            isAuthenticated = await authStore.checkAuthStatus()
         } catch {
             isAuthenticated = false
         }
+        // An expired or unreadable token ends the whole session, not only the token
+        if (!isAuthenticated) clearSession()
     }
 
     // 1. Route requires authentication.

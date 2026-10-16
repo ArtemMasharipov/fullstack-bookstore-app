@@ -162,10 +162,8 @@ import { localeRoute } from '@/router/locale'
 import { useAuthStore, useCartStore } from '@/stores'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useDisplay, useTheme } from 'vuetify'
 
-const router = useRouter()
 const theme = useTheme()
 const { xs } = useDisplay()
 const authStore = useAuthStore()
@@ -201,10 +199,8 @@ const userInitials = computed(() => {
     )
 })
 
-const logout = async () => {
-    await authStore.logout()
-    router.push(localeRoute('Home'))
-}
+// The session's end decides the page: a page that needs an account gives way to Login
+const logout = () => authStore.logout()
 
 const handleLogout = () => {
     logout()

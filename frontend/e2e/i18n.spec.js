@@ -172,7 +172,7 @@ test('inactive dictionary failure keeps URL, language and cart until keyboard re
     expect(attempts).toBe(2)
 })
 
-test('API 401 keeps the documented unprefixed login exception', async ({ page }) => {
+test('a guest 401 keeps the English page and hides the raw API answer', async ({ page }) => {
     await page.route(
         (url) => url.pathname === '/api/v1/books',
         (route) =>
@@ -183,8 +183,9 @@ test('API 401 keeps the documented unprefixed login exception', async ({ page })
             })
     )
     await page.goto('/en/books')
-    await expect(page).toHaveURL('http://localhost:4173/login')
-    await expect(page.locator('html')).toHaveAttribute('lang', 'cs')
+    await expect(page.locator('main')).toContainText(copy.en.title)
+    await expect(page).toHaveURL('http://localhost:4173/en/books')
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en')
     await expect(page.locator('body')).not.toContainText('RAW_PRIVATE_RESPONSE')
 })
 

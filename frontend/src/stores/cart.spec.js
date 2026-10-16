@@ -264,3 +264,24 @@ describe('mergeGuestCart', () => {
         expect(api.merge).not.toHaveBeenCalled()
     })
 })
+
+describe('forget', () => {
+    it('an answer that arrives after sign-out does not bring the old cart back', async () => {
+        api.fetch.mockReset()
+        let answer
+        api.fetch.mockReturnValueOnce(new Promise((resolve) => (answer = resolve)))
+        localStorage.setItem('token', 'local-demo-token')
+        const loading = cart.load()
+        await vi.waitFor(() => expect(api.fetch).toHaveBeenCalled())
+
+        localStorage.removeItem('token')
+        const forgotten = cart.forget()
+        answer(view(line(A, 2)))
+        await loading
+        await forgotten
+
+        expect(cart.lines).toEqual([])
+        expect(cart.status).toBe('ready')
+        expect(cart.totalQuantity).toBe(0)
+    })
+})
