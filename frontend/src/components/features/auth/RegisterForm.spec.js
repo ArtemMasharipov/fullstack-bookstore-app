@@ -89,4 +89,33 @@ describe('RegisterForm', () => {
 
         await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/orders'))
     })
+
+    it('says that the account already exists on CONFLICT', async () => {
+        auth.register.mockRejectedValueOnce(
+            Object.assign(new Error('Email already registered'), { status: 409, code: 'CONFLICT' })
+        )
+        await mount('/register')
+
+        await register()
+
+        await vi.waitFor(() =>
+            expect(document.querySelector('.v-alert')?.textContent).toContain(
+                'Účet s tímto e-mailem nebo uživatelským jménem už existuje.'
+            )
+        )
+        expect(document.body.textContent).not.toContain('Email already registered')
+    })
+
+    it('asks for matching passwords', async () => {
+        await mount('/register')
+
+        await register({ password: 'secret123', confirmPassword: 'secret124' })
+
+        await vi.waitFor(() =>
+            expect([...document.querySelectorAll('.v-messages__message')].map((m) => m.textContent)).toContain(
+                'Hesla se neshodují.'
+            )
+        )
+        expect(auth.register).not.toHaveBeenCalled()
+    })
 })

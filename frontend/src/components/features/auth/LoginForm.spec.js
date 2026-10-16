@@ -97,6 +97,41 @@ describe('LoginForm', () => {
         await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/'))
     })
 
+    it('shows that the email or password is wrong, not the server text', async () => {
+        auth.login.mockRejectedValueOnce(
+            Object.assign(new Error('Invalid credentials'), { status: 401, code: 'UNAUTHORIZED' })
+        )
+        await mount('/login?redirect=/checkout')
+
+        await signIn()
+
+        await vi.waitFor(() =>
+            expect(document.querySelector('.v-alert')?.textContent).toContain('E-mail nebo heslo nejsou správné.')
+        )
+        expect(document.body.textContent).not.toContain('Invalid credentials')
+        expect(router.currentRoute.value.fullPath).toBe('/login?redirect=/checkout')
+    })
+
+    it('speaks Czech on the Czech page', async () => {
+        await mount('/login')
+
+        expect(document.body.textContent).toContain('Přihlášení')
+        expect(document.querySelector('form button[type="submit"]').textContent).toContain('Přihlásit se')
+        expect(document.body.textContent).not.toContain('wishlist')
+    })
+
+    it('requires both fields before it calls the server', async () => {
+        await mount('/login')
+
+        await signIn('', '')
+
+        await vi.waitFor(() => {
+            const messages = [...document.querySelectorAll('.v-messages__message')].map((m) => m.textContent)
+            expect(messages).toEqual(['Zadejte e-mail.', 'Zadejte heslo.'])
+        })
+        expect(auth.login).not.toHaveBeenCalled()
+    })
+
     it('keeps the way back on the link to registration', async () => {
         await mount('/login?redirect=/checkout')
 

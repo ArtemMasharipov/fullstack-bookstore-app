@@ -66,6 +66,40 @@
         "userFallback": "Admin",
         "version": "Bookstore v{version}"
     },
+    "auth": {
+        "fields": {
+            "email": "Email",
+            "password": "Password",
+            "username": "Username",
+            "confirmPassword": "Confirm password"
+        },
+        "rules": {
+            "emailRequired": "Enter your email.",
+            "passwordRequired": "Enter your password.",
+            "usernameRequired": "Enter a username.",
+            "passwordTooShort": "Use at least 6 characters.",
+            "confirmRequired": "Repeat your password.",
+            "passwordsDiffer": "The passwords do not match."
+        },
+        "login": {
+            "title": "Sign in",
+            "welcome": "Welcome back",
+            "intro": "Sign in to place orders and see them in My orders.",
+            "submit": "Sign in",
+            "noAccount": "Don't have an account?",
+            "register": "Create one",
+            "invalidCredentials": "The email or password is not correct."
+        },
+        "register": {
+            "title": "Create an account",
+            "welcome": "Join us",
+            "intro": "Create an account to place orders and follow them in My orders.",
+            "submit": "Create account",
+            "haveAccount": "Already have an account?",
+            "login": "Sign in",
+            "taken": "An account with this email or username already exists."
+        }
+    },
     "cart": {
         "mergeSkipped": "Some books from your earlier cart are no longer available and were not added ({count}).",
         "title": "Your cart",

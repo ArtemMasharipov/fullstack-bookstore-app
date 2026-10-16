@@ -4,8 +4,6 @@
     "src/components/features/admin/BookDeleteDialog.vue",
     "src/components/features/admin/BookDialog.vue",
     "src/components/features/admin/UserDialog.vue",
-    "src/components/features/auth/LoginForm.vue",
-    "src/components/features/auth/RegisterForm.vue",
     "src/components/features/authors/AuthorDetails.vue",
     "src/components/features/authors/AuthorForm.vue",
     "src/components/features/authors/AuthorList.vue",
@@ -20,6 +18,5 @@
     "src/views/admin/AdminSettingsView.vue",
     "src/views/admin/AdminUsersView.vue",
     "src/views/auth/ProfileView.vue",
-    "src/views/auth/RegisterView.vue",
     "src/views/public/HomeView.vue"
 ]

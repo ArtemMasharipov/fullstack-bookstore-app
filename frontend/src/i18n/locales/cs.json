@@ -66,6 +66,40 @@
         "userFallback": "Správce",
         "version": "Bookstore v{version}"
     },
+    "auth": {
+        "fields": {
+            "email": "E-mail",
+            "password": "Heslo",
+            "username": "Uživatelské jméno",
+            "confirmPassword": "Potvrzení hesla"
+        },
+        "rules": {
+            "emailRequired": "Zadejte e-mail.",
+            "passwordRequired": "Zadejte heslo.",
+            "usernameRequired": "Zadejte uživatelské jméno.",
+            "passwordTooShort": "Použijte alespoň 6 znaků.",
+            "confirmRequired": "Zopakujte heslo.",
+            "passwordsDiffer": "Hesla se neshodují."
+        },
+        "login": {
+            "title": "Přihlášení",
+            "welcome": "Vítejte zpět",
+            "intro": "Přihlaste se, abyste mohli objednávat a vidět své objednávky.",
+            "submit": "Přihlásit se",
+            "noAccount": "Nemáte účet?",
+            "register": "Zaregistrujte se",
+            "invalidCredentials": "E-mail nebo heslo nejsou správné."
+        },
+        "register": {
+            "title": "Registrace",
+            "welcome": "Přidejte se k nám",
+            "intro": "Vytvořte si účet, abyste mohli objednávat a sledovat své objednávky.",
+            "submit": "Vytvořit účet",
+            "haveAccount": "Už máte účet?",
+            "login": "Přihlaste se",
+            "taken": "Účet s tímto e-mailem nebo uživatelským jménem už existuje."
+        }
+    },
     "cart": {
         "mergeSkipped": "Některé knihy z dřívějšího košíku už nejsou dostupné a nebyly přidány ({count}).",
         "title": "Váš košík",
