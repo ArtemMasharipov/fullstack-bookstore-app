@@ -17,6 +17,5 @@
     "src/views/admin/AdminOrdersView.vue",
     "src/views/admin/AdminSettingsView.vue",
     "src/views/admin/AdminUsersView.vue",
-    "src/views/auth/ProfileView.vue",
-    "src/views/public/HomeView.vue"
+    "src/views/auth/ProfileView.vue"
 ]

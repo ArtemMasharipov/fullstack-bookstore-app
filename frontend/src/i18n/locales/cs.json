@@ -66,6 +66,32 @@
         "userFallback": "Správce",
         "version": "Bookstore v{version}"
     },
+    "home": {
+        "hero": {
+            "title": "Objevte svou další skvělou knihu",
+            "text": "Prohlédněte si knihy všech žánrů, od klasiky po novinky.",
+            "browse": "Procházet knihy"
+        },
+        "categories": "Procházet podle kategorie",
+        "latest": "Nejnovější knihy",
+        "viewAll": "Zobrazit vše",
+        "empty": "Zatím tu nejsou žádné knihy. Zkuste to brzy znovu.",
+        "terms": {
+            "title": "Jak u nás nakupovat",
+            "delivery": {
+                "title": "Doručení po Česku",
+                "text": "Doprava stojí {fee}, objednávky od {threshold} doručíme zdarma."
+            },
+            "vat": {
+                "title": "Ceny včetně DPH",
+                "text": "Částka v košíku je cena objednávky včetně DPH a dopravy."
+            },
+            "orders": {
+                "title": "Objednávky na jednom místě",
+                "text": "Každou objednávku sledujete v sekci Moje objednávky a nezaplacenou můžete zrušit."
+            }
+        }
+    },
     "auth": {
         "fields": {
             "email": "E-mail",

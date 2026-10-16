@@ -66,6 +66,32 @@
         "userFallback": "Admin",
         "version": "Bookstore v{version}"
     },
+    "home": {
+        "hero": {
+            "title": "Discover your next great read",
+            "text": "Browse books across every genre, from classics to new releases.",
+            "browse": "Browse books"
+        },
+        "categories": "Browse by category",
+        "latest": "Latest books",
+        "viewAll": "View all",
+        "empty": "No books yet. Check back soon.",
+        "terms": {
+            "title": "Shopping with us",
+            "delivery": {
+                "title": "Delivery in Czechia",
+                "text": "Shipping costs {fee}; orders from {threshold} ship free."
+            },
+            "vat": {
+                "title": "Prices include VAT",
+                "text": "The total in your cart is what the order costs, with VAT and shipping."
+            },
+            "orders": {
+                "title": "Your orders in one place",
+                "text": "Follow every order in My Orders and cancel it while it is unpaid."
+            }
+        }
+    },
     "auth": {
         "fields": {
             "email": "Email",
@@ -84,7 +110,7 @@
         "login": {
             "title": "Sign in",
             "welcome": "Welcome back",
-            "intro": "Sign in to place orders and see them in My orders.",
+            "intro": "Sign in to place orders and see them in My Orders.",
             "submit": "Sign in",
             "noAccount": "Don't have an account?",
             "register": "Create one",
@@ -93,7 +119,7 @@
         "register": {
             "title": "Create an account",
             "welcome": "Join us",
-            "intro": "Create an account to place orders and follow them in My orders.",
+            "intro": "Create an account to place orders and follow them in My Orders.",
             "submit": "Create account",
             "haveAccount": "Already have an account?",
             "login": "Sign in",

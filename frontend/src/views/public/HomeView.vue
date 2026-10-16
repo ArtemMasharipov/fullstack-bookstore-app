@@ -5,21 +5,16 @@
             <v-container>
                 <v-row justify="center">
                     <v-col cols="12" md="8" lg="6">
-                        <h1 class="text-h3 text-md-h2 font-weight-bold text-white mb-4">
-                            Discover Your Next Great Read
-                        </h1>
-                        <p class="text-body-1 text-white mb-8" style="opacity: 0.85">
-                            Browse our curated collection of books across every genre. From timeless classics to the
-                            latest bestsellers.
-                        </p>
+                        <h1 class="text-h3 text-md-h2 font-weight-bold text-white mb-4">{{ t('home.hero.title') }}</h1>
+                        <p class="text-body-1 text-white mb-8" style="opacity: 0.85">{{ t('home.hero.text') }}</p>
                         <v-btn
                             color="secondary"
                             size="x-large"
-                            to="/books"
+                            :to="localeRoute('Books')"
                             prepend-icon="mdi-book-open-page-variant-outline"
                             elevation="3"
                         >
-                            Browse Books
+                            {{ t('home.hero.browse') }}
                         </v-btn>
                     </v-col>
                 </v-row>
@@ -28,12 +23,13 @@
 
         <!-- Categories Section -->
         <v-container class="py-10">
-            <h2 class="text-h5 font-weight-bold text-center mb-6">Browse by Category</h2>
+            <h2 class="text-h5 font-weight-bold text-center mb-6">{{ t('home.categories') }}</h2>
             <div class="d-flex flex-wrap justify-center ga-2">
+                <!-- Category names are catalogue data, as in the books themselves -->
                 <v-chip
                     v-for="category in featuredCategories"
                     :key="category.name"
-                    :to="`/books?category=${category.name}`"
+                    :to="localeRoute('Books', { query: { category: category.name } })"
                     :prepend-icon="category.icon"
                     size="large"
                     variant="outlined"
@@ -50,8 +46,10 @@
         <!-- Featured Books Section -->
         <v-container class="py-10">
             <div class="d-flex align-center justify-space-between mb-6">
-                <h2 class="text-h5 font-weight-bold">Latest Books</h2>
-                <v-btn variant="text" to="/books" append-icon="mdi-arrow-right"> View All </v-btn>
+                <h2 class="text-h5 font-weight-bold">{{ t('home.latest') }}</h2>
+                <v-btn variant="text" :to="localeRoute('Books')" append-icon="mdi-arrow-right">
+                    {{ t('home.viewAll') }}
+                </v-btn>
             </div>
 
             <v-skeleton-loader v-if="loading" type="card-avatar, card-avatar, card-avatar, card-avatar" />
@@ -65,39 +63,51 @@
                     md="3"
                     class="d-flex align-stretch"
                 >
-                    <book-card :book="book" class="w-100" @click="router.push(`/books/${book.id ?? book._id}`)" />
+                    <book-card
+                        :book="book"
+                        class="w-100"
+                        @click="router.push(localeRoute('BookDetails', { params: { id: book.id ?? book._id } }))"
+                    />
                 </v-col>
             </v-row>
 
             <v-alert v-else type="info" variant="tonal" icon="mdi-bookshelf" class="text-center">
-                No books available yet. Check back soon!
+                {{ t('home.empty') }}
             </v-alert>
         </v-container>
 
-        <v-divider />
+        <!-- Shop terms: stated only from the shop's own settings, so nothing shows until they load -->
+        <template v-if="shop.config">
+            <v-divider />
 
-        <!-- Trust Section -->
-        <v-container class="py-10">
-            <v-row justify="center">
-                <v-col v-for="item in trustItems" :key="item.title" cols="12" sm="4" class="text-center">
-                    <v-icon :icon="item.icon" size="48" color="secondary" class="mb-3" />
-                    <h3 class="text-subtitle-1 font-weight-bold mb-1">{{ item.title }}</h3>
-                    <p class="text-body-2 text-medium-emphasis">{{ item.description }}</p>
-                </v-col>
-            </v-row>
-        </v-container>
+            <v-container tag="section" class="home-terms py-10" aria-labelledby="home-terms-title">
+                <h2 id="home-terms-title" class="d-sr-only">{{ t('home.terms.title') }}</h2>
+                <v-row justify="center">
+                    <v-col v-for="item in terms" :key="item.title" cols="12" sm="4" class="text-center">
+                        <v-icon :icon="item.icon" size="48" color="secondary" class="mb-3" />
+                        <h3 class="text-subtitle-1 font-weight-bold mb-1">{{ item.title }}</h3>
+                        <p class="text-body-2 text-medium-emphasis">{{ item.text }}</p>
+                    </v-col>
+                </v-row>
+            </v-container>
+        </template>
     </div>
 </template>
 
 <script setup>
 import BookCard from '@/components/features/books/BookCard.vue'
-import { useBooksStore } from '@/stores'
+import { localeRoute } from '@/router/locale'
+import { useBooksStore, useShopConfigStore } from '@/stores'
+import { formatMoney } from '@/utils'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
+const { t } = useI18n()
 const router = useRouter()
 const booksStore = useBooksStore()
+const shop = useShopConfigStore()
 const { books, loading } = storeToRefs(booksStore)
 
 const featuredBooks = computed(() => books.value.slice(0, 4))
@@ -113,27 +123,35 @@ const featuredCategories = [
     { name: 'Technology', icon: 'mdi-laptop' },
 ]
 
-const trustItems = [
-    {
-        icon: 'mdi-truck-delivery-outline',
-        title: 'Fast Delivery',
-        description: 'Free shipping on orders over $50. Quick and reliable delivery to your door.',
-    },
-    {
-        icon: 'mdi-shield-check-outline',
-        title: 'Secure Payment',
-        description: 'Your payment information is always protected with industry-standard encryption.',
-    },
-    {
-        icon: 'mdi-autorenew',
-        title: 'Easy Returns',
-        description: '30-day hassle-free return policy. Not satisfied? Send it back, no questions asked.',
-    },
-]
+// Only what the shop does: delivery and VAT from its settings, and the order history it has
+const terms = computed(() => {
+    const config = shop.config
+    return [
+        {
+            icon: 'mdi-truck-delivery-outline',
+            title: t('home.terms.delivery.title'),
+            text: t('home.terms.delivery.text', {
+                fee: formatMoney(config.shippingFee),
+                threshold: formatMoney(config.freeShippingThreshold),
+            }),
+        },
+        config.vatIncluded && {
+            icon: 'mdi-receipt-text-outline',
+            title: t('home.terms.vat.title'),
+            text: t('home.terms.vat.text'),
+        },
+        {
+            icon: 'mdi-package-variant-closed',
+            title: t('home.terms.orders.title'),
+            text: t('home.terms.orders.text'),
+        },
+    ].filter(Boolean)
+})
 
 onMounted(() => {
     booksStore.limit = 4
     booksStore.loadBooks()
+    shop.load()
 })
 </script>
 
