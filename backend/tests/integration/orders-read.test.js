@@ -74,6 +74,8 @@ describe("GET /api/v1/orders", () => {
     ["limit=51", "limit"],
     ["limit=abc", "limit"],
     ["page[$gt]=1", "page"],
+    ["page=1&page=2", "page"],
+    [Array(25).fill("page=1").join("&"), "page"],
     ["status=pending", "status"],
   ])("rejects bad paging: %s", async (query, field) => {
     const res = await list(`?${query}`);
