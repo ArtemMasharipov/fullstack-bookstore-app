@@ -145,7 +145,7 @@ export const useAuthStore = defineStore('auth', {
         async logout() {
             const token = this.token
             const { resetSession } = await import('@/services/session')
-            await resetSession()
+            await resetSession({ wayBack: false })
             useNotifications().showSuccess(undefined, { messageKey: 'notifications.logoutSuccess', icon: 'mdi-logout' })
             if (token) authApi.logout(token).catch(() => {})
         },

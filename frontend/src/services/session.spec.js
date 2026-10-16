@@ -183,4 +183,21 @@ describe('signing out', () => {
             baseApi.defaults.adapter = adapter
         }
     })
+
+    it('opens Login without the way back to the page of the session that ended', async () => {
+        signedIn()
+        useAuthStore().$patch({ token: TOKEN })
+        await router.push('/en/orders/0123456789abcdef01234567')
+        const adapter = baseApi.defaults.adapter
+        baseApi.defaults.adapter = async (config) => ({ status: 200, data: { success: true }, headers: {}, config })
+        try {
+            await useAuthStore().logout()
+
+            // The next person on this device must not land on the previous user's order
+            expect(router.currentRoute.value.path).toBe('/en/login')
+            expect(router.currentRoute.value.query).toEqual({})
+        } finally {
+            baseApi.defaults.adapter = adapter
+        }
+    })
 })

@@ -146,8 +146,9 @@ the three plugins.
 - **Session** (`src/services/session.js`). Signing out, a 401 and an expired token end the session the same way:
   the token, the user data, the guest cart key, the notifications and every store except the public catalogue and
   shop settings are cleared. The cart also drops answers of requests that were still running. A page that needs an
-  account is then replaced by the login page in the same language, with the way back in `?redirect`; a public page
-  stays open for the visitor as a guest.
+  account is then replaced by the login page in the same language: after a 401 or an expired token with the way back
+  in `?redirect`, after signing out without it, so the next person on the device does not land on the previous
+  user's page. A public page stays open for the visitor as a guest.
 - **Components and views.** `src/components/features/` holds the components of each area: `admin`, `auth`, `authors`,
   `books`, `cart`, `orders`. Shared pieces live in `components/ui`, `components/layout` and
   `components/notifications`. `src/views/` holds the pages that the router loads, grouped as `public`, `auth`,

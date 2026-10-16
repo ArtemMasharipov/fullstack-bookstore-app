@@ -60,7 +60,6 @@ for (const locale of ['cs', 'en']) {
         await expect(page).toHaveURL((url) => url.pathname === `${prefix}/orders`)
         await page.getByRole('link', { name: orderNumber }).click()
         await expect(page).toHaveURL(ORDER_PATH)
-        const orderPath = new URL(page.url()).pathname
         await page.getByRole('button', { name: dict.orders.cancel }).click()
         await page.getByRole('button', { name: dict.orders.cancelConfirm }).click()
         await expect(page.getByText(dict.orders.status.cancelled, { exact: true }).first()).toBeVisible()
@@ -70,7 +69,8 @@ for (const locale of ['cs', 'en']) {
         await expect(page).toHaveURL((url) => url.pathname === `${prefix}/login`)
         // The server hears about it after the session has ended here
         expect((await told).status()).toBe(200)
-        expect(new URL(page.url()).searchParams.get('redirect')).toBe(orderPath)
+        // Signing out leaves no way back to the previous user's order for the next person on this device
+        expect(new URL(page.url()).searchParams.get('redirect')).toBeNull()
         // The snackbar shows its text in an overlay outside the container
         await expect(page.locator('.notification-message')).toHaveText([dict.notifications.logoutSuccess])
         await expect(page.locator('header .v-badge__badge')).toHaveCount(0)
