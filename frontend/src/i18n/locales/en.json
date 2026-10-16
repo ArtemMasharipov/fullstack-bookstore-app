@@ -146,6 +146,7 @@
         "decrease": "Decrease quantity of “{title}”",
         "remove": "Remove “{title}” from the cart",
         "removeConfirm": "Remove “{title}” from your cart?",
+        "deletedTitle": "Removed book",
         "unavailable": {
             "DELETED": "This book is no longer available.",
             "OUT_OF_STOCK": "Out of stock. Remove it to continue."

@@ -111,9 +111,10 @@ describe('CartItem', () => {
             })
         )
 
-        const title = t('cart.unavailable.DELETED')
-        expect(document.body.textContent).toContain(title)
-        expect(byLabel(t('cart.remove', { title }))).not.toBeNull()
+        expect(document.querySelector('h2').textContent).toBe('Removed book')
+        // The reason is said once, not again as the title
+        expect(document.body.textContent.split('This book is no longer available.')).toHaveLength(2)
+        expect(byLabel('Remove “Removed book” from the cart')).not.toBeNull()
         expect(document.querySelector('button[aria-label^="Increase"]')).toBeNull()
     })
 })

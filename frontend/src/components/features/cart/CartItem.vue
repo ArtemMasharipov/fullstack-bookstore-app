@@ -84,8 +84,8 @@ const { t } = useI18n()
 const cart = useCartStore()
 const confirming = ref(false)
 
-// A deleted book has no title any more; the reason stands in for it
-const title = computed(() => props.line.title ?? t('cart.unavailable.DELETED'))
+// A deleted book has no title any more; a plain name stands in, the line below says why
+const title = computed(() => props.line.title ?? t('cart.deletedTitle'))
 // Changes wait for the server; meanwhile the line takes no other action
 const busy = computed(() => cart.pending.includes(props.line.bookId))
 const canDecrease = computed(() => !busy.value && props.line.quantity > 1)

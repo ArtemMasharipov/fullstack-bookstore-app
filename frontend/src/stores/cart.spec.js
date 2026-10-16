@@ -77,6 +77,21 @@ describe('guest cart', () => {
     })
 })
 
+describe('a guest adding a book the server cannot sell', () => {
+    it('a guest cannot add a book the server reports unavailable', async () => {
+        api.quote.mockReset()
+        api.quote.mockResolvedValueOnce(
+            view({ ...line(A, 1), available: false, unavailableReason: 'OUT_OF_STOCK', unitPrice: 0, lineTotal: 0 })
+        )
+
+        await expect(cart.add(A)).resolves.toBe(false)
+
+        expect(localStorage.getItem('cart')).toBeNull()
+        expect(notify.showError).toHaveBeenCalledWith(undefined, { messageKey: 'errors.BOOK_UNAVAILABLE' })
+        expect(notify.showSuccess).not.toHaveBeenCalled()
+    })
+})
+
 describe('changes that overlap', () => {
     // The answer of quote(items), resolved when the test says so
     const deferredQuotes = () => {

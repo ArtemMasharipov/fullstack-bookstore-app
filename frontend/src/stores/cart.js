@@ -38,6 +38,7 @@ function writeGuestItems(items) {
 }
 
 const tooManyCopies = () => Object.assign(new Error('Too many copies'), { code: 'VALIDATION_FAILED' })
+const bookUnavailable = () => Object.assign(new Error('Book unavailable'), { code: 'BOOK_UNAVAILABLE' })
 
 // Cart changes run one after another: each starts from the cart the previous
 // one left, so two quick additions, or a refresh during a change, never
@@ -80,11 +81,15 @@ export const useCartStore = defineStore('cart', {
             this.error = null
         },
 
-        /** Applies a change to the guest cart and stores it once the server priced it */
-        async _guestView(change) {
+        /**
+         * Applies a change to the guest cart and stores it once the server priced
+         * it; `check` may refuse the priced cart, which then stays as it was
+         */
+        async _guestView(change, check) {
             const items = readGuestItems()
             change(items)
             const view = items.length ? await cartApi.quote(items) : { items: [], quote: null }
+            check?.(view)
             writeGuestItems(items)
             return view
         },
@@ -131,13 +136,20 @@ export const useCartStore = defineStore('cart', {
             try {
                 const view = isLoggedIn()
                     ? await cartApi.add(bookId, quantity)
-                    : await this._guestView((items) => {
-                          const existing = items.find((item) => item.bookId === bookId)
-                          const total = (existing?.quantity ?? 0) + quantity
-                          if (total > MAX_QUANTITY) throw tooManyCopies()
-                          if (existing) existing.quantity = total
-                          else items.push({ bookId, quantity })
-                      })
+                    : await this._guestView(
+                          (items) => {
+                              const existing = items.find((item) => item.bookId === bookId)
+                              const total = (existing?.quantity ?? 0) + quantity
+                              if (total > MAX_QUANTITY) throw tooManyCopies()
+                              if (existing) existing.quantity = total
+                              else items.push({ bookId, quantity })
+                          },
+                          // As for a signed-in user: a book the server cannot sell is not added
+                          (priced) => {
+                              if (!priced.items.find((line) => line.bookId === bookId)?.available)
+                                  throw bookUnavailable()
+                          }
+                      )
                 this._apply(view)
                 const title = view.items.find((line) => line.bookId === bookId)?.title ?? ''
                 showSuccess(undefined, {

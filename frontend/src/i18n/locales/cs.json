@@ -146,6 +146,7 @@
         "decrease": "Snížit počet „{title}“",
         "remove": "Odebrat „{title}“ z košíku",
         "removeConfirm": "Odebrat „{title}“ z košíku?",
+        "deletedTitle": "Odstraněná kniha",
         "unavailable": {
             "DELETED": "Tato kniha už není k dispozici.",
             "OUT_OF_STOCK": "Není skladem. Pro pokračování ji odeberte."
