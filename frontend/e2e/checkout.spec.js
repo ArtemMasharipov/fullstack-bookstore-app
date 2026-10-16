@@ -1,7 +1,7 @@
-import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { SMOKE_BOOK_TITLE } from '../../backend/scripts/seed-data.js'
+import { fillAddress, wcagViolations } from './support.js'
 
 const cs = JSON.parse(readFileSync('src/i18n/locales/cs.json', 'utf8'))
 const en = JSON.parse(readFileSync('src/i18n/locales/en.json', 'utf8'))
@@ -48,37 +48,12 @@ async function cartWithBook(page, token) {
     return (await response.json()).data.quote
 }
 
-async function fillAddress(page) {
-    await page.locator('input[autocomplete="name"]').fill('Jan Novák')
-    await page.locator('input[autocomplete="address-line1"]').fill('Vodičkova 12')
-    await page.locator('input[autocomplete="address-level2"]').fill('Praha')
-    await page.locator('input[autocomplete="postal-code"]').fill('110 00')
-    await page.locator('input[autocomplete="tel"]').fill('+420 777 123 456')
-}
-
 async function readyCheckout(page, path = '/checkout') {
     const token = await signIn(page)
     const quote = await cartWithBook(page, token)
     await page.goto(path)
     await expect(page.locator('input[autocomplete="name"]')).toBeVisible()
     return { token, quote }
-}
-
-// WCAG 2.2 A and AA rule violations inside one part of the page
-async function wcagViolations(page, selector) {
-    // Colors measured in the middle of a fade-in are not the colors people read
-    await page.waitForFunction(() => !document.querySelector('[class*="-enter-active"], [class*="-leave-active"]'))
-    const result = await new AxeBuilder({ page })
-        .include(selector)
-        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-        .analyze()
-    return result.violations.map((rule) => ({
-        id: rule.id,
-        impact: rule.impact,
-        targets: rule.nodes.map((node) => node.target.join(' ')),
-        // axe's own explanation, so a failure in CI says what to fix
-        why: rule.nodes.map((node) => node.failureSummary),
-    }))
 }
 
 function orderKeys(page) {

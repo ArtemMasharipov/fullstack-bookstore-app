@@ -1,4 +1,49 @@
+import AxeBuilder from '@axe-core/playwright'
 import { expect } from '@playwright/test'
+import { SMOKE_BOOK_TITLE } from '../../backend/scripts/seed-data.js'
+
+// An amount in geller, written the way the app writes it in this language
+export const money = (amount, locale = 'cs') =>
+    new Intl.NumberFormat(locale === 'en' ? 'en-GB' : 'cs-CZ', {
+        style: 'currency',
+        currency: 'CZK',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(amount / 100)
+
+// A catalogue price in geller, rounded the way the server rounds it
+export const geller = (price) => Math.round(Number((price * 100).toPrecision(12)))
+
+export async function seededBook(request) {
+    const payload = await (await request.get('/api/v1/books')).json()
+    const book = (payload.data.books || payload.data).find((b) => b.title === SMOKE_BOOK_TITLE)
+    return { id: book.id || book._id, price: book.price }
+}
+
+export async function fillAddress(page) {
+    await page.locator('input[autocomplete="name"]').fill('Jan Novák')
+    await page.locator('input[autocomplete="address-line1"]').fill('Vodičkova 12')
+    await page.locator('input[autocomplete="address-level2"]').fill('Praha')
+    await page.locator('input[autocomplete="postal-code"]').fill('110 00')
+    await page.locator('input[autocomplete="tel"]').fill('+420 777 123 456')
+}
+
+// WCAG 2.2 A and AA rule violations inside one part of the page
+export async function wcagViolations(page, selector) {
+    // Colors measured in the middle of a fade-in are not the colors people read
+    await page.waitForFunction(() => !document.querySelector('[class*="-enter-active"], [class*="-leave-active"]'))
+    const result = await new AxeBuilder({ page })
+        .include(selector)
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+        .analyze()
+    return result.violations.map((rule) => ({
+        id: rule.id,
+        impact: rule.impact,
+        targets: rule.nodes.map((node) => node.target.join(' ')),
+        // axe's own explanation, so a failure in CI says what to fix
+        why: rule.nodes.map((node) => node.failureSummary),
+    }))
+}
 
 // A new account, registered through the API; answers its credentials
 export async function signUp(page) {

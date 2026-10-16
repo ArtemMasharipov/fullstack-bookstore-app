@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
-import { brokenToken, signIn, signUp } from './support.js'
+import { brokenToken, seededBook, signIn, signUp, wcagViolations } from './support.js'
 
 const en = JSON.parse(readFileSync('src/i18n/locales/en.json', 'utf8'))
 
@@ -35,3 +35,35 @@ test.describe('session', () => {
         expect(await sessionKeys(page)).toEqual([null, null, null, null])
     })
 })
+
+for (const locale of ['cs', 'en']) {
+    const prefix = locale === 'en' ? '/en' : ''
+
+    test(`${locale}: sign-in and registration meet WCAG 2.2 AA`, async ({ page }) => {
+        await page.goto(`${prefix}/login`)
+        await expect(page.locator('form button[type="submit"]')).toBeVisible()
+        expect(await wcagViolations(page, 'main'), 'sign-in').toEqual([])
+
+        await page.locator('form button[type="submit"]').click()
+        await expect(page.locator('.v-messages__message').first()).toBeVisible()
+        expect(await wcagViolations(page, 'main'), 'sign-in with field errors').toEqual([])
+
+        await page.goto(`${prefix}/register`)
+        await expect(page.locator('form button[type="submit"]')).toBeVisible()
+        expect(await wcagViolations(page, 'main'), 'registration').toEqual([])
+    })
+
+    test(`${locale}: the home page meets WCAG 2.2 AA`, async ({ page }) => {
+        await page.goto(`${prefix}/`)
+        await expect(page.locator('.home-terms')).toBeVisible()
+        await expect(page.locator('.book-card').first()).toBeVisible()
+        expect(await wcagViolations(page, 'main'), 'home').toEqual([])
+    })
+
+    test(`${locale}: a book page meets WCAG 2.2 AA`, async ({ page, request }) => {
+        const book = await seededBook(request)
+        await page.goto(`${prefix}/books/${book.id}`)
+        await expect(page.getByRole('button', { name: 'Add to Cart', exact: true })).toBeVisible()
+        expect(await wcagViolations(page, 'main'), 'book').toEqual([])
+    })
+}
