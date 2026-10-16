@@ -8,6 +8,7 @@ export * from './currency.js'
 // export * from './formatters.js' // file removed
 
 export { formatDate, formatDateTime } from '../date.js'
+export { formatCountry } from '../country.js'
 
 // Array utilities
 export const uniqueBy = (array, key) => {

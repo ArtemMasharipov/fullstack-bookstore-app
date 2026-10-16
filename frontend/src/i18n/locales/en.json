@@ -164,8 +164,7 @@
             "country": "Country",
             "phone": "Phone"
         },
-        "countryName": "Czech Republic",
-        "countryHint": "We deliver only within the Czech Republic.",
+        "countryHint": "We deliver only within Czechia.",
         "hints": {
             "postalCode": "For example 110 00",
             "phone": "For example +420 777 123 456"

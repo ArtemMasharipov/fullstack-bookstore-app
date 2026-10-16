@@ -40,7 +40,7 @@
 
         <v-text-field
             id="checkout-country"
-            :model-value="t('checkout.countryName')"
+            :model-value="formatCountry(SHIPPING_COUNTRY)"
             :label="t('checkout.fields.country')"
             :aria-label="t('checkout.fields.country')"
             :hint="t('checkout.countryHint')"
@@ -69,6 +69,7 @@
 
 <script setup>
 import { ADDRESS_RULES, SHIPPING_COUNTRY, validateAddress } from '@/utils/address'
+import { formatCountry } from '@/utils/country'
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 

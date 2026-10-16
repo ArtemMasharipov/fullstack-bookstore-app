@@ -100,7 +100,7 @@
                                 <span class="d-block">
                                     {{ `${order.shippingAddress.postalCode} ${order.shippingAddress.city}` }}
                                 </span>
-                                <span class="d-block">{{ order.shippingAddress.country }}</span>
+                                <span class="d-block">{{ formatCountry(order.shippingAddress.country) }}</span>
                                 <span v-if="order.shippingAddress.phone" class="d-block">
                                     {{ order.shippingAddress.phone }}
                                 </span>
@@ -163,7 +163,7 @@ import OrderQuote from '@/components/features/orders/OrderQuote.vue'
 import ErrorMessage from '@/components/ui/ErrorMessage.vue'
 import { localeRoute } from '@/router/locale'
 import { useOrdersStore } from '@/stores'
-import { formatDate, formatDateTime, formatMoney } from '@/utils'
+import { formatCountry, formatDate, formatDateTime, formatMoney } from '@/utils'
 import { isCancellable, STATUS_COLORS } from '@/utils/orderStatus'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'

@@ -164,7 +164,6 @@
             "country": "Země",
             "phone": "Telefon"
         },
-        "countryName": "Česko",
         "countryHint": "Doručujeme pouze v rámci Česka.",
         "hints": {
             "postalCode": "Například 110 00",

@@ -104,7 +104,7 @@
                             <p>
                                 {{ `${detailsOrder.shippingAddress.postalCode} ${detailsOrder.shippingAddress.city}` }}
                             </p>
-                            <p>{{ detailsOrder.shippingAddress.country }}</p>
+                            <p>{{ formatCountry(detailsOrder.shippingAddress.country) }}</p>
                             <p v-if="detailsOrder.shippingAddress.phone">{{ detailsOrder.shippingAddress.phone }}</p>
                         </v-col>
                     </v-row>
@@ -181,7 +181,7 @@ import AdminDataTable from '@/components/features/admin/AdminDataTable.vue'
 import { useOrdersStore } from '@/stores'
 
 // Utilities
-import { formatDate, formatDateTime, formatMoney } from '@/utils'
+import { formatCountry, formatDate, formatDateTime, formatMoney } from '@/utils'
 import { logger } from '@/utils/logger'
 import { STATUS_COLORS } from '@/utils/orderStatus'
 

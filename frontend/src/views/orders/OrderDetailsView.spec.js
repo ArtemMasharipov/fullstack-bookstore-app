@@ -96,6 +96,17 @@ describe('OrderDetailsView', () => {
         expect(api.get).toHaveBeenCalledWith('o1')
     })
 
+    it('names the country of the address', async () => {
+        api.get.mockResolvedValueOnce(order())
+
+        await mount()
+
+        await vi.waitFor(() => expect(document.body.textContent).toContain('ORD-20261015-000001'))
+        const lines = [...document.querySelectorAll('address span')].map((span) => span.textContent.trim())
+        expect(lines).toContain('Česko')
+        expect(lines).not.toContain('CZ')
+    })
+
     it.each([
         ['a pending unpaid order', {}, true],
         ['a pending order whose payment failed', { paymentStatus: 'failed' }, true],
