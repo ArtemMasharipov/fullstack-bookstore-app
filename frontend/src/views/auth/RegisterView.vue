@@ -20,9 +20,7 @@
                         <register-form />
                         <div class="text-center mt-4">
                             <span class="text-medium-emphasis">Already have an account?</span>
-                            <v-btn variant="text" color="primary" :to="localeRoute('Login')" density="compact">
-                                Login
-                            </v-btn>
+                            <v-btn variant="text" color="primary" :to="loginLink" density="compact"> Login </v-btn>
                         </div>
                     </v-card-text>
                 </v-card>
@@ -32,6 +30,12 @@
 </template>
 
 <script setup>
-import { localeRoute } from '@/router/locale'
+import { loginRoute } from '@/router/redirect'
 import RegisterForm from '@/components/features/auth/RegisterForm.vue'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+// Signing in instead returns to the same page; the sign-in form checks the path
+const loginLink = computed(() => loginRoute(route.query.redirect || undefined))
 </script>

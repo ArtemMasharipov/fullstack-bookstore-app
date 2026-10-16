@@ -116,10 +116,9 @@ for (const initial of ['cs', 'en']) {
     test(`${initial}: guest admin destination and direct 404 retain locale; unknown text is safe`, async ({ page }) => {
         const prefix = initial === 'en' ? '/en' : ''
         await page.goto(`${prefix}/admin?tab=books#inventory`)
-        await expect(page).toHaveURL(`http://localhost:4173${prefix}/login`)
-        expect(await page.evaluate(() => localStorage.getItem('redirectPath'))).toBe(
-            `${prefix}/admin?tab=books#inventory`
-        )
+        await expect(page).toHaveURL((url) => url.pathname === `${prefix}/login`)
+        expect(new URL(page.url()).searchParams.get('redirect')).toBe(`${prefix}/admin?tab=books#inventory`)
+        expect(await page.evaluate(() => localStorage.getItem('redirectPath'))).toBeNull()
         await page.goto(`${prefix}/unknown/a?x=1#missing`)
         await expect(page.getByRole('heading', { name: copy[initial].notFound, exact: true })).toBeVisible()
         await language(page, initial === 'en' ? 'cs' : 'en').click()

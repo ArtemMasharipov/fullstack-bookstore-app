@@ -32,7 +32,7 @@
             >
                 {{ t('cart.checkout') }}
             </v-btn>
-            <v-btn v-else color="primary" :to="localeRoute('Login')" block size="large" prepend-icon="mdi-login">
+            <v-btn v-else color="primary" :to="signInToCheckout" block size="large" prepend-icon="mdi-login">
                 {{ t('cart.loginToCheckout') }}
             </v-btn>
         </v-card-text>
@@ -41,10 +41,13 @@
 
 <script setup>
 import { localeRoute } from '@/router/locale'
+import { loginRoute } from '@/router/redirect'
 import { useAuthStore } from '@/stores'
 import { formatMoney } from '@/utils'
 import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
 defineProps({
     /** The server quote: { itemsTotal, shipping, vatAmount, total, freeShippingThreshold } in geller */
@@ -55,7 +58,10 @@ defineProps({
 })
 
 const { t } = useI18n()
+const router = useRouter()
 const { isAuthenticated } = storeToRefs(useAuthStore())
+// A guest signs in first and then comes straight back to checkout
+const signInToCheckout = computed(() => loginRoute(router.resolve(localeRoute('Checkout')).fullPath))
 </script>
 
 <style scoped>

@@ -1,0 +1,92 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, h, nextTick } from 'vue'
+import { createMemoryHistory, createRouter } from 'vue-router'
+import { createPinia, setActivePinia } from 'pinia'
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+
+const auth = vi.hoisted(() => ({ register: vi.fn() }))
+const cart = vi.hoisted(() => ({ fetch: vi.fn(), merge: vi.fn() }))
+vi.mock('@/services/api/authService', () => ({ authApi: auth }))
+vi.mock('@/services/api/cartApi', () => ({ cartApi: cart }))
+
+import { activateLocale, i18n, loadLocale } from '@/i18n'
+import en from '@/i18n/locales/en.json'
+import cs from '@/i18n/locales/cs.json'
+import { buildRoutes } from '@/router/buildRoutes'
+import RegisterForm from './RegisterForm.vue'
+
+// A token the client can read, valid until 2100
+const TOKEN = 'eyJhbGciOiJub25lIn0.' + btoa(JSON.stringify({ exp: 4102444800 })) + '.'
+const USER = { id: 'u2', email: 'petr@example.com', username: 'petr', name: 'Petr' }
+
+let app
+let router
+
+function testRouter() {
+    const prepare = (record) => ({
+        ...record,
+        component: { render: () => null },
+        ...(record.children ? { children: record.children.map(prepare) } : {}),
+    })
+    return createRouter({ history: createMemoryHistory(), routes: buildRoutes().map(prepare) })
+}
+
+beforeEach(async () => {
+    vi.stubGlobal('fetch', async (url) => new Response(JSON.stringify(String(url).includes('/en.json') ? en : cs)))
+    localStorage.clear()
+    auth.register.mockReset()
+    cart.fetch.mockReset()
+    cart.merge.mockReset()
+    auth.register.mockResolvedValue({ data: { user: USER, token: TOKEN } })
+    cart.fetch.mockResolvedValue({ items: [], quote: null })
+    setActivePinia(createPinia())
+})
+
+afterEach(() => {
+    app?.unmount()
+    document.body.replaceChildren()
+    vi.unstubAllGlobals()
+})
+
+async function mount(path, locale = 'cs') {
+    await loadLocale(locale)
+    activateLocale(locale)
+    router = testRouter()
+    await router.push(path)
+    const root = document.createElement('div')
+    document.body.append(root)
+    app = createApp({ render: () => h(components.VApp, null, { default: () => h(RegisterForm) }) })
+        .use(i18n)
+        .use(createVuetify({ components, directives }))
+        .use(router)
+    app.mount(root)
+    await router.isReady()
+    await nextTick()
+}
+
+async function register({ password = 'secret123', confirmPassword = password } = {}) {
+    for (const [id, value] of [
+        ['username', USER.username],
+        ['email', USER.email],
+        ['password', password],
+        ['confirmPassword', confirmPassword],
+    ]) {
+        const field = document.getElementById(id)
+        field.value = value
+        field.dispatchEvent(new Event('input'))
+    }
+    await nextTick()
+    document.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true }))
+}
+
+describe('RegisterForm', () => {
+    it('opens the page from ?redirect after registration', async () => {
+        await mount('/register?redirect=/orders')
+
+        await register()
+
+        await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/orders'))
+    })
+})

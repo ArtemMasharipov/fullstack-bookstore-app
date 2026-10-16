@@ -8,13 +8,14 @@
  *
  * Scenarios handled (in order):
  *   1. Public route  → pass through immediately (no token validation)
- *   2. Auth required → validate token; redirect to Login if invalid/missing
+ *   2. Auth required → validate token; send to Login with the way back in ?redirect if invalid/missing
  *   3. Guest-only    → redirect to Home if already authenticated
  *   4. Permission    → redirect to Unauthorized if check fails
  */
 
 import { useAuthStore } from '@/stores/auth'
 import { localeRoute, routeLocale } from '../locale'
+import { loginRoute } from '../redirect'
 import { ROUTE_NAMES } from '@/utils/constants/routes'
 
 const unifiedGuard = async (to, from, next) => {
@@ -40,8 +41,7 @@ const unifiedGuard = async (to, from, next) => {
 
     // 1. Route requires authentication.
     if (access.auth && !isAuthenticated) {
-        localStorage.setItem('redirectPath', to.fullPath)
-        return next(localeRoute(ROUTE_NAMES.LOGIN, {}, routeLocale(to)))
+        return next(loginRoute(to.fullPath, routeLocale(to)))
     }
 
     // 2. Route is guest-only (Login / Register).

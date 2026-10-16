@@ -30,8 +30,9 @@ describe('locale-aware access redirects', () => {
     it('keeps full EN destination when a guest is sent to EN Login', async () => {
         const routes = router()
         await routes.push('/en/orders/abc?sort=price#description')
-        expect(routes.currentRoute.value.fullPath).toBe('/en/login')
-        expect(localStorage.getItem('redirectPath')).toBe('/en/orders/abc?sort=price#description')
+        expect(routes.currentRoute.value.path).toBe('/en/login')
+        expect(routes.currentRoute.value.query.redirect).toBe('/en/orders/abc?sort=price#description')
+        expect(localStorage.getItem('redirectPath')).toBeNull()
     })
     it('sends an authenticated guest-only visitor to Home in the requested language', async () => {
         authenticate()

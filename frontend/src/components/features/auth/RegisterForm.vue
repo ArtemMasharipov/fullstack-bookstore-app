@@ -52,14 +52,15 @@
 </template>
 
 <script setup>
-import { localeRoute } from '@/router/locale'
+import { afterSignIn } from '@/router/redirect'
 import { useAuthStore } from '@/stores'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const { loading: authLoading, error: authError } = storeToRefs(authStore)
@@ -82,7 +83,7 @@ const handleSubmit = async () => {
             password: password.value,
             confirmPassword: confirmPassword.value,
         })
-        router.push(localeRoute('Home'))
+        await afterSignIn(router, route)
     } catch (error) {
         logger.error('Registration failed', error, 'RegisterForm')
     }

@@ -52,7 +52,7 @@
 
                             <div class="text-center mt-6">
                                 <span class="text-medium-emphasis">Don't have an account?</span>
-                                <v-btn variant="text" color="primary" :to="localeRoute('Register')" density="compact">
+                                <v-btn variant="text" color="primary" :to="registerRoute" density="compact">
                                     Register
                                 </v-btn>
                             </div>
@@ -66,13 +66,15 @@
 
 <script setup>
 import { localeRoute } from '@/router/locale'
+import { afterSignIn } from '@/router/redirect'
 import { useAuthStore } from '@/stores'
 import { logger } from '@/utils/logger'
 import { storeToRefs } from 'pinia'
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const { loading: authLoading, error: authError, isAuthenticated } = storeToRefs(authStore)
@@ -81,6 +83,11 @@ const formRef = ref(null)
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
+
+// Registration returns to the same page; the form that signs in checks the path
+const registerRoute = computed(() =>
+    localeRoute('Register', route.query.redirect ? { query: { redirect: route.query.redirect } } : {})
+)
 
 const handleSubmit = async () => {
     const { valid } = await formRef.value.validate()
@@ -92,15 +99,7 @@ const handleSubmit = async () => {
             password: password.value,
         })
 
-        if (isAuthenticated.value) {
-            const redirectPath = localStorage.getItem('redirectPath')
-            if (redirectPath) {
-                localStorage.removeItem('redirectPath')
-                router.push(redirectPath)
-            } else {
-                router.push(localeRoute('Home'))
-            }
-        }
+        if (isAuthenticated.value) await afterSignIn(router, route)
     } catch (error) {
         logger.error('Login failed', error, 'LoginForm')
     }
