@@ -24,8 +24,8 @@ Known limitations:
 - The catalogue, author pages, the profile and the admin panel are still in English only. The Czech texts are a
   draft.
 - The catalogue shows only the first 12 books, with no pager and a counter that reads "Showing 12 of 12 books".
-- Development tools (nodemon, ESLint 7) still depend on packages with known vulnerabilities and no fix;
-  [docs/dependency-audit.md](docs/dependency-audit.md) lists them with review dates.
+- Development tools (nodemon, ESLint 7) still depend on packages with known vulnerabilities and no fix within their
+  current major versions; [docs/dependency-audit.md](docs/dependency-audit.md) lists them with review dates.
 - The seed data is for checking the layout; there is no real catalogue yet.
 - Books without a cover leave an empty area in the catalogue and on the book page: the placeholder image is missing.
 
@@ -38,7 +38,7 @@ Known limitations:
 ## Tech stack
 
 - **Frontend:** Vue 3, Vuetify 3, Pinia 3, Vue Router 4, Vite 6, Axios 1.
-- **Backend:** Node.js 24, Express 4, Mongoose 8, MongoDB, JWT (`jsonwebtoken` 9), bcrypt 5, Helmet 8.
+- **Backend:** Node.js 24, Express 4, Mongoose 8, MongoDB, JWT (`jsonwebtoken` 9), bcrypt 6, Helmet 8.
 - **Tests:** Vitest 4.1.11, Supertest 7.3.0, mongodb-memory-server 11.3.0, happy-dom 20.14.5, Playwright 1.63.0.
 - **Tooling:** ESLint 7 and Prettier 2 (frontend), GitHub Actions.
 
@@ -81,7 +81,7 @@ Run each code block from the repository root; the install block starts one level
   fnm (`fnm install`, then `fnm use`; both read `.nvmrc`), nvm-windows (`nvm install 24`, then `nvm use 24`) or volta
   (`volta install node@24`); `node -v` must print `v24.x.x`.
 - **Docker** (optional) replaces a local Node 24: run npm in a `node:24` container, with `node_modules` in its own
-  volume (native packages built on the host, such as `bcrypt`, do not load on Linux). From the repository root; in Git
+  volume (native packages built on the host do not load on Linux). From the repository root; in Git
   Bash on Windows prefix the command with `MSYS_NO_PATHCONV=1` and write `$PWD` as a full path such as
   `D:/path/to/fullstack-bookstore-app`:
   ```bash

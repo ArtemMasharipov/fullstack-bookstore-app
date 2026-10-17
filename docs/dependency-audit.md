@@ -29,7 +29,8 @@ bcrypt is the one dependency updated across a major version, from 5.1.1 to 6.0.0
 - bcrypt 5 downloaded its native binary during installation with `@mapbox/node-pre-gyp`, which depends on `tar` 6.
   Every `tar` 6 release has known vulnerabilities, one of them critical. bcrypt 5.1.1 and node-pre-gyp 1.0.11 are the
   last releases of their major versions, so no update within them removes `tar`.
-- bcrypt 6 ships prebuilt binaries inside the package. Installing it downloads nothing and pulls in neither
+- bcrypt 6 ships prebuilt binaries inside the package for Linux, macOS and Windows on x64 and arm64 (and Linux on
+  arm), so installing it there downloads nothing; on other platforms it is compiled from source. It pulls in neither
   node-pre-gyp nor `tar`.
 - Its other breaking change is Node.js 18 or newer; this project runs on Node.js 24. The API (`genSalt`, `hash`,
   `compare`) and the hash format (`$2b$`) are unchanged, and a test signs in with a password hashed by bcrypt 5.
