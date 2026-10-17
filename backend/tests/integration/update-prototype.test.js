@@ -23,7 +23,7 @@ describe("PUT /api/v1/books/:id: an update with a dotted __proto__ path", () => 
     const token = await loginAs(app, admin);
     const book = await createBook();
 
-    await request(app)
+    const res = await request(app)
       .put(`/api/v1/books/${book.id}`)
       .set("Authorization", `Bearer ${token}`)
       .send({ $set: { "__proto__.x": "anything" } });
@@ -31,5 +31,8 @@ describe("PUT /api/v1/books/:id: an update with a dotted __proto__ path", () => 
     expect(Object.hasOwn(Object.prototype, "$fullPath")).toBe(false);
     expect(Object.hasOwn(Object.prototype, "$parentSchemaDocArray")).toBe(false);
     expect((await Book.findById(book.id).lean()).title).toBe("R.U.R.");
+    // The update reached Mongoose: 200 today, 400 once the API validates update fields.
+    // 401, 403 or 404 would mean the checks above proved nothing.
+    expect([200, 400]).toContain(res.status);
   });
 });
