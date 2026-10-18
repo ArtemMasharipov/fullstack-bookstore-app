@@ -35,8 +35,9 @@ password, about ten times faster than for an existing one: the time told whether
   `AUTH_RATE_LIMIT_MAX` failed requests to `/api/v1/auth` in `AUTH_RATE_LIMIT_WINDOW_MINUTES` (10 in 15 by default)
   the answer is 429 `RATE_LIMITED` with `Retry-After`. Only answers with status 400 and up count, so signing in and the
   normal use of `/auth` never reach the limit, while guessing passwords, probing taken emails and guessing the current
-  password do. The client is the request's IP address; `TRUST_PROXY` says how many reverse proxies' `X-Forwarded-For`
-  to trust (none by default, so the header cannot be used to dodge the limit).
+  password do. Signing out and `GET /auth/me` need a live session, guess nothing and are never limited, so a blocked
+  address can still end its sessions. The client is the request's IP address; `TRUST_PROXY` says how many reverse
+  proxies' `X-Forwarded-For` to trust (none by default, so the header cannot be used to dodge the limit).
 - **Sign-in takes the same time for every account** (`utils/passwords.js`): the password is checked in every case,
   against a dummy hash of the same cost when there is no account, and a deactivated account is refused after the
   check, with the same answer.

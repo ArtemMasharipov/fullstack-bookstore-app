@@ -56,6 +56,19 @@ describe("failed attempts on /api/v1/auth", () => {
     expect((await wrongLogin(user.email)).status).toBe(429);
   });
 
+  it("still signs out and answers the current user from a blocked address", async () => {
+    const user = await createUser();
+    const token = await loginAs(app, user);
+    for (let attempt = 0; attempt <= LIMIT; attempt += 1) await wrongLogin(user.email);
+    expect((await wrongLogin(user.email)).status).toBe(429);
+    const me = () => request(app).get("/api/v1/auth/me").set("Authorization", `Bearer ${token}`);
+
+    expect((await me()).status).toBe(200);
+    const out = await request(app).post("/api/v1/auth/logout").set("Authorization", `Bearer ${token}`);
+    expect(out.status).toBe(204);
+    expect((await me()).status).toBe(401);
+  });
+
   it("keeps counting when the client changes X-Forwarded-For", async () => {
     const user = await createUser();
     for (let attempt = 0; attempt < LIMIT; attempt += 1) {

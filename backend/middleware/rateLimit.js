@@ -5,7 +5,9 @@
  * signing in and the normal use of /auth never reach the limit, while guessing
  * passwords, probing for taken emails and guessing the current password do.
  * The client is req.ip, so behind a reverse proxy TRUST_PROXY has to say how
- * many proxies there are.
+ * many proxies there are. Signing out and reading the current user need a live
+ * session, guess nothing and are never limited: a blocked address can still
+ * end its sessions.
  */
 
 import { MemoryStore, rateLimit } from "express-rate-limit";
@@ -15,10 +17,14 @@ import { AppError } from "../utils/errors.js";
 // The counts live in this process; one store, so tests can reset it
 const store = new MemoryStore();
 
+// Paths inside the /auth router
+const NEVER_LIMITED = new Set(["/logout", "/me"]);
+
 export const authRateLimit = rateLimit({
   windowMs: config.authRateLimit.windowMinutes * 60 * 1000,
   limit: config.authRateLimit.max,
   skipSuccessfulRequests: true,
+  skip: (req) => NEVER_LIMITED.has(req.path),
   standardHeaders: "draft-8",
   legacyHeaders: false,
   store,
