@@ -117,6 +117,7 @@
         "increase": "Increase quantity"
     },
     "auth": {
+        "tooManyAttempts": "Too many attempts. Try again in {minutes} min.",
         "fields": {
             "email": "Email",
             "password": "Password",

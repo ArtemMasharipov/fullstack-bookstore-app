@@ -112,6 +112,24 @@ describe('LoginForm', () => {
         expect(router.currentRoute.value.fullPath).toBe('/login?redirect=/checkout')
     })
 
+    it.each([
+        ['en', '/en/login', 'Too many attempts. Try again in 10 min.'],
+        ['cs', '/login', 'Příliš mnoho pokusů. Zkuste to znovu za 10 min.'],
+    ])('tells when to try again after too many attempts (%s)', async (locale, path, text) => {
+        auth.login.mockRejectedValueOnce(
+            Object.assign(new Error('Too many failed attempts'), {
+                status: 429,
+                code: 'RATE_LIMITED',
+                details: { retryAfter: 600 },
+            })
+        )
+        await mount(path, locale)
+
+        await signIn()
+
+        await vi.waitFor(() => expect(document.querySelector('.v-alert')?.textContent).toContain(text))
+    })
+
     it('speaks Czech on the Czech page', async () => {
         await mount('/login')
 

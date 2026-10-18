@@ -107,6 +107,9 @@ try {
   process.env.MONGODB_URI = mongod.getUri("e2e");
   process.env.NODE_ENV = "test";
   process.env.JWT_SECRET = randomBytes(32).toString("hex");
+  // The whole suite runs from one address; its own failed sign-ins must not
+  // reach the limit, which the backend tests check
+  process.env.AUTH_RATE_LIMIT_MAX ||= "1000";
 
   const { default: app } = await import("../app.js");
   const { connectDatabase } = await import("../config/index.js");

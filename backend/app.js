@@ -25,6 +25,9 @@ const app = express();
 // SECURITY & MIDDLEWARE
 // =============================================================================
 
+// How many reverse proxies' X-Forwarded-For to trust for req.ip (0: none)
+app.set("trust proxy", config.trustProxy);
+
 // Security headers
 app.use(helmet());
 

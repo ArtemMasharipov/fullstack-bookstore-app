@@ -117,6 +117,7 @@
         "increase": "Zvýšit množství"
     },
     "auth": {
+        "tooManyAttempts": "Příliš mnoho pokusů. Zkuste to znovu za {minutes} min.",
         "fields": {
             "email": "E-mail",
             "password": "Heslo",

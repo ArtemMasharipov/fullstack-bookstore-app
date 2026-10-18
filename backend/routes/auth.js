@@ -7,10 +7,14 @@ import express from "express";
 import * as authController from "../controllers/authController.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { protect } from "../middleware/auth.js";
+import { authRateLimit } from "../middleware/rateLimit.js";
 import { validate } from "../middleware/validate.js";
 import { loginBody, passwordBody, profileBody, registerBody } from "../schemas/auth.js";
 
 const router = express.Router();
+
+// Every auth endpoint: failed requests per client are limited
+router.use(authRateLimit);
 
 // =============================================================================
 // PUBLIC ROUTES

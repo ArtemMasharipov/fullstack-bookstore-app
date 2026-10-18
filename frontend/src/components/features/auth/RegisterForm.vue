@@ -60,7 +60,7 @@
         </v-btn>
 
         <v-alert v-if="errorKey" type="error" class="mt-4" density="compact">
-            {{ t(errorKey) }}
+            {{ t(errorKey, errorParams) }}
         </v-alert>
     </v-form>
 </template>
@@ -89,6 +89,7 @@ const password = ref('')
 const confirmPassword = ref('')
 const showPassword = ref(false)
 const errorKey = ref(null)
+const errorParams = ref({})
 
 const handleSubmit = async () => {
     const { valid } = await formRef.value.validate()
@@ -104,8 +105,15 @@ const handleSubmit = async () => {
         })
         await afterSignIn(router, route)
     } catch (error) {
-        // The server does not say which of the two is taken
-        errorKey.value = error.code === 'CONFLICT' ? 'auth.register.taken' : resolveErrorKey(error)
+        errorParams.value = {}
+        if (error.status === 429) {
+            // Too many failed attempts from this device: the server says when to try again
+            errorKey.value = 'auth.tooManyAttempts'
+            errorParams.value = { minutes: Math.ceil((error.details?.retryAfter ?? 60) / 60) }
+        } else {
+            // The server does not say which of the two is taken
+            errorKey.value = error.code === 'CONFLICT' ? 'auth.register.taken' : resolveErrorKey(error)
+        }
         logger.error('Registration failed', error, 'RegisterForm')
     }
 }

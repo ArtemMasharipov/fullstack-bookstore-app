@@ -12,6 +12,7 @@ import {
   assertLocalConnection,
   assertLocalMongoUri,
 } from "../../config/mongo-guard.js";
+import { resetAuthRateLimit } from "../../middleware/rateLimit.js";
 
 async function clearCollections() {
   const collections = Object.values(mongoose.connection.collections);
@@ -36,7 +37,11 @@ export function useTestDatabase() {
     await ensureIndexes();
   });
 
-  afterEach(clearCollections);
+  // The failed sign-in counts too: every test starts below the limit
+  afterEach(async () => {
+    await clearCollections();
+    await resetAuthRateLimit();
+  });
 
   afterAll(async () => {
     await mongoose.disconnect();

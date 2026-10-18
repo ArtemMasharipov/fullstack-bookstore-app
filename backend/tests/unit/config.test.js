@@ -83,6 +83,8 @@ describe("loadConfig result", () => {
         shippingFee: 9900,
         freeShippingThreshold: 100000,
       },
+      authRateLimit: { max: 10, windowMinutes: 15 },
+      trustProxy: 0,
     });
     expect(Object.isFrozen(config)).toBe(true);
     expect(Object.isFrozen(config.commerce)).toBe(true);
@@ -196,6 +198,9 @@ describe("empty strings", () => {
     COMMERCE_VAT_RATE_PERCENT: "21",
     COMMERCE_SHIPPING_FEE: "4900",
     COMMERCE_FREE_SHIPPING_THRESHOLD: "50000",
+    AUTH_RATE_LIMIT_MAX: "50",
+    AUTH_RATE_LIMIT_WINDOW_MINUTES: "30",
+    TRUST_PROXY: "2",
   };
 
   it.each(Object.keys(everything))('treat %s="" as not set', (name) => {
@@ -435,6 +440,40 @@ describe("commerce settings", () => {
     for (const value of values) {
       expect(outcome(inDevelopment({ [name]: value })).problems).toEqual([
         about(name),
+      ]);
+    }
+  });
+});
+
+describe("sign-in limits and proxies", () => {
+  it("defaults to 10 failed attempts in 15 minutes and no trusted proxy", () => {
+    const config = loadConfig(inDevelopment());
+
+    expect(config.authRateLimit).toEqual({ max: 10, windowMinutes: 15 });
+    expect(config.trustProxy).toBe(0);
+  });
+
+  it("reads the limit and the proxies from the environment", () => {
+    const config = loadConfig(
+      inDevelopment({
+        AUTH_RATE_LIMIT_MAX: "1000",
+        AUTH_RATE_LIMIT_WINDOW_MINUTES: "60",
+        TRUST_PROXY: "1",
+      })
+    );
+
+    expect(config.authRateLimit).toEqual({ max: 1000, windowMinutes: 60 });
+    expect(config.trustProxy).toBe(1);
+  });
+
+  it.each([
+    ["AUTH_RATE_LIMIT_MAX", ["0", "10001", "1.5", "abc"], "from 1 to 10000"],
+    ["AUTH_RATE_LIMIT_WINDOW_MINUTES", ["0", "1441", "abc"], "from 1 to 1440"],
+    ["TRUST_PROXY", ["-1", "11", "abc"], "from 0 to 10"],
+  ])("rejects a bad %s", (name, values, range) => {
+    for (const value of values) {
+      expect(outcome(inDevelopment({ [name]: value })).problems).toEqual([
+        `${name} must be a whole number ${range}`,
       ]);
     }
   });

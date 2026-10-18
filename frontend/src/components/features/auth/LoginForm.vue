@@ -47,7 +47,7 @@
                             </v-btn>
 
                             <v-alert v-if="errorKey" type="error" class="mt-4" density="compact">
-                                {{ t(errorKey) }}
+                                {{ t(errorKey, errorParams) }}
                             </v-alert>
 
                             <div class="text-center mt-6">
@@ -87,6 +87,7 @@ const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const errorKey = ref(null)
+const errorParams = ref({})
 
 // Registration returns to the same page; the form that signs in checks the path
 const registerRoute = computed(() =>
@@ -106,8 +107,15 @@ const handleSubmit = async () => {
 
         if (isAuthenticated.value) await afterSignIn(router, route)
     } catch (error) {
-        // On this form a 401 means the email or the password, not an ended session
-        errorKey.value = error.status === 401 ? 'auth.login.invalidCredentials' : resolveErrorKey(error)
+        errorParams.value = {}
+        if (error.status === 429) {
+            // Too many failed attempts from this device: the server says when to try again
+            errorKey.value = 'auth.tooManyAttempts'
+            errorParams.value = { minutes: Math.ceil((error.details?.retryAfter ?? 60) / 60) }
+        } else {
+            // On this form a 401 means the email or the password, not an ended session
+            errorKey.value = error.status === 401 ? 'auth.login.invalidCredentials' : resolveErrorKey(error)
+        }
         logger.error('Login failed', error, 'LoginForm')
     }
 }

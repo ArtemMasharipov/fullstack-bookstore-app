@@ -135,6 +135,9 @@ if (-not (Test-Path backend/.env)) { Copy-Item backend/.env.example backend/.env
 | `JWT_EXPIRATION`, `JWT_AUDIENCE`, `JWT_ISSUER` | Defaults `7d`, `bookstore-web` and `bookstore-api`; every request checks audience and issuer    |
 | `CORS_ORIGIN`                                  | Allowed browser origin; default `http://localhost:8080`; in production **required and not `*`** |
 | `CORS_METHODS`, `CORS_CREDENTIALS`             | Optional; defaults `GET,POST,PUT,PATCH,DELETE` and `false`                                      |
+| `AUTH_RATE_LIMIT_MAX`                          | Failed requests to `/api/v1/auth` per client in the window before 429; default `10`             |
+| `AUTH_RATE_LIMIT_WINDOW_MINUTES`               | The length of that window in minutes; default `15`                                              |
+| `TRUST_PROXY`                                  | Reverse proxies in front of the API, so the limit sees each client's address; default `0`       |
 | `EXPOSE_ERROR_DETAILS`                         | `true` puts error messages and stack traces into responses; ignored in production               |
 | `COMMERCE_VAT_RATE_PERCENT`                    | VAT rate included in prices, whole percent; demo default `0` (books are zero-rated in Czechia)  |
 | `COMMERCE_SHIPPING_FEE`                        | Shipping fee in geller (1/100 CZK); demo default `9900`                                         |

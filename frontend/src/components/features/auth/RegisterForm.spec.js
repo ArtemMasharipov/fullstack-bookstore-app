@@ -119,6 +119,24 @@ describe('RegisterForm', () => {
         expect(document.body.textContent).not.toContain('Email already registered')
     })
 
+    it.each([
+        ['en', '/en/register', 'Too many attempts. Try again in 10 min.'],
+        ['cs', '/register', 'Příliš mnoho pokusů. Zkuste to znovu za 10 min.'],
+    ])('tells when to try again after too many attempts (%s)', async (locale, path, text) => {
+        auth.register.mockRejectedValueOnce(
+            Object.assign(new Error('Too many failed attempts'), {
+                status: 429,
+                code: 'RATE_LIMITED',
+                details: { retryAfter: 600 },
+            })
+        )
+        await mount(path, locale)
+
+        await register()
+
+        await vi.waitFor(() => expect(document.querySelector('.v-alert')?.textContent).toContain(text))
+    })
+
     it('asks for matching passwords', async () => {
         await mount('/register')
 

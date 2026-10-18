@@ -35,6 +35,16 @@ bcrypt is the one dependency updated across a major version, from 5.1.1 to 6.0.0
 - Its other breaking change is Node.js 18 or newer; this project runs on Node.js 24. The API (`genSalt`, `hash`,
   `compare`) and the hash format (`$2b$`) are unchanged, and a test signs in with a password hashed by bcrypt 5.
 
+## express-rate-limit 8.7.0
+
+The one runtime dependency added since, on 2026-10-18, for the limit of failed sign-in attempts:
+
+- It answers the limit with the standard `RateLimit` and `Retry-After` headers, groups IPv6 clients by subnet and warns
+  about a `trust proxy` setting that does not match the requests. A limiter written here would repeat that work.
+- 8.7.0 was published on 2026-08-29; 8.7.1 (2026-10-06) was less than 14 days old. It brings in `ip-address` 10.7.3
+  (2026-10-01) and its own `debug` 4.4.3. `npm audit --omit=dev` in `backend/` still finds no vulnerabilities.
+- The counts live in the API process (`MemoryStore`): a restart forgets them, and two processes would count apart.
+
 ## Exceptions (development only)
 
 These packages are installed by `npm ci` for development and tests. They are not part of the API process or the
