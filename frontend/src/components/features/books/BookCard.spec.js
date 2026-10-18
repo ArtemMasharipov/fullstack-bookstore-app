@@ -111,7 +111,7 @@ describe('BookCard', () => {
     })
 
     it('shows no admin button to an admin', async () => {
-        useAuthStore().$patch({ permissions: ['admin:access'] })
+        useAuthStore().$patch({ user: { role: 'admin' } })
         const card = await mount({ book: BOOK })
 
         expect(card.textContent).not.toContain('Manage in Admin')

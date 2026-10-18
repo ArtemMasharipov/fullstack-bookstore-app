@@ -1,6 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
+
+const auth = vi.hoisted(() => ({ getCurrentUser: vi.fn() }))
+vi.mock('@/services/api/authService', () => ({ authApi: auth }))
+
 import { buildRoutes } from '../buildRoutes'
 import unifiedGuard from './unified'
 import { useAuthStore } from '@/stores/auth'
@@ -17,15 +21,20 @@ function router() {
     instance.beforeEach(unifiedGuard)
     return instance
 }
-function authenticate(permissions = []) {
+// A signed-in session whose cached user has this role
+function authenticate(role = 'admin') {
     const token = 'eyJhbGciOiJub25lIn0.' + btoa(JSON.stringify({ exp: 4102444800 })) + '.'
     localStorage.setItem('token', token)
-    useAuthStore().$patch({ token, user: { name: 'Local admin', role: 'admin' }, permissions })
+    useAuthStore().$patch({ token, user: { name: 'Local admin', role } })
 }
+
+// What GET /auth/me answers: the user as the server has it
+const serverSays = (role) => auth.getCurrentUser.mockResolvedValue({ success: true, data: { id: 'u1', role } })
 
 beforeEach(() => {
     localStorage.clear()
     setActivePinia(createPinia())
+    auth.getCurrentUser.mockReset()
 })
 describe('locale-aware access redirects', () => {
     it('keeps full EN destination when a guest is sent to EN Login', async () => {
@@ -56,13 +65,59 @@ describe('locale-aware access redirects', () => {
         await routes.push('/en/login')
         expect(routes.currentRoute.value.fullPath).toBe('/en')
     })
-    it('preserves admin permission enforcement and language', async () => {
-        authenticate()
+})
+
+describe('the admin area', () => {
+    it('lets an admin into the admin area once the server confirms the role', async () => {
+        authenticate('admin')
+        serverSays('admin')
         const routes = router()
-        await routes.push('/en/admin/books')
-        expect(routes.currentRoute.value.fullPath).toBe('/en/unauthorized')
-        useAuthStore().permissions = ['admin:access']
+
         await routes.push('/en/admin')
+
         expect(routes.currentRoute.value.name).toBe('AdminDashboard')
+    })
+
+    it('sends a cached admin to Unauthorized when the server says user', async () => {
+        authenticate('admin')
+        serverSays('user')
+        const routes = router()
+
+        await routes.push('/en/admin/books')
+
+        expect(routes.currentRoute.value.fullPath).toBe('/en/unauthorized')
+        expect(useAuthStore().user.role).toBe('user')
+    })
+
+    it('asks the server once per app load', async () => {
+        authenticate('admin')
+        serverSays('admin')
+        const routes = router()
+
+        await routes.push('/en/admin')
+        await routes.push('/en/admin/books')
+
+        expect(routes.currentRoute.value.name).toBe('AdminBooks')
+        expect(auth.getCurrentUser).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps the cached role when the server cannot be reached', async () => {
+        authenticate('admin')
+        auth.getCurrentUser.mockRejectedValue(Object.assign(new Error('offline'), { code: 'NETWORK_ERROR' }))
+        const routes = router()
+
+        await routes.push('/en/admin')
+
+        expect(routes.currentRoute.value.name).toBe('AdminDashboard')
+    })
+
+    it('sends a user to Unauthorized in the same language', async () => {
+        authenticate('user')
+        serverSays('user')
+        const routes = router()
+
+        await routes.push('/admin')
+
+        expect(routes.currentRoute.value.fullPath).toBe('/unauthorized')
     })
 })

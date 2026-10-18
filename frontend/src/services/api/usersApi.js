@@ -1,5 +1,4 @@
 import baseApi from './baseApi'
-import { jwtDecode } from 'jwt-decode'
 
 /**
  * Users API - direct axios implementation
@@ -23,12 +22,5 @@ export const usersApi = {
     delete: (id) => {
         if (!id) throw new Error('User ID is required')
         return baseApi.delete(`/users/${id}`).then((res) => res.data)
-    },
-
-    fetchUserPermissions: () => {
-        const token = localStorage.getItem('token')
-        if (!token) throw new Error('No token found')
-        const decoded = jwtDecode(token)
-        return decoded.permissions
     },
 }

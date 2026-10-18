@@ -182,10 +182,10 @@ if (savedTheme === 'dark' || savedTheme === 'light') {
     theme.global.name.value = savedTheme
 }
 
-const { isAuthenticated, user } = storeToRefs(authStore)
+// isAdmin: the admin capability of the user's role (src/auth/capabilities.js)
+const { isAuthenticated, isAdmin, user } = storeToRefs(authStore)
 
 const drawer = ref(false)
-const isAdmin = computed(() => user.value?.role === 'admin')
 const cartItemsCount = computed(() => cartStore.totalQuantity)
 const userInitials = computed(() => {
     const name = user.value?.name || ''

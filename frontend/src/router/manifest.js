@@ -9,7 +9,7 @@
  * Access policy shape:
  *   auth        {boolean} — route requires an authenticated user
  *   guestOnly   {boolean} — redirect to Home when user is already logged in
- *   permission  {string}  — user must pass authStore.hasPermission(permission)
+ *   capability  {string}  — the user's role must have it: can(role, capability) in src/auth/capabilities.js
  *
  * redirectTo {string} — instead of a view: the id of the route this path now
  *   opens, with the same params, query and language
@@ -125,7 +125,7 @@ export const routeManifest = [
         id: 'Admin',
         path: '/admin',
         layout: () => import('@/views/admin/AdminWrapper.vue'),
-        access: { auth: true, permission: 'admin:access' },
+        access: { auth: true, capability: 'admin' },
         children: [
             {
                 id: 'AdminDashboard',

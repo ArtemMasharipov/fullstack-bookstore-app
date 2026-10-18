@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { readFileSync, readdirSync } from 'node:fs'
 import { SMOKE_BOOK_TITLE } from '../../backend/scripts/seed-data.js'
+import { SEEDED } from './credentials.js'
+import { signIn } from './support.js'
 
 const cardFor = (page) => page.locator('.book-card').filter({ hasText: SMOKE_BOOK_TITLE })
 const capture = async (page, info, name) => {
@@ -219,42 +221,26 @@ for (const locale of ['cs', 'en']) {
     })
 }
 
-test('controlled real auth store preserves permission guard and renders real admin header', async ({
+test('the seeded admin opens the admin area and switches its language from the admin header', async ({
     page,
 }, testInfo) => {
-    await page.goto('/en/')
+    await signIn(page, SEEDED.admin, '/en')
+    await page.goto('/en/admin')
     await expect(page.locator('html')).toHaveAttribute('lang', 'en')
-    // Component/guard evidence only: no seeded admin login or server authorization is claimed.
-    await page.evaluate(async () => {
-        const app = document.querySelector('#app').__vue_app__
-        const auth = app.config.globalProperties.$pinia._s.get('auth')
-        const token = `fixture.${btoa(JSON.stringify({ exp: 4102444800 }))}.fixture`
-        localStorage.setItem('token', token)
-        auth.$patch({ token, user: { name: 'Controlled Admin', role: 'admin' }, permissions: [] })
-        await app.config.globalProperties.$router.push('/en/admin/settings')
-    })
-    await expect(page).toHaveURL('http://localhost:4173/en/unauthorized')
-    await page.evaluate(async () => {
-        const app = document.querySelector('#app').__vue_app__
-        app.config.globalProperties.$pinia._s.get('auth').permissions = ['admin:access']
-        await app.config.globalProperties.$router.push('/en/admin/settings')
-    })
     await expect(page.getByRole('heading', { name: 'Admin Panel', exact: true })).toBeVisible()
     const header = page.locator('.admin-content header')
     await expect(header.locator('button[lang="en"]')).toHaveAttribute('aria-pressed', 'true')
-    await capture(page, testInfo, 'en-admin-header-controlled-store')
+    await capture(page, testInfo, 'en-admin-header')
     await header.locator('button[lang="cs"]').focus()
     await header.locator('button[lang="cs"]').press('Enter')
-    await expect(page).toHaveURL('http://localhost:4173/admin/settings')
+    await expect(page).toHaveURL('http://localhost:4173/admin')
     await expect(page.getByRole('heading', { name: 'Administrace', exact: true })).toBeVisible()
     await expect(header.locator('button[lang="cs"]')).toBeFocused()
     await expect(header.locator('button[lang="cs"]')).toHaveAttribute('aria-pressed', 'true')
-    await capture(page, testInfo, 'cs-admin-header-controlled-store')
+    await capture(page, testInfo, 'cs-admin-header')
 })
 
-test('narrow public and controlled-store admin headers keep full language controls visible and fitted', async ({
-    page,
-}, testInfo) => {
+test('narrow public and admin headers keep full language controls visible and fitted', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 375, height: 812 })
     const checkHeader = async (header, locale, name) => {
         const labels = locale === 'en' ? ['Czech', 'English'] : ['\u010ce\u0161tina', 'Angli\u010dtina']
@@ -317,21 +303,14 @@ test('narrow public and controlled-store admin headers keep full language contro
     await publicHeader.locator('button[lang="cs"]').click()
     await expect(page).toHaveURL('http://localhost:4173/books')
     await checkHeader(publicHeader, 'cs', 'cs-public-header-375')
-    // Controlled component/guard rendering only; live server authorization is unavailable.
-    await page.evaluate(async () => {
-        const app = document.querySelector('#app').__vue_app__
-        const auth = app.config.globalProperties.$pinia._s.get('auth')
-        const token = `fixture.${btoa(JSON.stringify({ exp: 4102444800 }))}.fixture`
-        localStorage.setItem('token', token)
-        auth.$patch({ token, user: { name: 'Controlled Admin', role: 'admin' }, permissions: ['admin:access'] })
-        await app.config.globalProperties.$router.push('/en/admin/settings')
-    })
+    await signIn(page, SEEDED.admin, '/en')
+    await page.goto('/en/admin')
     const adminHeader = page.locator('.admin-content header')
     await expect(adminHeader).toBeVisible()
-    await checkHeader(adminHeader, 'en', 'en-admin-header-controlled-store-375')
+    await checkHeader(adminHeader, 'en', 'en-admin-header-375')
     await adminHeader.locator('button[lang="cs"]').focus()
     await adminHeader.locator('button[lang="cs"]').press('Enter')
-    await expect(page).toHaveURL('http://localhost:4173/admin/settings')
-    await checkHeader(adminHeader, 'cs', 'cs-admin-header-controlled-store-375')
+    await expect(page).toHaveURL('http://localhost:4173/admin')
+    await checkHeader(adminHeader, 'cs', 'cs-admin-header-375')
     await expect(adminHeader.locator('button[lang="cs"]')).toBeFocused()
 })

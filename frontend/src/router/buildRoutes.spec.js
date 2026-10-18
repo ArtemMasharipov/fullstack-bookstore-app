@@ -31,7 +31,7 @@ describe('localized route manifest', () => {
                 .sort()
         ).toEqual(['AdminAuthors', 'AdminBooks', 'AdminDashboard', 'AdminOrders', 'AdminSettings', 'AdminUsers'])
         for (const path of ['/admin', '/en/admin', '/en/admin/books']) {
-            expect(routes.resolve(path).meta.access).toEqual({ auth: true, permission: 'admin:access' })
+            expect(routes.resolve(path).meta.access).toEqual({ auth: true, capability: 'admin' })
         }
         expect(routes.resolve('/en/admin').name).toBe('AdminDashboard')
         expect(routes.getRoutes().find((r) => r.path.endsWith('/admin') && r.children.length)?.name).toBeUndefined()

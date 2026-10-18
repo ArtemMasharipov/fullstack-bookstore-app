@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
+import { SEEDED } from './e2e/credentials.js'
 
 // The smoke test starts its own servers on dedicated ports: the API (an
 // in-memory MongoDB, never the database of backend/.env) on 3100 and the built
@@ -23,11 +24,11 @@ export default defineConfig({
             // does this on Linux and macOS only; on Windows it kills the process tree, and a later start of the
             // server removes the directory once it is an hour old.
             gracefulShutdown: { signal: 'SIGTERM', timeout: 10000 },
-            // Fixed test passwords for the seeded users; not secrets
+            // Fixed test passwords for the seeded users (e2e/credentials.js); not secrets
             env: {
                 E2E_API_PORT: '3100',
-                SEED_ADMIN_PASSWORD: 'e2e-admin-pass',
-                SEED_USER_PASSWORD: 'e2e-user-pass',
+                SEED_ADMIN_PASSWORD: SEEDED.admin.password,
+                SEED_USER_PASSWORD: SEEDED.user.password,
             },
         },
         {

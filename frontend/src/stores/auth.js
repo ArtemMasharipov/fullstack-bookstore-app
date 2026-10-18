@@ -1,3 +1,4 @@
+import { can } from '@/auth/capabilities'
 import { useNotifications } from '@/composables/useNotifications'
 import { authApi } from '@/services/api/authService'
 import { jwtDecode } from 'jwt-decode'
@@ -6,7 +7,8 @@ import { withLoading } from './storeHelpers'
 
 /**
  * Authentication Store
- * Manages user authentication, tokens, and permissions
+ * Manages user authentication and the token. What the user may do comes from
+ * their role through can() (src/auth/capabilities.js).
  *
  * Simplified version without factory - direct Pinia implementation
  */
@@ -15,7 +17,8 @@ export const useAuthStore = defineStore('auth', {
         // Auth state
         token: localStorage.getItem('token') || null,
         user: null,
-        permissions: [],
+        // Whether the user has come from the server since the app loaded; the cached one may be out of date
+        userChecked: false,
 
         // Loading & error states
         loading: false,
@@ -31,19 +34,29 @@ export const useAuthStore = defineStore('auth', {
         /**
          * Check if user is admin
          */
-        isAdmin: (state) => {
-            return state.user?.role === 'admin' || state.permissions.includes('admin:access')
-        },
-
-        /**
-         * Check if user has specific permission
-         */
-        hasPermission: (state) => (permission) => {
-            return state.permissions.includes(permission)
-        },
+        isAdmin: (state) => can(state.user?.role, 'admin'),
     },
 
     actions: {
+        /**
+         * Takes the user from the server once per app load, so the role is the server's and not the one cached
+         * in localStorage. Without a connection the cached user stays; an answer with an error status is thrown on
+         * (a 401 ends the session in the API client).
+         */
+        async ensureFreshUser() {
+            if (this.userChecked || !this.token) return
+            try {
+                const response = await authApi.getCurrentUser()
+                if (response?.data) {
+                    this.user = response.data
+                    localStorage.setItem('userData', JSON.stringify(response.data))
+                }
+                this.userChecked = true
+            } catch (error) {
+                if (error?.status) throw error
+            }
+        },
+
         /**
          * Initialize auth store - restore user from token
          */
@@ -88,7 +101,7 @@ export const useAuthStore = defineStore('auth', {
                 // Update state
                 this.user = user
                 this.token = token
-                this.permissions = user.permissions || []
+                this.userChecked = true
 
                 // Save to localStorage
                 localStorage.setItem('token', token)
@@ -119,7 +132,7 @@ export const useAuthStore = defineStore('auth', {
                 // Update state
                 this.user = user
                 this.token = token
-                this.permissions = user.permissions || []
+                this.userChecked = true
 
                 // Save to localStorage
                 localStorage.setItem('token', token)
@@ -138,9 +151,8 @@ export const useAuthStore = defineStore('auth', {
         },
 
         /**
-         * Logout user. The session ends on this device at once; the server, which
-         * keeps no session for a token, hears about it afterwards and its answer
-         * changes nothing.
+         * Logout user. The session ends on this device at once; the server ends its
+         * own session when it hears about it, and its answer changes nothing here.
          */
         async logout() {
             const token = this.token
@@ -165,11 +177,9 @@ export const useAuthStore = defineStore('auth', {
                 const userData = localStorage.getItem('userData')
                 if (userData) {
                     this.user = JSON.parse(userData)
-                    this.permissions = this.user.permissions || []
                 } else {
                     // Use token data as fallback
                     this.user = decoded
-                    this.permissions = decoded.permissions || []
 
                     // Fetch current user in background
                     this.fetchCurrentUser()
@@ -190,7 +200,6 @@ export const useAuthStore = defineStore('auth', {
                     const response = await authApi.getCurrentUser()
                     if (response?.data) {
                         this.user = response.data
-                        this.permissions = response.data.permissions || []
                         localStorage.setItem('userData', JSON.stringify(response.data))
                     }
                 },
@@ -227,7 +236,7 @@ export const useAuthStore = defineStore('auth', {
         clearAuth() {
             this.user = null
             this.token = null
-            this.permissions = []
+            this.userChecked = false
             this.error = null
             localStorage.removeItem('token')
             localStorage.removeItem('userData')
