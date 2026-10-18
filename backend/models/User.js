@@ -5,6 +5,7 @@
 
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
+import { verifyPassword } from "../utils/passwords.js";
 
 // A stored role outside this list (an older "moderator") reads as "user": services/userView.js
 export const ROLES = Object.freeze(["user", "admin"]);
@@ -121,7 +122,7 @@ userSchema.pre("save", async function (next) {
 // Instance method - compare password
 userSchema.methods.comparePassword = async function (candidatePassword) {
   try {
-    return await bcrypt.compare(candidatePassword, this.password);
+    return await verifyPassword(candidatePassword, this.password);
   } catch (error) {
     throw new Error("Password comparison failed");
   }

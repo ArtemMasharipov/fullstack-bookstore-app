@@ -6,6 +6,7 @@
 
 import User from "../models/User.js";
 import { ConflictError, UnauthorizedError, ValidationError } from "../utils/errors.js";
+import { verifyAgainstDummy } from "../utils/passwords.js";
 import { endUserSessions, issueToken } from "./sessions.js";
 import { toUserView } from "./userView.js";
 
@@ -38,10 +39,15 @@ export async function register({ username, email, password, firstName, lastName 
 export async function login({ emailOrUsername, password }) {
   const user = await User.findOne({
     $or: [{ email: emailOrUsername.toLowerCase() }, { username: emailOrUsername }],
-    isActive: true,
   }).select("+password");
 
-  if (!user || !(await user.comparePassword(password))) {
+  // The password is checked in every case, against a dummy hash when there is
+  // no account, so the time of the answer does not tell which case it was
+  const passwordMatches = user
+    ? await user.comparePassword(password)
+    : await verifyAgainstDummy(password);
+
+  if (!user || !passwordMatches || !user.isActive) {
     throw new UnauthorizedError("Invalid credentials");
   }
 
