@@ -202,6 +202,14 @@ export async function createUser(userData) {
  * @returns {Object} Updated user
  */
 export async function updateUser(id, updateData, actorId) {
+  // Strictly true or false: a form-encoded "false", 0 or null would reach the
+  // database as false while the access checks below look for false itself
+  if (updateData.isActive !== undefined && typeof updateData.isActive !== "boolean") {
+    throw new ValidationError("isActive must be a boolean value", {
+      isActive: "invalid_type",
+    });
+  }
+
   // Check user exists
   const existingUser = await User.findById(id);
   if (!existingUser) {

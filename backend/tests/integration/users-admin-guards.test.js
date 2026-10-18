@@ -95,6 +95,39 @@ describe("an admin's own access", () => {
     expect((await User.findById(admin.user._id)).isActive).toBe(true);
   });
 
+  // A form-encoded body sends "false" as a string, which Mongoose would store as false
+  it.each([["false"], ["0"], [0], [null]])(
+    "refuses an isActive of %j that is not true or false: 400, nothing changes",
+    async (isActive) => {
+      const admin = await signedIn({ role: "admin" });
+      const target = await signedIn();
+
+      const own = await put(admin.token, admin.user._id, { isActive });
+      const other = await put(admin.token, target.user._id, { isActive });
+
+      for (const res of [own, other]) {
+        expect(res.status).toBe(400);
+        expect(res.body.error).toMatchObject({
+          code: "VALIDATION_FAILED",
+          fields: { isActive: "invalid_type" },
+        });
+      }
+      expect(await activeAdmins()).toBe(1);
+      expect((await User.findById(target.user._id)).isActive).toBe(true);
+    }
+  );
+
+  it("refuses a form-encoded isActive=false for one's own account", async () => {
+    const admin = await signedIn({ role: "admin" });
+
+    const res = await as(request(app).put(`/api/v1/users/${admin.user._id}`), admin.token)
+      .type("form")
+      .send("isActive=false");
+
+    expect(res.status).toBe(400);
+    expect(await activeAdmins()).toBe(1);
+  });
+
   it("lets an admin change their own name", async () => {
     const admin = await signedIn({ role: "admin" });
 
