@@ -46,6 +46,7 @@ import {
     VContainer,
     // Data tables (admin only)
     VDataTable,
+    VDataTableServer,
     // Dialogs and modals
     VDialog,
     // Dividers
@@ -105,6 +106,7 @@ import {
     VSpacer,
     VSwitch,
     VTab,
+    VTable,
     // Tabs
     VTabs,
     VTextField,
@@ -194,6 +196,8 @@ export const vuetify = createVuetify({
 
         // Data tables (admin only)
         VDataTable,
+        VDataTableServer,
+        VTable,
 
         // Avatar
         VAvatar,
