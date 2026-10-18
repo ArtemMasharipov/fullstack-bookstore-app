@@ -32,6 +32,9 @@ export const useBooksStore = defineStore('books', {
         loading: false,
         searching: false,
         error: null,
+
+        // The number of the latest list request: an older answer must not replace a newer one
+        listRequest: 0,
     }),
 
     getters: {
@@ -62,15 +65,33 @@ export const useBooksStore = defineStore('books', {
 
     actions: {
         /**
-         * Fetch books with pagination
-         * Simplified with withLoading helper
+         * Fetch a page of books. Only the latest request sets the list, loading and the error: with quick Back,
+         * Forward or typing, answers can arrive out of order. The error is the API error object (its code is
+         * translated on screen); it is thrown on as well.
          */
         async fetchBooks(params = { page: 1, limit: 12 }) {
-            return withLoading(this, async () => {
+            const request = ++this.listRequest
+            const latest = () => request === this.listRequest
+            this.loading = true
+            this.error = null
+            try {
                 const response = await booksApi.fetchAll(params)
-                this.setBooksList(response)
+                if (latest()) this.setBooksList(response)
                 return response
-            })
+            } catch (error) {
+                if (latest()) this.error = error
+                throw error
+            } finally {
+                if (latest()) this.loading = false
+            }
+        },
+
+        /**
+         * The newest books, for a list of its own (the home page): the catalogue's list and pages stay as they are
+         */
+        async fetchLatest(limit = 4) {
+            const response = await booksApi.fetchAll({ page: 1, limit })
+            return normalizeBooks(normalizeApiResponse(response).data)
         },
 
         /**
@@ -144,37 +165,16 @@ export const useBooksStore = defineStore('books', {
         },
 
         /**
-         * Helper method to handle different API response formats
+         * Keep a page of books with the server's pagination: { data: [...], pagination: { page, limit, total,
+         * pages } }
          */
         setBooksList(response) {
-            const normalizedResponse = normalizeApiResponse(response)
-
-            if (Array.isArray(normalizedResponse.data)) {
-                this.books = normalizeBooks(normalizedResponse.data)
-                this.page = 1
-                this.total = this.books.length
-                this.pages = 1
-            } else if (normalizedResponse.data && typeof normalizedResponse.data === 'object') {
-                const books = normalizedResponse.data.books || normalizedResponse.data.data || []
-                this.books = normalizeBooks(books)
-
-                if (normalizedResponse.pagination) {
-                    this.page = normalizedResponse.pagination.page
-                    this.limit = normalizedResponse.pagination.limit
-                    this.total = normalizedResponse.pagination.total
-                    this.pages = normalizedResponse.pagination.pages
-                } else {
-                    this.page = 1
-                    this.total = this.books.length
-                    this.pages = 1
-                }
-            } else {
-                this.books = []
-                this.page = 1
-                this.limit = 12
-                this.total = 0
-                this.pages = 0
-            }
+            const { data, pagination } = normalizeApiResponse(response)
+            this.books = normalizeBooks(data)
+            this.page = pagination.page
+            this.limit = pagination.limit
+            this.total = pagination.total
+            this.pages = pagination.pages
         },
 
         /**
