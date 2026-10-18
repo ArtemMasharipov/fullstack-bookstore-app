@@ -12,7 +12,7 @@ import * as authorService from "../services/authorService.js";
  * @access  Public
  */
 export async function getAuthors(req, res) {
-  const result = await authorService.getAuthors(req.query);
+  const result = await authorService.getAuthors(req.valid.query);
 
   res.status(200).json({
     success: true,
@@ -89,8 +89,8 @@ export async function deleteAuthor(req, res) {
  */
 export async function getAuthorsByCountry(req, res) {
   const authors = await authorService.getAuthorsByCountry(
-    req.params.country,
-    req.query
+    req.valid.params.country,
+    req.valid.query
   );
 
   res.status(200).json({

@@ -7,6 +7,8 @@ import express from "express";
 import * as authorController from "../controllers/authorController.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { authorize, protect } from "../middleware/auth.js";
+import { validate } from "../middleware/validate.js";
+import { countryAuthorsQuery, countryParams, listAuthorsQuery } from "../schemas/author.js";
 
 const router = express.Router();
 
@@ -17,19 +19,21 @@ const router = express.Router();
 /**
  * @route   GET /api/v1/authors
  * @desc    Get all authors with filtering and pagination
- * @params  ?page=1&limit=20&country=USA&search=query&sortBy=-createdAt
+ * @params  ?page=1&limit=20 (at most 100)&country=United Kingdom (exact)&search=query
+ *          &sortBy=-createdAt (see AUTHOR_SORTS); any other parameter answers 400
  * @access  Public
  */
-router.get("/", asyncHandler(authorController.getAuthors));
+router.get("/", validate({ query: listAuthorsQuery }), asyncHandler(authorController.getAuthors));
 
 /**
  * @route   GET /api/v1/authors/country/:country
- * @desc    Get authors by country
+ * @desc    Get authors of exactly this country
  * @params  :country (required), ?limit=50&sortBy=lastName
  * @access  Public
  */
 router.get(
   "/country/:country",
+  validate({ params: countryParams, query: countryAuthorsQuery }),
   asyncHandler(authorController.getAuthorsByCountry)
 );
 

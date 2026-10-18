@@ -14,42 +14,25 @@ import {
 
 /**
  * Get authors with filtering and pagination
- * @param {Object} filters - Query filters (page, limit, country, search, sortBy)
+ * @param {Object} filters - Parsed listAuthorsQuery (page, limit, country, search, sortBy)
  * @returns {Object} { authors, pagination }
  */
-export async function getAuthors(filters = {}) {
-  const {
-    page = 1,
-    limit = 20,
-    country,
-    search,
-    sortBy = "-createdAt",
-  } = filters;
-
-  // Validate pagination params
-  if (page < 1 || limit < 1) {
-    throw new ValidationError("Page and limit must be greater than 0");
-  }
-
-  if (limit > 100) {
-    throw new ValidationError("Maximum limit is 100");
-  }
-
-  // Build query
+export async function getAuthors({ page, limit, country, search, sortBy }) {
+  // The country is compared as a whole value, not as a pattern
   const query = {};
-  if (country) query.country = new RegExp(country, "i");
+  if (country) query.country = country;
 
   const skip = (page - 1) * limit;
 
   // Search vs regular query
   let authorsQuery;
   if (search) {
-    authorsQuery = Author.searchAuthors(search).skip(skip).limit(Number(limit));
+    authorsQuery = Author.searchAuthors(search).skip(skip).limit(limit);
   } else {
     authorsQuery = Author.find(query)
       .sort(sortBy)
       .skip(skip)
-      .limit(Number(limit))
+      .limit(limit)
       .lean();
   }
 
@@ -231,20 +214,13 @@ export async function deleteAuthor(id, deleteBooks = false) {
 }
 
 /**
- * Get authors by country
+ * Get authors of exactly one country
  * @param {string} country - Country name
- * @param {Object} options - Additional options (limit, sortBy)
+ * @param {Object} options - Parsed countryAuthorsQuery (limit, sortBy)
  * @returns {Array} Authors from country
  */
-export async function getAuthorsByCountry(country, options = {}) {
-  const { limit = 50, sortBy = "lastName" } = options;
-
-  const authors = await Author.find({
-    country: new RegExp(country, "i"),
-  })
-    .sort(sortBy)
-    .limit(Number(limit))
-    .lean();
+export async function getAuthorsByCountry(country, { limit, sortBy }) {
+  const authors = await Author.find({ country }).sort(sortBy).limit(limit).lean();
 
   return authors;
 }
