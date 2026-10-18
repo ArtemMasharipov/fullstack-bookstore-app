@@ -62,6 +62,33 @@
         "navLabel": "Admin sections",
         "table": {
             "loadError": "The list could not be loaded."
+        },
+        "bookForm": {
+            "createTitle": "New book",
+            "editTitle": "Edit book",
+            "title": "Title",
+            "author": "Author",
+            "year": "Year of publication",
+            "category": "Category",
+            "description": "Description",
+            "image": "Cover link (https://)",
+            "inStock": "In stock",
+            "authorsError": "Authors could not be loaded."
+        },
+        "form": {
+            "save": "Save",
+            "summary": "Please correct the highlighted fields.",
+            "errors": {
+                "required": "Fill in this field.",
+                "length": "Use {min}–{max} characters.",
+                "maxLength": "Use at most {max} characters.",
+                "range": "Enter a whole number from {min} to {max}.",
+                "price": "Enter a price from 0 to 999,999.99 with at most two decimals.",
+                "image": "Use a link that starts with https://.",
+                "authorNotFound": "This author no longer exists. Choose another one.",
+                "duplicateBook": "A book with this title, author and year already exists.",
+                "invalid": "Check this value."
+            }
         }
     },
     "home": {

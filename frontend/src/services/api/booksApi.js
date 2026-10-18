@@ -19,6 +19,8 @@ export const booksApi = {
         return baseApi.put(`/books/${id}`, data).then((res) => res.data)
     },
 
+    setStock: (id, inStock) => baseApi.patch(`/books/${id}/stock`, { inStock }).then((res) => res.data),
+
     delete: (id) => {
         if (!id) throw new Error('Book ID is required')
         return baseApi.delete(`/books/${id}`).then((res) => res.data)

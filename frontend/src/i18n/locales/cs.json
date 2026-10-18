@@ -62,6 +62,33 @@
         "navLabel": "Sekce administrace",
         "table": {
             "loadError": "Seznam se nepodařilo načíst."
+        },
+        "bookForm": {
+            "createTitle": "Nová kniha",
+            "editTitle": "Upravit knihu",
+            "title": "Název",
+            "author": "Autor",
+            "year": "Rok vydání",
+            "category": "Kategorie",
+            "description": "Popis",
+            "image": "Odkaz na obálku (https://)",
+            "inStock": "Skladem",
+            "authorsError": "Autory se nepodařilo načíst."
+        },
+        "form": {
+            "save": "Uložit",
+            "summary": "Opravte prosím označená pole.",
+            "errors": {
+                "required": "Vyplňte toto pole.",
+                "length": "Použijte {min}–{max} znaků.",
+                "maxLength": "Použijte nejvýše {max} znaků.",
+                "range": "Zadejte celé číslo od {min} do {max}.",
+                "price": "Zadejte cenu od 0 do 999 999,99 s nejvýše dvěma desetinnými místy.",
+                "image": "Použijte odkaz začínající https://.",
+                "authorNotFound": "Tento autor už neexistuje. Vyberte jiného.",
+                "duplicateBook": "Kniha se stejným názvem, autorem a rokem už existuje.",
+                "invalid": "Zkontrolujte tuto hodnotu."
+            }
         }
     },
     "home": {
