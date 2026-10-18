@@ -5,7 +5,6 @@
  */
 
 import * as bookService from "../services/bookService.js";
-import { ValidationError } from "../utils/errors.js";
 import { ok } from "../utils/respond.js";
 
 /**
@@ -33,19 +32,7 @@ export async function getBook(req, res) {
  * @access  Private/Admin
  */
 export async function createBook(req, res) {
-  const bookData = {
-    ...req.body,
-    // Add file path if image was uploaded
-    ...(req.file && { image: req.file.path }),
-  };
-
-  const book = await bookService.createBook(bookData);
-
-  res.status(201).json({
-    success: true,
-    data: book,
-    message: "Book created successfully",
-  });
+  ok(res, await bookService.createBook(req.valid.body), { status: 201 });
 }
 
 /**
@@ -54,19 +41,7 @@ export async function createBook(req, res) {
  * @access  Private/Admin
  */
 export async function updateBook(req, res) {
-  const updateData = {
-    ...req.body,
-    // Add new image path if uploaded
-    ...(req.file && { image: req.file.path }),
-  };
-
-  const book = await bookService.updateBook(req.params.id, updateData);
-
-  res.status(200).json({
-    success: true,
-    data: book,
-    message: "Book updated successfully",
-  });
+  ok(res, await bookService.updateBook(req.valid.params.id, req.valid.body));
 }
 
 /**
@@ -75,12 +50,8 @@ export async function updateBook(req, res) {
  * @access  Private/Admin
  */
 export async function deleteBook(req, res) {
-  await bookService.deleteBook(req.params.id);
-
-  res.status(200).json({
-    success: true,
-    message: "Book deleted successfully",
-  });
+  await bookService.deleteBook(req.valid.params.id);
+  res.status(204).end();
 }
 
 /**
@@ -98,21 +69,7 @@ export async function getBooksByCategory(req, res) {
  * @access  Private/Admin
  */
 export async function updateBookStock(req, res) {
-  const { inStock } = req.body;
-
-  if (typeof inStock !== "boolean") {
-    throw new ValidationError("inStock must be a boolean value", {
-      inStock: "invalid_type",
-    });
-  }
-
-  const book = await bookService.updateBookStock(req.params.id, inStock);
-
-  res.status(200).json({
-    success: true,
-    data: book,
-    message: "Stock status updated successfully",
-  });
+  ok(res, await bookService.updateBookStock(req.valid.params.id, req.valid.body.inStock));
 }
 
 /**

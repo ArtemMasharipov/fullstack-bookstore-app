@@ -23,10 +23,11 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const bookWithYear = (publicationYear) => ({
-  title: `Book of ${publicationYear}`,
+const bookWithYear = (publicationYear, title = `Book of ${publicationYear}`) => ({
+  title,
   authorId: author.id,
   publicationYear,
+  category: "Fiction",
   price: 10,
 });
 
@@ -82,10 +83,11 @@ describe("PUT /api/v1/books/:id: publication year", () => {
     const created = await postBook(token, bookWithYear(1999));
     expect(created.status).toBe(201);
 
+    // PUT replaces the book: the whole body with the new year
     const res = await request(app)
-      .put(`/api/v1/books/${created.body.data._id}`)
+      .put(`/api/v1/books/${created.body.data.id}`)
       .set("Authorization", `Bearer ${token}`)
-      .send({ publicationYear: 2000 });
+      .send(bookWithYear(2000, created.body.data.title));
 
     expect(res.status).toBe(200);
     expect(res.body.data.publicationYear).toBe(2000);

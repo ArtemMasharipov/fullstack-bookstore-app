@@ -6,7 +6,7 @@
 
 import Author from "../models/Author.js";
 import Book from "../models/Book.js";
-import { NotFoundError, ValidationError } from "../utils/errors.js";
+import { AppError, NotFoundError, ValidationError } from "../utils/errors.js";
 import { toBookView } from "./bookView.js";
 
 /**
@@ -73,101 +73,83 @@ export async function getBookById(id) {
   return toBookView(book);
 }
 
+// The optional fields of a book: PUT removes the ones its body leaves out
+const OPTIONAL_FIELDS = ["description", "image"];
+
+// The fields to store from a parsed bookBody: authorId is stored as the author reference
+function storedFields({ authorId, ...fields }) {
+  return { ...fields, author: authorId };
+}
+
+async function assertAuthorExists(authorId) {
+  if (!(await Author.exists({ _id: authorId }))) {
+    throw new ValidationError("Validation failed", { authorId: "not_found" });
+  }
+}
+
+// The same title, author and year is the same book; exceptId is the book being replaced
+async function assertNotDuplicate({ title, authorId, publicationYear }, exceptId) {
+  const filter = { title, author: authorId, publicationYear };
+  if (exceptId) filter._id = { $ne: exceptId };
+  if (await Book.exists(filter)) {
+    throw new AppError("A book with this title, author and year already exists", 409, "CONFLICT", {
+      fields: { title: "duplicate" },
+    });
+  }
+}
+
+const withAuthor = (query) => query.populate("author", "firstName lastName").lean();
+
 /**
- * Create new book
- * @param {Object} bookData - Book data (title, authorId, publicationYear, category, description, price, image, inStock)
- * @returns {Object} Created book
+ * Create a book
+ * @param {Object} body - Parsed bookBody
+ * @returns {Object} Book view
  */
-export async function createBook(bookData) {
-  // Validate author exists
-  if (!bookData.authorId) {
-    throw new ValidationError("Author ID is required");
-  }
+export async function createBook(body) {
+  await assertAuthorExists(body.authorId);
+  await assertNotDuplicate(body);
 
-  const author = await Author.findById(bookData.authorId);
-  if (!author) {
-    throw new NotFoundError("Author not found");
-  }
+  const book = await Book.create(storedFields(body));
 
-  // Check for duplicates (same title + author + year)
-  const existingBook = await Book.findOne({
-    title: bookData.title,
-    author: bookData.authorId,
-    publicationYear: bookData.publicationYear,
-  });
-
-  if (existingBook) {
-    throw new ValidationError(
-      "Book with this title already exists for this author and year"
-    );
-  }
-
-  // Create book
-  const book = new Book({
-    ...bookData,
-    author: bookData.authorId,
-  });
-
-  await book.save();
-  await book.populate("author", "firstName lastName");
-
-  return book;
+  return toBookView(await withAuthor(Book.findById(book._id)));
 }
 
 /**
- * Update book
+ * Replace a book: the fields of the body, and no optional field it leaves out
  * @param {string} id - Book ID
- * @param {Object} updateData - Fields to update
- * @returns {Object} Updated book
+ * @param {Object} body - Parsed bookBody
+ * @returns {Object} Book view
  */
-export async function updateBook(id, updateData) {
-  // Check book exists
-  const existingBook = await Book.findById(id);
-  if (!existingBook) {
+export async function updateBook(id, body) {
+  if (!(await Book.exists({ _id: id }))) {
     throw new NotFoundError("Book not found");
   }
+  await assertAuthorExists(body.authorId);
+  await assertNotDuplicate(body, id);
 
-  // Validate new author if changing
-  if (
-    updateData.authorId &&
-    updateData.authorId !== existingBook.author.toString()
-  ) {
-    const author = await Author.findById(updateData.authorId);
-    if (!author) {
-      throw new NotFoundError("Author not found");
-    }
-    updateData.author = updateData.authorId;
-    delete updateData.authorId;
-  }
+  const absent = OPTIONAL_FIELDS.filter((field) => body[field] === undefined);
+  const update = {
+    $set: storedFields(body),
+    ...(absent.length && { $unset: Object.fromEntries(absent.map((field) => [field, ""])) }),
+  };
+  const book = await withAuthor(Book.findByIdAndUpdate(id, update, { new: true, runValidators: true }));
 
-  // Prevent modifying certain fields
-  delete updateData.createdAt;
-  delete updateData._id;
-
-  // Update
-  const book = await Book.findByIdAndUpdate(id, updateData, {
-    new: true,
-    runValidators: true,
-  }).populate("author", "firstName lastName");
-
-  return book;
-}
-
-/**
- * Delete book
- * @param {string} id - Book ID
- * @returns {Object} Success message
- */
-export async function deleteBook(id) {
-  const book = await Book.findById(id);
-
+  // Deleted between the check and the write
   if (!book) {
     throw new NotFoundError("Book not found");
   }
 
-  await Book.findByIdAndDelete(id);
+  return toBookView(book);
+}
 
-  return { message: "Book deleted successfully" };
+/**
+ * Delete a book
+ * @param {string} id - Book ID
+ */
+export async function deleteBook(id) {
+  if (!(await Book.findByIdAndDelete(id))) {
+    throw new NotFoundError("Book not found");
+  }
 }
 
 /**
@@ -187,23 +169,21 @@ export async function getBooksByCategory(category, { limit, sortBy }) {
 }
 
 /**
- * Update book stock status
+ * Set whether a book is in stock
  * @param {string} id - Book ID
  * @param {boolean} inStock - Stock status
- * @returns {Object} Updated book
+ * @returns {Object} Book view
  */
 export async function updateBookStock(id, inStock) {
-  const book = await Book.findByIdAndUpdate(
-    id,
-    { inStock },
-    { new: true, runValidators: true }
-  ).populate("author", "firstName lastName");
+  const book = await withAuthor(
+    Book.findByIdAndUpdate(id, { $set: { inStock } }, { new: true, runValidators: true })
+  );
 
   if (!book) {
     throw new NotFoundError("Book not found");
   }
 
-  return book;
+  return toBookView(book);
 }
 
 /**

@@ -11,7 +11,9 @@ import { validate } from "../middleware/validate.js";
 import {
   authorBooksQuery,
   authorIdParams,
+  bookBody,
   bookIdParams,
+  bookStockBody,
   categoryBooksQuery,
   categoryParams,
   listBooksQuery,
@@ -70,34 +72,36 @@ router.get("/:id", validate({ params: bookIdParams }), asyncHandler(bookControll
 
 /**
  * @route   POST /api/v1/books
- * @desc    Create new book
- * @body    { title, authorId, publicationYear, category, description, price, image?, inStock? }
+ * @desc    Create a book; answers 201 with the book
+ * @body    { title, authorId, publicationYear, category, description?, price, image?, inStock? } (see bookBody);
+ *          an unknown author answers 400 on authorId, the same title, author and year 409 CONFLICT
  * @access  Private/Admin
  */
 router.post(
   "/",
   protect,
   authorize("admin"),
+  validate({ body: bookBody }),
   asyncHandler(bookController.createBook)
 );
 
 /**
  * @route   PUT /api/v1/books/:id
- * @desc    Update book (full update)
+ * @desc    Replace a book: the same body as POST; an optional field it leaves out is removed
  * @params  :id (required)
- * @body    { title?, authorId?, publicationYear?, category?, description?, price?, image?, inStock? }
  * @access  Private/Admin
  */
 router.put(
   "/:id",
   protect,
   authorize("admin"),
+  validate({ params: bookIdParams, body: bookBody }),
   asyncHandler(bookController.updateBook)
 );
 
 /**
  * @route   PATCH /api/v1/books/:id/stock
- * @desc    Update book stock status only
+ * @desc    Set whether the book is in stock; answers with the book
  * @params  :id (required)
  * @body    { inStock: boolean }
  * @access  Private/Admin
@@ -106,12 +110,13 @@ router.patch(
   "/:id/stock",
   protect,
   authorize("admin"),
+  validate({ params: bookIdParams, body: bookStockBody }),
   asyncHandler(bookController.updateBookStock)
 );
 
 /**
  * @route   DELETE /api/v1/books/:id
- * @desc    Delete book
+ * @desc    Delete a book; answers 204
  * @params  :id (required)
  * @access  Private/Admin
  */
@@ -119,6 +124,7 @@ router.delete(
   "/:id",
   protect,
   authorize("admin"),
+  validate({ params: bookIdParams }),
   asyncHandler(bookController.deleteBook)
 );
 
