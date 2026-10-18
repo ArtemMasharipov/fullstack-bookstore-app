@@ -109,8 +109,9 @@ export function loadConfig(env) {
     jwt: {
       secret: jwtSecret,
       expiresIn: read(env, "JWT_EXPIRATION", "7d"),
-      audience: read(env, "JWT_AUDIENCE"),
-      issuer: read(env, "JWT_ISSUER"),
+      // Signed into every token and checked on every request
+      audience: read(env, "JWT_AUDIENCE", "bookstore-web"),
+      issuer: read(env, "JWT_ISSUER", "bookstore-api"),
     },
 
     cors: {

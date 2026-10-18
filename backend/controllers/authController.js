@@ -4,6 +4,7 @@
  */
 
 import * as authService from "../services/authService.js";
+import { endSession } from "../services/sessions.js";
 
 /**
  * @route   POST /api/v1/auth/register
@@ -87,15 +88,10 @@ export async function updateProfile(req, res) {
 
 /**
  * @route   POST /api/v1/auth/logout
- * @desc    Logout user (client-side token removal)
+ * @desc    End the session of this token: the token stops working at once
  * @access  Private
  */
 export async function logout(req, res) {
-  // With JWT, logout is handled client-side by removing the token
-  // This endpoint is for consistency and future token blacklisting
-
-  res.status(200).json({
-    success: true,
-    message: "Logout successful. Please remove the token from client.",
-  });
+  await endSession(req.sessionId);
+  res.status(204).end();
 }

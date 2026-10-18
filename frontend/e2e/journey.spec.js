@@ -67,8 +67,8 @@ for (const locale of ['cs', 'en']) {
         const told = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/v1/auth/logout')
         await userMenu(page, dict.nav.logout)
         await expect(page).toHaveURL((url) => url.pathname === `${prefix}/login`)
-        // The server hears about it after the session has ended here
-        expect((await told).status()).toBe(200)
+        // The server hears about it after the session has ended here, and ends its session too
+        expect((await told).status()).toBe(204)
         // Signing out leaves no way back to the previous user's order for the next person on this device
         expect(new URL(page.url()).searchParams.get('redirect')).toBeNull()
         // The snackbar shows its text in an overlay outside the container

@@ -1,27 +1,16 @@
 /**
  * Auth Service Layer
- * Handles authentication logic: register, login, token generation
+ * Handles authentication logic: register, login, password and profile; the
+ * tokens come from sessions.js
  */
 
-import jwt from "jsonwebtoken";
-import { config } from "../config/index.js";
 import User from "../models/User.js";
 import {
   ConflictError,
   UnauthorizedError,
   ValidationError,
 } from "../utils/errors.js";
-
-/**
- * Generate JWT token
- * @param {Object} payload - Data to encode in token
- * @returns {string} JWT token
- */
-function generateToken(payload) {
-  return jwt.sign(payload, config.jwt.secret, {
-    expiresIn: config.jwt.expiresIn,
-  });
-}
+import { issueToken } from "./sessions.js";
 
 /**
  * Register new user
@@ -67,13 +56,7 @@ export async function register(userData) {
 
   await user.save();
 
-  // Generate token
-  const token = generateToken({
-    id: user._id,
-    username: user.username,
-    email: user.email,
-    role: user.role,
-  });
+  const token = await issueToken(user._id);
 
   // Remove password from response
   const userObject = user.toJSON();
@@ -121,13 +104,7 @@ export async function login(credentials) {
   // Update last login
   await user.updateLastLogin();
 
-  // Generate token
-  const token = generateToken({
-    id: user._id,
-    username: user.username,
-    email: user.email,
-    role: user.role,
-  });
+  const token = await issueToken(user._id);
 
   // Remove password from response
   const userObject = user.toJSON();
@@ -244,20 +221,4 @@ export async function updateProfile(userId, updates) {
   }
 
   return user;
-}
-
-/**
- * Verify JWT token
- * @param {string} token - JWT token
- * @returns {Object} Decoded token payload
- */
-export function verifyToken(token) {
-  try {
-    return jwt.verify(token, config.jwt.secret);
-  } catch (error) {
-    if (error.name === "TokenExpiredError") {
-      throw new UnauthorizedError("Token expired");
-    }
-    throw new UnauthorizedError("Invalid token");
-  }
 }

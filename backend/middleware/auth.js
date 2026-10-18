@@ -3,43 +3,26 @@
  * Protects routes and authorizes based on user roles
  */
 
-import jwt from "jsonwebtoken";
-import { config } from "../config/index.js";
+import { readSession } from "../services/sessions.js";
 import { ForbiddenError, UnauthorizedError } from "../utils/errors.js";
 
 /**
- * Protect routes - verify JWT token
+ * Protect routes: the Bearer token must belong to a live session of an active
+ * user. req.user gets that user as the database has it ({ id, username, email,
+ * role }), req.sessionId the session of the token.
  */
 export const protect = async (req, res, next) => {
   try {
-    let token;
-
-    // Get token from header
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
+    const [scheme, token] = (req.headers.authorization ?? "").split(" ");
+    if (scheme !== "Bearer" || !token) {
+      throw new UnauthorizedError("Authentication required");
     }
 
-    // Check if token exists
-    if (!token) {
-      throw new UnauthorizedError("Access denied. No token provided.");
-    }
-
-    // Verify token
-    const decoded = jwt.verify(token, config.jwt.secret);
-
-    // Add user to request object
-    req.user = decoded;
+    const { user, sessionId } = await readSession(token);
+    req.user = user;
+    req.sessionId = sessionId;
     next();
   } catch (error) {
-    if (error.name === "JsonWebTokenError") {
-      return next(new UnauthorizedError("Invalid token"));
-    }
-    if (error.name === "TokenExpiredError") {
-      return next(new UnauthorizedError("Token expired"));
-    }
     next(error);
   }
 };

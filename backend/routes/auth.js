@@ -59,7 +59,7 @@ router.put("/profile", protect, asyncHandler(authController.updateProfile));
 
 /**
  * @route   POST /api/v1/auth/logout
- * @desc    Logout user
+ * @desc    End the session of this token; answers 204
  * @access  Private
  */
 router.post("/logout", protect, asyncHandler(authController.logout));

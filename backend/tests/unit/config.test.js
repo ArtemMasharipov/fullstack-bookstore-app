@@ -64,7 +64,12 @@ describe("loadConfig result", () => {
       port: 3000,
       nodeEnv: "production",
       database: { uri: "mongodb://db.internal/shop" },
-      jwt: { secret: "x".repeat(32), expiresIn: "7d" },
+      jwt: {
+        secret: "x".repeat(32),
+        expiresIn: "7d",
+        audience: "bookstore-web",
+        issuer: "bookstore-api",
+      },
       cors: {
         origin: "https://shop.example",
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
@@ -81,6 +86,13 @@ describe("loadConfig result", () => {
     });
     expect(Object.isFrozen(config)).toBe(true);
     expect(Object.isFrozen(config.commerce)).toBe(true);
+  });
+
+  it("uses bookstore-web and bookstore-api as the default audience and issuer", () => {
+    expect(loadConfig(production).jwt).toMatchObject({
+      audience: "bookstore-web",
+      issuer: "bookstore-api",
+    });
   });
 
   it("passes JWT_EXPIRATION, JWT_AUDIENCE, JWT_ISSUER, CORS_METHODS and CORS_CREDENTIALS through", () => {

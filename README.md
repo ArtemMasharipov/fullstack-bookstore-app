@@ -132,7 +132,7 @@ if (-not (Test-Path backend/.env)) { Copy-Item backend/.env.example backend/.env
 | `MONGODB_URI`                                  | Connection string; default `mongodb://localhost:27017/bookStoreDB`                              |
 | `MONGODB_URL`, `DATABASE_NAME`                 | The older form of `MONGODB_URI`; in production one of the two forms is required                 |
 | `JWT_SECRET`                                   | **Required everywhere**; at least 32 characters in production                                   |
-| `JWT_EXPIRATION`, `JWT_AUDIENCE`, `JWT_ISSUER` | Token lifetime, default `7d`; audience and issuer are optional and not used yet                 |
+| `JWT_EXPIRATION`, `JWT_AUDIENCE`, `JWT_ISSUER` | Defaults `7d`, `bookstore-web` and `bookstore-api`; every request checks audience and issuer    |
 | `CORS_ORIGIN`                                  | Allowed browser origin; default `http://localhost:8080`; in production **required and not `*`** |
 | `CORS_METHODS`, `CORS_CREDENTIALS`             | Optional; defaults `GET,POST,PUT,PATCH,DELETE` and `false`                                      |
 | `EXPOSE_ERROR_DETAILS`                         | `true` puts error messages and stack traces into responses; ignored in production               |
