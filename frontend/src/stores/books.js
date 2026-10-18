@@ -3,8 +3,6 @@ import { normalizeApiResponse, normalizeBook, normalizeBooks } from '@/utils/dat
 import { defineStore } from 'pinia'
 import { withLoading } from './storeHelpers'
 
-let _searchTimer = null
-
 /**
  * Books Store
  * Manages books data, search, filtering, and pagination
@@ -30,7 +28,6 @@ export const useBooksStore = defineStore('books', {
 
         // Loading & error states
         loading: false,
-        searching: false,
         error: null,
 
         // The number of the latest list request: an older answer must not replace a newer one
@@ -178,65 +175,6 @@ export const useBooksStore = defineStore('books', {
         },
 
         /**
-         * Set search query
-         */
-        setSearchQuery(query) {
-            this.searchQuery = query
-            this.page = 1
-        },
-
-        /**
-         * Debounced search (to be called from components)
-         * Minimum 2 characters to trigger search, empty clears filter
-         */
-        debouncedSearch(query) {
-            clearTimeout(_searchTimer)
-            const trimmed = query?.trim() ?? ''
-
-            if (!trimmed) {
-                this.setSearchQuery('')
-                this.loadBooks()
-                return
-            }
-
-            if (trimmed.length < 2) return
-
-            this.setSearchQuery(trimmed)
-            _searchTimer = setTimeout(async () => {
-                this.searching = true
-                try {
-                    await this.fetchBooks(this.filterParams)
-                } finally {
-                    this.searching = false
-                }
-            }, 300)
-        },
-
-        /**
-         * Set category filter
-         */
-        setCategory(category) {
-            this.category = category
-            this.page = 1
-        },
-
-        /**
-         * Set author filter
-         */
-        setAuthorId(authorId) {
-            this.authorId = authorId
-            this.page = 1
-        },
-
-        /**
-         * Change page
-         */
-        changePage(page) {
-            this.page = page
-            return this.loadBooks()
-        },
-
-        /**
          * Load books with current filters
          */
         async loadBooks() {
@@ -247,16 +185,6 @@ export const useBooksStore = defineStore('books', {
                     // Failed to load books
                 }
             }
-        },
-
-        /**
-         * Clear filters and reset
-         */
-        clearFilters() {
-            this.searchQuery = ''
-            this.category = null
-            this.authorId = null
-            this.page = 1
         },
 
         /**

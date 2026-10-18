@@ -14,6 +14,7 @@ const copy = {
         title: 'Knihy',
         details: 'Detail knihy',
         books: 'Knihy',
+        catalogue: 'Katalog knih',
         unknown: 'Něco se pokazilo. Zkuste to později.',
         notFound: 'Stránka nenalezena',
     },
@@ -21,6 +22,7 @@ const copy = {
         title: 'Books',
         details: 'Book Details',
         books: 'Books',
+        catalogue: 'Book catalogue',
         unknown: 'Something went wrong. Please try again later.',
         notFound: 'Page not found',
     },
@@ -183,7 +185,8 @@ test('a guest 401 keeps the English page and hides the raw API answer', async ({
             })
     )
     await page.goto('/en/books')
-    await expect(page.locator('main')).toContainText(copy.en.title)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(copy.en.catalogue)
+    await expect(page.locator('main')).toContainText(copy.en.unknown)
     await expect(page).toHaveURL('http://localhost:4173/en/books')
     await expect(page.locator('html')).toHaveAttribute('lang', 'en')
     await expect(page.locator('body')).not.toContainText('RAW_PRIVATE_RESPONSE')

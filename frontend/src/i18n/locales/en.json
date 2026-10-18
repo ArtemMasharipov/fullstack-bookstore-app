@@ -93,6 +93,19 @@
         }
     },
     "catalog": {
+        "title": "Book catalogue",
+        "range": "Showing {from}–{to} of {total}",
+        "search": {
+            "label": "Search books",
+            "hint": "Type at least 2 characters"
+        },
+        "categories": {
+            "label": "Categories",
+            "all": "All"
+        },
+        "empty": "There are no books in the catalogue yet.",
+        "noResults": "No books match this selection.",
+        "resetFilters": "Reset filters",
         "addToCart": "Add to cart",
         "addToCartNamed": "Add to cart: {title}",
         "inStock": "In stock",

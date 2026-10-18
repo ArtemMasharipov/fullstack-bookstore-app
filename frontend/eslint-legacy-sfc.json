@@ -10,7 +10,6 @@
     "src/components/features/authors/AuthorListItem.vue",
     "src/components/features/books/BookDetails.vue",
     "src/components/features/books/BookForm.vue",
-    "src/components/features/books/BookList.vue",
     "src/views/admin/AdminAuthorsView.vue",
     "src/views/admin/AdminDashboardView.vue",
     "src/views/admin/AdminOrdersView.vue",

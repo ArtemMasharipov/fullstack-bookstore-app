@@ -1,181 +1,221 @@
 <template>
-    <div>
-        <v-card flat class="mb-4">
-            <v-toolbar color="primary" flat rounded="0" elevation="1">
-                <v-toolbar-title class="text-white font-weight-medium"> Books </v-toolbar-title>
+    <section class="catalog" aria-labelledby="catalog-title">
+        <header class="catalog-header">
+            <!-- Focus lands here after paging, so keyboard and screen reader users go on from the top of the page -->
+            <h1 id="catalog-title" ref="heading" class="catalog-title text-h4" tabindex="-1">
+                {{ t('catalog.title') }}
+            </h1>
+            <p v-if="showRange" class="catalog-range text-medium-emphasis">
+                {{ t('catalog.range', range) }}
+            </p>
+        </header>
 
-                <v-spacer></v-spacer>
-                <v-text-field
-                    v-model="searchQuery"
-                    prepend-inner-icon="mdi-magnify"
-                    label="Search books"
-                    hide-details
-                    density="compact"
-                    variant="solo-filled"
-                    class="mx-2 mt-1 shrink"
-                    bg-color="primary-lighten-1"
-                    style="max-width: 250px"
-                    clearable
-                ></v-text-field>
-            </v-toolbar>
+        <v-text-field
+            v-model="search"
+            class="catalog-search"
+            :label="t('catalog.search.label')"
+            :aria-label="t('catalog.search.label')"
+            :hint="searchHint"
+            :persistent-hint="Boolean(searchHint)"
+            :loading="loading"
+            prepend-inner-icon="mdi-magnify"
+            clearable
+            @update:model-value="onSearch"
+        />
 
-            <!-- Category filters -->
-            <div class="px-4 py-3 d-flex align-center flex-wrap ga-2">
-                <v-chip
-                    :variant="!selectedCategory ? 'elevated' : 'outlined'"
-                    :color="!selectedCategory ? 'primary' : undefined"
-                    size="small"
-                    @click="selectCategory(null)"
-                >
-                    All
-                </v-chip>
-                <v-chip
-                    v-for="cat in categories"
-                    :key="cat"
-                    :variant="selectedCategory === cat ? 'elevated' : 'outlined'"
-                    :color="selectedCategory === cat ? 'primary' : undefined"
-                    size="small"
-                    @click="selectCategory(cat)"
-                >
-                    {{ cat }}
-                </v-chip>
-            </div>
-
-            <v-divider />
-
-            <!-- Search progress -->
-            <v-progress-linear v-if="searching" indeterminate color="primary" height="3"></v-progress-linear>
-
-            <!-- Loading state -->
-            <v-skeleton-loader
-                v-if="loading && !searching"
-                type="card-avatar, article, actions"
-                class="py-4"
-            ></v-skeleton-loader>
-
-            <!-- Empty state -->
-            <v-alert
-                v-else-if="!books.length"
-                type="info"
-                variant="tonal"
-                class="ma-4 text-center"
-                icon="mdi-bookshelf"
-                border="start"
+        <div class="catalog-categories" role="group" :aria-label="t('catalog.categories.label')">
+            <!-- Category names are catalogue data, as in the books themselves -->
+            <v-btn
+                v-for="option in categoryOptions"
+                :key="option.value"
+                size="small"
+                :variant="option.value === query.category ? 'flat' : 'outlined'"
+                :color="option.value === query.category ? 'primary' : undefined"
+                :aria-pressed="String(option.value === query.category)"
+                @click="chooseCategory(option.value)"
             >
-                <p class="mb-1">No books found.</p>
-                <v-btn
-                    v-if="authStore.hasPermission('admin:access')"
-                    color="primary"
-                    variant="text"
-                    density="comfortable"
-                    :to="localeRoute('AdminBooks')"
-                    prepend-icon="mdi-shield-account"
-                >
-                    Manage Books
-                </v-btn>
-                <p v-else class="mt-2 text-caption">Check back later for new books.</p>
-            </v-alert>
+                {{ option.label }}
+            </v-btn>
+        </div>
 
-            <!-- Books grid -->
-            <v-container v-else fluid class="py-2">
-                <p v-if="total > 0" class="text-caption text-medium-emphasis mb-3">
-                    Showing {{ books.length }} of {{ total }} books
-                </p>
-                <v-row>
-                    <v-col
-                        v-for="book in books"
-                        :key="book.id"
-                        cols="12"
-                        sm="6"
-                        md="4"
-                        lg="3"
-                        class="d-flex align-stretch"
-                    >
-                        <book-card :book="book" class="w-100" />
-                    </v-col>
-                </v-row>
-            </v-container>
+        <error-message v-if="error" :error="error" :on-retry="load" :closable="false" class="my-4" />
 
-            <!-- Pagination -->
-            <v-card-actions v-if="books.length && totalPages > 1" class="justify-center pa-4">
-                <v-pagination
-                    v-model="currentPage"
-                    :length="totalPages"
-                    :total-visible="mobile ? 3 : 7"
-                    @update:model-value="booksStore.changePage"
-                    rounded
-                    color="primary"
-                    active-color="primary"
-                ></v-pagination>
-            </v-card-actions>
-        </v-card>
-    </div>
+        <v-row v-else-if="loading" tag="ul" class="book-grid">
+            <v-col v-for="n in CATALOG_PAGE_SIZE" :key="n" tag="li" cols="12" sm="6" md="4" lg="3" class="d-flex">
+                <book-card-skeleton />
+            </v-col>
+        </v-row>
+
+        <v-alert v-else-if="!books.length" type="info" variant="tonal" class="my-4">
+            <template v-if="filtered">
+                <p>{{ t('catalog.noResults') }}</p>
+                <v-btn variant="text" class="mt-2" :to="localeRoute('Books')">{{ t('catalog.resetFilters') }}</v-btn>
+            </template>
+            <p v-else>{{ t('catalog.empty') }}</p>
+        </v-alert>
+
+        <v-row v-else tag="ul" class="book-grid">
+            <v-col v-for="(book, index) in books" :key="book.id" tag="li" cols="12" sm="6" md="4" lg="3" class="d-flex">
+                <book-card :book="book" :heading-level="2" :eager="index < 4" class="w-100" />
+            </v-col>
+        </v-row>
+
+        <v-pagination
+            v-if="!error && pages > 1"
+            :model-value="query.page"
+            :length="pages"
+            :total-visible="mobile ? 5 : 7"
+            class="my-6"
+            @update:model-value="goToPage"
+        />
+    </section>
 </template>
 
 <script setup>
+import ErrorMessage from '@/components/ui/ErrorMessage.vue'
+import { t } from '@/i18n'
+import {
+    CATALOG_PAGE_SIZE,
+    canonicalCatalogQuery,
+    catalogQuery,
+    parseCatalogQuery,
+    toBooksParams,
+} from '@/router/catalogQuery'
 import { localeRoute } from '@/router/locale'
-import { useAuthStore, useBooksStore } from '@/stores'
+import { useBooksStore } from '@/stores'
 import { BOOK_CATEGORIES } from '@/utils/constants/app'
-import { useDisplay } from 'vuetify'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useDisplay } from 'vuetify'
 import BookCard from './BookCard.vue'
+import BookCardSkeleton from './BookCardSkeleton.vue'
 
-const props = defineProps({
-    category: {
-        type: String,
-        default: null,
-    },
-    authorId: {
-        type: String,
-        default: null,
-    },
-    itemsPerPage: {
-        type: Number,
-        default: 12,
-    },
-})
+/**
+ * The catalogue. Its address is the only source of what it shows: the page, the search and the category come from
+ * the URL, and every change of the list changes the URL first (paging and categories add a history entry, typing
+ * replaces it). Back, Forward, a reload and a shared link therefore show the same books.
+ */
 
+const SEARCH_DELAY = 300
+
+const route = useRoute()
+const router = useRouter()
 const { mobile } = useDisplay()
-
-const authStore = useAuthStore()
 const booksStore = useBooksStore()
+const { books, loading, error, page, limit, total, pages } = storeToRefs(booksStore)
 
-const { books, loading, searching, page, pages, total } = storeToRefs(booksStore)
+const heading = ref(null)
+const query = computed(() => parseCatalogQuery(route.query))
+const filtered = computed(() => Boolean(query.value.q || query.value.category))
 
-const searchQuery = ref('')
-const selectedCategory = ref(props.category || null)
-const categories = BOOK_CATEGORIES
-
-const totalPages = computed(() => pages.value || 1)
-const currentPage = computed({
-    get: () => page.value,
-    set: (value) => (page.value = value),
+const showRange = computed(() => !loading.value && !error.value && total.value > 0 && books.value.length > 0)
+const range = computed(() => {
+    const from = (page.value - 1) * limit.value + 1
+    return { from, to: from + books.value.length - 1, total: total.value }
 })
 
-const selectCategory = (cat) => {
-    selectedCategory.value = cat
-    booksStore.setCategory(cat)
+const categoryOptions = computed(() => [
+    { value: '', label: t('catalog.categories.all') },
+    ...BOOK_CATEGORIES.map((category) => ({ value: category, label: category })),
+])
+
+// Opens a catalogue state: a new page or category is a step in the history, a search replaces the current one
+const open = (state, { replace = false } = {}) => {
+    const target = { query: catalogQuery({ ...query.value, ...state }) }
+    return replace ? router.replace(target) : router.push(target)
 }
 
-watch(searchQuery, (val) => {
-    booksStore.debouncedSearch(val)
-})
+const load = async () => {
+    const at = route.fullPath
+    const params = toBooksParams(query.value)
+    let response
+    try {
+        response = await booksStore.fetchBooks(params)
+    } catch {
+        // The store keeps the error of the latest request, and the page shows it with Try again
+        return
+    }
+    // A page past the end of the list (an old link) opens the last page, if the visitor is still on it
+    const { total: found, pages: last } = response.pagination
+    if (route.fullPath === at && found > 0 && params.page > last) open({ page: last }, { replace: true })
+}
 
 watch(
-    () => [props.category, props.authorId, props.itemsPerPage],
-    () => {
-        booksStore.category = props.category
-        booksStore.authorId = props.authorId
-        booksStore.limit = props.itemsPerPage
-        booksStore.loadBooks()
+    () => route.query,
+    (value) => {
+        // Leaving the catalogue changes the route before this component goes away
+        if (route.name !== 'Books') return
+        const canonical = canonicalCatalogQuery(value)
+        if (canonical) router.replace({ query: canonical })
+        else load()
+    },
+    { immediate: true }
+)
+
+const goToPage = async (next) => {
+    await open({ page: next })
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    heading.value?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' })
+    heading.value?.focus({ preventScroll: true })
+}
+
+const chooseCategory = (category) => open({ page: 1, category })
+
+// The search field shows the address's search, also after Back or Forward
+const search = ref(query.value.q)
+watch(
+    () => query.value.q,
+    (q) => {
+        if ((search.value ?? '').trim() !== q) search.value = q
     }
 )
 
-onMounted(() => {
-    booksStore.category = props.category
-    booksStore.authorId = props.authorId
-    booksStore.limit = props.itemsPerPage
-    booksStore.loadBooks()
-})
+const searchHint = computed(() => ((search.value ?? '').trim().length === 1 ? t('catalog.search.hint') : ''))
+
+let searchTimer
+const onSearch = (value) => {
+    clearTimeout(searchTimer)
+    const text = (value ?? '').trim()
+    // One character is not a search yet: the hint asks for two, the list stays
+    if (text.length === 1) return
+    searchTimer = setTimeout(() => open({ page: 1, q: text }, { replace: true }), SEARCH_DELAY)
+}
+
+onBeforeUnmount(() => clearTimeout(searchTimer))
 </script>
+
+<style scoped>
+.catalog-header {
+    margin-bottom: 16px;
+}
+
+.catalog-title {
+    margin-bottom: 4px;
+}
+
+.catalog-title:focus {
+    outline: none;
+}
+
+.catalog-range {
+    margin: 0;
+}
+
+.catalog-search {
+    max-width: 480px;
+}
+
+.catalog-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0 16px;
+}
+
+.book-grid {
+    margin-top: 0;
+    padding: 0;
+    list-style: none;
+}
+</style>

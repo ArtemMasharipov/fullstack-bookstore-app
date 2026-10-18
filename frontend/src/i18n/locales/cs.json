@@ -93,6 +93,19 @@
         }
     },
     "catalog": {
+        "title": "Katalog knih",
+        "range": "Zobrazeno {from}–{to} z {total}",
+        "search": {
+            "label": "Hledat knihy",
+            "hint": "Zadejte alespoň 2 znaky"
+        },
+        "categories": {
+            "label": "Kategorie",
+            "all": "Vše"
+        },
+        "empty": "V katalogu zatím nejsou žádné knihy.",
+        "noResults": "Tomuto výběru neodpovídají žádné knihy.",
+        "resetFilters": "Zrušit filtry",
         "addToCart": "Přidat do košíku",
         "addToCartNamed": "Přidat do košíku: {title}",
         "inStock": "Skladem",

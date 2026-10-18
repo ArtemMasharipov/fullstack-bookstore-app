@@ -5,6 +5,7 @@
  */
 
 import { createVuetify } from 'vuetify'
+import { cs, en } from 'vuetify/locale'
 import { dark, focus, light } from '@/design/tokens'
 
 // Critical components (used on every page)
@@ -263,6 +264,14 @@ export const vuetify = createVuetify({
     directives: {
         Intersect,
         Ripple,
+    },
+
+    // Vuetify's own texts (the pager's labels, "Close" on alerts) in the app's languages; App.vue keeps the current
+    // one in step with the page language
+    locale: {
+        locale: 'cs',
+        fallback: 'en',
+        messages: { cs, en },
     },
 
     theme: {

@@ -27,11 +27,19 @@ import NotificationContainer from './components/notifications/NotificationContai
 import { useAuthStore, useCartStore } from './stores'
 
 // Composition API imports
-import { onMounted } from 'vue'
+import { onMounted, watchEffect } from 'vue'
+import { useLocale } from 'vuetify'
+import { locale } from '@/i18n'
 
 // Store instances
 const authStore = useAuthStore()
 const cartStore = useCartStore()
+
+// Vuetify's own texts follow the page language
+const vuetifyLocale = useLocale()
+watchEffect(() => {
+    vuetifyLocale.current.value = locale.value
+})
 
 // Lifecycle hooks
 onMounted(async () => {
