@@ -12,6 +12,7 @@ import { config } from "../config/index.js";
 import Session from "../models/Session.js";
 import User from "../models/User.js";
 import { UnauthorizedError } from "../utils/errors.js";
+import { roleOf } from "./userView.js";
 
 const OBJECT_ID = /^[0-9a-f]{24}$/i;
 
@@ -67,7 +68,7 @@ export async function readSession(token) {
   if (!session || !user) throw notValid();
 
   return {
-    user: { id: user._id.toString(), username: user.username, email: user.email, role: user.role },
+    user: { id: user._id.toString(), username: user.username, email: user.email, role: roleOf(user) },
     sessionId: jti,
   };
 }

@@ -1,224 +1,120 @@
 /**
  * Auth Service Layer
  * Handles authentication logic: register, login, password and profile; the
- * tokens come from sessions.js
+ * tokens come from sessions.js. Bodies arrive parsed by schemas/auth.js.
  */
 
 import User from "../models/User.js";
-import {
-  ConflictError,
-  UnauthorizedError,
-  ValidationError,
-} from "../utils/errors.js";
-import { issueToken } from "./sessions.js";
+import { ConflictError, UnauthorizedError, ValidationError } from "../utils/errors.js";
+import { endUserSessions, issueToken } from "./sessions.js";
+import { toUserView } from "./userView.js";
 
 /**
  * Register new user
- * @param {Object} userData - User registration data
+ * @param {Object} body - Parsed registerBody
  * @returns {Object} { user, token }
  */
-export async function register(userData) {
-  const { username, email, password, firstName, lastName } = userData;
-
-  // Validate required fields
-  if (!username || !email || !password) {
-    throw new ValidationError("Username, email and password are required");
-  }
-
-  // Validate password strength
-  if (password.length < 6) {
-    throw new ValidationError("Password must be at least 6 characters");
-  }
-
-  // Check if user already exists
-  const existingUser = await User.findOne({
-    $or: [{ email }, { username }],
-  });
+export async function register({ username, email, password, firstName, lastName }) {
+  const existingUser = await User.findOne({ $or: [{ email }, { username }] });
 
   if (existingUser) {
     if (existingUser.email === email) {
       throw new ConflictError("Email already registered");
     }
-    if (existingUser.username === username) {
-      throw new ConflictError("Username already taken");
-    }
+    throw new ConflictError("Username already taken");
   }
 
-  // Create user
-  const user = new User({
-    username,
-    email,
-    password, // Will be hashed by pre-save hook
-    firstName,
-    lastName,
-    role: "user", // Default role
-  });
+  // The password is hashed by the pre-save hook
+  const user = await User.create({ username, email, password, firstName, lastName, role: "user" });
 
-  await user.save();
-
-  const token = await issueToken(user._id);
-
-  // Remove password from response
-  const userObject = user.toJSON();
-  delete userObject.password;
-
-  return {
-    user: userObject,
-    token,
-  };
+  return { user: toUserView(user), token: await issueToken(user._id) };
 }
 
 /**
  * Login user
- * @param {Object} credentials - Login credentials (email/username, password)
+ * @param {Object} body - Parsed loginBody
  * @returns {Object} { user, token }
  */
-export async function login(credentials) {
-  const { emailOrUsername, password } = credentials;
-
-  // Validate input
-  if (!emailOrUsername || !password) {
-    throw new ValidationError("Email/username and password are required");
-  }
-
-  // Find user by email or username
+export async function login({ emailOrUsername, password }) {
   const user = await User.findOne({
-    $or: [
-      { email: emailOrUsername.toLowerCase() },
-      { username: emailOrUsername },
-    ],
+    $or: [{ email: emailOrUsername.toLowerCase() }, { username: emailOrUsername }],
     isActive: true,
-  }).select("+password"); // Include password field
+  }).select("+password");
 
-  if (!user) {
+  if (!user || !(await user.comparePassword(password))) {
     throw new UnauthorizedError("Invalid credentials");
   }
 
-  // Check password
-  const isPasswordValid = await user.comparePassword(password);
+  // Not save(): it would check the whole stored document, and a role the app
+  // no longer has would fail it
+  const lastLogin = new Date();
+  await User.updateOne({ _id: user._id }, { $set: { lastLogin } });
 
-  if (!isPasswordValid) {
-    throw new UnauthorizedError("Invalid credentials");
-  }
-
-  // Update last login
-  await user.updateLastLogin();
-
-  const token = await issueToken(user._id);
-
-  // Remove password from response
-  const userObject = user.toJSON();
-  delete userObject.password;
-
-  return {
-    user: userObject,
-    token,
-  };
+  return { user: toUserView({ ...user.toObject(), lastLogin }), token: await issueToken(user._id) };
 }
 
 /**
- * Get current user from token
- * @param {string} userId - User ID from token
- * @returns {Object} User data
+ * The signed-in user
+ * @param {string} userId - User id of the session
+ * @returns {Object} User view
  */
 export async function getCurrentUser(userId) {
-  const user = await User.findById(userId).select("-password");
+  const user = await User.findById(userId).lean();
 
-  if (!user) {
-    throw new UnauthorizedError("User not found");
+  if (!user || !user.isActive) {
+    throw new UnauthorizedError("Session is not valid");
   }
 
-  if (!user.isActive) {
-    throw new UnauthorizedError("Account is disabled");
-  }
-
-  return user;
+  return toUserView(user);
 }
 
 /**
- * Change password
- * @param {string} userId - User ID
- * @param {Object} passwords - Old and new passwords
- * @returns {Object} Success message
+ * Change password: every session of the user ends, and this device gets a new one
+ * @param {string} userId - User id of the session
+ * @param {Object} body - Parsed passwordBody
+ * @returns {Object} { user, token }
  */
-export async function changePassword(userId, passwords) {
-  const { currentPassword, newPassword } = passwords;
-
-  // Validate input
-  if (!currentPassword || !newPassword) {
-    throw new ValidationError("Current and new password are required");
-  }
-
-  if (newPassword.length < 6) {
-    throw new ValidationError("New password must be at least 6 characters");
-  }
-
-  if (currentPassword === newPassword) {
-    throw new ValidationError(
-      "New password must be different from current password"
-    );
-  }
-
-  // Find user with password
+export async function changePassword(userId, { currentPassword, newPassword }) {
   const user = await User.findById(userId).select("+password");
 
   if (!user) {
-    throw new UnauthorizedError("User not found");
+    throw new UnauthorizedError("Session is not valid");
   }
 
-  // Verify current password
-  const isPasswordValid = await user.comparePassword(currentPassword);
-
-  if (!isPasswordValid) {
-    throw new UnauthorizedError("Current password is incorrect");
+  // A field error and not 401: a mistyped password must not end the session
+  if (!(await user.comparePassword(currentPassword))) {
+    throw new ValidationError("Validation failed", { currentPassword: "incorrect" });
   }
 
-  // Update password (will be hashed by pre-save hook)
+  if (currentPassword === newPassword) {
+    throw new ValidationError("Validation failed", { newPassword: "same_as_current" });
+  }
+
+  // The pre-save hook hashes it; only the password is checked, so a stored
+  // role the app no longer has does not stop the change
   user.password = newPassword;
-  await user.save();
+  await user.save({ validateModifiedOnly: true });
 
-  return {
-    message: "Password changed successfully",
-  };
+  await endUserSessions(userId);
+  return { user: toUserView(user), token: await issueToken(userId) };
 }
 
 /**
- * Update user profile
- * @param {string} userId - User ID
- * @param {Object} updates - Profile updates
- * @returns {Object} Updated user
+ * Update user profile. A username someone else has answers 409 from the
+ * unique index.
+ * @param {string} userId - User id of the session
+ * @param {Object} body - Parsed profileBody
+ * @returns {Object} User view
  */
-export async function updateProfile(userId, updates) {
-  // Prevent updating sensitive fields
-  const allowedUpdates = ["firstName", "lastName", "username"];
-  const updateData = {};
-
-  for (const key of allowedUpdates) {
-    if (updates[key] !== undefined) {
-      updateData[key] = updates[key];
-    }
-  }
-
-  // Check if username is being changed and is unique
-  if (updateData.username) {
-    const existingUser = await User.findOne({
-      username: updateData.username,
-      _id: { $ne: userId },
-    });
-
-    if (existingUser) {
-      throw new ConflictError("Username already taken");
-    }
-  }
-
-  const user = await User.findByIdAndUpdate(userId, updateData, {
+export async function updateProfile(userId, body) {
+  const user = await User.findByIdAndUpdate(userId, body, {
     new: true,
     runValidators: true,
-  }).select("-password");
+  }).lean();
 
   if (!user) {
-    throw new UnauthorizedError("User not found");
+    throw new UnauthorizedError("Session is not valid");
   }
 
-  return user;
+  return toUserView(user);
 }

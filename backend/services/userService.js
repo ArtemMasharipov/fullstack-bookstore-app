@@ -3,7 +3,7 @@
  * Handles user management logic (admin operations)
  */
 
-import User from "../models/User.js";
+import User, { ROLES } from "../models/User.js";
 import {
   ForbiddenError,
   NotFoundError,
@@ -123,9 +123,8 @@ export async function createUser(userData) {
   }
 
   // Validate role
-  const validRoles = ["user", "admin", "moderator"];
-  if (role && !validRoles.includes(role)) {
-    throw new ValidationError(`Role must be one of: ${validRoles.join(", ")}`);
+  if (role && !ROLES.includes(role)) {
+    throw new ValidationError(`Role must be one of: ${ROLES.join(", ")}`);
   }
 
   // Create user
@@ -203,10 +202,9 @@ export async function updateUser(id, updateData) {
 
   // Validate role if updating
   if (updates.role) {
-    const validRoles = ["user", "admin", "moderator"];
-    if (!validRoles.includes(updates.role)) {
+    if (!ROLES.includes(updates.role)) {
       throw new ValidationError(
-        `Role must be one of: ${validRoles.join(", ")}`
+        `Role must be one of: ${ROLES.join(", ")}`
       );
     }
   }
@@ -282,10 +280,9 @@ export async function permanentlyDeleteUser(id, currentUserId) {
  * @returns {Array} Users with specified role
  */
 export async function getUsersByRole(role) {
-  const validRoles = ["user", "admin", "moderator"];
 
-  if (!validRoles.includes(role)) {
-    throw new ValidationError(`Role must be one of: ${validRoles.join(", ")}`);
+  if (!ROLES.includes(role)) {
+    throw new ValidationError(`Role must be one of: ${ROLES.join(", ")}`);
   }
 
   const users = await User.findByRole(role).lean();

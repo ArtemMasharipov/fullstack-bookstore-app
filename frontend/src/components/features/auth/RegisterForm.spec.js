@@ -90,6 +90,19 @@ describe('RegisterForm', () => {
         await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/orders'))
     })
 
+    it('sends the account without the repeated password', async () => {
+        await mount('/register')
+
+        await register()
+
+        await vi.waitFor(() => expect(auth.register).toHaveBeenCalledTimes(1))
+        expect(auth.register.mock.calls[0][0]).toEqual({
+            username: USER.username,
+            email: USER.email,
+            password: 'secret123',
+        })
+    })
+
     it('says that the account already exists on CONFLICT', async () => {
         auth.register.mockRejectedValueOnce(
             Object.assign(new Error('Email already registered'), { status: 409, code: 'CONFLICT' })

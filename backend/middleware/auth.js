@@ -29,7 +29,7 @@ export const protect = async (req, res, next) => {
 
 /**
  * Authorize specific roles
- * Usage: authorize('admin'), authorize('admin', 'moderator')
+ * Usage: authorize('admin')
  */
 export const authorize = (...roles) => {
   return (req, res, next) => {

@@ -7,6 +7,8 @@ import express from "express";
 import * as authController from "../controllers/authController.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { protect } from "../middleware/auth.js";
+import { validate } from "../middleware/validate.js";
+import { loginBody, passwordBody, profileBody, registerBody } from "../schemas/auth.js";
 
 const router = express.Router();
 
@@ -16,19 +18,19 @@ const router = express.Router();
 
 /**
  * @route   POST /api/v1/auth/register
- * @desc    Register new user
- * @body    { username, email, password, firstName?, lastName? }
+ * @desc    Register new user; answers 201 { user, token }
+ * @body    { username, email, password, firstName?, lastName? }; any other field answers 400
  * @access  Public
  */
-router.post("/register", asyncHandler(authController.register));
+router.post("/register", validate({ body: registerBody }), asyncHandler(authController.register));
 
 /**
  * @route   POST /api/v1/auth/login
- * @desc    Login user
+ * @desc    Login user; answers { user, token }
  * @body    { emailOrUsername, password }
  * @access  Public
  */
-router.post("/login", asyncHandler(authController.login));
+router.post("/login", validate({ body: loginBody }), asyncHandler(authController.login));
 
 // =============================================================================
 // PROTECTED ROUTES (Authenticated Users)
@@ -43,11 +45,16 @@ router.get("/me", protect, asyncHandler(authController.getCurrentUser));
 
 /**
  * @route   PUT /api/v1/auth/password
- * @desc    Change password
+ * @desc    Change password; answers { user, token } and ends every other session of the user
  * @body    { currentPassword, newPassword }
  * @access  Private
  */
-router.put("/password", protect, asyncHandler(authController.changePassword));
+router.put(
+  "/password",
+  protect,
+  validate({ body: passwordBody }),
+  asyncHandler(authController.changePassword)
+);
 
 /**
  * @route   PUT /api/v1/auth/profile
@@ -55,7 +62,12 @@ router.put("/password", protect, asyncHandler(authController.changePassword));
  * @body    { firstName?, lastName?, username? }
  * @access  Private
  */
-router.put("/profile", protect, asyncHandler(authController.updateProfile));
+router.put(
+  "/profile",
+  protect,
+  validate({ body: profileBody }),
+  asyncHandler(authController.updateProfile)
+);
 
 /**
  * @route   POST /api/v1/auth/logout

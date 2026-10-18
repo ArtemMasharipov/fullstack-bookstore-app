@@ -96,11 +96,11 @@ const handleSubmit = async () => {
 
     errorKey.value = null
     try {
+        // The repeated password is checked here only; the server accepts the account fields alone
         await authStore.register({
             username: username.value,
             email: email.value,
             password: password.value,
-            confirmPassword: confirmPassword.value,
         })
         await afterSignIn(router, route)
     } catch (error) {

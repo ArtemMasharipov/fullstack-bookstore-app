@@ -6,6 +6,9 @@
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 
+// A stored role outside this list (an older "moderator") reads as "user": services/userView.js
+export const ROLES = Object.freeze(["user", "admin"]);
+
 const userSchema = new mongoose.Schema(
   {
     username: {
@@ -47,7 +50,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "admin", "moderator"],
+      enum: ROLES,
       default: "user",
       index: true,
     },
@@ -122,12 +125,6 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
   } catch (error) {
     throw new Error("Password comparison failed");
   }
-};
-
-// Instance method - update last login
-userSchema.methods.updateLastLogin = async function () {
-  this.lastLogin = new Date();
-  return this.save();
 };
 
 // Static method - find active users
