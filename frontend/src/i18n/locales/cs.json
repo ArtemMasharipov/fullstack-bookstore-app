@@ -59,7 +59,10 @@
             "users": "Uživatelské účty"
         },
         "userFallback": "Správce",
-        "navLabel": "Sekce administrace"
+        "navLabel": "Sekce administrace",
+        "table": {
+            "loadError": "Seznam se nepodařilo načíst."
+        }
     },
     "home": {
         "hero": {

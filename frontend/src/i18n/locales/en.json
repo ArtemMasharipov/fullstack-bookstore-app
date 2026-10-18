@@ -59,7 +59,10 @@
             "users": "User accounts"
         },
         "userFallback": "Admin",
-        "navLabel": "Admin sections"
+        "navLabel": "Admin sections",
+        "table": {
+            "loadError": "The list could not be loaded."
+        }
     },
     "home": {
         "hero": {
