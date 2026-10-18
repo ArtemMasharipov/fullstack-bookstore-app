@@ -15,6 +15,9 @@ export const useBooksStore = defineStore('books', {
         // Data state
         books: [],
         currentBook: null,
+        // The open book has a state of its own: loading it leaves the catalogue list as it is
+        currentBookLoading: false,
+        currentBookError: null,
 
         // Pagination
         page: 1,
@@ -62,17 +65,22 @@ export const useBooksStore = defineStore('books', {
         },
 
         /**
-         * Fetch book by ID
-         * Simplified with withLoading helper
+         * Fetch the open book with its own loading and error. The error is the API error object; it is thrown on as
+         * well.
          */
         async fetchBookById(id) {
-            return withLoading(this, async () => {
-                const response = await booksApi.fetchById(id)
-                const normalizedResponse = normalizeApiResponse(response)
-                const book = normalizeBook(normalizedResponse.data)
+            this.currentBookLoading = true
+            this.currentBookError = null
+            try {
+                const book = normalizeBook(normalizeApiResponse(await booksApi.fetchById(id)).data)
                 this.currentBook = book
                 return book
-            })
+            } catch (error) {
+                this.currentBookError = error
+                throw error
+            } finally {
+                this.currentBookLoading = false
+            }
         },
 
         /**

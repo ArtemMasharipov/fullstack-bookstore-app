@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
-const books = vi.hoisted(() => ({ fetchAll: vi.fn() }))
+const books = vi.hoisted(() => ({ fetchAll: vi.fn(), fetchById: vi.fn() }))
 vi.mock('@/services/api/booksApi', () => ({ booksApi: books }))
 
 import { useBooksStore } from './books'
@@ -36,6 +36,7 @@ function deferred() {
 
 beforeEach(() => {
     books.fetchAll.mockReset()
+    books.fetchById.mockReset()
     setActivePinia(createPinia())
 })
 
@@ -112,5 +113,35 @@ describe('books store', () => {
         expect(latest.map((b) => [b.id, b.author.name])).toEqual([['b9', 'Božena Němcová']])
         expect(store.books).toEqual([{ id: 'kept', title: 'Kept' }])
         expect(store.page).toBe(2)
+    })
+
+    it('loads a book without touching the catalogue loading and error', async () => {
+        const answer = deferred()
+        books.fetchById.mockReturnValue(answer.promise)
+        const store = useBooksStore()
+        store.$patch({ loading: true, error: { code: 'INTERNAL' } })
+
+        const loading = store.fetchBookById('b1')
+        expect(store.currentBookLoading).toBe(true)
+        answer.resolve({ success: true, data: book('b1', 'Babička') })
+        await loading
+
+        expect(store.currentBook.id).toBe('b1')
+        expect(store.currentBookLoading).toBe(false)
+        expect(store.currentBookError).toBeNull()
+        expect(store.loading).toBe(true)
+        expect(store.error).toEqual({ code: 'INTERNAL' })
+    })
+
+    it('keeps a failed book load to itself', async () => {
+        books.fetchById.mockRejectedValue({ code: 'NOT_FOUND', message: 'Book not found' })
+        const store = useBooksStore()
+
+        await expect(store.fetchBookById('b1')).rejects.toEqual(expect.objectContaining({ code: 'NOT_FOUND' }))
+
+        expect(store.currentBookError.code).toBe('NOT_FOUND')
+        expect(store.currentBookLoading).toBe(false)
+        expect(store.error).toBeNull()
+        expect(store.loading).toBe(false)
     })
 })

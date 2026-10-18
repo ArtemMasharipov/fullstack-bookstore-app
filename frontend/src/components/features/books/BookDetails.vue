@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="loading" class="text-center py-8">
+        <div v-if="currentBookLoading" class="text-center py-8">
             <loading-spinner />
         </div>
 
@@ -145,7 +145,7 @@ const booksStore = useBooksStore()
 const cartStore = useCartStore()
 const shop = useShopConfigStore()
 
-const { currentBook, loading } = storeToRefs(booksStore)
+const { currentBook, currentBookLoading } = storeToRefs(booksStore)
 
 const loadError = ref(null)
 const quantity = ref(1)
