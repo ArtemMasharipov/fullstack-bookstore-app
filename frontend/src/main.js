@@ -11,6 +11,7 @@ import { installSession } from '@/services/session'
 import { vuetify } from '@/config/vuetify'
 import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
+import '@/design/focus.css'
 
 // Import logging
 import { setupGlobalErrorHandling } from '@/utils/errorHandler'

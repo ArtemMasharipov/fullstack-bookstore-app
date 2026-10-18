@@ -1,0 +1,20 @@
+/*
+ * Two-tone focus ring from the design tokens (design/tokens.js, theme variables focus-*): an inner outline and an
+ * outer halo, so the ring shows on any background. Vuetify removes the outline of its buttons and list items
+ * (.v-btn { outline: none }), so the selector outweighs it. Its elevation classes set box-shadow with !important,
+ * so the halo needs it too, and only while the element has keyboard focus. Fields keep their own focus border.
+ */
+:is(a, button, [tabindex]:not([tabindex='-1']), .v-btn, .v-chip, .v-list-item):focus-visible {
+    outline: 3px solid rgb(var(--v-focus-inner));
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgb(var(--v-focus-outer)) !important;
+}
+
+/*
+ * On navy surfaces (the header, the hero, the footer) the colours swap, as in the dark theme. Set on the focused
+ * element itself: Vuetify components carry their own theme class, which would reset an inherited variable.
+ */
+.bg-primary :is(a, button, [tabindex]:not([tabindex='-1']), .v-btn, .v-chip, .v-list-item):focus-visible {
+    outline-color: rgb(var(--v-focus-inner-on-dark));
+    box-shadow: 0 0 0 6px rgb(var(--v-focus-outer-on-dark)) !important;
+}

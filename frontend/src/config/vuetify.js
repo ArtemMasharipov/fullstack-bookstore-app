@@ -5,6 +5,7 @@
  */
 
 import { createVuetify } from 'vuetify'
+import { dark, focus, light } from '@/design/tokens'
 
 // Critical components (used on every page)
 import {
@@ -268,28 +269,28 @@ export const vuetify = createVuetify({
         defaultTheme: 'light',
         themes: {
             light: {
+                // secondary, on-secondary, price and the status colours come from the design tokens
                 colors: {
                     primary: '#1B2A4A',
-                    secondary: '#D4A574',
                     accent: '#E8C547',
-                    error: '#C0392B',
-                    info: '#2196F3',
-                    success: '#42b983',
-                    warning: '#F39C12',
                     surface: '#FAFAF7',
                     background: '#FAFAF7',
                     'on-primary': '#FFFFFF',
-                    'on-secondary': '#FFFFFF',
                     'on-surface': '#2D3436',
                     'on-background': '#2D3436',
                     'surface-variant': '#F0EDE8',
                     'on-surface-variant': '#5A5A5A',
+                    ...light,
                 },
                 // Secondary text at Vuetify's default 0.6 is 3.7:1 on this surface. Field
                 // labels and hints apply it on top of the field's 0.87, so 0.8 is what
                 // brings them to 4.8:1 (WCAG AA); text-medium-emphasis gets about 7:1
                 variables: {
                     'medium-emphasis-opacity': 0.8,
+                    'focus-inner': focus.light.inner,
+                    'focus-outer': focus.light.outer,
+                    'focus-inner-on-dark': focus.onDark.inner,
+                    'focus-outer-on-dark': focus.onDark.outer,
                 },
             },
             dark: {
@@ -304,11 +305,18 @@ export const vuetify = createVuetify({
                     surface: '#1A1A1A',
                     background: '#121212',
                     'on-primary': '#FFFFFF',
-                    'on-secondary': '#FFFFFF',
+                    // on-secondary and price come from the design tokens
                     'on-surface': '#E8E8E8',
                     'on-background': '#E8E8E8',
                     'surface-variant': '#2A2A2A',
                     'on-surface-variant': '#B0B0B0',
+                    ...dark,
+                },
+                variables: {
+                    'focus-inner': focus.onDark.inner,
+                    'focus-outer': focus.onDark.outer,
+                    'focus-inner-on-dark': focus.onDark.inner,
+                    'focus-outer-on-dark': focus.onDark.outer,
                 },
             },
         },

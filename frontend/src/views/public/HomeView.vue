@@ -161,12 +161,6 @@ onMounted(() => {
     background: linear-gradient(135deg, rgb(var(--v-theme-primary)) 0%, #2a4470 100%);
 }
 
-/* White on the secondary color is 2.2:1; the navy of the light theme gives 6.4:1. The hero and its button look
-   the same in both themes, so the color is fixed rather than the theme's primary, which is lighter in the dark theme */
-.hero-cta.v-btn {
-    color: #1b2a4a !important;
-}
-
 .category-chip {
     transition: transform var(--motion-fast) var(--motion-ease);
 }
