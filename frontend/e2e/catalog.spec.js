@@ -245,5 +245,23 @@ for (const locale of ['cs', 'en']) {
             )
             expect(small).toEqual([])
         })
+
+        test(`${locale}: cards in a row line up their prices and buttons`, async ({ page }) => {
+            await page.setViewportSize({ width: 1440, height: 900 })
+            await page.goto(`${prefix}/books`)
+            await expect(page.locator('.book-card')).toHaveCount(12)
+
+            // The first row holds a title of two lines next to titles of one line
+            const row = await page.locator('.book-card').evaluateAll((cards) =>
+                cards.slice(0, 4).map((card) => {
+                    const price = card.querySelector('.book-card__price').getBoundingClientRect()
+                    const button = card.querySelector('.book-card__add').getBoundingClientRect()
+                    return { price: Math.round(price.top), button: Math.round(button.top), height: button.height }
+                })
+            )
+            expect(new Set(row.map((card) => card.price)).size, JSON.stringify(row)).toBe(1)
+            expect(new Set(row.map((card) => card.button)).size, JSON.stringify(row)).toBe(1)
+            expect(new Set(row.map((card) => card.height)).size, JSON.stringify(row)).toBe(1)
+        })
     })
 }

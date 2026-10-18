@@ -175,10 +175,12 @@ const addToCart = async () => {
     font-variant-numeric: tabular-nums;
 }
 
-/* Above the stretched link */
+/* Above the stretched link. A block button grows with Vuetify's flex: 1 0 auto; in this column it would take the
+   card's free height, so the free space goes to the price row's top margin and the cards of a row line up */
 .book-card__add {
     position: relative;
     z-index: 1;
+    flex: 0 0 auto;
     margin-top: 8px;
 }
 </style>
