@@ -8,7 +8,6 @@ import cs from '@/i18n/locales/cs.json'
 import ConfirmModal from './ConfirmModal.vue'
 import BaseModal from './BaseModal.vue'
 import FooterLayout from '@/components/layout/FooterLayout.vue'
-import AdminSidebar from '@/components/layout/admin/AdminSidebar.vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 let app
@@ -85,7 +84,7 @@ describe('localized modal defaults', () => {
     })
 })
 
-it('updates sidebar labels, subtitles and footer copy in place on locale activation', async () => {
+it('updates the footer copy in place on locale activation', async () => {
     const names = [
         'Home',
         'Books',
@@ -98,21 +97,17 @@ it('updates sidebar labels, subtitles and footer copy in place on locale activat
         'AdminAuthors',
         'AdminOrders',
         'AdminUsers',
-        'AdminSettings',
     ]
     const router = createRouter({
         history: createMemoryHistory(),
         routes: names.map((name) => ({ name, path: '/' + name, component: { render: () => null } })),
     })
     await router.push('/Home')
-    await mount({ render: () => h('div', [h(AdminSidebar), h(FooterLayout)]) }, {}, router)
-    expect(document.body.textContent).toContain('Přehled a statistiky')
+    await mount({ render: () => h('div', [h(FooterLayout)]) }, {}, router)
     expect(document.body.textContent).toContain('O nás')
     expect(document.body.textContent).toContain('Všechna práva vyhrazena.')
     activateLocale('en')
     await nextTick()
-    expect(document.body.textContent).toContain('Overview & stats')
-    expect(document.body.textContent).toContain('Manage inventory')
     expect(document.body.textContent).toContain('Discover your next great read at Bookstore')
     expect(document.body.textContent).toContain('All rights reserved.')
     expect(document.body.textContent).not.toContain('Bookstore App')

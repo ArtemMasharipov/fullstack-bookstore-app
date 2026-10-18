@@ -57,18 +57,10 @@ export default defineConfig({
                         return 'vendor'
                     }
 
-                    // Application code chunking
+                    // Application code chunking. Admin code has no chunk of its own here: a manual chunk also takes the
+                    // modules it shares with the storefront, which then preloads it. The lazy admin layout and pages
+                    // are its chunks.
                     if (id.includes('src/')) {
-                        // Admin features
-                        if (
-                            id.includes('src/views/admin') ||
-                            id.includes('src/components/layout/admin') ||
-                            id.includes('AdminHeader') ||
-                            id.includes('AdminSidebar')
-                        ) {
-                            return 'admin'
-                        }
-
                         // Store modules
                         if (id.includes('src/store')) {
                             return 'store'

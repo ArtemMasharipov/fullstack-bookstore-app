@@ -36,7 +36,6 @@ export const ROUTE_NAMES = {
     ADMIN_AUTHORS: 'AdminAuthors',
     ADMIN_ORDERS: 'AdminOrders',
     ADMIN_USERS: 'AdminUsers',
-    ADMIN_SETTINGS: 'AdminSettings',
 
     // Errors
     ERROR: 'Error',
@@ -70,7 +69,6 @@ export const ROUTE_PATHS = {
     ADMIN_AUTHORS: '/admin/authors',
     ADMIN_ORDERS: '/admin/orders',
     ADMIN_USERS: '/admin/users',
-    ADMIN_SETTINGS: '/admin/settings',
 
     // Errors
     ERROR: '/error',

@@ -8,8 +8,7 @@ import { createLocaleRuntime, i18n, loadLocale, activateLocale } from '@/i18n'
 import { useCartStore } from '@/stores/cart'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
-import AdminSidebar from '@/components/layout/admin/AdminSidebar.vue'
-import AdminHeader from '@/components/layout/admin/AdminHeader.vue'
+import AdminLayout from '@/components/layout/admin/AdminLayout.vue'
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher.vue'
 import { buildRoutes } from './buildRoutes'
 import { installLocaleRouting, localeRoute, routeLocale, switchLocaleTarget } from './locale'
@@ -205,7 +204,7 @@ describe('native language control', () => {
 })
 
 describe('localized admin navigation', () => {
-    it('updates system and main titles, subtitles and link URLs when the locale changes', async () => {
+    it('updates section titles, subtitles and link URLs when the locale changes', async () => {
         const router = makeRouter()
         const pinia = createPinia()
         setActivePinia(pinia)
@@ -214,7 +213,7 @@ describe('localized admin navigation', () => {
         const root = document.createElement('div')
         document.body.append(root)
         const app = createApp({
-            render: () => h(components.VApp, {}, { default: () => [h(AdminHeader), h(AdminSidebar)] }),
+            render: () => h(components.VApp, {}, { default: () => h(AdminLayout) }),
         })
             .use(pinia)
             .use(i18n)
@@ -222,12 +221,12 @@ describe('localized admin navigation', () => {
             .use(createVuetify({ components }))
         app.mount(root)
         await nextTick()
-        expect(root.querySelector('a[href="/en/admin/settings"]')?.textContent).toContain('Settings')
+        expect(root.querySelector('a[href="/en/admin/books"]')?.textContent).toContain('Books')
         expect(root.querySelector('a[href="/en/admin/books"]')?.textContent).toContain('Manage inventory')
         expect(root.querySelector('button[lang="cs"]')).toBeInstanceOf(HTMLButtonElement)
         await router.push('/admin')
         await nextTick()
-        expect(root.querySelector('a[href="/admin/settings"]')?.textContent).toContain('Nastavení')
+        expect(root.querySelector('a[href="/admin/books"]')?.textContent).toContain('Knihy')
         expect(root.querySelector('a[href="/admin/books"]')?.textContent).toContain('Správa knih')
         app.unmount()
     })

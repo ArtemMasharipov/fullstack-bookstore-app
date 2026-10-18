@@ -29,12 +29,23 @@ describe('localized route manifest', () => {
                 .filter((r) => r.name?.startsWith('Admin'))
                 .map((r) => r.name)
                 .sort()
-        ).toEqual(['AdminAuthors', 'AdminBooks', 'AdminDashboard', 'AdminOrders', 'AdminSettings', 'AdminUsers'])
+        ).toEqual(['AdminAuthors', 'AdminBooks', 'AdminDashboard', 'AdminOrders', 'AdminUsers'])
         for (const path of ['/admin', '/en/admin', '/en/admin/books']) {
             expect(routes.resolve(path).meta.access).toEqual({ auth: true, capability: 'admin' })
         }
         expect(routes.resolve('/en/admin').name).toBe('AdminDashboard')
         expect(routes.getRoutes().find((r) => r.path.endsWith('/admin') && r.children.length)?.name).toBeUndefined()
+    })
+
+    it('puts the admin pages, and only them, in the admin layout', () => {
+        const routes = router()
+        for (const path of ['/admin', '/en/admin', '/en/admin/books', '/admin/users']) {
+            expect(routes.resolve(path).meta.layout).toBe('admin')
+        }
+        for (const path of ['/', '/books', '/en/orders/abc', '/admin/settings']) {
+            expect(routes.resolve(path).meta.layout).toBeUndefined()
+        }
+        expect(routes.resolve('/admin/settings').name).toBe('NotFound')
     })
 
     it('sends the old order status page to the order details in the same language', async () => {

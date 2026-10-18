@@ -12,7 +12,6 @@
     "src/views/admin/AdminAuthorsView.vue",
     "src/views/admin/AdminDashboardView.vue",
     "src/views/admin/AdminOrdersView.vue",
-    "src/views/admin/AdminSettingsView.vue",
     "src/views/admin/AdminUsersView.vue",
     "src/views/auth/ProfileView.vue"
 ]

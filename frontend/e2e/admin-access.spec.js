@@ -34,7 +34,9 @@ for (const locale of ['cs', 'en']) {
         await menuItem(page, words.nav.admin).click()
 
         await expect(page).toHaveURL((url) => url.pathname === `${prefix}/admin`)
-        await expect(page.getByRole('heading', { name: words.nav.admin, exact: true })).toBeVisible()
+        await expect(
+            page.getByRole('heading', { level: 1, name: words.routes.AdminDashboard, exact: true })
+        ).toBeVisible()
     })
 
     test(`${locale}: a customer is refused the admin area`, async ({ page }) => {
@@ -93,12 +95,15 @@ test('an admin whose role is taken away is sent to sign in at the next request',
 
     await signIn(page, second, '/en')
     await page.goto('/en/admin/books')
-    await expect(page.getByRole('heading', { name: dict.nav.admin, exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: dict.routes.AdminBooks, exact: true })).toBeVisible()
 
     const demoted = await page.request.put(`/api/v1/users/${secondId}`, { headers: asSeeded, data: { role: 'user' } })
     expect(demoted.status()).toBe(200)
 
     // The dashboard asks the API for the orders: the ended session answers 401
-    await page.locator('.admin-sidebar a').filter({ hasText: dict.routes.AdminDashboard }).click()
+    await page
+        .getByRole('navigation', { name: dict.admin.navLabel })
+        .getByRole('link', { name: dict.routes.AdminDashboard })
+        .click()
     await expect(page).toHaveURL((url) => url.pathname === '/en/login')
 })

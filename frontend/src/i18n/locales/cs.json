@@ -28,7 +28,6 @@
         "AdminAuthors": "Autoři",
         "AdminOrders": "Objednávky",
         "AdminUsers": "Uživatelé",
-        "AdminSettings": "Nastavení",
         "Error": "Chyba",
         "Unauthorized": "Přístup odepřen",
         "NotFound": "Stránka nenalezena"
@@ -49,10 +48,6 @@
         "customerService": "Zákaznický servis",
         "account": "Můj účet",
         "returnStore": "Zpět do obchodu",
-        "search": "Hledat…",
-        "system": "Systém",
-        "adminAccess": "Přístup správce",
-        "adminDashboard": "Přehled administrace",
         "userInitial": "U"
     },
     "admin": {
@@ -64,7 +59,7 @@
             "users": "Uživatelské účty"
         },
         "userFallback": "Správce",
-        "version": "Bookstore v{version}"
+        "navLabel": "Sekce administrace"
     },
     "home": {
         "hero": {

@@ -14,6 +14,9 @@
  * redirectTo {string} — instead of a view: the id of the route this path now
  *   opens, with the same params, query and language
  *
+ * layout {string} — a group's layout, which App.vue renders around its pages: 'admin' for the admin
+ *   area; any other page is shown in the storefront layout
+ *
  * Nav shape (admin children only):
  *   section  {string} — sidebar section key, e.g. 'main' | 'system'
  *   order    {number} — sort order within the section
@@ -119,12 +122,13 @@ export const routeManifest = [
     },
 
     // ── Admin (layout group) ────────────────────────────────────────────
-    // The `layout` component wraps all children; its `access` is merged
-    // into every child record by buildRoutes() so the unified guard sees it.
+    // The group has no view: App.vue shows its pages in the admin layout. Its
+    // `access` is merged into every child record by buildRoutes() so the
+    // unified guard sees it.
     {
         id: 'Admin',
         path: '/admin',
-        layout: () => import('@/views/admin/AdminWrapper.vue'),
+        layout: 'admin',
         access: { auth: true, capability: 'admin' },
         children: [
             {
@@ -161,13 +165,6 @@ export const routeManifest = [
                 view: () => import('@/views/admin/AdminUsersView.vue'),
                 titleKey: 'routes.AdminUsers',
                 nav: { section: 'main', order: 50, icon: 'mdi-account-group', subtitleKey: 'admin.nav.users' },
-            },
-            {
-                id: 'AdminSettings',
-                path: 'settings',
-                view: () => import('@/views/admin/AdminSettingsView.vue'),
-                titleKey: 'routes.AdminSettings',
-                nav: { section: 'system', order: 10, icon: 'mdi-cog' },
             },
         ],
     },

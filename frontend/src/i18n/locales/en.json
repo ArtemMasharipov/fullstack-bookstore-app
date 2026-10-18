@@ -28,7 +28,6 @@
         "AdminAuthors": "Authors",
         "AdminOrders": "Orders",
         "AdminUsers": "Users",
-        "AdminSettings": "Settings",
         "Error": "Error",
         "Unauthorized": "Access Denied",
         "NotFound": "Page Not Found"
@@ -49,10 +48,6 @@
         "customerService": "Customer Service",
         "account": "My Account",
         "returnStore": "Return to Store",
-        "search": "Search…",
-        "system": "System",
-        "adminAccess": "Admin Access",
-        "adminDashboard": "Admin Dashboard",
         "userInitial": "U"
     },
     "admin": {
@@ -64,7 +59,7 @@
             "users": "User accounts"
         },
         "userFallback": "Admin",
-        "version": "Bookstore v{version}"
+        "navLabel": "Admin sections"
     },
     "home": {
         "hero": {

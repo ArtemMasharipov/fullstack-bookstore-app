@@ -13,8 +13,7 @@ const legacy = existsSync(inventoryPath) ? JSON.parse(readFileSync(inventoryPath
 const strict = [
     'src/components/layout/NavBar.vue',
     'src/components/layout/FooterLayout.vue',
-    'src/components/layout/admin/AdminHeader.vue',
-    'src/components/layout/admin/AdminSidebar.vue',
+    'src/components/layout/admin/AdminLayout.vue',
     'src/components/ui/BaseModal.vue',
     'src/components/ui/ConfirmModal.vue',
     'src/components/ui/ErrorMessage.vue',

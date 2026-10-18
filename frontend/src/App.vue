@@ -1,14 +1,18 @@
 <template>
     <v-app>
-        <nav-bar-layout />
+        <admin-layout v-if="route.meta.layout === 'admin'" />
 
-        <v-main>
-            <v-container fluid>
-                <router-view />
-            </v-container>
-        </v-main>
+        <template v-else>
+            <nav-bar-layout />
 
-        <footer-layout />
+            <v-main>
+                <v-container fluid>
+                    <router-view />
+                </v-container>
+            </v-main>
+
+            <footer-layout />
+        </template>
 
         <!-- Dialog system (separate from notifications for SOLID principles) -->
         <dialog-layout />
@@ -27,9 +31,15 @@ import NotificationContainer from './components/notifications/NotificationContai
 import { useAuthStore, useCartStore } from './stores'
 
 // Composition API imports
-import { onMounted, watchEffect } from 'vue'
+import { defineAsyncComponent, onMounted, watchEffect } from 'vue'
+import { useRoute } from 'vue-router'
 import { useLocale } from 'vuetify'
 import { locale } from '@/i18n'
+
+// The admin layout, and the admin code with it, loads only when an admin page opens
+const AdminLayout = defineAsyncComponent(() => import('./components/layout/admin/AdminLayout.vue'))
+
+const route = useRoute()
 
 // Store instances
 const authStore = useAuthStore()

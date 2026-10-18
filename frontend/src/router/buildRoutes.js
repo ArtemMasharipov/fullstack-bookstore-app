@@ -35,11 +35,11 @@ function buildRoute(entry, parentAccess = {}) {
     const meta = { titleKey, access: mergedAccess }
 
     if (children) {
-        // Layout route — uses `layout` component, no name of its own.
+        // A group has no view and no name: its children show in the layout it names, which the router merges into
+        // every child's route.meta
         return {
             path,
-            component: layout,
-            meta,
+            meta: { ...meta, layout },
             children: children.map((child) => buildRoute(child, mergedAccess)),
         }
     }
@@ -66,7 +66,7 @@ export function buildRoutes() {
 
 /**
  * Returns admin nav items grouped by section and sorted by `order`.
- * AdminSidebar imports this instead of maintaining its own hardcoded arrays.
+ * AdminLayout builds its navigation from this instead of a list of its own.
  *
  * Shape of the return value:
  * {
