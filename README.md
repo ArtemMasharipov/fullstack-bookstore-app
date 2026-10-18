@@ -18,18 +18,21 @@ The purchase path works from the catalogue to the order:
 - Signing out and an expired session clear the session the same way; signing in returns to the page that asked for
   it.
 - Sessions live on the server: signing out, deactivating an account or changing its role or password ends its
-  sessions at once, and every request reads the user's role from the database. Failed sign-in attempts are limited
-  per client, and sign-in takes the same time whether the account exists or not.
+  sessions at once, and every protected request reads the user's role from the database. Failed sign-in attempts are
+  limited per client, and sign-in takes the same time whether the account exists or not.
 - The admin account opens the admin panel; other accounts get an access-denied page. An admin cannot take away their
   own admin role or deactivate their own account.
+- The admin panel has its own layout and manages the books: a table loaded page by page from the API, with the
+  search, filters, sort and page in the address; a form to add and edit a book; the stock switched in its row; and
+  deletion after a confirmation. Its code loads only when an admin page opens.
 - The interface is in Czech (default) and English (`/en`), with prices in CZK. Delivery and VAT terms are built from
   the shop settings (`GET /api/v1/config/public`), which hold demo values.
 
 Known limitations:
 
 - There is no online payment: a new order waits for payment.
-- The sections of the admin panel are still being rebuilt: their tables, forms and the dashboard do not work yet.
-- Author pages, the profile and the admin panel are still in English only. The Czech texts are a draft.
+- The admin sections for authors, orders and users and the dashboard are still being rebuilt and do not work yet.
+- Author pages, the profile and those admin sections are still in English only. The Czech texts are a draft.
 - Book categories are a fixed list, and their names are not translated yet.
 - Development tools (nodemon, ESLint 7) still depend on packages with known vulnerabilities and no fix within their
   current major versions; [docs/dependency-audit.md](docs/dependency-audit.md) lists them with review dates.

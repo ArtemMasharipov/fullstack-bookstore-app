@@ -53,7 +53,11 @@ README lists them.
   response: method, path without the query string, status and duration.
   `asyncHandler.js` passes errors of async handlers on to the error handler.
 - **API.** `routes/index.js` mounts the routers under `/api/v1`, grouped as `/books`, `/authors`, `/auth`, `/users`,
-  `/cart`, `/orders` and `/config`. `GET /api/v1/health` answers 200 with `API is running`.
+  `/cart`, `/orders` and `/config`. `GET /api/v1/health` answers 200 with `API is running`. Every list takes `page`
+  and `limit` as whole numbers written in digits (`schemas/common.js`). The admin's book writes take strict bodies
+  (`schemas/book.js`) and answer with the book view of `services/bookView.js`, or 204 on delete: `PUT` replaces the
+  book, an unknown author answers 400 on `authorId`, the same title, author and year 409 `CONFLICT` on `title`, and
+  a cover is an `https://` link or a data URI of an image.
 - **Shutdown.** On SIGTERM or SIGINT the server stops accepting connections, waits for open requests, closes the
   MongoDB connection and exits with 0. An unhandled rejection or an uncaught exception takes the same path and exits
   with 1. If the cleanup has not finished after 10 seconds, the process prints `shutdown timed out` and exits with 1.
@@ -139,20 +143,25 @@ the three plugins.
 
 - **Router** (`src/router/`). `manifest.js` is the single list of routes: path, lazily loaded view, page title and an
   access policy (`auth`, `guestOnly`, `capability`). `buildRoutes.js` turns it into Vue Router records, passes a
-  layout's policy down to its children and builds the admin sidebar from the same list. `guards/unified.js` is the one
-  `beforeEach` guard: public routes pass at once; otherwise it checks that the stored token has not expired and sends
+  layout's policy down to its children and builds the admin navigation from the same list. The admin group names
+  its layout: its pages carry `meta.layout: 'admin'`, and `App.vue` shows them in `AdminLayout` (one app bar, one
+  navigation of links, one main with the section heading), which loads only when an admin page opens, instead of the
+  storefront header and footer. `guards/unified.js` is the one `beforeEach` guard: public routes pass at once;
+  otherwise it checks that the stored token has not expired and sends
   the user to the login page, the home page or the "access denied" page as the policy requires. A capability is
   checked with `can(role, capability)` from `src/auth/capabilities.js`, the one table of what each role may do, and
   against the role from `GET /auth/me`, which the guard asks once per app load. The login page gets
   the way back in `?redirect`; after signing in, `redirect.js` opens it only if it is a path to a page of this app,
   and opens it in the current language, otherwise the home page. The API checks every protected request on its own.
   `catalogQuery.js` reads the catalogue's page, search and category from the address and writes them back in one
-  canonical form: no first page, no empty values, an invalid page replaced.
+  canonical form: no first page, no empty values, an invalid page replaced. `adminListQuery.js` does the same for the
+  admin tables: page, page size, sort, search and the screen's filters.
 - **State** (`src/stores/`). One Pinia store per area: `auth`, `authors`, `books`, `cart`, `checkout`, `orders`,
   `shopConfig` and `users`. The stores call their API modules and track their loading and error state.
   - `auth` holds the token and the user; whether the user is an admin comes from their role through `can()`.
   - `books` holds one page of books with the server's pagination. Search and filters are not kept there: the
-    catalogue reads them from its address, and the home page loads its latest books into a list of its own.
+    catalogue reads them from its address, and the home page loads its latest books into a list of its own. The open
+    book has a loading and error state of its own. The admin changes books through `booksApi` from its screen.
   - `shopConfig` loads the shop settings of `GET /config/public` once; the home page and the book page state shipping
     and VAT only from them.
   - The cart store holds the server's lines and quote and runs its changes one after another; a guest cart keeps only
@@ -182,7 +191,10 @@ the three plugins.
   `books`, `cart`, `orders`. In `books`, `BookCard` links its title over the whole card and names its add-to-cart
   button after the book, and `BookCover` keeps a 2:3 box with the title and the author when there is no image.
   Shared pieces live in `components/ui`, `components/layout` and `components/notifications`. `src/views/` holds the
-  pages that the router loads, grouped as `public`, `auth`, `orders`, `admin` and `errors`.
+  pages that the router loads, grouped as `public`, `auth`, `orders`, `admin` and `errors`. An admin table is
+  `AdminTable` (Vuetify's server-side table with its loading, empty and error states) fed by `useAdminList`
+  (`src/composables/`), which loads the page the address names and keeps only the newest answer; the books screen adds
+  `BookFormDialog` and a confirmation for deleting.
 
 ## Configuration and environments
 
@@ -211,9 +223,11 @@ reads `API_PROXY_TARGET` from the process environment
 | End-to-end | `vite preview` of a fresh build on 4173, proxies `/api` to 3100 | `npm run e2e:server` on 3100 | in-memory MongoDB with the demo data |
 
 `npm run build` writes the bundle to `dist/` in the repository root and empties that directory first. esbuild minifies
-the code and drops `console.log`, `console.info` and `console.debug` calls. By default the bundle names no API host, so
-a production web server has to forward `/api` to the API; the other option is to build with an absolute
-`VITE_API_URL`.
+the code and drops `console.log`, `console.info` and `console.debug` calls. `vite.config.js` groups the code into
+chunks by area; admin code has no chunk of its own there, because a manual chunk also takes the modules it shares
+with the storefront, which then preloads it: the lazy admin layout and pages are its chunks. By default the bundle
+names no API host, so a production web server has to forward `/api` to the API; the other option is to build with an
+absolute `VITE_API_URL`.
 
 ## Testing
 
@@ -235,13 +249,18 @@ a production web server has to forward `/api` to the API; the other option is to
 - **Frontend.** Vitest on happy-dom runs `src/**/*.spec.js`: the API modules, the stores, the utilities, the design
   tokens, the catalogue's address, and the components and views of the catalogue, the book page, the home page, the
   sign-in and registration forms, the cart, checkout and orders, mounted with the real router, i18n and Vuetify.
+  `views/admin/admin-screens.spec.js` mounts every admin screen with the app's own Vuetify setup and fails on a
+  component it does not register.
 - **End-to-end.** Playwright in Chromium runs `frontend/e2e/`: the catalogue smoke test, paging, search and categories
   in the address with Back, reload and a language switch, the keyboard path to a book, contrast, the focus ring,
   reflow at 320 px and target sizes on the catalogue pages, layout shift while books load, the Czech and English flows
   with accessibility checks, the server cart, checkout with retries, price changes and order cancellation, the whole
   purchase journey from a guest cart to a cancelled order and sign-out in both languages, expired sessions, the admin
-  area for the seeded admin and for other accounts, sessions that end on the server, and the shop terms against
-  `GET /config/public`. Shared helpers live in `e2e/support.js`, the seeded accounts in `e2e/credentials.js`.
+  area for the seeded admin and for other accounts, sessions that end on the server, the admin layout, the books table
+  with its accessibility checks, a storefront that loads no admin code, and the shop terms against
+  `GET /config/public`. The tests that change the catalogue (`admin-catalog.spec.js`) run in a Playwright project of
+  their own after all the others, which count the seeded books. Shared helpers live in `e2e/support.js`, the seeded
+  accounts in `e2e/credentials.js`.
   Playwright starts its own servers on dedicated ports: the API on 3100 (`npm run e2e:server`, an in-memory MongoDB
   with the demo data) and `vite preview` on 4173. Existing servers are never reused, so a busy port fails the run
   instead of testing a dev stack.
