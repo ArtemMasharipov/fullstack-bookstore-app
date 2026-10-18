@@ -5,8 +5,9 @@
             <h1 id="catalog-title" ref="heading" class="catalog-title text-h4" tabindex="-1">
                 {{ t('catalog.title') }}
             </h1>
-            <!-- The line keeps its height while the books load, so the search and the categories do not move -->
-            <p class="catalog-range text-medium-emphasis">
+            <!-- The line keeps its height while the books load, so the search and the categories do not move.
+                 As a status it tells screen reader users what a search or a category found, focus staying put -->
+            <p class="catalog-range text-medium-emphasis" role="status">
                 {{ showRange ? t('catalog.range', range) : '' }}
             </p>
         </header>
@@ -18,6 +19,7 @@
             :aria-label="t('catalog.search.label')"
             :hint="searchHint"
             :persistent-hint="Boolean(searchHint)"
+            :maxlength="MAX_SEARCH"
             :loading="loading"
             prepend-inner-icon="mdi-magnify"
             clearable
@@ -77,6 +79,7 @@ import ErrorMessage from '@/components/ui/ErrorMessage.vue'
 import { t } from '@/i18n'
 import {
     CATALOG_PAGE_SIZE,
+    MAX_SEARCH,
     canonicalCatalogQuery,
     catalogQuery,
     parseCatalogQuery,

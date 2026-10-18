@@ -106,6 +106,22 @@ describe('the catalogue page', () => {
         )
     })
 
+    it('announces the count to screen readers when the list changes', async () => {
+        await mount('/books?page=2')
+
+        await vi.waitFor(() =>
+            expect([...root.querySelectorAll('[role="status"]')].map((el) => el.textContent)).toContainEqual(
+                expect.stringContaining('Zobrazeno 13–24 z 24')
+            )
+        )
+    })
+
+    it('takes no longer search than the API accepts', async () => {
+        await mount('/books')
+
+        expect(root.querySelector('.catalog-search input').getAttribute('maxlength')).toBe('100')
+    })
+
     it('replaces a page that is not a number with the first page', async () => {
         await mount('/books?page=abc')
 

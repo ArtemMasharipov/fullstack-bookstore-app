@@ -3,13 +3,16 @@
  * three live in the URL: a reload, Back and a shared link show the same books.
  *
  *   ?page=2      the page; the first page has no parameter
- *   ?q=Čapek     the search, at least 2 characters (sent to the API as `search`)
+ *   ?q=Čapek     the search, 2 to 100 characters (sent to the API as `search`)
  *   ?category=   one category, compared as a whole value
+ *
+ * The limits are the API's: a value it would refuse reads as absent, so no address shows a validation error.
  */
 
 export const CATALOG_PAGE_SIZE = 12
 
 const MIN_SEARCH = 2
+export const MAX_SEARCH = 100
 const MAX_CATEGORY = 50
 
 // A repeated parameter (?q=a&q=b) arrives as an array: it is no value
@@ -21,8 +24,8 @@ export function parseCatalogQuery(query) {
     const q = single(query.q)
     const category = single(query.category)
     return {
-        page: /^\d+$/.test(page) && Number(page) >= 1 ? Number(page) : 1,
-        q: q.length >= MIN_SEARCH ? q : '',
+        page: /^\d+$/.test(page) && Number.isSafeInteger(Number(page)) && Number(page) >= 1 ? Number(page) : 1,
+        q: q.length >= MIN_SEARCH && q.length <= MAX_SEARCH ? q : '',
         category: category.length <= MAX_CATEGORY ? category : '',
     }
 }
