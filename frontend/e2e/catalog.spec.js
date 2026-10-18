@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
 import { readFileSync } from 'node:fs'
 import { BOOKS, SMOKE_BOOK_TITLE } from '../../backend/scripts/seed-data.js'
+import { contrastOf, seededBook, wcagViolations } from './support.js'
 
 const dictionaries = {
     cs: JSON.parse(readFileSync('src/i18n/locales/cs.json', 'utf8')),
@@ -18,6 +20,19 @@ const seedTitles = (category) => BOOKS.filter((b) => !category || b.category ===
 const SECOND_PAGE = BOOKS.slice(0, 12)
     .map((b) => b.title)
     .sort()
+// The focus ring's inner colour on light surfaces and on navy (design tokens)
+const RING = 'rgb(31, 79, 140)'
+const RING_ON_NAVY = 'rgb(255, 210, 122)'
+
+const ringOf = (locator) =>
+    locator.evaluate((element) => {
+        const style = getComputedStyle(element)
+        return [style.outlineStyle, style.outlineWidth, style.outlineColor]
+    })
+
+// Colours measured in the middle of a fade-in are not the colours people read
+const settled = (page) =>
+    page.waitForFunction(() => !document.querySelector('[class*="-enter-active"], [class*="-leave-active"]'))
 
 for (const locale of ['cs', 'en']) {
     const prefix = locale === 'en' ? '/en' : ''
@@ -130,6 +145,105 @@ for (const locale of ['cs', 'en']) {
             await page.goBack()
             const outOfStock = page.locator('.book-card').filter({ hasText: OUT_OF_STOCK_TITLE })
             await expect(outOfStock.locator('a[href], button:not([disabled])')).toHaveCount(1)
+        })
+    })
+
+    test.describe(`${locale}: catalogue accessibility`, () => {
+        test(`${locale}: no text on the catalogue pages falls below the contrast minimum`, async ({
+            page,
+            request,
+        }) => {
+            const book = await seededBook(request)
+            const pages = [
+                [`${prefix}/`, '.book-card'],
+                [`${prefix}/books`, '.book-card'],
+                [`${prefix}/books/${book.id}`, '.book-details__price'],
+            ]
+            for (const [path, ready] of pages) {
+                await page.goto(path)
+                await expect(page.locator(ready).first()).toBeVisible()
+                await settled(page)
+                const { violations } = await new AxeBuilder({ page }).withRules(['color-contrast']).analyze()
+                expect(
+                    violations.flatMap((rule) => rule.nodes.map((node) => node.target.join(' '))),
+                    path
+                ).toEqual([])
+            }
+
+            // What axe leaves as "incomplete" (text on buttons and tinted chips) is measured
+            const measured = async (name, locator) =>
+                expect(await contrastOf(locator), name).toBeGreaterThanOrEqual(4.5)
+            await page.goto(`${prefix}/`)
+            await expect(page.locator('.book-card').first()).toBeVisible()
+            await measured('call to action', page.locator('.hero-cta .v-btn__content'))
+            await page.goto(`${prefix}/books`)
+            await expect(page.locator('.book-card')).toHaveCount(12)
+            const inStock = page.locator('.book-card').filter({ hasText: SMOKE_BOOK_TITLE })
+            const outOfStock = page.locator('.book-card').filter({ hasText: OUT_OF_STOCK_TITLE })
+            await measured('price', inStock.locator('.book-card__price'))
+            await measured('add to cart', inStock.locator('.book-card__add .v-btn__content'))
+            await measured('in stock', inStock.locator('.v-chip__content'))
+            await measured('out of stock', outOfStock.locator('.v-chip__content'))
+            await measured('range', page.locator('.catalog-range'))
+            await page.goto(`${prefix}/books/${book.id}`)
+            await expect(page.locator('.book-details__price')).toBeVisible()
+            await measured('book price', page.locator('.book-details__price'))
+            await measured('current breadcrumb', page.locator('.v-breadcrumbs-item').last())
+        })
+
+        test(`${locale}: the focus ring shows on cards, buttons, the pager and the header`, async ({ page }) => {
+            await page.goto(`${prefix}/books`)
+            await expect(page.locator('.book-card')).toHaveCount(12)
+            const firstLink = page.locator('.book-card__link').first()
+            for (let i = 0; i < 80 && !(await firstLink.evaluate((el) => el === document.activeElement)); i++) {
+                await page.keyboard.press('Tab')
+            }
+            await expect(firstLink).toBeFocused()
+            expect(await ringOf(firstLink), 'card link').toEqual(['solid', '3px', RING])
+            await page.keyboard.press('Tab')
+            expect(await ringOf(page.locator(':focus')), 'add to cart').toEqual(['solid', '3px', RING])
+
+            // After keyboard use, focus() shows the ring as Tab would
+            for (const [name, locator, colour] of [
+                ['category', categoryButton(page, 'Fiction'), RING],
+                ['pager', page.locator('.v-pagination button').last(), RING],
+                ['header link', page.locator('header a').first(), RING_ON_NAVY],
+            ]) {
+                await locator.focus()
+                expect(await ringOf(locator), name).toEqual(['solid', '3px', colour])
+            }
+        })
+
+        test(`${locale}: the catalogue meets the WCAG 2.2 A and AA rules axe checks in its main area`, async ({
+            page,
+        }) => {
+            await page.goto(`${prefix}/books`)
+            await expect(page.locator('.book-card')).toHaveCount(12)
+
+            expect(await wcagViolations(page, 'main')).toEqual([])
+        })
+
+        test(`${locale}: the catalogue reflows at 320 px`, async ({ page }) => {
+            await page.setViewportSize({ width: 320, height: 800 })
+            await page.goto(`${prefix}/books`)
+            await expect(page.locator('.book-card')).toHaveCount(12)
+
+            expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320)
+        })
+
+        test(`${locale}: catalogue controls are at least 24 by 24 px`, async ({ page }) => {
+            await page.goto(`${prefix}/books`)
+            await expect(page.locator('.book-card')).toHaveCount(12)
+
+            const small = await page.locator('main button, main .book-card__link').evaluateAll((elements) =>
+                elements
+                    // The title link covers its card through ::after, so the card is its target
+                    .map((element) => [element, element.closest('.book-card') ?? element])
+                    .map(([element, target]) => [element, target.getBoundingClientRect()])
+                    .filter(([, box]) => box.width > 0 && (box.width < 24 || box.height < 24))
+                    .map(([element, box]) => `${element.textContent.trim()} ${box.width}x${box.height}`)
+            )
+            expect(small).toEqual([])
         })
     })
 }
