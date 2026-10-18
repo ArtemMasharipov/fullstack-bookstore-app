@@ -23,22 +23,14 @@ export function setUnauthorizedHandler(handler) {
     onUnauthorized = handler
 }
 
-// Request interceptor - add auth token
+// Request interceptor - the token goes with every request while there is one; the API decides which routes need it.
+// A request may bring its own token: sign-out tells the server after the session has ended here.
 baseApi.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token')
-
-        // Public endpoints that don't require auth
-        const publicEndpoints = ['/auth/login', '/auth/register', '/books', '/authors', '/cart/quote', '/config/public']
-        const isPublic = publicEndpoints.some((ep) => config.url.includes(ep))
-
-        if (token && (!isPublic || config.headers.Authorization)) {
+        if (token && !config.headers.Authorization) {
             config.headers.Authorization = `Bearer ${token}`
-        } else if (!isPublic && !config.headers.Authorization) {
-            // A request may bring its own token: sign-out tells the server after the session has ended here
-            return Promise.reject(new Error('Authorization required'))
         }
-
         return config
     },
     (error) => Promise.reject(error)

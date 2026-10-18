@@ -110,6 +110,44 @@ describe('baseApi rejection metadata', () => {
     })
 })
 
+describe('baseApi token', () => {
+    // Answers the request it was given, so a test sees what would be sent
+    const echo = async (config) => ({ data: {}, status: 200, statusText: 'OK', headers: {}, config })
+    const sentAuthorization = async (path, options = {}) => {
+        const { default: baseApi } = await import('./baseApi')
+        const response = await baseApi.get(path, { adapter: echo, ...options })
+        return response.config.headers.Authorization
+    }
+
+    afterEach(() => {
+        localStorage.clear()
+    })
+
+    it.each(['/books', '/authors', '/cart/quote', '/config/public', '/auth/login', '/orders'])(
+        'sends the token with a request to %s',
+        async (path) => {
+            localStorage.setItem('token', 'local-demo-token')
+
+            expect(await sentAuthorization(path)).toBe('Bearer local-demo-token')
+        }
+    )
+
+    it.each(['/books', '/orders'])(
+        'sends a request to %s without an Authorization header when there is no token',
+        async (path) => {
+            expect(await sentAuthorization(path)).toBeUndefined()
+        }
+    )
+
+    it('keeps the token a request brings itself', async () => {
+        localStorage.setItem('token', 'current-token')
+
+        expect(await sentAuthorization('/auth/logout', { headers: { Authorization: 'Bearer ended-token' } })).toBe(
+            'Bearer ended-token'
+        )
+    })
+})
+
 describe('baseApi session handler', () => {
     const answering = (status) => async (config) => {
         throw { response: { status, data: { error: { code: 'UNAUTHORIZED' } }, headers: {}, config } }
