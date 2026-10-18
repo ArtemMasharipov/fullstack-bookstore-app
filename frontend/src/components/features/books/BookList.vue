@@ -5,8 +5,9 @@
             <h1 id="catalog-title" ref="heading" class="catalog-title text-h4" tabindex="-1">
                 {{ t('catalog.title') }}
             </h1>
-            <p v-if="showRange" class="catalog-range text-medium-emphasis">
-                {{ t('catalog.range', range) }}
+            <!-- The line keeps its height while the books load, so the search and the categories do not move -->
+            <p class="catalog-range text-medium-emphasis">
+                {{ showRange ? t('catalog.range', range) : '' }}
             </p>
         </header>
 
@@ -199,7 +200,9 @@ onBeforeUnmount(() => clearTimeout(searchTimer))
 }
 
 .catalog-range {
+    min-height: 1.5em;
     margin: 0;
+    line-height: 1.5;
 }
 
 .catalog-search {

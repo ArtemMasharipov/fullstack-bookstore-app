@@ -54,6 +54,41 @@ export async function contrastOf(locator) {
     })
 }
 
+// The cumulative layout shift of a cold load of a page with books, in a fresh browser context: the shifts not caused
+// by input until the first card shows and 2.5 s after. Each shift lists the nodes that moved, for a failure message.
+export async function layoutShift(browser, path, viewport, { apiDelay = 0 } = {}) {
+    const context = await browser.newContext({ viewport })
+    const page = await context.newPage()
+    // A slow API keeps the loading state on screen long enough to be painted, as on a real network
+    if (apiDelay)
+        await page.route('**/api/v1/books**', async (route) => {
+            await new Promise((resolve) => setTimeout(resolve, apiDelay))
+            await route.continue()
+        })
+    await page.addInitScript(() => {
+        window.__layoutShifts = []
+        new PerformanceObserver((list) => {
+            for (const entry of list.getEntries()) {
+                if (entry.hadRecentInput) continue
+                window.__layoutShifts.push({
+                    value: entry.value,
+                    sources: (entry.sources || []).map((source) => ({
+                        node: source.node ? `${source.node.nodeName}.${String(source.node.className)}` : null,
+                        from: source.previousRect.y,
+                        to: source.currentRect.y,
+                    })),
+                })
+            }
+        }).observe({ type: 'layout-shift', buffered: true })
+    })
+    await page.goto(path)
+    await page.locator('.book-card').first().waitFor()
+    await page.waitForTimeout(2500)
+    const shifts = await page.evaluate(() => window.__layoutShifts)
+    await context.close()
+    return { cls: shifts.reduce((sum, shift) => sum + shift.value, 0), shifts }
+}
+
 // WCAG 2.2 A and AA rule violations inside one part of the page
 export async function wcagViolations(page, selector) {
     // Colors measured in the middle of a fade-in are not the colors people read
