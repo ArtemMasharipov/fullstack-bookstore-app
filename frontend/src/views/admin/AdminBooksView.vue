@@ -32,6 +32,8 @@
                         :model-value="state.filters.category ?? ''"
                         :items="categoryOptions"
                         :label="t('admin.books.category')"
+                        :open-text="t('admin.books.category')"
+                        :close-text="t('admin.books.category')"
                         hide-details
                         @update:model-value="setFilter('category', $event)"
                     />
@@ -39,6 +41,8 @@
                         :model-value="state.filters.inStock ?? ''"
                         :items="stockOptions"
                         :label="t('admin.books.availability')"
+                        :open-text="t('admin.books.availability')"
+                        :close-text="t('admin.books.availability')"
                         hide-details
                         @update:model-value="setFilter('inStock', $event)"
                     />

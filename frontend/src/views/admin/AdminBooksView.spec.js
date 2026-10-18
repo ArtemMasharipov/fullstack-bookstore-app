@@ -121,6 +121,14 @@ describe('AdminBooksView', () => {
         expect(byLabel(fill(cs.admin.books.stockToggle, { title: 'Kniha 2.1' }))).not.toBeNull()
     })
 
+    it('names the filters by their labels', async () => {
+        await mount()
+
+        for (const label of [cs.admin.books.category, cs.admin.books.availability]) {
+            expect(input(label).getAttribute('aria-label')).toBe(label)
+        }
+    })
+
     it('searches and filters on the server', async () => {
         await mount()
 

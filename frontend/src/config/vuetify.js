@@ -47,6 +47,8 @@ import {
     // Data tables (admin only)
     VDataTable,
     VDataTableServer,
+    // Defaults for a part of the page (the admin table names its rows-per-page select)
+    VDefaultsProvider,
     // Dialogs and modals
     VDialog,
     // Dividers
@@ -198,6 +200,7 @@ export const vuetify = createVuetify({
         VDataTable,
         VDataTableServer,
         VTable,
+        VDefaultsProvider,
 
         // Avatar
         VAvatar,

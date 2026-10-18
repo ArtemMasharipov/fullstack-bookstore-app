@@ -56,6 +56,8 @@
                     <v-select
                         v-model="form.category"
                         :label="t('admin.bookForm.category')"
+                        :open-text="t('admin.bookForm.category')"
+                        :close-text="t('admin.bookForm.category')"
                         :items="BOOK_CATEGORIES"
                         :error-messages="errors.category"
                     />

@@ -154,6 +154,15 @@ describe.each(['cs', 'en'])('BookFormDialog (%s)', (locale) => {
         expect(dialog().textContent).toContain(words.admin.bookForm.inStock)
         expect(dialog().textContent).not.toMatch(/ISBN|quantity|množství|počet/i)
     })
+
+    it('names every field by its label, the category select included', async () => {
+        await mount({ locale })
+
+        for (const key of ['title', 'author', 'year', 'category', 'description', 'image']) {
+            const label = words.admin.bookForm[key]
+            expect([null, label], key).toContain(input(label).getAttribute('aria-label'))
+        }
+    })
 })
 
 describe('BookFormDialog', () => {

@@ -11,33 +11,35 @@
             </div>
         </v-alert>
 
-        <v-data-table-server
-            :headers="headers"
-            :items="items"
-            :items-length="itemsLength"
-            :loading="loading"
-            :page="page"
-            :items-per-page="limit"
-            :items-per-page-options="ADMIN_PAGE_SIZES"
-            :sort-by="vuetifySort"
-            @update:page="emit('update:page', $event)"
-            @update:items-per-page="emit('update:limit', $event)"
-            @update:sort-by="onSort"
-        >
-            <template v-for="name in cellSlots" :key="name" #[name]="cell">
-                <slot :name="name" v-bind="cell" />
-            </template>
+        <v-defaults-provider :defaults="FOOTER_DEFAULTS">
+            <v-data-table-server
+                :headers="headers"
+                :items="items"
+                :items-length="itemsLength"
+                :loading="loading"
+                :page="page"
+                :items-per-page="limit"
+                :items-per-page-options="ADMIN_PAGE_SIZES"
+                :sort-by="vuetifySort"
+                @update:page="emit('update:page', $event)"
+                @update:items-per-page="emit('update:limit', $event)"
+                @update:sort-by="onSort"
+            >
+                <template v-for="name in cellSlots" :key="name" #[name]="cell">
+                    <slot :name="name" v-bind="cell" />
+                </template>
 
-            <template #no-data>
-                <div v-if="!error" class="py-8 text-center">
-                    <p class="mb-4">{{ emptyText }}</p>
-                    <v-btn v-if="filtered" variant="outlined" @click="emit('resetFilters')">
-                        {{ t('catalog.resetFilters') }}
-                    </v-btn>
-                    <slot v-else name="empty-action" />
-                </div>
-            </template>
-        </v-data-table-server>
+                <template #no-data>
+                    <div v-if="!error" class="py-8 text-center">
+                        <p class="mb-4">{{ emptyText }}</p>
+                        <v-btn v-if="filtered" variant="outlined" @click="emit('resetFilters')">
+                            {{ t('catalog.resetFilters') }}
+                        </v-btn>
+                        <slot v-else name="empty-action" />
+                    </div>
+                </template>
+            </v-data-table-server>
+        </v-defaults-provider>
     </div>
 </template>
 
@@ -67,6 +69,14 @@ const props = defineProps({
     // The list is empty because of the search or the filters
     filtered: Boolean,
 })
+
+// Vuetify names its rows-per-page select "Open"; the text shown next to it is its name
+const FOOTER_DEFAULTS = {
+    VSelect: {
+        openText: '$vuetify.dataFooter.itemsPerPageText',
+        closeText: '$vuetify.dataFooter.itemsPerPageText',
+    },
+}
 
 const emit = defineEmits(['update:page', 'update:limit', 'update:sortBy', 'retry', 'resetFilters'])
 

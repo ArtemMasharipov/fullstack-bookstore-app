@@ -138,6 +138,14 @@ describe('AdminTable', () => {
         expect(events).toEqual([['resetFilters']])
     })
 
+    it('names the rows-per-page select by the text next to it', async () => {
+        await mount()
+
+        const select = document.querySelector('.v-data-table-footer input')
+        const text = document.querySelector('.v-data-table-footer__items-per-page > span').textContent.trim()
+        expect(select.getAttribute('aria-label')).toBe(text)
+    })
+
     it('offers 10, 20 and 50 rows per page', async () => {
         await mount()
 
