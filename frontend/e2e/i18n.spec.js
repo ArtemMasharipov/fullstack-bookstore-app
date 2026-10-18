@@ -15,6 +15,7 @@ const copy = {
         details: 'Detail knihy',
         books: 'Knihy',
         catalogue: 'Katalog knih',
+        addToCart: 'Přidat do košíku',
         unknown: 'Něco se pokazilo. Zkuste to později.',
         notFound: 'Stránka nenalezena',
     },
@@ -23,6 +24,7 @@ const copy = {
         details: 'Book Details',
         books: 'Books',
         catalogue: 'Book catalogue',
+        addToCart: 'Add to cart',
         unknown: 'Something went wrong. Please try again later.',
         notFound: 'Page not found',
     },
@@ -78,8 +80,8 @@ for (const initial of ['cs', 'en']) {
         await page.goto(`${prefix}/books/${id}?sort=price#description`)
         await expect(page.getByRole('heading', { level: 1, name: SMOKE_BOOK_TITLE })).toBeVisible()
         await expect(page.locator('main')).toContainText(price(initial))
-        await page.getByRole('button', { name: 'Add to Cart', exact: true }).click()
-        await expect(page.getByRole('button', { name: 'Added!', exact: true })).toBeVisible()
+        await page.getByRole('button', { name: copy[initial].addToCart, exact: true }).click()
+        await expect(page.locator('.notification-container .notification-wrapper')).toHaveCount(1)
         const cart = await page.evaluate(() => localStorage.getItem('cart'))
         // The guest cart keeps ids and quantities only; prices come from the server
         expect(JSON.parse(cart)).toEqual([{ bookId: id, quantity: 1 }])
@@ -154,8 +156,8 @@ test('inactive dictionary failure keeps URL, language and cart until keyboard re
     await page.goto('/books')
     await cardFor(page).getByRole('link', { name: SMOKE_BOOK_TITLE }).click()
     await expect(page.getByRole('heading', { level: 1, name: SMOKE_BOOK_TITLE })).toBeVisible()
-    await page.getByRole('button', { name: 'Add to Cart', exact: true }).click()
-    await expect(page.getByRole('button', { name: 'Added!', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: copy.cs.addToCart, exact: true }).click()
+    await expect(page.locator('.notification-container .notification-wrapper')).toHaveCount(1)
     const cart = await page.evaluate(() => localStorage.getItem('cart'))
     await page.goto(new URL(page.url()).pathname + '?sort=price#description')
     await expect(page.getByRole('heading', { level: 1, name: SMOKE_BOOK_TITLE })).toBeVisible()

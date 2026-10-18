@@ -33,7 +33,7 @@ for (const locale of ['cs', 'en']) {
         const total = money(geller(book.price) + settings.shippingFee, locale)
 
         await page.goto(`${prefix}/books/${book.id}`)
-        await page.getByRole('button', { name: 'Add to Cart', exact: true }).click()
+        await page.getByRole('button', { name: dict.catalog.addToCart, exact: true }).click()
         await expect(page.locator('.notification-container .notification-wrapper')).toHaveCount(1)
 
         await page.goto(`${prefix}/cart`)
@@ -97,8 +97,8 @@ for (const locale of ['cs', 'en']) {
         await expect(page.locator('main')).toContainText(dict.shipping.freeFrom.replace('{amount}', threshold))
         await expect(page.locator('body')).not.toContainText(/30-day|returns|encryption/i)
 
-        await page.getByRole('button', { name: 'Add to Cart', exact: true }).click()
-        await expect(page.getByRole('button', { name: 'Added!', exact: true })).toBeVisible()
+        await page.getByRole('button', { name: dict.catalog.addToCart, exact: true }).click()
+        await expect(page.locator('.notification-container .notification-wrapper')).toHaveCount(1)
         await page.goto(`${prefix}/cart`)
         await expect(page.locator('.cart-summary')).toContainText(fee)
         await expect(page.locator('.cart-summary')).toContainText(

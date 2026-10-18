@@ -4,22 +4,33 @@
             <loading-spinner />
         </div>
 
+        <!-- A failed load says why, by its error code, and offers to try again -->
+        <error-message
+            v-else-if="loadError"
+            :error="loadError"
+            :on-retry="load"
+            :closable="false"
+            class="mx-auto my-6"
+            style="max-width: 800px"
+        />
+
         <v-container v-else-if="book">
             <v-breadcrumbs :items="breadcrumbItems" class="pa-0 mb-4"></v-breadcrumbs>
 
             <v-row>
                 <v-col cols="12" sm="4" md="3">
-                    <v-img
-                        :src="book.image || placeholderImage"
-                        :alt="book.title || 'No image available'"
-                        aspect-ratio="3/4"
-                        cover
-                        class="rounded-lg elevation-3"
-                    ></v-img>
+                    <!-- The largest image of the page: loaded at once, with high priority -->
+                    <book-cover
+                        :src="book.image"
+                        :title="book.title"
+                        :author="book.author?.name"
+                        priority
+                        class="elevation-3"
+                    />
                 </v-col>
 
                 <v-col cols="12" sm="8" md="9">
-                    <h1 class="text-h4 font-weight-bold mb-2">{{ book.title || 'No Title' }}</h1>
+                    <h1 class="text-h4 font-weight-bold mb-2">{{ book.title }}</h1>
 
                     <v-btn
                         v-if="book.author?.id"
@@ -28,28 +39,23 @@
                         color="primary"
                         class="px-0 mb-4 text-h6"
                     >
-                        {{ book.author?.name || 'Unknown Author' }}
+                        {{ book.author.name }}
                     </v-btn>
 
+                    <!-- The year and the category are data; the chips use the text colour, not amber -->
                     <div class="d-flex flex-wrap ga-2 mb-4">
-                        <v-chip size="small" color="secondary" variant="tonal" prepend-icon="mdi-calendar">
-                            {{ book.publicationYear || 'N/A' }}
+                        <v-chip v-if="book.publicationYear" size="small" variant="tonal" prepend-icon="mdi-calendar">
+                            {{ book.publicationYear }}
                         </v-chip>
-                        <v-chip
-                            v-if="book.category"
-                            size="small"
-                            color="secondary"
-                            variant="tonal"
-                            prepend-icon="mdi-tag"
-                        >
+                        <v-chip v-if="book.category" size="small" variant="tonal" prepend-icon="mdi-tag">
                             {{ book.category }}
                         </v-chip>
-                        <v-chip :color="book.inStock ? 'success' : 'error'" size="small">
-                            {{ book.inStock ? 'In Stock' : 'Out of Stock' }}
+                        <v-chip :color="book.inStock ? 'success' : undefined" size="small" variant="tonal">
+                            {{ t(book.inStock ? 'catalog.inStock' : 'catalog.outOfStock') }}
                         </v-chip>
                     </div>
 
-                    <div class="text-h4 font-weight-bold mb-4">
+                    <div class="book-details__price text-price text-h4 font-weight-bold mb-4">
                         {{ formatPrice(book.price) }}
                     </div>
 
@@ -66,7 +72,7 @@
                                 variant="outlined"
                                 size="small"
                                 :disabled="quantity <= 1"
-                                aria-label="Decrease quantity"
+                                :aria-label="t('book.decrease')"
                                 @click="quantity--"
                             />
                             <span class="text-body-1 font-weight-medium mx-3" aria-live="polite">{{ quantity }}</span>
@@ -75,20 +81,21 @@
                                 density="compact"
                                 variant="outlined"
                                 size="small"
-                                aria-label="Increase quantity"
+                                :aria-label="t('book.increase')"
                                 @click="quantity++"
                             />
                         </div>
 
+                        <!-- The cart store tells the visitor how adding went, in one notification -->
                         <v-btn
                             size="large"
                             :loading="adding"
-                            :prepend-icon="added ? 'mdi-check' : 'mdi-cart-plus'"
-                            :color="added ? 'success' : 'primary'"
+                            prepend-icon="mdi-cart-plus"
+                            color="primary"
                             class="flex-grow-1"
                             @click="handleAddToCart"
                         >
-                            {{ added ? 'Added!' : 'Add to Cart' }}
+                            {{ t('catalog.addToCart') }}
                         </v-btn>
                     </div>
 
@@ -100,59 +107,32 @@
                         class="mb-4"
                         style="max-width: 360px"
                     >
-                        This book is currently out of stock.
+                        {{ t('book.outOfStock') }}
                     </v-alert>
 
                     <!-- Shipping terms come from the shop settings; without them the page states none -->
                     <div v-if="shop.config" class="d-flex flex-wrap ga-4 mt-2">
                         <div class="d-flex align-center ga-1 text-caption text-medium-emphasis">
-                            <v-icon size="16">mdi-truck-delivery-outline</v-icon>
+                            <v-icon size="16" icon="mdi-truck-delivery-outline" />
                             {{ t('shipping.freeFrom', { amount: formatMoney(shop.config.freeShippingThreshold) }) }}
                         </div>
                     </div>
                 </v-col>
             </v-row>
-
-            <v-divider class="my-6"></v-divider>
-
-            <v-row v-if="relatedBooks && relatedBooks.length > 0">
-                <v-col cols="12">
-                    <h2 class="text-h5 font-weight-bold mb-4">Related Books</h2>
-
-                    <v-slide-group v-if="!loading" show-arrows>
-                        <v-slide-group-item
-                            v-for="(relatedBook, index) in relatedBooks"
-                            :key="relatedBook?.id || `related-book-${index}`"
-                            v-slot="{}"
-                        >
-                            <div class="pa-2" style="width: 250px">
-                                <book-card
-                                    v-if="relatedBook"
-                                    :book="relatedBook"
-                                    @click="navigateToBook(relatedBook)"
-                                />
-                            </div>
-                        </v-slide-group-item>
-                    </v-slide-group>
-                </v-col>
-            </v-row>
         </v-container>
-        <v-alert v-else-if="error" type="error" variant="tonal" class="mx-auto my-6" max-width="800">
-            {{ error }}
-        </v-alert>
     </div>
 </template>
 
 <script setup>
 import { t } from '@/i18n'
 import { localeRoute } from '@/router/locale'
-import BookCard from '@/components/features/books/BookCard.vue'
+import ErrorMessage from '@/components/ui/ErrorMessage.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { useBooksStore, useCartStore, useShopConfigStore } from '@/stores'
 import { formatMoney, formatPrice } from '@/utils'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import BookCover from './BookCover.vue'
 
 const props = defineProps({
     bookId: {
@@ -161,55 +141,46 @@ const props = defineProps({
     },
 })
 
-const router = useRouter()
 const booksStore = useBooksStore()
 const cartStore = useCartStore()
 const shop = useShopConfigStore()
 
-const { currentBook, loading, error } = storeToRefs(booksStore)
+const { currentBook, loading } = storeToRefs(booksStore)
 
-const placeholderImage = ref('/images/placeholder.png')
+const loadError = ref(null)
 const quantity = ref(1)
 const adding = ref(false)
-const added = ref(false)
 
 const book = computed(() => currentBook.value)
-const relatedBooks = computed(() => (book.value ? book.value.relatedBooks || [] : []))
 
 const breadcrumbItems = computed(() => [
-    { title: 'Books', to: localeRoute('Books') },
+    { title: t('routes.Books'), to: localeRoute('Books') },
     // The current page: marked active, not disabled, which Vuetify fades below readable contrast
-    { title: book.value?.title || 'Unknown Title', disabled: false, active: true },
+    { title: book.value?.title, disabled: false, active: true },
 ])
 
-const fetchBook = (id) => booksStore.fetchBookById(id)
+const load = async () => {
+    loadError.value = null
+    try {
+        await booksStore.fetchBookById(props.bookId)
+    } catch (error) {
+        loadError.value = error
+    }
+}
 
 const handleAddToCart = async () => {
     if (!book.value.inStock || adding.value) return
 
     adding.value = true
     try {
-        // The store notifies about success and failure itself
-        if (!(await cartStore.add(book.value.id || book.value._id, quantity.value))) return
-        added.value = true
-        setTimeout(() => {
-            added.value = false
-        }, 2000)
+        await cartStore.add(book.value.id, quantity.value)
     } finally {
         adding.value = false
     }
 }
 
-const navigateToBook = (navBook) => {
-    if (navBook.id === props.bookId) return
-    router.push(localeRoute('BookDetails', { params: { id: navBook.id } }))
-    fetchBook(navBook.id)
-    quantity.value = 1
-    added.value = false
-}
-
 onMounted(() => {
-    fetchBook(props.bookId)
+    load()
     shop.load()
 })
 </script>

@@ -62,19 +62,79 @@ afterEach(() => {
     vi.unstubAllGlobals()
 })
 
+async function mount() {
+    const router = testRouter()
+    await router.push('/books/b1')
+    const root = document.createElement('div')
+    document.body.append(root)
+    app = createApp({ render: () => h(components.VApp, null, { default: () => h(BookDetails, { bookId: 'b1' }) }) })
+        .use(i18n)
+        .use(createVuetify({ components, directives }))
+        .use(router)
+    app.mount(root)
+    return root
+}
+
 describe('BookDetails', () => {
     it('names the free-shipping threshold of the shop settings and no return policy', async () => {
-        const router = testRouter()
-        await router.push('/books/b1')
-        const root = document.createElement('div')
-        document.body.append(root)
-        app = createApp({ render: () => h(components.VApp, null, { default: () => h(BookDetails, { bookId: 'b1' }) }) })
-            .use(i18n)
-            .use(createVuetify({ components, directives }))
-            .use(router)
-        app.mount(root)
+        await mount()
 
         await vi.waitFor(() => expect(document.body.textContent).toContain(`Doprava zdarma od ${formatMoney(100000)}`))
         expect(document.body.textContent).not.toMatch(/return/i)
+    })
+
+    it('speaks Czech', async () => {
+        const root = await mount()
+
+        await vi.waitFor(() => expect(root.textContent).toContain('Přidat do košíku'))
+        expect(root.textContent).toContain('Skladem')
+        expect(root.querySelector('.v-breadcrumbs a').textContent.trim()).toBe('Knihy')
+        expect(root.textContent).not.toMatch(/Add to Cart|In Stock/)
+        expect(root.querySelector('[aria-label="Zvýšit množství"]')).not.toBeNull()
+    })
+
+    it('shows the cover placeholder for a book without an image', async () => {
+        const root = await mount()
+
+        await vi.waitFor(() => expect(root.querySelector('.book-cover__placeholder')?.textContent).toContain('Babička'))
+    })
+
+    it('marks the price with the price colour', async () => {
+        const root = await mount()
+
+        await vi.waitFor(() => expect(root.querySelector('.book-details__price.text-price')).not.toBeNull())
+    })
+
+    it('explains a missing book by its error code and offers Try again', async () => {
+        books.fetchById.mockRejectedValueOnce({ code: 'NOT_FOUND' })
+        const root = await mount()
+
+        const alert = await vi.waitFor(() => {
+            const found = [...root.querySelectorAll('[role="alert"]')].find((el) =>
+                el.textContent.includes(cs.errors.NOT_FOUND)
+            )
+            expect(found).toBeDefined()
+            return found
+        })
+        ;[...alert.querySelectorAll('button')].find((b) => b.textContent.trim() === cs.errors.retry).click()
+
+        await vi.waitFor(() => expect(books.fetchById).toHaveBeenCalledTimes(2))
+        await vi.waitFor(() => expect(root.querySelector('h1').textContent).toContain('Babička'))
+    })
+
+    it('leaves out the author and the year when the book has none', async () => {
+        books.fetchById.mockResolvedValue({ success: true, data: { ...BOOK, author: null } })
+        const root = await mount()
+
+        await vi.waitFor(() => expect(root.querySelector('h1').textContent).toContain('Babička'))
+        expect(root.textContent).not.toMatch(/Unknown Author|N\/A/)
+    })
+
+    it('says a book out of stock is not available and offers no button', async () => {
+        books.fetchById.mockResolvedValue({ success: true, data: { ...BOOK, inStock: false } })
+        const root = await mount()
+
+        await vi.waitFor(() => expect(root.textContent).toContain(cs.book.outOfStock))
+        expect(root.textContent).not.toContain('Přidat do košíku')
     })
 })

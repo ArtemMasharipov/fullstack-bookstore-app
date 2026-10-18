@@ -111,6 +111,11 @@
         "inStock": "Skladem",
         "outOfStock": "Není skladem"
     },
+    "book": {
+        "outOfStock": "Tato kniha teď není skladem.",
+        "decrease": "Snížit množství",
+        "increase": "Zvýšit množství"
+    },
     "auth": {
         "fields": {
             "email": "E-mail",

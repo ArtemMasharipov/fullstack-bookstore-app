@@ -33,8 +33,7 @@ test.describe('server cart', () => {
         const book = await seededBook(request)
 
         await page.goto(`/books/${book.id}`)
-        await page.getByRole('button', { name: 'Add to Cart', exact: true }).click()
-        await expect(page.getByRole('button', { name: 'Added!', exact: true })).toBeVisible()
+        await page.getByRole('button', { name: cs.catalog.addToCart, exact: true }).click()
         await expect(page.locator('.notification-container .notification-wrapper')).toHaveCount(1)
 
         await page.goto('/cart')

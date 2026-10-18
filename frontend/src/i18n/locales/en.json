@@ -111,6 +111,11 @@
         "inStock": "In stock",
         "outOfStock": "Out of stock"
     },
+    "book": {
+        "outOfStock": "This book is out of stock right now.",
+        "decrease": "Decrease quantity",
+        "increase": "Increase quantity"
+    },
     "auth": {
         "fields": {
             "email": "Email",

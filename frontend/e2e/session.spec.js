@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { brokenToken, contrastOf, seededBook, signIn, signUp, wcagViolations } from './support.js'
 
 const en = JSON.parse(readFileSync('src/i18n/locales/en.json', 'utf8'))
+const cs = JSON.parse(readFileSync('src/i18n/locales/cs.json', 'utf8'))
 
 const SESSION_KEYS = ['token', 'userData', 'cart', 'redirectPath']
 const sessionKeys = (page) => page.evaluate((keys) => keys.map((key) => localStorage.getItem(key)), SESSION_KEYS)
@@ -75,7 +76,7 @@ for (const locale of ['cs', 'en']) {
             expect(await contrastOf(cardPrice), `${theme}: price on a book card`).toBeGreaterThanOrEqual(4.5)
 
             await page.goto(`${prefix}/books/${book.id}`)
-            const price = page.locator('main .text-h4.font-weight-bold').first()
+            const price = page.locator('.book-details__price')
             await expect(price).toBeVisible()
             expect(await contrastOf(price), `${theme}: price on the book page`).toBeGreaterThanOrEqual(4.5)
         }
@@ -84,7 +85,8 @@ for (const locale of ['cs', 'en']) {
     test(`${locale}: a book page meets WCAG 2.2 AA`, async ({ page, request }) => {
         const book = await seededBook(request)
         await page.goto(`${prefix}/books/${book.id}`)
-        await expect(page.getByRole('button', { name: 'Add to Cart', exact: true })).toBeVisible()
+        const addToCart = (locale === 'en' ? en : cs).catalog.addToCart
+        await expect(page.getByRole('button', { name: addToCart, exact: true })).toBeVisible()
         expect(await wcagViolations(page, 'main'), 'book').toEqual([])
     })
 }
