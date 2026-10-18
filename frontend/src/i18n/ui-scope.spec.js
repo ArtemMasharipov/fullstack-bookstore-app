@@ -18,7 +18,6 @@ const strict = [
     'src/components/ui/ConfirmModal.vue',
     'src/components/ui/ErrorMessage.vue',
     'src/components/notifications/NotificationContainer.vue',
-    'src/components/features/admin/AdminErrorBoundary.vue',
     'src/views/errors/ErrorView.vue',
     'src/views/errors/UnauthorizedView.vue',
     'src/views/errors/NotFoundView.vue',
@@ -59,8 +58,8 @@ describe('translation lint boundary', () => {
             expect(diagnostics('<template><p>Legacy copy</p></template>', filename)).toEqual([])
         }
         for (const filename of [
-            'src/components/features/admin/BookDialog.vue',
-            'src/components/features/books/BookForm.vue',
+            'src/views/admin/AdminAuthorsView.vue',
+            'src/components/features/authors/AuthorForm.vue',
             'src/views/admin/AdminUsersView.vue',
         ])
             expect(legacy).toContain(filename)

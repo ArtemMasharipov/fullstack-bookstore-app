@@ -1,7 +1,13 @@
 <template>
-    <v-dialog v-model="localDialog" :max-width="maxWidth" :persistent="persistent" @click:outside="handleCancel">
+    <v-dialog
+        v-model="localDialog"
+        :max-width="maxWidth"
+        :persistent="persistent"
+        :aria-labelledby="titleId"
+        @click:outside="handleCancel"
+    >
         <v-card>
-            <v-card-title>
+            <v-card-title :id="titleId">
                 <v-icon v-if="icon" :icon="icon" class="me-2" :color="iconColor"></v-icon>
                 {{ resolvedTitle }}
             </v-card-title>
@@ -27,7 +33,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -136,6 +142,8 @@ const emit = defineEmits(['confirm', 'cancel', 'update:modelValue'])
  * Reactive data
  */
 const loading = ref(false)
+// The dialog is named by its title
+const titleId = `confirm-title-${useId()}`
 const resolvedTitle = computed(() => props.title || t('modal.confirmTitle'))
 const resolvedConfirmText = computed(() => props.confirmText || t('modal.confirm'))
 const resolvedCancelText = computed(() => props.cancelText || t('modal.cancel'))

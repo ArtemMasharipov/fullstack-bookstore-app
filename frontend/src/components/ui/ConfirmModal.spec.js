@@ -50,6 +50,13 @@ describe('localized modal defaults', () => {
         expect(button('Cancel')).toBeDefined()
         expect(document.body.textContent).toContain('Caller message')
     })
+    it('names the dialog by its title', async () => {
+        await mount(ConfirmModal, { title: 'Delete this book?', message: 'Caller message' })
+
+        const dialog = document.querySelector('[role="dialog"]')
+        const name = document.getElementById(dialog.getAttribute('aria-labelledby'))
+        expect(name.textContent.trim()).toBe('Delete this book?')
+    })
     it('preserves caller copy and confirm/cancel/model events after a locale change', async () => {
         const events = []
         await mount(ConfirmModal, {

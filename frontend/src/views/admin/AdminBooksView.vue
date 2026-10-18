@@ -1,226 +1,262 @@
 <template>
-    <div class="admin-books">
-        <!-- Book management data table -->
-        <admin-books-table
-            :books="paginatedBooks"
-            :authors="authors"
+    <div>
+        <admin-table
+            :headers="headers"
+            :items="items"
+            :items-length="total"
             :loading="loading"
-            :total-items="totalItems"
-            :page="page"
-            :items-per-page="itemsPerPage"
-            :sort-by="sortBy"
-            :search="search"
-            @update:page="updatePage"
-            @update:items-per-page="updateItemsPerPage"
-            @update:sort-by="updateSortBy"
-            @update:search="updateSearch"
-            @reset-filters="resetFilters"
-            @add-book="openBookDialog"
-            @edit-book="openBookDialog"
-            @delete-book="confirmDeleteBook"
-        />
+            :error="error"
+            :page="state.page"
+            :limit="state.limit"
+            :sort-by="state.sortBy"
+            :empty-text="t(filtered ? 'admin.books.noResults' : 'admin.books.empty')"
+            :filtered="filtered"
+            @update:page="update({ page: $event })"
+            @update:limit="update({ limit: $event })"
+            @update:sort-by="update({ sortBy: $event ?? LIST.defaultSort })"
+            @retry="reload"
+            @reset-filters="update({ q: '', filters: {} })"
+        >
+            <template #toolbar>
+                <div class="admin-books__toolbar">
+                    <v-text-field
+                        v-model="search"
+                        type="search"
+                        :label="t('admin.books.search')"
+                        prepend-inner-icon="mdi-magnify"
+                        maxlength="100"
+                        hide-details
+                        clearable
+                    />
+                    <v-select
+                        :model-value="state.filters.category ?? ''"
+                        :items="categoryOptions"
+                        :label="t('admin.books.category')"
+                        hide-details
+                        @update:model-value="setFilter('category', $event)"
+                    />
+                    <v-select
+                        :model-value="state.filters.inStock ?? ''"
+                        :items="stockOptions"
+                        :label="t('admin.books.availability')"
+                        hide-details
+                        @update:model-value="setFilter('inStock', $event)"
+                    />
+                    <v-btn prepend-icon="mdi-plus" class="admin-books__add" @click="openForm(null)">
+                        {{ t('admin.books.add') }}
+                    </v-btn>
+                </div>
+            </template>
 
-        <!-- Book edit/create dialog -->
-        <book-dialog
-            v-model="bookDialogOpen"
-            :book="editedBook"
-            :authors="authors"
-            :saving="saving"
-            @save="handleSaveBook"
-            @close="closeBookDialog"
-        />
+            <template #item.cover="{ item }">
+                <book-cover :src="item.image" :title="item.title" class="admin-books__cover" />
+            </template>
+            <template #item.author="{ item }">
+                {{ item.author ? `${item.author.firstName} ${item.author.lastName}` : t('common.notAvailable') }}
+            </template>
+            <template #item.price="{ item }">{{ formatPrice(item.price) }}</template>
+            <template #item.inStock="{ item }">
+                <v-switch
+                    :model-value="item.inStock"
+                    :aria-label="t('admin.books.stockToggle', { title: item.title })"
+                    :disabled="stockChanging.includes(item.id)"
+                    color="primary"
+                    density="compact"
+                    inset
+                    hide-details
+                    @update:model-value="setStock(item, $event)"
+                />
+            </template>
+            <template #item.actions="{ item }">
+                <div class="d-flex justify-end">
+                    <v-btn
+                        icon="mdi-pencil"
+                        variant="text"
+                        size="small"
+                        :aria-label="t('admin.books.edit', { title: item.title })"
+                        @click="openForm(item)"
+                    />
+                    <v-btn
+                        icon="mdi-delete"
+                        variant="text"
+                        size="small"
+                        color="error"
+                        :aria-label="t('admin.books.delete', { title: item.title })"
+                        @click="askDelete(item)"
+                    />
+                </div>
+            </template>
+            <template #empty-action>
+                <v-btn prepend-icon="mdi-plus" @click="openForm(null)">{{ t('admin.books.add') }}</v-btn>
+            </template>
+        </admin-table>
 
-        <!-- Delete confirmation dialog -->
-        <book-delete-dialog
-            v-model="deleteDialogOpen"
-            :book="bookToDelete"
-            :deleting="deleting"
-            @delete="handleDeleteBook"
-            @close="closeDeleteDialog"
+        <book-form-dialog v-model="formOpen" :book="editedBook" @saved="onSaved" />
+
+        <confirm-modal
+            v-model="deleteOpen"
+            :title="t('admin.books.deleteTitle')"
+            :message="t('admin.books.deleteMessage', { title: bookToDelete?.title ?? '' })"
+            :confirm-text="t('admin.books.deleteConfirm')"
+            @confirm="deleteBook"
         />
     </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import AdminTable from '@/components/features/admin/AdminTable.vue'
+import BookFormDialog from '@/components/features/admin/BookFormDialog.vue'
+import BookCover from '@/components/features/books/BookCover.vue'
+import ConfirmModal from '@/components/ui/ConfirmModal.vue'
+import { useAdminList } from '@/composables/useAdminList'
+import { useNotifications } from '@/composables/useNotifications'
+import { useReturnFocus } from '@/composables/useReturnFocus'
+import { t } from '@/i18n'
+import { booksApi } from '@/services/api/booksApi'
+import { formatPrice } from '@/utils'
+import { BOOK_CATEGORIES } from '@/utils/constants/app'
+import { resolveErrorKey } from '@/utils/errorResolver'
+import { debounce } from '@/utils/helpers/debounce'
+import { computed, nextTick, ref, watch } from 'vue'
 
-// Components
-import AdminBooksTable from '@/components/features/admin/AdminBooksTable.vue'
-import BookDeleteDialog from '@/components/features/admin/BookDeleteDialog.vue'
-import BookDialog from '@/components/features/admin/BookDialog.vue'
+/**
+ * The admin's books: a page of GET /books with its search, filters, sort and page in the address; the stock is
+ * switched in the row; a book is added and edited in the form dialog and deleted after a confirmation. Each action
+ * ends in one notification.
+ */
 
-// Stores
-import { useAuthorsStore, useBooksStore } from '@/stores'
+const LIST = {
+    sorts: ['-createdAt', 'title', '-title', 'price', '-price', 'publicationYear', '-publicationYear'],
+    defaultSort: '-createdAt',
+    filters: {
+        category: (value) => BOOK_CATEGORIES.includes(value),
+        inStock: (value) => value === 'true' || value === 'false',
+    },
+}
 
-// Utils
-import { logger } from '@/utils/logger'
+const { state, items, total, loading, error, update, reload } = useAdminList({
+    config: LIST,
+    load: (params) => booksApi.fetchAll(params),
+})
+const { showSuccess, showError } = useNotifications()
 
-// Store instances
-const booksStore = useBooksStore()
-const authorsStore = useAuthorsStore()
+const headers = computed(() => [
+    { title: t('admin.books.columns.cover'), key: 'cover', sortable: false, width: 72 },
+    { title: t('admin.books.columns.title'), key: 'title', sortable: true },
+    { title: t('admin.books.columns.author'), key: 'author', sortable: false },
+    { title: t('admin.books.columns.category'), key: 'category', sortable: false },
+    { title: t('admin.books.columns.year'), key: 'publicationYear', sortable: true },
+    { title: t('admin.books.columns.price'), key: 'price', sortable: true, align: 'end' },
+    { title: t('admin.books.columns.inStock'), key: 'inStock', sortable: false },
+    { title: t('admin.books.columns.actions'), key: 'actions', sortable: false, align: 'end' },
+])
 
-// Dialog states
-const bookDialogOpen = ref(false)
-const deleteDialogOpen = ref(false)
+const categoryOptions = computed(() => [
+    { value: '', title: t('admin.books.all') },
+    ...BOOK_CATEGORIES.map((category) => ({ value: category, title: category })),
+])
+const stockOptions = computed(() => [
+    { value: '', title: t('admin.books.all') },
+    { value: 'true', title: t('catalog.inStock') },
+    { value: 'false', title: t('catalog.outOfStock') },
+])
+
+const filtered = computed(() => Boolean(state.value.q || Object.keys(state.value.filters).length))
+const setFilter = (name, value) => update({ filters: { ...state.value.filters, [name]: value ?? '' } })
+
+// The search goes to the address once typing pauses; Back and a link bring their own search into the field
+const search = ref(state.value.q)
+const sendSearch = debounce((value) => update({ q: (value ?? '').trim() }), 300)
+watch(search, (value) => {
+    if ((value ?? '').trim() !== state.value.q) sendSearch(value)
+})
+watch(
+    () => state.value.q,
+    (q) => {
+        if ((search.value ?? '').trim() !== q) search.value = q
+    }
+)
+
+// The stock switch of a row: shown at once, put back when the API refuses it
+const stockChanging = ref([])
+async function setStock(book, inStock) {
+    const before = book.inStock
+    book.inStock = inStock
+    stockChanging.value.push(book.id)
+    try {
+        const { data } = await booksApi.setStock(book.id, inStock)
+        book.inStock = data.inStock
+        showSuccess(undefined, {
+            messageKey: data.inStock ? 'admin.books.nowInStock' : 'admin.books.nowOutOfStock',
+            messageParams: { title: book.title },
+        })
+    } catch (failure) {
+        book.inStock = before
+        showError(undefined, { messageKey: resolveErrorKey(failure) })
+    } finally {
+        stockChanging.value = stockChanging.value.filter((id) => id !== book.id)
+    }
+}
+
+const formOpen = ref(false)
 const editedBook = ref(null)
-const bookToDelete = ref(null)
-
-// Loading states
-const saving = ref(false)
-const deleting = ref(false)
-
-// Table state
-const page = ref(1)
-const itemsPerPage = ref(10)
-const sortBy = ref([{ key: 'title', order: 'asc' }])
-const search = ref('')
-
-// Data from stores
-const books = computed(() => booksStore.books || [])
-const authors = computed(() => authorsStore.list || [])
-const loading = computed(() => booksStore.loading)
-
-// Filtered and paginated data
-const filteredBooks = computed(() => {
-    let result = books.value
-
-    // Search filter
-    if (search.value) {
-        const query = search.value.toLowerCase()
-        result = result.filter(
-            (book) =>
-                book.title?.toLowerCase().includes(query) ||
-                book.isbn?.toLowerCase().includes(query) ||
-                book.author?.name?.toLowerCase().includes(query) ||
-                book.category?.toLowerCase().includes(query)
-        )
-    }
-
-    return result
-})
-
-const totalItems = computed(() => filteredBooks.value.length)
-
-const paginatedBooks = computed(() => {
-    const start = (page.value - 1) * itemsPerPage.value
-    const end = start + itemsPerPage.value
-    return filteredBooks.value.slice(start, end)
-})
-
-// Data loading methods
-const loadBooks = async () => {
-    try {
-        await booksStore.fetchBooks({ page: page.value, limit: itemsPerPage.value })
-    } catch (error) {
-        logger.error('Failed to load books', error, 'admin-books')
-    }
-}
-
-const loadAuthors = async () => {
-    try {
-        await authorsStore.fetchAuthors()
-    } catch (error) {
-        logger.error('Error fetching authors', error, 'admin-books')
-    }
-}
-
-// Dialog methods
-const openBookDialog = (book = null) => {
+function openForm(book) {
     editedBook.value = book
-    bookDialogOpen.value = true
+    formOpen.value = true
+}
+function onSaved(book, created) {
+    showSuccess(undefined, {
+        messageKey: created ? 'admin.books.created' : 'admin.books.updated',
+        messageParams: { title: book.title },
+    })
+    reload()
 }
 
-const closeBookDialog = () => {
-    bookDialogOpen.value = false
-    editedBook.value = null
-    saving.value = false
-}
-
-const confirmDeleteBook = (book) => {
+const deleteOpen = ref(false)
+const bookToDelete = ref(null)
+const deleteFocus = useReturnFocus()
+function askDelete(book) {
+    deleteFocus.remember()
     bookToDelete.value = book
-    deleteDialogOpen.value = true
+    deleteOpen.value = true
 }
-
-const closeDeleteDialog = () => {
-    deleteDialogOpen.value = false
-    bookToDelete.value = null
-    deleting.value = false
-}
-
-// CRUD operations
-const handleSaveBook = async (bookData) => {
-    saving.value = true
-
-    try {
-        if (bookData.id) {
-            // Update existing book
-            await booksStore.updateBook({ id: bookData.id, formData: bookData })
-            logger.info('Book updated successfully', { title: bookData.title, id: bookData.id }, 'admin-books')
-        } else {
-            // Create new book
-            await booksStore.createBook(bookData)
-            logger.info('Book created successfully', { title: bookData.title }, 'admin-books')
-        }
-
-        closeBookDialog()
-        await loadBooks() // Refresh the list
-    } catch (error) {
-        logger.error('Failed to save book', error, 'admin-books')
-    } finally {
-        saving.value = false
-    }
-}
-
-const handleDeleteBook = async () => {
-    if (!bookToDelete.value) return
-
-    deleting.value = true
-
-    try {
-        await booksStore.deleteBook(bookToDelete.value.id, bookToDelete.value.title)
-        logger.info(`Book "${bookToDelete.value.title}" deleted successfully`, 'admin-books')
-
-        closeDeleteDialog()
-        await loadBooks() // Refresh the list
-    } catch (error) {
-        logger.error(`Failed to delete book: ${error.message || 'Unknown error'}`, error, 'admin-books')
-    } finally {
-        deleting.value = false
-    }
-}
-
-// Table event handlers
-const updatePage = (newPage) => {
-    page.value = newPage
-}
-
-const updateItemsPerPage = (newItemsPerPage) => {
-    itemsPerPage.value = newItemsPerPage
-    page.value = 1 // Reset to first page
-}
-
-const updateSortBy = (sortField) => {
-    sortBy.value = sortField
-}
-
-const updateSearch = (query) => {
-    search.value = query
-    page.value = 1 // Reset to first page
-}
-
-const resetFilters = () => {
-    search.value = ''
-    page.value = 1
-}
-
-onMounted(async () => {
-    await loadBooks()
-    await loadAuthors()
+watch(deleteOpen, async (open) => {
+    if (open) return
+    await nextTick()
+    deleteFocus.restore()
 })
+async function deleteBook() {
+    const book = bookToDelete.value
+    try {
+        await booksApi.delete(book.id)
+        showSuccess(undefined, { messageKey: 'admin.books.deleted', messageParams: { title: book.title } })
+        await reload()
+    } catch (failure) {
+        showError(undefined, { messageKey: resolveErrorKey(failure) })
+    }
+}
 </script>
 
 <style scoped>
-.admin-books {
-    padding: 16px;
+.admin-books__toolbar {
+    display: grid;
+    grid-template-columns: minmax(14rem, 2fr) repeat(2, minmax(10rem, 1fr)) auto;
+    gap: 12px;
+    align-items: center;
+}
+
+@media (max-width: 959px) {
+    .admin-books__toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-books__add {
+        justify-self: start;
+    }
+}
+
+.admin-books__cover {
+    width: 40px;
+    margin: 4px 0;
 }
 </style>

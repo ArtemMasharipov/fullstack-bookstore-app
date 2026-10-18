@@ -89,6 +89,36 @@
                 "duplicateBook": "A book with this title, author and year already exists.",
                 "invalid": "Check this value."
             }
+        },
+        "books": {
+            "search": "Search title or description",
+            "category": "Category",
+            "availability": "Availability",
+            "all": "All",
+            "add": "Add book",
+            "columns": {
+                "cover": "Cover",
+                "title": "Title",
+                "author": "Author",
+                "category": "Category",
+                "year": "Year",
+                "price": "Price",
+                "inStock": "In stock",
+                "actions": "Actions"
+            },
+            "edit": "Edit: {title}",
+            "delete": "Delete: {title}",
+            "stockToggle": "In stock: {title}",
+            "empty": "There are no books yet.",
+            "noResults": "No book matches this search and these filters.",
+            "created": "Book “{title}” added.",
+            "updated": "Book “{title}” saved.",
+            "deleted": "Book “{title}” deleted.",
+            "nowInStock": "“{title}” is now in stock.",
+            "nowOutOfStock": "“{title}” is now out of stock.",
+            "deleteTitle": "Delete this book?",
+            "deleteMessage": "“{title}” will be deleted. This cannot be undone.",
+            "deleteConfirm": "Delete"
         }
     },
     "home": {
@@ -309,9 +339,6 @@
         "contact": "Contact support",
         "supportUnavailable": "Support channel is not configured in this demo. No message has been sent.",
         "close": "Close",
-        "adminTitle": "Admin panel error",
-        "resetView": "Reset view",
-        "dashboard": "Go to dashboard",
         "oops": "Oops!",
         "title": "Something went wrong",
         "home": "Go home",

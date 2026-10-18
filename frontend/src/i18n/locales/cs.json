@@ -89,6 +89,36 @@
                 "duplicateBook": "Kniha se stejným názvem, autorem a rokem už existuje.",
                 "invalid": "Zkontrolujte tuto hodnotu."
             }
+        },
+        "books": {
+            "search": "Hledat v názvu nebo popisu",
+            "category": "Kategorie",
+            "availability": "Dostupnost",
+            "all": "Vše",
+            "add": "Přidat knihu",
+            "columns": {
+                "cover": "Obálka",
+                "title": "Název",
+                "author": "Autor",
+                "category": "Kategorie",
+                "year": "Rok",
+                "price": "Cena",
+                "inStock": "Skladem",
+                "actions": "Akce"
+            },
+            "edit": "Upravit: {title}",
+            "delete": "Smazat: {title}",
+            "stockToggle": "Skladem: {title}",
+            "empty": "Zatím tu nejsou žádné knihy.",
+            "noResults": "Hledání a filtrům neodpovídá žádná kniha.",
+            "created": "Kniha „{title}“ byla přidána.",
+            "updated": "Kniha „{title}“ byla uložena.",
+            "deleted": "Kniha „{title}“ byla smazána.",
+            "nowInStock": "„{title}“ je nyní skladem.",
+            "nowOutOfStock": "„{title}“ teď není skladem.",
+            "deleteTitle": "Smazat knihu?",
+            "deleteMessage": "Kniha „{title}“ bude smazána. Tuto akci nelze vrátit.",
+            "deleteConfirm": "Smazat"
         }
     },
     "home": {
@@ -309,9 +339,6 @@
         "contact": "Kontaktovat podporu",
         "supportUnavailable": "Kanál podpory není v této ukázce nastaven. Žádná zpráva nebyla odeslána.",
         "close": "Zavřít",
-        "adminTitle": "Chyba administrace",
-        "resetView": "Obnovit zobrazení",
-        "dashboard": "Přejít na přehled",
         "oops": "Jejda!",
         "title": "Něco se pokazilo",
         "home": "Na úvodní stránku",

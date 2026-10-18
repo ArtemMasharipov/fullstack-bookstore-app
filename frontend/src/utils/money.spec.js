@@ -75,14 +75,13 @@ describe('CZK display in major units', () => {
         expect(display.value).toBe(en.common.notAvailable)
     })
 })
-import { createApp, createSSRApp, h, nextTick, reactive } from 'vue'
+import { createSSRApp, h } from 'vue'
 import { renderToString } from '@vue/server-renderer'
 import { createPinia } from 'pinia'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import BookCard from '@/components/features/books/BookCard.vue'
-import BookDialog from '@/components/features/admin/BookDialog.vue'
 import { buildRoutes } from '@/router/buildRoutes'
 
 async function renderConsumer(component, props) {
@@ -110,25 +109,4 @@ it('renders a zero book price instead of a missing-price fallback', async () => 
         new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK' }).format(0)
     )
     expect(book.price).toBe(0)
-})
-
-it('shows a CZK editing prefix while retaining the numeric major-unit value', async () => {
-    const book = { id: 'book', title: 'Example', price: 299.9 }
-    const props = reactive({ book, visible: false, attach: true, eager: true })
-    const root = document.createElement('div')
-    document.body.append(root)
-    const app = createApp({ render: () => h(components.VApp, {}, { default: () => h(BookDialog, props) }) }).use(
-        createVuetify({ components })
-    )
-    app.mount(root)
-    try {
-        props.visible = true
-        await nextTick()
-        expect(root.textContent).toContain('CZK')
-        expect(root.querySelector('input[type="number"]')?.value).toBe('299.9')
-        expect(book.price).toBe(299.9)
-    } finally {
-        app.unmount()
-        root.remove()
-    }
 })

@@ -1,12 +1,12 @@
 import { booksApi } from '@/services/api/booksApi'
 import { normalizeApiResponse, normalizeBook, normalizeBooks } from '@/utils/dataNormalizers'
 import { defineStore } from 'pinia'
-import { withLoading } from './storeHelpers'
 
 /**
  * Books Store
- * A page of books with the server's pagination, the open book, and the admin's book changes. Search and filters
- * are not kept here: the catalogue reads them from its address (router/catalogQuery.js)
+ * The storefront's books: a page with the server's pagination and the open book. Search and filters are not kept
+ * here: the catalogue reads them from its address (router/catalogQuery.js). The admin changes books through the API
+ * from its own screen
  *
  * Simplified version without factory - direct Pinia implementation
  */
@@ -81,62 +81,6 @@ export const useBooksStore = defineStore('books', {
             } finally {
                 this.currentBookLoading = false
             }
-        },
-
-        /**
-         * Create a new book
-         */
-        async createBook(formData) {
-            return withLoading(this, async () => {
-                const response = await booksApi.create(formData)
-                const normalizedResponse = normalizeApiResponse(response)
-                const book = normalizeBook(normalizedResponse.data)
-
-                if (book) {
-                    this.books.push(book)
-                    this.total += 1
-                }
-
-                return book
-            })
-        },
-
-        /**
-         * Update an existing book
-         */
-        async updateBook({ id, formData }) {
-            return withLoading(this, async () => {
-                const response = await booksApi.update(id, formData)
-                const normalizedResponse = normalizeApiResponse(response)
-                const updatedBook = normalizeBook(normalizedResponse.data)
-
-                if (updatedBook) {
-                    const index = this.books.findIndex((book) => book.id === updatedBook.id)
-                    if (index !== -1) {
-                        this.books.splice(index, 1, updatedBook)
-                    }
-                }
-
-                return updatedBook
-            })
-        },
-
-        /**
-         * Delete a book
-         */
-        async deleteBook(id, title = '') {
-            if (!id) throw new Error('Book ID is required')
-
-            return withLoading(this, async () => {
-                if (!title) {
-                    const book = this.books.find((b) => b.id === id)
-                    title = book?.title || 'Book'
-                }
-
-                await booksApi.delete(id)
-                this.books = this.books.filter((book) => book.id !== id)
-                this.total = Math.max(0, this.total - 1)
-            })
         },
 
         /**
