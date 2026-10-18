@@ -104,6 +104,34 @@ describe('AdminTable', () => {
         ])
     })
 
+    it('sorts from the keyboard: a sortable header holds one button', async () => {
+        await mount()
+
+        expect(header('Akce').querySelector('button')).toBeNull()
+        const sort = header('Cena').querySelector('button')
+        expect(sort.textContent.trim()).toBe('Cena')
+        sort.click()
+        await nextTick()
+
+        expect(events.filter(([name]) => name === 'sortBy')).toEqual([['sortBy', 'price']])
+    })
+
+    it('tells which column sorts the table', async () => {
+        await mount()
+
+        expect(header('Cena').getAttribute('aria-sort')).toBe('none')
+        expect(header('Akce').hasAttribute('aria-sort')).toBe(false)
+
+        state.sortBy = 'price'
+        await nextTick()
+        expect(header('Cena').getAttribute('aria-sort')).toBe('ascending')
+        expect(header('Název').getAttribute('aria-sort')).toBe('none')
+
+        state.sortBy = '-price'
+        await nextTick()
+        expect(header('Cena').getAttribute('aria-sort')).toBe('descending')
+    })
+
     it('shows the error with a retry button', async () => {
         state.error = { code: 'INTERNAL' }
         state.items = []

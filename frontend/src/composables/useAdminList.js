@@ -57,9 +57,23 @@ export function useAdminList({ config, load }) {
         { immediate: true }
     )
 
+    // The changes of one tick make one navigation: the table reports a new sort or page size and then page 1 at once,
+    // and a second push built from the address not yet changed would cancel the first
+    let pending = null
+    let navigation = null
+
     /** Changes the list through the address; a new search, filter, page size or sort starts from page 1 */
     function update(patch) {
-        return router.push({ query: listQuery({ ...state.value, page: 1, ...patch }, config) })
+        pending = { ...pending, ...patch }
+        if (!navigation) {
+            navigation = Promise.resolve().then(() => {
+                const next = { ...state.value, page: 1, ...pending }
+                pending = null
+                navigation = null
+                return router.push({ query: listQuery(next, config) })
+            })
+        }
+        return navigation
     }
 
     return { state, items, total, loading, error, update, reload }

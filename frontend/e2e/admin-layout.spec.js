@@ -92,14 +92,45 @@ for (const locale of ['cs', 'en']) {
         await expect(rows).toHaveCount(10)
         await expect.poll(firstTitle).toBe(pageTwo)
 
+        // A new page size on page 2 starts again from page 1 with that size
+        await page.locator('.v-data-table-footer__items-per-page .v-field').click()
+        await page.locator('.v-overlay__content .v-list-item').filter({ hasText: /^20$/ }).click()
+        await expect(page).toHaveURL((url) => url.searchParams.get('limit') === '20' && !url.searchParams.has('page'))
+        await expect(rows).toHaveCount(20)
+
+        await page.goBack()
+        await expect(page).toHaveURL((url) => url.searchParams.get('page') === '2' && !url.searchParams.has('limit'))
+        await expect.poll(firstTitle).toBe(pageTwo)
+
         await page.goBack()
         await expect(page).toHaveURL((url) => !url.searchParams.has('page'))
         await expect.poll(firstTitle).toBe(pageOne)
+    })
 
-        await page.locator('.v-data-table-footer__items-per-page .v-field').click()
-        await page.locator('.v-overlay__content .v-list-item').filter({ hasText: /^20$/ }).click()
-        await expect(page).toHaveURL((url) => url.searchParams.get('limit') === '20')
-        await expect(rows).toHaveCount(20)
+    test(`${locale}: the books table sorts from the keyboard and Back returns from a search`, async ({ page }) => {
+        await signIn(page, SEEDED.admin, prefix)
+        await page.goto(`${prefix}/admin/books?page=2`)
+        const rows = page.locator('main tbody tr')
+        await expect(rows).toHaveCount(10)
+
+        const price = page.getByRole('columnheader', { name: words.admin.books.columns.price })
+        await price.getByRole('button').focus()
+        await page.keyboard.press('Enter')
+        await expect(page).toHaveURL(
+            (url) => url.searchParams.get('sortBy') === 'price' && !url.searchParams.has('page')
+        )
+        await expect(price).toHaveAttribute('aria-sort', 'ascending')
+
+        await page.goBack()
+        await expect(page).toHaveURL((url) => url.searchParams.get('page') === '2')
+        await page.getByLabel(words.admin.books.search, { exact: true }).fill('Krakatit')
+        await expect(page).toHaveURL((url) => url.searchParams.get('q') === 'Krakatit')
+        await expect(rows).toHaveCount(1)
+
+        await page.goBack()
+        await expect(page).toHaveURL((url) => url.searchParams.get('page') === '2' && !url.searchParams.has('q'))
+        await expect(rows).toHaveCount(10)
+        await expect(page).toHaveURL((url) => url.searchParams.get('page') === '2')
     })
 
     test(`${locale}: the admin books page and its form meet the WCAG 2.2 A and AA rules axe checks`, async ({

@@ -106,6 +106,8 @@ const choose = async (label, option) => {
     ;[...document.querySelectorAll('.v-list-item')].find((i) => i.textContent.trim() === option).click()
     await nextTick()
 }
+const header = (text) => [...document.querySelectorAll('th')].find((th) => th.textContent.includes(text))
+const settle = () => new Promise((resolve) => setTimeout(resolve, 50))
 const notices = () => useNotifications().notifications.value.map((n) => [n.type, n.messageKey])
 
 describe('AdminBooksView', () => {
@@ -244,6 +246,60 @@ describe('AdminBooksView', () => {
         )
         await vi.waitFor(() => expect(notices()).toEqual([['success', 'admin.books.updated']]))
         await vi.waitFor(() => expect(books.fetchAll).toHaveBeenCalledTimes(2))
+    })
+
+    it('keeps the sort a header click picks on page 2', async () => {
+        await mount('/admin/books?page=2')
+        await vi.waitFor(() => expect(rows()).toHaveLength(10))
+
+        header(cs.admin.books.columns.price).click()
+
+        await vi.waitFor(() => expect(router.currentRoute.value.query).toEqual({ sortBy: 'price' }))
+        await settle()
+        expect(router.currentRoute.value.query).toEqual({ sortBy: 'price' })
+    })
+
+    it('keeps a page size picked on page 2', async () => {
+        await mount('/admin/books?page=2')
+        await vi.waitFor(() => expect(rows()).toHaveLength(10))
+
+        document
+            .querySelector('.v-data-table-footer .v-field')
+            .dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+        await vi.waitFor(() =>
+            expect([...document.querySelectorAll('.v-list-item')].some((i) => i.textContent.trim() === '20')).toBe(true)
+        )
+        ;[...document.querySelectorAll('.v-list-item')].find((i) => i.textContent.trim() === '20').click()
+
+        await vi.waitFor(() => expect(router.currentRoute.value.query).toEqual({ limit: '20' }))
+        await settle()
+        expect(router.currentRoute.value.query).toEqual({ limit: '20' })
+    })
+
+    it('returns to page 3 with Back from a short filtered list', async () => {
+        books.fetchAll.mockImplementation(async ({ page, category }) => pageOf(page, { total: category ? 3 : 24 }))
+        await mount('/admin/books?page=3')
+        await vi.waitFor(() => expect(rows()).toHaveLength(4))
+        await router.push('/admin/books?category=Fiction')
+        await vi.waitFor(() => expect(rows()).toHaveLength(3))
+
+        router.back()
+
+        await vi.waitFor(() => expect(router.currentRoute.value.query).toEqual({ page: '3' }))
+        await vi.waitFor(() => expect(rows()).toHaveLength(4))
+        await settle()
+        expect(router.currentRoute.value.query).toEqual({ page: '3' })
+        expect(books.fetchAll).toHaveBeenLastCalledWith({ page: 3, limit: 10, sortBy: '-createdAt' })
+    })
+
+    it('shows the last page for a link past it', async () => {
+        books.fetchAll.mockImplementation(async ({ page }) => pageOf(page, { total: 15 }))
+        await mount('/admin/books?page=3')
+
+        await vi.waitFor(() => expect(router.currentRoute.value.query).toEqual({ page: '2' }))
+        await vi.waitFor(() => expect(rows()).toHaveLength(5))
+        await settle()
+        expect(router.currentRoute.value.query).toEqual({ page: '2' })
     })
 
     it('shows the load error with a retry', async () => {
