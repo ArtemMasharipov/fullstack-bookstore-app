@@ -204,6 +204,16 @@ describe('BookFormDialog', () => {
         expect(books.create).not.toHaveBeenCalled()
     })
 
+    it('marks the fields with an error as invalid', async () => {
+        await mount()
+
+        await save()
+
+        expect(input(cs.admin.bookForm.title).getAttribute('aria-invalid')).toBe('true')
+        expect(input(cs.admin.bookForm.author).getAttribute('aria-invalid')).toBe('true')
+        expect(input(cs.admin.bookForm.description).hasAttribute('aria-invalid')).toBe(false)
+    })
+
     it('creates a book and reports it', async () => {
         const created = { ...BOOK, id: 'b9', inStock: true }
         books.create.mockResolvedValue({ success: true, data: created })

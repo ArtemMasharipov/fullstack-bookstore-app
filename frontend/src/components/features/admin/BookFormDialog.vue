@@ -24,6 +24,7 @@
                         v-model="form.title"
                         :label="t('admin.bookForm.title')"
                         :error-messages="errors.title"
+                        :aria-invalid="errors.title ? 'true' : undefined"
                         maxlength="100"
                     />
                     <v-autocomplete
@@ -32,6 +33,7 @@
                         :items="authorOptions"
                         :loading="authorsLoading"
                         :error-messages="errors.authorId"
+                        :aria-invalid="errors.authorId ? 'true' : undefined"
                     />
                     <v-row>
                         <v-col cols="12" sm="6">
@@ -40,6 +42,7 @@
                                 type="number"
                                 :label="t('admin.bookForm.year')"
                                 :error-messages="errors.publicationYear"
+                                :aria-invalid="errors.publicationYear ? 'true' : undefined"
                             />
                         </v-col>
                         <v-col cols="12" sm="6">
@@ -50,6 +53,7 @@
                                 min="0"
                                 :label="t('common.priceLabel', { currency: 'CZK' })"
                                 :error-messages="errors.price"
+                                :aria-invalid="errors.price ? 'true' : undefined"
                             />
                         </v-col>
                     </v-row>
@@ -60,11 +64,13 @@
                         :close-text="t('admin.bookForm.category')"
                         :items="BOOK_CATEGORIES"
                         :error-messages="errors.category"
+                        :aria-invalid="errors.category ? 'true' : undefined"
                     />
                     <v-textarea
                         v-model="form.description"
                         :label="t('admin.bookForm.description')"
                         :error-messages="errors.description"
+                        :aria-invalid="errors.description ? 'true' : undefined"
                         rows="3"
                         auto-grow
                         counter="1000"
@@ -74,6 +80,7 @@
                         type="url"
                         :label="t('admin.bookForm.image')"
                         :error-messages="errors.image"
+                        :aria-invalid="errors.image ? 'true' : undefined"
                     />
                     <v-switch
                         v-model="form.inStock"
