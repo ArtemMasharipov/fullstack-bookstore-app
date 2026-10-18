@@ -7,74 +7,59 @@
 import Author from "../models/Author.js";
 import Book from "../models/Book.js";
 import { NotFoundError, ValidationError } from "../utils/errors.js";
+import { toBookView } from "./bookView.js";
+
+/**
+ * The sort of a sortBy key ("price", "-price"). _id breaks ties in the same
+ * direction: MongoDB does not keep equal values in a stable order, and
+ * without it skip and limit could show a book on two pages and another on
+ * none.
+ * @param {string} sortBy - A key from BOOK_SORTS
+ * @returns {Object} Mongoose sort
+ */
+export function sortOf(sortBy) {
+  const direction = sortBy.startsWith("-") ? -1 : 1;
+  return { [sortBy.replace(/^-/, "")]: direction, _id: direction };
+}
 
 /**
  * Get books with filtering and pagination
- * @param {Object} filters - Query filters (page, limit, category, authorId, inStock, search, sortBy)
- * @returns {Object} { books, pagination }
+ * @param {Object} query - Parsed listBooksQuery (page, limit, category, authorId, inStock, search, sortBy)
+ * @returns {Object} { books, pagination: { page, limit, total, pages } }
  */
-export async function getBooks(filters = {}) {
-  const {
-    page = 1,
-    limit = 20,
-    category,
-    authorId,
-    inStock,
-    search,
-    sortBy = "-createdAt",
-  } = filters;
+export async function getBooks({ page, limit, category, authorId, inStock, search, sortBy }) {
+  // Filters compare whole values: a category is chosen from a list, not searched for
+  const filter = {};
+  if (category) filter.category = category;
+  if (authorId) filter.author = authorId;
+  if (inStock !== undefined) filter.inStock = inStock;
 
-  // Validate pagination params
-  if (page < 1 || limit < 1) {
-    throw new ValidationError("Page and limit must be greater than 0");
-  }
-
-  if (limit > 100) {
-    throw new ValidationError("Maximum limit is 100");
-  }
-
-  // Build query
-  const query = {};
-  if (category) query.category = new RegExp(category, "i");
-  if (authorId) query.author = authorId;
-  if (inStock !== undefined) query.inStock = inStock === "true";
-
-  const skip = (page - 1) * limit;
-
-  // Add search filter (regex for partial matching)
+  // Search matches part of the title or description, as plain text
   if (search) {
     const searchRegex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
-    query.$or = [{ title: searchRegex }, { description: searchRegex }];
+    filter.$or = [{ title: searchRegex }, { description: searchRegex }];
   }
 
-  // Execute queries in parallel
   const [books, total] = await Promise.all([
-    Book.find(query)
+    Book.find(filter)
       .populate("author", "firstName lastName")
-      .sort(sortBy)
-      .skip(skip)
-      .limit(Number(limit))
+      .sort(sortOf(sortBy))
+      .skip((page - 1) * limit)
+      .limit(limit)
       .lean(),
-    Book.countDocuments(query),
+    Book.countDocuments(filter),
   ]);
 
   return {
-    books,
-    pagination: {
-      page: Number(page),
-      limit: Number(limit),
-      total,
-      pages: Math.ceil(total / limit),
-      hasNext: page * limit < total,
-      hasPrev: page > 1,
-    },
+    books: books.map(toBookView),
+    pagination: { page, limit, total, pages: Math.ceil(total / limit) },
   };
 }
 
 /**
  * Get book by ID
  * @param {string} id - Book ID
- * @returns {Object} Book document
+ * @returns {Object} Book view
  */
 export async function getBookById(id) {
   const book = await Book.findById(id)
@@ -85,7 +70,7 @@ export async function getBookById(id) {
     throw new NotFoundError("Book not found");
   }
 
-  return book;
+  return toBookView(book);
 }
 
 /**
@@ -186,24 +171,19 @@ export async function deleteBook(id) {
 }
 
 /**
- * Get books by category
+ * Get books in stock of exactly one category
  * @param {string} category - Category name
- * @param {Object} options - Additional options (limit, sortBy)
- * @returns {Array} Books in category
+ * @param {Object} options - Parsed categoryBooksQuery (limit, sortBy)
+ * @returns {Array} Book views
  */
-export async function getBooksByCategory(category, options = {}) {
-  const { limit = 20, sortBy = "-createdAt" } = options;
-
-  const books = await Book.find({
-    category: new RegExp(category, "i"),
-    inStock: true,
-  })
+export async function getBooksByCategory(category, { limit, sortBy }) {
+  const books = await Book.find({ category, inStock: true })
     .populate("author", "firstName lastName")
-    .sort(sortBy)
-    .limit(Number(limit))
+    .sort(sortOf(sortBy))
+    .limit(limit)
     .lean();
 
-  return books;
+  return books.map(toBookView);
 }
 
 /**
@@ -229,12 +209,10 @@ export async function updateBookStock(id, inStock) {
 /**
  * Get books by author
  * @param {string} authorId - Author ID
- * @param {Object} options - Additional options (limit, sortBy)
- * @returns {Array} Author's books
+ * @param {Object} options - Parsed authorBooksQuery (limit, sortBy)
+ * @returns {Array} Book views
  */
-export async function getBooksByAuthor(authorId, options = {}) {
-  const { limit = 50, sortBy = "-publicationYear" } = options;
-
+export async function getBooksByAuthor(authorId, { limit, sortBy }) {
   // Verify author exists
   const author = await Author.findById(authorId);
   if (!author) {
@@ -242,9 +220,10 @@ export async function getBooksByAuthor(authorId, options = {}) {
   }
 
   const books = await Book.find({ author: authorId })
-    .sort(sortBy)
-    .limit(Number(limit))
+    .populate("author", "firstName lastName")
+    .sort(sortOf(sortBy))
+    .limit(limit)
     .lean();
 
-  return books;
+  return books.map(toBookView);
 }

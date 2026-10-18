@@ -91,8 +91,8 @@ describe("books", () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toEqual({
       code: "VALIDATION_FAILED",
-      message: "Invalid value",
-      fields: { _id: "invalid" },
+      message: "Validation failed",
+      fields: { id: "invalid_format" },
     });
   });
 

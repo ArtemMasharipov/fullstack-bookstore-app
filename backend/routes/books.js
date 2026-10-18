@@ -7,6 +7,15 @@ import express from "express";
 import * as bookController from "../controllers/bookController.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { authorize, protect } from "../middleware/auth.js";
+import { validate } from "../middleware/validate.js";
+import {
+  authorBooksQuery,
+  authorIdParams,
+  bookIdParams,
+  categoryBooksQuery,
+  categoryParams,
+  listBooksQuery,
+} from "../schemas/book.js";
 
 const router = express.Router();
 
@@ -16,20 +25,22 @@ const router = express.Router();
 
 /**
  * @route   GET /api/v1/books
- * @desc    Get all books with filtering and pagination
- * @params  ?page=1&limit=20&category=fiction&authorId=xxx&inStock=true&search=query&sortBy=-createdAt
+ * @desc    Get books with filtering and pagination, newest first
+ * @params  ?page=1&limit=20 (at most 100)&category=Fiction (exact)&authorId=<id>&inStock=true|false
+ *          &search=text&sortBy=-createdAt (see BOOK_SORTS); any other parameter answers 400
  * @access  Public
  */
-router.get("/", asyncHandler(bookController.getBooks));
+router.get("/", validate({ query: listBooksQuery }), asyncHandler(bookController.getBooks));
 
 /**
  * @route   GET /api/v1/books/category/:category
- * @desc    Get books by category
+ * @desc    Get books in stock of exactly this category
  * @params  :category (required), ?limit=20&sortBy=-createdAt
  * @access  Public
  */
 router.get(
   "/category/:category",
+  validate({ params: categoryParams, query: categoryBooksQuery }),
   asyncHandler(bookController.getBooksByCategory)
 );
 
@@ -39,7 +50,11 @@ router.get(
  * @params  :authorId (required), ?limit=50&sortBy=-publicationYear
  * @access  Public
  */
-router.get("/author/:authorId", asyncHandler(bookController.getBooksByAuthor));
+router.get(
+  "/author/:authorId",
+  validate({ params: authorIdParams, query: authorBooksQuery }),
+  asyncHandler(bookController.getBooksByAuthor)
+);
 
 /**
  * @route   GET /api/v1/books/:id
@@ -47,7 +62,7 @@ router.get("/author/:authorId", asyncHandler(bookController.getBooksByAuthor));
  * @params  :id (required)
  * @access  Public
  */
-router.get("/:id", asyncHandler(bookController.getBook));
+router.get("/:id", validate({ params: bookIdParams }), asyncHandler(bookController.getBook));
 
 // =============================================================================
 // PROTECTED ROUTES (Admin Only)

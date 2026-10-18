@@ -6,6 +6,7 @@
 
 import * as bookService from "../services/bookService.js";
 import { ValidationError } from "../utils/errors.js";
+import { ok } from "../utils/respond.js";
 
 /**
  * @route   GET /api/v1/books
@@ -13,13 +14,8 @@ import { ValidationError } from "../utils/errors.js";
  * @access  Public
  */
 export async function getBooks(req, res) {
-  const result = await bookService.getBooks(req.query);
-
-  res.status(200).json({
-    success: true,
-    data: result.books,
-    pagination: result.pagination,
-  });
+  const { books, pagination } = await bookService.getBooks(req.valid.query);
+  ok(res, books, { pagination });
 }
 
 /**
@@ -28,12 +24,7 @@ export async function getBooks(req, res) {
  * @access  Public
  */
 export async function getBook(req, res) {
-  const book = await bookService.getBookById(req.params.id);
-
-  res.status(200).json({
-    success: true,
-    data: book,
-  });
+  ok(res, await bookService.getBookById(req.valid.params.id));
 }
 
 /**
@@ -98,16 +89,7 @@ export async function deleteBook(req, res) {
  * @access  Public
  */
 export async function getBooksByCategory(req, res) {
-  const books = await bookService.getBooksByCategory(
-    req.params.category,
-    req.query
-  );
-
-  res.status(200).json({
-    success: true,
-    count: books.length,
-    data: books,
-  });
+  ok(res, await bookService.getBooksByCategory(req.valid.params.category, req.valid.query));
 }
 
 /**
@@ -139,14 +121,5 @@ export async function updateBookStock(req, res) {
  * @access  Public
  */
 export async function getBooksByAuthor(req, res) {
-  const books = await bookService.getBooksByAuthor(
-    req.params.authorId,
-    req.query
-  );
-
-  res.status(200).json({
-    success: true,
-    count: books.length,
-    data: books,
-  });
+  ok(res, await bookService.getBooksByAuthor(req.valid.params.authorId, req.valid.query));
 }

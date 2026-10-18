@@ -16,8 +16,8 @@ export const geller = (price) => Math.round(Number((price * 100).toPrecision(12)
 
 export async function seededBook(request) {
     const payload = await (await request.get('/api/v1/books')).json()
-    const book = (payload.data.books || payload.data).find((b) => b.title === SMOKE_BOOK_TITLE)
-    return { id: book.id || book._id, price: book.price }
+    const book = payload.data.find((b) => b.title === SMOKE_BOOK_TITLE)
+    return { id: book.id, price: book.price }
 }
 
 export async function fillAddress(page) {
