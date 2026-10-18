@@ -8,6 +8,9 @@ that shows how its author builds and maintains a full-stack application with tes
 The foundation is done: automated tests, CI, configuration checked at startup, a seed command and end-to-end tests.
 The purchase path works from the catalogue to the order:
 
+- The catalogue lists every book, page by page. The page, the search and the category are in the address, so Back,
+  a reload and a shared link show the same list. A book card opens from the keyboard, its add-to-cart button is named
+  after the book, and a book without a cover shows its title and author in the cover's place.
 - The cart lives on the server. A guest cart is priced by the server and joins the account cart on sign-in.
 - Checkout validates the delivery address, orders at the server's total and places an order at most once, also when
   the request is retried.
@@ -21,13 +24,11 @@ Known limitations:
 
 - There is no online payment: a new order waits for payment.
 - The admin panel cannot be opened by signing in: the API gives users no permissions, and the panel requires one.
-- The catalogue, author pages, the profile and the admin panel are still in English only. The Czech texts are a
-  draft.
-- The catalogue shows only the first 12 books, with no pager and a counter that reads "Showing 12 of 12 books".
+- Author pages, the profile and the admin panel are still in English only. The Czech texts are a draft.
+- Book categories are a fixed list, and their names are not translated yet.
 - Development tools (nodemon, ESLint 7) still depend on packages with known vulnerabilities and no fix within their
   current major versions; [docs/dependency-audit.md](docs/dependency-audit.md) lists them with review dates.
 - The seed data is for checking the layout; there is no real catalogue yet.
-- Books without a cover leave an empty area in the catalogue and on the book page: the placeholder image is missing.
 
 ## Screenshots
 

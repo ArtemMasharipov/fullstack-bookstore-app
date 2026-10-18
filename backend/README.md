@@ -79,6 +79,18 @@ role is `admin`.
 | PATCH  | `/books/:id/stock`        | Admin  | Change only the stock status |
 | DELETE | `/books/:id`              | Admin  | Delete a book                |
 
+`GET /books` takes `page` (from 1), `limit` (1–100, default 20), `category`, `authorId`, `inStock` (`true` or
+`false`), `search` and `sortBy` (`-createdAt` by default, also `createdAt`, `title`, `price`, `publicationYear` and
+their `-` forms). Any other parameter, or a value sent twice or as an object, answers 400. The category matches as a
+whole value, case included (`Fiction` does not find `Science Fiction`); the search matches part of the title or the
+description as plain text. Equal sort values are ordered by id, so pages never overlap. The answer is
+`{ success, data, pagination: { page, limit, total, pages } }`.
+
+Every book read answers the same book view: `id`, `title`, `author` (`{ id, firstName, lastName }`, with `bio` on
+`GET /books/:id`; `null` if the author no longer exists), `publicationYear`, `category`, `description`, `price` (CZK,
+in crowns), `image`, `inStock`, `createdAt` and `updatedAt`. `/books/category/:category` lists books in stock of
+exactly that category.
+
 ### Authors (`/authors`)
 
 | Method | Path                         | Access | Description                  |
@@ -91,6 +103,9 @@ role is `admin`.
 | POST   | `/authors`                   | Admin  | Create an author             |
 | PUT    | `/authors/:id`               | Admin  | Update an author             |
 | DELETE | `/authors/:id`               | Admin  | Delete an author             |
+
+`GET /authors?country=` and `/authors/country/:country` match the country as a whole value, case included. Both
+lists check their query like `GET /books`: an unknown parameter or a sort outside the list answers 400.
 
 ### Cart (`/cart`, every route except `/cart/quote` needs a token)
 

@@ -97,27 +97,34 @@ Six Mongoose models live in `backend/models/`. All but `Counter` have `createdAt
 
 How the catalogue page gets its books, from the browser to MongoDB and back:
 
-1. On `/books` the router renders `BooksView`. Its `BookList` component (`components/features/books`) calls
-   `loadBooks()` of the books store when it mounts.
-2. The store calls `booksApi.fetchAll()` with `page` and `limit`, plus the search text and filters when they are set.
+1. On `/books` the router renders `BooksView`. Its `BookList` component (`components/features/books`) reads the page,
+   the search and the category from the address (`router/catalogQuery.js`) and asks the books store for that page
+   whenever the address changes. Paging and choosing a category change the address first, so Back, a reload and a
+   shared link show the same list.
+2. The store calls `booksApi.fetchAll()` with `page`, `limit` (12) and the search and the category when they are set.
+   It keeps only the answer of its latest request, so a quick Back or typing never shows an older list.
 3. `booksApi` sends the request through the shared Axios instance in `services/api/baseApi.js`. Its base URL is
-   `/api/v1`, so the browser asks the origin that served the page for `GET /api/v1/books?page=1&limit=12`.
+   `/api/v1`, so the browser asks the origin that served the page for `GET /api/v1/books?page=2&limit=12`.
 4. The Vite server forwards `/api` to the API at `API_PROXY_TARGET` (default `http://localhost:3000`): the dev server
    on port 8080 in development, the preview server on port 4173 in a preview.
 5. Express runs the global middleware (Helmet, CORS, body parsing, request logging). The `/api/v1` router hands the
-   request to `routes/books.js`, where `GET /` is public and calls `bookController.getBooks` through `asyncHandler`.
-6. The controller passes the parsed query (`req.query`) to `bookService.getBooks()`.
-7. The service checks `page` and `limit` (at most 100) and builds the filter. It runs two queries at once: `Book.find()`
-   with the author's first and last name populated, newest first, skipped and limited to the requested page, and
-   `Book.countDocuments()` for the total.
+   request to `routes/books.js`, where `GET /` is public. `validate({ query: listBooksQuery })` checks the query first:
+   an unknown parameter, a page below 1, a limit above 100, a sort outside the list or a value sent twice or as an
+   object answers 400 `VALIDATION_FAILED`.
+6. The controller passes the parsed query (`req.valid.query`) to `bookService.getBooks()`.
+7. The service builds the filter: the category and the author match as whole values, the search matches part of the
+   title or the description as plain text. It runs two queries at once: `Book.find()` with the author's first and last
+   name populated, newest first with `_id` breaking ties (so no book shows on two pages), skipped and limited to the
+   requested page, and `Book.countDocuments()` for the total.
 8. Mongoose sends both queries to MongoDB and returns the documents as plain objects (`lean()`).
-9. The controller answers 200 with `{ success: true, data, pagination }`: `data` is the list of books, `pagination`
-   holds `page`, `limit`, `total`, `pages`, `hasNext` and `hasPrev`. The request logger prints
+9. `services/bookView.js` turns each document into the book view (`id`, no `_id` or `__v`, the author as
+   `{ id, firstName, lastName }`), and the controller answers 200 with `{ success: true, data, pagination }`:
+   `pagination` holds `page`, `limit`, `total` and `pages`. The request logger prints
    `GET /api/v1/books 200 <duration>ms`.
-10. The store keeps the books, and `BookList` renders them as cards.
+10. The store keeps the books and the server's pagination, and `BookList` renders the cards, the count and the pager.
 
-If any step throws, for example because `limit` is above 100, `asyncHandler` passes the error to the error handler,
-which answers `{ success: false, error: { code, message } }` with the matching status.
+If the query is invalid or any step throws, the error handler answers `{ success: false, error: { code, message } }`
+with the matching status, and the catalogue shows the translated message with Try again.
 
 ## Frontend
 
@@ -131,14 +138,22 @@ the three plugins.
   the user to the login page, the home page or the "access denied" page as the policy requires. The login page gets
   the way back in `?redirect`; after signing in, `redirect.js` opens it only if it is a path to a page of this app,
   and opens it in the current language, otherwise the home page. The API checks every protected request on its own.
+  `catalogQuery.js` reads the catalogue's page, search and category from the address and writes them back in one
+  canonical form: no first page, no empty values, an invalid page replaced.
 - **State** (`src/stores/`). One Pinia store per area: `auth`, `authors`, `books`, `cart`, `checkout`, `orders`,
-  `shopConfig` and `users`. `shopConfig` loads the shop settings of `GET /config/public` once; the home page and the
-  book page state shipping and VAT only from them. Each calls its API module and tracks its loading and error state. The cart store holds the server's
-  lines and quote and runs its changes one after another; a guest cart keeps only book ids and quantities in
-  `localStorage`, is priced by `POST /cart/quote` and is merged into the account cart on sign-in. The checkout store
-  holds the idempotency key of the current checkout and keeps it for every retry of the same order.
+  `shopConfig` and `users`. The stores call their API modules and track their loading and error state.
+  - `books` holds one page of books with the server's pagination. Search and filters are not kept there: the
+    catalogue reads them from its address, and the home page loads its latest books into a list of its own.
+  - `shopConfig` loads the shop settings of `GET /config/public` once; the home page and the book page state shipping
+    and VAT only from them.
+  - The cart store holds the server's lines and quote and runs its changes one after another; a guest cart keeps only
+    book ids and quantities in `localStorage`, is priced by `POST /cart/quote` and is merged into the account cart on
+    sign-in.
+  - The checkout store holds the idempotency key of the current checkout and keeps it for every retry of the same
+    order.
 - **API client** (`src/services/api/`). One module per resource (`booksApi.js`, `authorsApi.js`, `cartApi.js`,
-  `orderApi.js`, `usersApi.js`, `rolesApi.js`, `authService.js`), all on the Axios instance in `baseApi.js`. It sets
+  `orderApi.js`, `configApi.js`, `usersApi.js`, `rolesApi.js`, `authService.js`), all on the Axios instance in
+  `baseApi.js`. It sets
   the base URL and a 15-second timeout, adds the token from `localStorage` to protected requests, turns failures into
   `Error` objects that carry the status and the `code`, `fields` and `details` of the error envelope, and ends the
   session after a 401 to a request that carried the token. A 401 without a token, such as a wrong password, ends
@@ -149,10 +164,15 @@ the three plugins.
   account is then replaced by the login page in the same language: after a 401 or an expired token with the way back
   in `?redirect`, after signing out without it, so the next person on the device does not land on the previous
   user's page. A public page stays open for the visitor as a guest.
+- **Design tokens** (`src/design/`). `tokens.js` holds the colours that text contrast and the focus ring depend on;
+  `config/vuetify.js` builds the theme from them, and `tokens.spec.js` checks every pair against the WCAG 2.x
+  thresholds. `focus.css` draws a two-tone focus ring on links and buttons, with the colours swapped on navy surfaces
+  and in the dark theme.
 - **Components and views.** `src/components/features/` holds the components of each area: `admin`, `auth`, `authors`,
-  `books`, `cart`, `orders`. Shared pieces live in `components/ui`, `components/layout` and
-  `components/notifications`. `src/views/` holds the pages that the router loads, grouped as `public`, `auth`,
-  `orders`, `admin` and `errors`.
+  `books`, `cart`, `orders`. In `books`, `BookCard` links its title over the whole card and names its add-to-cart
+  button after the book, and `BookCover` keeps a 2:3 box with the title and the author when there is no image.
+  Shared pieces live in `components/ui`, `components/layout` and `components/notifications`. `src/views/` holds the
+  pages that the router loads, grouped as `public`, `auth`, `orders`, `admin` and `errors`.
 
 ## Configuration and environments
 
@@ -197,9 +217,12 @@ a production web server has to forward `/api` to the API; the other option is to
 - **Characterization tests** (`tests/integration/characterization.test.js`) record the API's correct behavior before
   the refactoring: health, registration and login, `/auth/me`, the book list and lookup, admin-only book creation.
   They must not pin known defects.
-- **Frontend.** Vitest on happy-dom runs `src/**/*.spec.js`: the API modules, the stores, the utilities and the
-  components and views of the cart, checkout and orders, mounted with the real router, i18n and Vuetify.
-- **End-to-end.** Playwright in Chromium runs `frontend/e2e/`: the catalogue smoke test, the Czech and English flows
+- **Frontend.** Vitest on happy-dom runs `src/**/*.spec.js`: the API modules, the stores, the utilities, the design
+  tokens, the catalogue's address, and the components and views of the catalogue, the book page, the home page, the
+  sign-in and registration forms, the cart, checkout and orders, mounted with the real router, i18n and Vuetify.
+- **End-to-end.** Playwright in Chromium runs `frontend/e2e/`: the catalogue smoke test, paging, search and categories
+  in the address with Back, reload and a language switch, the keyboard path to a book, contrast, the focus ring,
+  reflow at 320 px and target sizes on the catalogue pages, layout shift while books load, the Czech and English flows
   with accessibility checks, the server cart, checkout with retries, price changes and order cancellation, the whole
   purchase journey from a guest cart to a cancelled order and sign-out in both languages, expired sessions, and the
   shop terms against `GET /config/public`. Shared helpers live in `e2e/support.js`.
