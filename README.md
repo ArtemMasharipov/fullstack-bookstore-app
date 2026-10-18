@@ -17,13 +17,18 @@ The purchase path works from the catalogue to the order:
 - My Orders lists the user's orders, shows each one with its history and cancels an order that is not paid yet.
 - Signing out and an expired session clear the session the same way; signing in returns to the page that asked for
   it.
+- Sessions live on the server: signing out, deactivating an account or changing its role or password ends its
+  sessions at once, and every request reads the user's role from the database. Failed sign-in attempts are limited
+  per client, and sign-in takes the same time whether the account exists or not.
+- The admin account opens the admin panel; other accounts get an access-denied page. An admin cannot take away their
+  own admin role or deactivate their own account.
 - The interface is in Czech (default) and English (`/en`), with prices in CZK. Delivery and VAT terms are built from
   the shop settings (`GET /api/v1/config/public`), which hold demo values.
 
 Known limitations:
 
 - There is no online payment: a new order waits for payment.
-- The admin panel cannot be opened by signing in: the API gives users no permissions, and the panel requires one.
+- The sections of the admin panel are still being rebuilt: their tables, forms and the dashboard do not work yet.
 - Author pages, the profile and the admin panel are still in English only. The Czech texts are a draft.
 - Book categories are a fixed list, and their names are not translated yet.
 - Development tools (nodemon, ESLint 7) still depend on packages with known vulnerabilities and no fix within their
@@ -70,6 +75,9 @@ runs away from databases that are not local. [docs/architecture.md](docs/archite
   origin, and the Vite dev and preview servers proxy it to the API.
 - [0004, dependency and CI policy](docs/decisions/0004-dependency-and-ci-policy.md): exact versions for new
   dependencies, new packages at least 14 days old, pinned CI actions and checks that never rewrite files.
+- [0005, server sessions and sign-in protection](docs/decisions/0005-server-sessions-and-sign-in-protection.md): the
+  token names a server session that signing out, deactivation and role or password changes end at once; failed
+  sign-in attempts are limited per client, and sign-in takes the same time for every account.
 
 ## Getting started
 

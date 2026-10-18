@@ -37,10 +37,14 @@ README lists them.
   controller reads the request, calls a service and sends the JSON response. A service holds the business logic and
   reports failures with the error classes of `utils/errors.js` (400, 401, 403, 404, 409). A model is a Mongoose schema
   with validation, indexes and hooks.
-- **Middleware** (`middleware/`). In `auth.js`, `protect` verifies the `Authorization: Bearer <token>` JWT with
-  `JWT_SECRET` and puts its payload (user id, username, email, role) on `req.user`; `authorize(...roles)` checks the
-  role. `validate.js` checks the params, query and body of a route against its zod schemas (`schemas/`) and puts the
-  parsed values on `req.valid`. `errorHandler.js` comes last and answers every error as
+- **Middleware** (`middleware/`). In `auth.js`, `protect` takes the `Authorization: Bearer <token>` JWT to
+  `services/sessions.js`, which checks the signature (HS256, `JWT_SECRET`), the audience and the issuer, then the
+  session the token names and the user: `req.user` gets the user as the database has it (id, username, email, role),
+  and a token whose session has ended or whose user is inactive answers 401. `authorize(...roles)` checks that role
+  ([decision 0005](decisions/0005-server-sessions-and-sign-in-protection.md)). `rateLimit.js` counts the failed
+  requests to `/auth` per client and answers 429 `RATE_LIMITED` past the limit. `validate.js` checks the params,
+  query and body of a route against its zod schemas (`schemas/`) and puts the parsed values on `req.valid`.
+  `errorHandler.js` comes last and answers every error as
   `{ success: false, error: { code, message, fields?, details? } }`: failed validation, Mongoose validation errors and
   malformed ids become 400 `VALIDATION_FAILED` with the invalid `fields`, duplicate keys 409 `CONFLICT`, and the app's
   own errors keep their status and code. Any other error keeps its own status code or gets 500 `INTERNAL`, and its
@@ -56,13 +60,15 @@ README lists them.
 
 ## Data model
 
-Six Mongoose models live in `backend/models/`. All but `Counter` have `createdAt` and `updatedAt` timestamps.
+Seven Mongoose models live in `backend/models/`. All but `Counter` and `Session` have `createdAt` and `updatedAt`
+timestamps; `Session` has `createdAt`.
 
 | Model | Key fields | Relations |
 | --- | --- | --- |
 | `Author` | `firstName`, `lastName`, `bio`, `birthYear`, `country`, `website` | `books`: ids of the author's books |
 | `Book` | `title`, `publicationYear` (1450 up to the current year), `category`, `description`, `price`, `image`, `inStock` | `author` (an `Author`, required) |
-| `User` | `username` and `email` (both unique), `password` (bcrypt hash, left out of query results by default), `role` (`user`, `admin`, `moderator`), `isActive`, `lastLogin` | none |
+| `User` | `username` and `email` (both unique), `password` (bcrypt hash, left out of query results by default), `role` (`user` or `admin`; a stored older `moderator` reads as `user`), `isActive`, `lastLogin` | none |
+| `Session` | `jti` (unique, the id in the token), `expiresAt` (a TTL index deletes the session then) | `user` (a `User`) |
 | `Cart` | `items` (`book`, `quantity` from 1 to 99) | `user` (a `User`, one cart each); `items.book` (a `Book`) |
 | `Order` | `orderNumber` (`ORD-YYYYMMDD-NNNNNN`), `items` (`book`, `title`, `unitPrice`, `quantity`, `lineTotal`), `shippingAddress`, `quote`, `status`, `paymentStatus`, `statusHistory`, `idempotencyKey`, `requestHash`, `schemaVersion: 2` | `user` (a `User`); `items.book` (a `Book`) |
 | `Counter` | `_id` (the sequence name, `order:YYYYMMDD`), `seq` | none |
@@ -132,16 +138,19 @@ with the matching status, and the catalogue shows the translated message with Tr
 the three plugins.
 
 - **Router** (`src/router/`). `manifest.js` is the single list of routes: path, lazily loaded view, page title and an
-  access policy (`auth`, `guestOnly`, `permission`). `buildRoutes.js` turns it into Vue Router records, passes a
+  access policy (`auth`, `guestOnly`, `capability`). `buildRoutes.js` turns it into Vue Router records, passes a
   layout's policy down to its children and builds the admin sidebar from the same list. `guards/unified.js` is the one
   `beforeEach` guard: public routes pass at once; otherwise it checks that the stored token has not expired and sends
-  the user to the login page, the home page or the "access denied" page as the policy requires. The login page gets
+  the user to the login page, the home page or the "access denied" page as the policy requires. A capability is
+  checked with `can(role, capability)` from `src/auth/capabilities.js`, the one table of what each role may do, and
+  against the role from `GET /auth/me`, which the guard asks once per app load. The login page gets
   the way back in `?redirect`; after signing in, `redirect.js` opens it only if it is a path to a page of this app,
   and opens it in the current language, otherwise the home page. The API checks every protected request on its own.
   `catalogQuery.js` reads the catalogue's page, search and category from the address and writes them back in one
   canonical form: no first page, no empty values, an invalid page replaced.
 - **State** (`src/stores/`). One Pinia store per area: `auth`, `authors`, `books`, `cart`, `checkout`, `orders`,
   `shopConfig` and `users`. The stores call their API modules and track their loading and error state.
+  - `auth` holds the token and the user; whether the user is an admin comes from their role through `can()`.
   - `books` holds one page of books with the server's pagination. Search and filters are not kept there: the
     catalogue reads them from its address, and the home page loads its latest books into a list of its own.
   - `shopConfig` loads the shop settings of `GET /config/public` once; the home page and the book page state shipping
@@ -154,7 +163,8 @@ the three plugins.
 - **API client** (`src/services/api/`). One module per resource (`booksApi.js`, `authorsApi.js`, `cartApi.js`,
   `orderApi.js`, `configApi.js`, `usersApi.js`, `rolesApi.js`, `authService.js`), all on the Axios instance in
   `baseApi.js`. It sets
-  the base URL and a 15-second timeout, adds the token from `localStorage` to protected requests, turns failures into
+  the base URL and a 15-second timeout, adds the token from `localStorage` to every request while there is one (a
+  request that brings its own token keeps it), turns failures into
   `Error` objects that carry the status and the `code`, `fields` and `details` of the error envelope, and ends the
   session after a 401 to a request that carried the token. A 401 without a token, such as a wrong password, ends
   nothing.
@@ -185,7 +195,9 @@ the key ones are:
 - `JWT_SECRET`: required everywhere, at least 32 characters in production;
 - `PORT`: default 3000;
 - `CORS_ORIGIN`: default `http://localhost:8080` outside production, required and not `*` in production;
-- `EXPOSE_ERROR_DETAILS`: `true` adds error messages and stack traces to responses, outside production only.
+- `EXPOSE_ERROR_DETAILS`: `true` adds error messages and stack traces to responses, outside production only;
+- `TRUST_PROXY`: the number of reverse proxies in front of the API, default 0; behind one it has to be set, or every
+  client shares the proxy's address and one limit of failed sign-in attempts.
 
 The frontend uses two: `VITE_API_URL`, the API base URL built into the bundle (default `/api/v1`), and
 `API_PROXY_TARGET`, where the dev and preview servers forward `/api` (default `http://localhost:3000`). `vite.config.js`
@@ -207,8 +219,11 @@ a production web server has to forward `/api` to the API; the other option is to
 
 - **Backend.** Vitest with Supertest. Unit tests (`tests/unit/`) cover the configuration, the database guard, the
   error handler, the request logger and `.env` loading. Integration tests (`tests/integration/`) call the API over
-  HTTP and run the seed command, the end-to-end server and `server.js` start-up and shutdown in child processes. Tests
-  of the SIGTERM and SIGINT handling run on Linux and are skipped on Windows.
+  HTTP and run the seed command, the end-to-end server and `server.js` start-up and shutdown in child processes.
+  `admin-access.test.js` checks every admin endpoint for a guest (401), a user (403) and an admin; the session,
+  sign-in limit and sign-in time tests cover what ends a token and how sign-in is protected. Tests of the SIGTERM and
+  SIGINT handling run on Linux and are skipped on Windows. The helper resets the counts of failed sign-in attempts
+  after every test.
 - **Database.** One in-memory MongoDB (mongodb-memory-server, mongod 8.2.6 pinned in `backend/package.json`) serves
   the whole run. Each Vitest worker uses its own database, and collections are emptied after every test. The test
   helper passes the URI through the local-only guard before it connects and checks the connected host after. With
@@ -224,8 +239,9 @@ a production web server has to forward `/api` to the API; the other option is to
   in the address with Back, reload and a language switch, the keyboard path to a book, contrast, the focus ring,
   reflow at 320 px and target sizes on the catalogue pages, layout shift while books load, the Czech and English flows
   with accessibility checks, the server cart, checkout with retries, price changes and order cancellation, the whole
-  purchase journey from a guest cart to a cancelled order and sign-out in both languages, expired sessions, and the
-  shop terms against `GET /config/public`. Shared helpers live in `e2e/support.js`.
+  purchase journey from a guest cart to a cancelled order and sign-out in both languages, expired sessions, the admin
+  area for the seeded admin and for other accounts, sessions that end on the server, and the shop terms against
+  `GET /config/public`. Shared helpers live in `e2e/support.js`, the seeded accounts in `e2e/credentials.js`.
   Playwright starts its own servers on dedicated ports: the API on 3100 (`npm run e2e:server`, an in-memory MongoDB
   with the demo data) and `vite preview` on 4173. Existing servers are never reused, so a busy port fails the run
   instead of testing a dev stack.
