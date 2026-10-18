@@ -13,7 +13,17 @@ export default defineConfig({
         baseURL: 'http://localhost:4173',
         trace: 'retain-on-failure',
     },
-    projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+    projects: [
+        { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: /admin-catalog\.spec\.js/ },
+        // Tests that change the catalogue run after every other test: the catalogue tests count the seeded books
+        // and look for the newest one
+        {
+            name: 'admin-writes',
+            use: { ...devices['Desktop Chrome'] },
+            testMatch: /admin-catalog\.spec\.js/,
+            dependencies: ['chromium'],
+        },
+    ],
     webServer: [
         {
             command: 'npm --prefix ../backend run e2e:server',
