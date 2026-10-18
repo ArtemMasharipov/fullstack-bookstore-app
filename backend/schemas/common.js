@@ -13,10 +13,14 @@ export const objectId = z
 // One title in a cart or an order: a JSON integer, never a string
 export const quantity = z.number().int().min(1).max(99);
 
-// Query values arrive as strings; anything that is not a whole number fails
-export const page = z.coerce.number().int().min(1).default(1);
+// Query values arrive as strings: only digits count as a whole number, so a hex
+// or exponent form, spaces, a fraction or a repeated parameter (an array) fail
+const wholeNumber = z.string().regex(/^\d+$/).transform(Number);
 
-export const limit = (max, fallback) => z.coerce.number().int().min(1).max(max).default(fallback);
+export const page = wholeNumber.pipe(z.number().int().min(1)).default(1);
+
+export const limit = (max, fallback) =>
+  wholeNumber.pipe(z.number().int().min(1).max(max)).default(fallback);
 
 // A sort key from a fixed list: "-" in front sorts in descending order
 export const sortBy = (values, fallback) => z.enum(values).default(fallback);

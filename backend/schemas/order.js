@@ -4,21 +4,18 @@
 
 import { z } from "zod";
 import { ORDER_STATUSES, PAYMENT_STATUSES } from "../models/Order.js";
-import { objectId } from "./common.js";
+import { limit, objectId, page } from "./common.js";
 
 export const orderIdParams = z.strictObject({ id: objectId });
 
-// Query values arrive as strings; anything that is not a whole number fails
-const page = z.coerce.number().int().min(1).default(1);
-
 export const listOrdersQuery = z.strictObject({
   page,
-  limit: z.coerce.number().int().min(1).max(50).default(10),
+  limit: limit(50, 10),
 });
 
 export const adminListOrdersQuery = z.strictObject({
   page,
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: limit(100, 20),
   status: z.enum(ORDER_STATUSES).optional(),
   paymentStatus: z.enum(PAYMENT_STATUSES).optional(),
 });
