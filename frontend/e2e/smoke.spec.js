@@ -10,7 +10,7 @@ test('catalog shows a seeded book and opens its page', async ({ page }) => {
     await expect(card).toBeVisible()
     await expect(page.locator('html')).toHaveAttribute('lang', 'cs')
     await expect(page).toHaveTitle('Knihy | Bookstore')
-    await card.click()
+    await card.getByRole('link', { name: SMOKE_BOOK_TITLE }).click()
     await expect(page).toHaveURL(/\/books\/[a-f0-9]{24}$/)
     await expect(page.getByRole('heading', { level: 1, name: SMOKE_BOOK_TITLE })).toBeVisible()
 })

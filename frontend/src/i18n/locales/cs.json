@@ -92,6 +92,12 @@
             }
         }
     },
+    "catalog": {
+        "addToCart": "Přidat do košíku",
+        "addToCartNamed": "Přidat do košíku: {title}",
+        "inStock": "Skladem",
+        "outOfStock": "Není skladem"
+    },
     "auth": {
         "fields": {
             "email": "E-mail",

@@ -109,8 +109,7 @@ describe('HomeView', () => {
         expect(hrefOf('Browse books')).toBe('/en/books')
         expect(hrefOf('View all')).toBe('/en/books')
         expect(hrefOf('Fiction')).toBe('/en/books?category=Fiction')
-        document.querySelector('.book-card').click()
-        await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/en/books/b1'))
+        expect(document.querySelector('.book-card__link').getAttribute('href')).toBe('/en/books/b1')
     })
 
     it('speaks Czech', async () => {

@@ -91,11 +91,7 @@
                         lg="3"
                         class="d-flex align-stretch"
                     >
-                        <book-card
-                            :book="book"
-                            @click="router.push(localeRoute('BookDetails', { params: { id: book.id ?? book._id } }))"
-                            class="w-100"
-                        />
+                        <book-card :book="book" class="w-100" />
                     </v-col>
                 </v-row>
             </v-container>
@@ -123,7 +119,6 @@ import { BOOK_CATEGORIES } from '@/utils/constants/app'
 import { useDisplay } from 'vuetify'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import BookCard from './BookCard.vue'
 
 const props = defineProps({
@@ -141,7 +136,6 @@ const props = defineProps({
     },
 })
 
-const router = useRouter()
 const { mobile } = useDisplay()
 
 const authStore = useAuthStore()

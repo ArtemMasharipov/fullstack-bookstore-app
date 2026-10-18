@@ -8,7 +8,6 @@
     "src/components/features/authors/AuthorForm.vue",
     "src/components/features/authors/AuthorList.vue",
     "src/components/features/authors/AuthorListItem.vue",
-    "src/components/features/books/BookCard.vue",
     "src/components/features/books/BookDetails.vue",
     "src/components/features/books/BookForm.vue",
     "src/components/features/books/BookList.vue",

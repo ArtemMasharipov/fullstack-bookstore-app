@@ -92,7 +92,7 @@ for (const locale of ['cs', 'en']) {
         await page.goto(`${prefix}/books`)
         await expect(cardFor(page)).toBeVisible()
         await scan('books')
-        await cardFor(page).click()
+        await cardFor(page).getByRole('link', { name: SMOKE_BOOK_TITLE }).click()
         await expect(page.getByRole('heading', { level: 1, name: SMOKE_BOOK_TITLE })).toBeVisible()
         const detailsPath = new URL(page.url()).pathname
         await scan('book-details')

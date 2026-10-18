@@ -92,6 +92,12 @@
             }
         }
     },
+    "catalog": {
+        "addToCart": "Add to cart",
+        "addToCartNamed": "Add to cart: {title}",
+        "inStock": "In stock",
+        "outOfStock": "Out of stock"
+    },
     "auth": {
         "fields": {
             "email": "Email",

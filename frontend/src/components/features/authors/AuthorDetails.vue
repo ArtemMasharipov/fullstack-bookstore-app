@@ -37,11 +37,7 @@
                         lg="3"
                         class="d-flex align-stretch"
                     >
-                        <book-card
-                            :book="book"
-                            class="w-100"
-                            @click="$router.push(localeRoute('BookDetails', { params: { id: book.id } }))"
-                        />
+                        <book-card :book="book" class="w-100" />
                     </v-col>
                 </v-row>
             </template>

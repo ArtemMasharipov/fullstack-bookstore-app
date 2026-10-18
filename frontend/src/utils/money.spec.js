@@ -83,10 +83,15 @@ import * as components from 'vuetify/components'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import BookCard from '@/components/features/books/BookCard.vue'
 import BookDialog from '@/components/features/admin/BookDialog.vue'
+import { buildRoutes } from '@/router/buildRoutes'
 
 async function renderConsumer(component, props) {
     const context = {}
-    const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: BookCard }] })
+    // The app's routes: the card links to the book page by its route name
+    const router = createRouter({
+        history: createMemoryHistory(),
+        routes: buildRoutes().map((record) => ({ ...record, component: { render: () => null }, children: undefined })),
+    })
     await router.push('/')
     const app = createSSRApp({ render: () => h(components.VApp, {}, { default: () => h(component, props) }) })
         .use(createPinia())
@@ -101,7 +106,9 @@ async function renderConsumer(component, props) {
 it('renders a zero book price instead of a missing-price fallback', async () => {
     const book = { id: 'zero', title: 'Free book', price: 0, inStock: false }
     const root = await renderConsumer(BookCard, { book })
-    expect(root.textContent).toContain(new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK' }).format(0))
+    expect(root.querySelector('.book-card__price').textContent).toContain(
+        new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK' }).format(0)
+    )
     expect(book.price).toBe(0)
 })
 

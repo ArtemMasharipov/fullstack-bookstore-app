@@ -69,7 +69,7 @@ for (const initial of ['cs', 'en']) {
                 seeded.price
             )
         await expect(cardFor(page)).toContainText(price(initial))
-        await cardFor(page).click()
+        await cardFor(page).getByRole('link', { name: SMOKE_BOOK_TITLE }).click()
         await expect(page).toHaveURL(new RegExp(`${prefix}/books/[a-f0-9]{24}$`))
         const id = new URL(page.url()).pathname.split('/').pop()
         expect(id).toBe(seeded.id || seeded._id)
@@ -150,7 +150,7 @@ test('inactive dictionary failure keeps URL, language and cart until keyboard re
     let attempts = 0
     await page.route(`**${assets.en}`, (route) => (++attempts === 1 ? route.abort() : route.continue()))
     await page.goto('/books')
-    await cardFor(page).click()
+    await cardFor(page).getByRole('link', { name: SMOKE_BOOK_TITLE }).click()
     await expect(page.getByRole('heading', { level: 1, name: SMOKE_BOOK_TITLE })).toBeVisible()
     await page.getByRole('button', { name: 'Add to Cart', exact: true }).click()
     await expect(page.getByRole('button', { name: 'Added!', exact: true })).toBeVisible()

@@ -64,11 +64,7 @@
                     md="3"
                     class="d-flex align-stretch"
                 >
-                    <book-card
-                        :book="book"
-                        class="w-100"
-                        @click="router.push(localeRoute('BookDetails', { params: { id: book.id ?? book._id } }))"
-                    />
+                    <book-card :book="book" :heading-level="3" eager class="w-100" />
                 </v-col>
             </v-row>
 
@@ -103,10 +99,8 @@ import { formatMoney } from '@/utils'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 
 const { t } = useI18n()
-const router = useRouter()
 const booksStore = useBooksStore()
 const shop = useShopConfigStore()
 const { books, loading } = storeToRefs(booksStore)

@@ -71,7 +71,7 @@ for (const locale of ['cs', 'en']) {
             await expect(page.locator('.book-card').first()).toBeVisible()
             const cta = page.locator('.hero-section .v-btn .v-btn__content')
             expect(await contrastOf(cta), `${theme}: home call to action`).toBeGreaterThanOrEqual(4.5)
-            const cardPrice = page.locator('.book-card .text-subtitle-1.font-weight-bold').first()
+            const cardPrice = page.locator('.book-card .book-card__price').first()
             expect(await contrastOf(cardPrice), `${theme}: price on a book card`).toBeGreaterThanOrEqual(4.5)
 
             await page.goto(`${prefix}/books/${book.id}`)
