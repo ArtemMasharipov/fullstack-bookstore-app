@@ -15,6 +15,7 @@ import { activateLocale, i18n, loadLocale } from '@/i18n'
 import en from '@/i18n/locales/en.json'
 import cs from '@/i18n/locales/cs.json'
 import { buildRoutes } from '@/router/buildRoutes'
+import { useBooksStore } from '@/stores'
 import { formatMoney } from '@/utils/money'
 import HomeView from './HomeView.vue'
 
@@ -55,7 +56,7 @@ afterEach(() => {
     vi.unstubAllGlobals()
 })
 
-async function mount(locale = 'cs') {
+async function mount(locale = 'cs', { waitForBooks = true } = {}) {
     await loadLocale(locale)
     activateLocale(locale)
     router = testRouter()
@@ -68,7 +69,7 @@ async function mount(locale = 'cs') {
         .use(router)
     app.mount(root)
     await router.isReady()
-    await vi.waitFor(() => expect(document.querySelector('.book-card')).not.toBeNull())
+    if (waitForBooks) await vi.waitFor(() => expect(document.querySelector('.book-card')).not.toBeNull())
 }
 
 const hrefOf = (label) =>
@@ -110,6 +111,38 @@ describe('HomeView', () => {
         expect(hrefOf('View all')).toBe('/en/books')
         expect(hrefOf('Fiction')).toBe('/en/books?category=Fiction')
         expect(document.querySelector('.book-card__link').getAttribute('href')).toBe('/en/books/b1')
+    })
+
+    it('asks for the four newest books whatever the catalogue left in the store', async () => {
+        useBooksStore().$patch({ page: 2, limit: 12 })
+
+        await mount()
+
+        expect(books.fetchAll).toHaveBeenCalledTimes(1)
+        expect(books.fetchAll).toHaveBeenCalledWith({ page: 1, limit: 4 })
+    })
+
+    it('shows an error with Try again instead of "no books" when the books cannot be loaded', async () => {
+        books.fetchAll.mockRejectedValueOnce({ code: 'INTERNAL' })
+        await mount('cs', { waitForBooks: false })
+
+        const alert = await vi.waitFor(() => {
+            const found = [...document.querySelectorAll('[role="alert"]')].find((el) =>
+                el.textContent.includes(cs.errors.INTERNAL)
+            )
+            expect(found).toBeDefined()
+            return found
+        })
+        expect(document.body.textContent).not.toContain(cs.home.empty)
+        ;[...alert.querySelectorAll('button')].find((b) => b.textContent.trim() === cs.errors.retry).click()
+
+        await vi.waitFor(() => expect(document.querySelector('.book-card__link').textContent).toContain('Babička'))
+    })
+
+    it('keeps the catalogue list untouched', async () => {
+        await mount()
+
+        expect(useBooksStore().books).toEqual([])
     })
 
     it('speaks Czech', async () => {

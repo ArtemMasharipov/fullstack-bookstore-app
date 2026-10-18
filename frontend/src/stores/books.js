@@ -5,7 +5,8 @@ import { withLoading } from './storeHelpers'
 
 /**
  * Books Store
- * Manages books data, search, filtering, and pagination
+ * A page of books with the server's pagination, the open book, and the admin's book changes. Search and filters
+ * are not kept here: the catalogue reads them from its address (router/catalogQuery.js)
  *
  * Simplified version without factory - direct Pinia implementation
  */
@@ -21,11 +22,6 @@ export const useBooksStore = defineStore('books', {
         total: 0,
         pages: 0,
 
-        // Filter parameters
-        searchQuery: '',
-        category: null,
-        authorId: null,
-
         // Loading & error states
         loading: false,
         error: null,
@@ -33,32 +29,6 @@ export const useBooksStore = defineStore('books', {
         // The number of the latest list request: an older answer must not replace a newer one
         listRequest: 0,
     }),
-
-    getters: {
-        /**
-         * Get filter parameters for API request
-         */
-        filterParams: (state) => {
-            const params = {
-                page: state.page,
-                limit: state.limit,
-            }
-
-            if (state.searchQuery) {
-                params.search = state.searchQuery
-            }
-
-            if (state.category) {
-                params.category = state.category
-            }
-
-            if (state.authorId) {
-                params.author = state.authorId
-            }
-
-            return params
-        },
-    },
 
     actions: {
         /**
@@ -172,19 +142,6 @@ export const useBooksStore = defineStore('books', {
             this.limit = pagination.limit
             this.total = pagination.total
             this.pages = pagination.pages
-        },
-
-        /**
-         * Load books with current filters
-         */
-        async loadBooks() {
-            try {
-                await this.fetchBooks(this.filterParams)
-            } catch (error) {
-                if (!error.isAuthError && !error.isNetworkError) {
-                    // Failed to load books
-                }
-            }
         },
 
         /**

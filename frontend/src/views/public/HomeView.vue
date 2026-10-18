@@ -53,17 +53,17 @@
                 </v-btn>
             </div>
 
-            <v-skeleton-loader v-if="loading" type="card-avatar, card-avatar, card-avatar, card-avatar" />
+            <v-row v-if="status === 'loading'" tag="ul" class="book-grid">
+                <v-col v-for="n in LATEST_COUNT" :key="n" tag="li" cols="12" sm="6" md="3" class="d-flex">
+                    <book-card-skeleton />
+                </v-col>
+            </v-row>
 
-            <v-row v-else-if="featuredBooks.length">
-                <v-col
-                    v-for="book in featuredBooks"
-                    :key="book.id ?? book._id"
-                    cols="12"
-                    sm="6"
-                    md="3"
-                    class="d-flex align-stretch"
-                >
+            <!-- A failed load says so and offers to try again: it is not an empty shop -->
+            <error-message v-else-if="status === 'error'" :error="error" :on-retry="load" :closable="false" />
+
+            <v-row v-else-if="latest.length" tag="ul" class="book-grid">
+                <v-col v-for="book in latest" :key="book.id" tag="li" cols="12" sm="6" md="3" class="d-flex">
                     <book-card :book="book" :heading-level="3" eager class="w-100" />
                 </v-col>
             </v-row>
@@ -93,19 +93,36 @@
 
 <script setup>
 import BookCard from '@/components/features/books/BookCard.vue'
+import BookCardSkeleton from '@/components/features/books/BookCardSkeleton.vue'
+import ErrorMessage from '@/components/ui/ErrorMessage.vue'
 import { localeRoute } from '@/router/locale'
 import { useBooksStore, useShopConfigStore } from '@/stores'
 import { formatMoney } from '@/utils'
-import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+const LATEST_COUNT = 4
 
 const { t } = useI18n()
 const booksStore = useBooksStore()
 const shop = useShopConfigStore()
-const { books, loading } = storeToRefs(booksStore)
 
-const featuredBooks = computed(() => books.value.slice(0, 4))
+// The latest books are the home page's own list: the catalogue's list, page and filters stay as they are
+const latest = ref([])
+const status = ref('loading')
+const error = ref(null)
+
+const load = async () => {
+    status.value = 'loading'
+    error.value = null
+    try {
+        latest.value = await booksStore.fetchLatest(LATEST_COUNT)
+        status.value = 'ready'
+    } catch (failure) {
+        error.value = failure
+        status.value = 'error'
+    }
+}
 
 const featuredCategories = [
     { name: 'Fiction', icon: 'mdi-book-open-variant' },
@@ -144,8 +161,7 @@ const terms = computed(() => {
 })
 
 onMounted(() => {
-    booksStore.limit = 4
-    booksStore.loadBooks()
+    load()
     shop.load()
 })
 </script>
@@ -153,6 +169,12 @@ onMounted(() => {
 <style scoped>
 .hero-section {
     background: linear-gradient(135deg, rgb(var(--v-theme-primary)) 0%, #2a4470 100%);
+}
+
+.book-grid {
+    margin-top: 0;
+    padding: 0;
+    list-style: none;
 }
 
 .category-chip {
