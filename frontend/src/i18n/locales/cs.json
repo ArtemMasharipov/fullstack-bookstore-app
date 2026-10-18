@@ -277,6 +277,8 @@
         "CART_HAS_UNAVAILABLE_ITEMS": "Některé knihy v košíku už nejsou dostupné. Odeberte je a pokračujte.",
         "INVALID_TRANSITION": "Tuto objednávku už takto změnit nelze.",
         "IDEMPOTENCY_CONFLICT": "Objednávka už možná byla odeslána. Než to zkusíte znovu, podívejte se do Mých objednávek.",
+        "ADMIN_SELF_CHANGE": "Nemůžete odebrat vlastní roli správce ani deaktivovat vlastní účet.",
+        "LAST_ADMIN": "Obchod musí mít alespoň jednoho aktivního správce.",
         "retry": "Zkusit znovu",
         "contact": "Kontaktovat podporu",
         "supportUnavailable": "Kanál podpory není v této ukázce nastaven. Žádná zpráva nebyla odeslána.",

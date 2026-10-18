@@ -37,6 +37,15 @@ describe('safe error code resolution', () => {
             expect(resolveErrorKey(error)).toBe('errors.' + code)
         }
     })
+    it('resolves ADMIN_SELF_CHANGE and LAST_ADMIN to their messages', async () => {
+        const { t } = await import('@/i18n')
+        expect(t(resolveErrorKey({ code: 'ADMIN_SELF_CHANGE' }))).toBe(
+            'You cannot remove your own admin role or deactivate your own account.'
+        )
+        expect(t(resolveErrorKey({ data: { error: { code: 'LAST_ADMIN' } } }))).toBe(
+            'The shop needs at least one active administrator.'
+        )
+    })
     it.each([
         null,
         undefined,

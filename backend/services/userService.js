@@ -5,10 +5,58 @@
 
 import User, { ROLES } from "../models/User.js";
 import {
+  ConflictError,
   ForbiddenError,
   NotFoundError,
   ValidationError,
 } from "../utils/errors.js";
+import { endUserSessions } from "./sessions.js";
+
+const takesAdminAccess = (user, changes) =>
+  user.role === "admin" &&
+  user.isActive &&
+  ((changes.role !== undefined && changes.role !== "admin") || changes.isActive === false);
+
+/**
+ * Writes a change of a user's role or status. Nobody takes away their own
+ * admin access. The acting admin is an active admin, so the shop can lose its
+ * last one only when two admins take each other's access at the same moment;
+ * the count is therefore checked after the write, and a write that left no
+ * active admin is undone. A role change or a deactivation ends the user's
+ * sessions, once it stands.
+ * @param {Object} user - The user as stored before the change
+ * @param {Object} changes - The fields being written ({ role?, isActive?, … })
+ * @param {string} actorId - Id of the acting admin
+ * @param {Function} write - Writes the change and returns the updated user
+ */
+async function changeAccess(user, changes, actorId, write) {
+  const takesAccess = takesAdminAccess(user, changes);
+  if (takesAccess && user._id.toString() === actorId) {
+    throw new ConflictError(
+      "You cannot take away your own admin access",
+      "ADMIN_SELF_CHANGE"
+    );
+  }
+
+  const updated = await write();
+
+  if (takesAccess && !(await User.exists({ role: "admin", isActive: true }))) {
+    // Only while it still holds what this request wrote
+    await User.updateOne(
+      {
+        _id: user._id,
+        role: changes.role ?? user.role,
+        isActive: changes.isActive ?? user.isActive,
+      },
+      { $set: { role: user.role, isActive: user.isActive } }
+    );
+    throw new ConflictError("The shop needs at least one active admin", "LAST_ADMIN");
+  }
+
+  const roleChanged = changes.role !== undefined && changes.role !== user.role;
+  if (roleChanged || changes.isActive === false) await endUserSessions(user._id);
+  return updated;
+}
 
 /**
  * Get users with filtering and pagination
@@ -150,9 +198,10 @@ export async function createUser(userData) {
  * Update user (admin only)
  * @param {string} id - User ID
  * @param {Object} updateData - Fields to update
+ * @param {string} actorId - Id of the acting admin
  * @returns {Object} Updated user
  */
-export async function updateUser(id, updateData) {
+export async function updateUser(id, updateData, actorId) {
   // Check user exists
   const existingUser = await User.findById(id);
   if (!existingUser) {
@@ -214,27 +263,21 @@ export async function updateUser(id, updateData) {
   delete updates.createdAt;
   delete updates._id;
 
-  // Update user
-  const user = await User.findByIdAndUpdate(id, updates, {
-    new: true,
-    runValidators: true,
-  }).select("-password");
-
-  return user;
+  return changeAccess(existingUser, updates, actorId, () =>
+    User.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true,
+    }).select("-password")
+  );
 }
 
 /**
- * Delete user (admin only)
+ * Delete user (admin only): deactivates the account
  * @param {string} id - User ID
  * @param {string} currentUserId - ID of user performing deletion
  * @returns {Object} Success message
  */
 export async function deleteUser(id, currentUserId) {
-  // Prevent self-deletion
-  if (id === currentUserId) {
-    throw new ForbiddenError("You cannot delete your own account");
-  }
-
   const user = await User.findById(id);
 
   if (!user) {
@@ -242,7 +285,9 @@ export async function deleteUser(id, currentUserId) {
   }
 
   // Soft delete by deactivating
-  await User.findByIdAndUpdate(id, { isActive: false });
+  await changeAccess(user, { isActive: false }, currentUserId, () =>
+    User.findByIdAndUpdate(id, { isActive: false })
+  );
 
   return {
     message: "User deactivated successfully",
@@ -326,18 +371,19 @@ export async function getUserStats() {
  * Activate/Deactivate user
  * @param {string} id - User ID
  * @param {boolean} isActive - Active status
+ * @param {string} actorId - Id of the acting admin
  * @returns {Object} Updated user
  */
-export async function toggleUserStatus(id, isActive) {
-  const user = await User.findByIdAndUpdate(
-    id,
-    { isActive },
-    { new: true, runValidators: true }
-  ).select("-password");
+export async function toggleUserStatus(id, isActive, actorId) {
+  const user = await User.findById(id);
 
   if (!user) {
     throw new NotFoundError("User not found");
   }
 
-  return user;
+  return changeAccess(user, { isActive }, actorId, () =>
+    User.findByIdAndUpdate(id, { isActive }, { new: true, runValidators: true }).select(
+      "-password"
+    )
+  );
 }

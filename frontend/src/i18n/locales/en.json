@@ -277,6 +277,8 @@
         "CART_HAS_UNAVAILABLE_ITEMS": "Some books in your cart are no longer available. Remove them to continue.",
         "INVALID_TRANSITION": "This order can no longer be changed this way.",
         "IDEMPOTENCY_CONFLICT": "This order may already have been placed. Check My orders before you try again.",
+        "ADMIN_SELF_CHANGE": "You cannot remove your own admin role or deactivate your own account.",
+        "LAST_ADMIN": "The shop needs at least one active administrator.",
         "retry": "Retry",
         "contact": "Contact support",
         "supportUnavailable": "Support channel is not configured in this demo. No message has been sent.",

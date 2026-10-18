@@ -14,6 +14,8 @@ export const ERROR_CODES = Object.freeze([
     'CART_HAS_UNAVAILABLE_ITEMS',
     'INVALID_TRANSITION',
     'IDEMPOTENCY_CONFLICT',
+    'ADMIN_SELF_CHANGE',
+    'LAST_ADMIN',
 ])
 
 export function resolveErrorKey(error) {

@@ -56,7 +56,7 @@ export async function createUser(req, res) {
  * @access  Private/Admin
  */
 export async function updateUser(req, res) {
-  const user = await userService.updateUser(req.params.id, req.body);
+  const user = await userService.updateUser(req.params.id, req.body, req.user.id);
 
   res.status(200).json({
     success: true,
@@ -139,7 +139,7 @@ export async function toggleUserStatus(req, res) {
     });
   }
 
-  const user = await userService.toggleUserStatus(req.params.id, isActive);
+  const user = await userService.toggleUserStatus(req.params.id, isActive, req.user.id);
 
   res.status(200).json({
     success: true,
