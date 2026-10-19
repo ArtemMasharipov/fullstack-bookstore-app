@@ -53,13 +53,14 @@ describe("seed()", () => {
     expect(await User.countDocuments({ role: "admin" })).toBe(1);
   });
 
-  it("creates the books through the model: each is on its author's list", async () => {
+  it("stores the relation only on each book", async () => {
     await seed(passwords);
 
-    const authors = await Author.find();
-    const listed = authors.flatMap((author) => author.books);
-
-    expect(listed).toHaveLength(24);
+    expect(await Author.collection.countDocuments({ books: { $exists: true } })).toBe(0);
+    const books = await Book.find().lean();
+    expect(books).toHaveLength(24);
+    const ids = (await Author.find().lean()).map((author) => String(author._id));
+    for (const book of books) expect(ids).toContain(String(book.author));
   });
 
   it("makes the book the smoke test looks for the newest one", async () => {

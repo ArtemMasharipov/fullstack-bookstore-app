@@ -27,7 +27,10 @@ const authorSchema = new mongoose.Schema(
     birthYear: {
       type: Number,
       min: [1000, "Birth year cannot be before 1000"],
-      max: [new Date().getFullYear(), "Birth year cannot be in the future"],
+      validate: {
+        validator: (year) => Number.isInteger(year) && year <= new Date().getFullYear(),
+        message: "Birth year must be a whole number no later than the current year",
+      },
     },
     country: {
       type: String,
@@ -45,12 +48,6 @@ const authorSchema = new mongoose.Schema(
         message: "Invalid URL format",
       },
     },
-    books: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Book",
-      },
-    ],
   },
   {
     timestamps: true,
@@ -69,38 +66,6 @@ authorSchema.index({ createdAt: -1 });
 authorSchema.virtual("fullName").get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
-
-authorSchema.virtual("booksCount").get(function () {
-  return this.books ? this.books.length : 0;
-});
-
-// Instance methods
-authorSchema.methods.getWithBooks = async function () {
-  return this.populate("books", "title publicationYear price inStock");
-};
-
-authorSchema.methods.getBooksCount = async function () {
-  const Book = mongoose.model("Book");
-  return Book.countDocuments({ author: this._id });
-};
-
-// Static methods
-authorSchema.statics.findWithBooks = function (filters = {}) {
-  return this.find(filters)
-    .populate("books", "title publicationYear price inStock")
-    .sort("-createdAt");
-};
-
-authorSchema.statics.searchAuthors = function (searchTerm) {
-  return this.find(
-    {
-      $text: { $search: searchTerm },
-    },
-    {
-      score: { $meta: "textScore" },
-    }
-  ).sort({ score: { $meta: "textScore" } });
-};
 
 // Model middleware
 authorSchema.pre("remove", async function (next) {

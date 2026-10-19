@@ -98,30 +98,4 @@ bookSchema.pre("save", async function (next) {
   next();
 });
 
-bookSchema.post("save", async function (doc) {
-  try {
-    // Update author's books list
-    const Author = mongoose.model("Author");
-    await Author.findByIdAndUpdate(
-      doc.author,
-      { $addToSet: { books: doc._id } },
-      { new: true }
-    );
-  } catch (error) {
-    // Ignore errors in post-save hook
-    console.error("Error updating author books:", error);
-  }
-});
-
-bookSchema.pre("remove", async function (next) {
-  try {
-    // Remove book from author's books list
-    const Author = mongoose.model("Author");
-    await Author.findByIdAndUpdate(this.author, { $pull: { books: this._id } });
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
-
 export default mongoose.model("Book", bookSchema);
