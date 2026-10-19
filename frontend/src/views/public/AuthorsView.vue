@@ -7,7 +7,8 @@
 <script setup>
 import AuthorList from '@/components/features/authors/AuthorList.vue'
 import { useRouter } from 'vue-router'
+import { localeRoute } from '@/router/locale'
 
 const router = useRouter()
-const goToAuthor = (authorId) => router.push(`/authors/${authorId}`)
+const goToAuthor = (id) => router.push(localeRoute('AuthorDetails', { params: { id } }))
 </script>

@@ -14,18 +14,18 @@
                             <span class="text-h4 font-weight-bold text-white">{{ authorInitials }}</span>
                         </v-avatar>
                     </template>
-                    <v-card-title class="text-h4 font-weight-bold">{{ author.name }}</v-card-title>
-                    <v-card-subtitle v-if="author.books?.length">
-                        {{ author.books.length }} {{ author.books.length === 1 ? 'book' : 'books' }} published
+                    <v-card-title class="text-h4 font-weight-bold">{{ authorName }}</v-card-title>
+                    <v-card-subtitle v-if="author.booksCount">
+                        {{ author.booksCount }} {{ author.booksCount === 1 ? 'book' : 'books' }} published
                     </v-card-subtitle>
                 </v-card-item>
-                <v-card-text v-if="author.biography" class="text-body-1">
-                    {{ author.biography }}
+                <v-card-text v-if="author.bio" class="text-body-1">
+                    {{ author.bio }}
                 </v-card-text>
             </v-card>
 
             <template v-if="author.books?.length">
-                <h2 class="text-h5 font-weight-bold mb-4">Books by {{ author.name }}</h2>
+                <h2 class="text-h5 font-weight-bold mb-4">Books by {{ authorName }}</h2>
 
                 <v-row>
                     <v-col
@@ -71,8 +71,9 @@ const authorsStore = useAuthorsStore()
 const { current: currentAuthor, loading, error } = storeToRefs(authorsStore)
 
 const author = computed(() => currentAuthor.value)
+const authorName = computed(() => (author.value ? `${author.value.firstName} ${author.value.lastName}` : ''))
 const authorInitials = computed(() => {
-    return (author.value?.name || '')
+    return authorName.value
         .split(' ')
         .map((w) => w[0])
         .join('')
@@ -82,7 +83,7 @@ const authorInitials = computed(() => {
 
 const breadcrumbItems = computed(() => [
     { title: 'Authors', to: localeRoute('Authors') },
-    { title: author.value?.name || 'Unknown Author', disabled: true },
+    { title: authorName.value || 'Unknown Author', disabled: true },
 ])
 
 onMounted(() => {

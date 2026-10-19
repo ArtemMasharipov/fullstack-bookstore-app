@@ -18,6 +18,9 @@
                     </v-alert>
                     <v-alert v-if="authorsFailed" type="warning" class="mb-4">
                         {{ t('admin.bookForm.authorsError') }}
+                        <v-btn variant="text" :disabled="authorsLoading" @click="loadAuthors">{{
+                            t('errors.retry')
+                        }}</v-btn>
                     </v-alert>
 
                     <v-text-field
@@ -94,7 +97,12 @@
                 <v-card-actions>
                     <v-spacer />
                     <v-btn variant="text" @click="close">{{ t('modal.cancel') }}</v-btn>
-                    <v-btn type="submit" variant="elevated" :loading="saving" :disabled="authorsFailed">
+                    <v-btn
+                        type="submit"
+                        variant="elevated"
+                        :loading="saving"
+                        :disabled="authorsFailed || authorsLoading"
+                    >
                         {{ t('admin.form.save') }}
                     </v-btn>
                 </v-card-actions>
@@ -224,9 +232,8 @@ async function loadAuthors() {
     authorsFailed.value = false
     try {
         const response = await authorsApi.fetchAll({ limit: 100, sortBy: 'lastName' })
-        // Until the authors API answers by the contract, its documents carry _id
         const options = (response.data ?? []).map((author) => ({
-            value: author._id,
+            value: author.id,
             title: `${author.lastName}, ${author.firstName}`,
         }))
         // The book's own author stays selectable even beyond the first 100
@@ -249,7 +256,7 @@ async function showSummary(message) {
 }
 
 async function save() {
-    if (saving.value) return
+    if (saving.value || authorsLoading.value || authorsFailed.value) return
     for (const field of FIELDS) errors[field] = check(field)
     if (FIELDS.some((field) => errors[field])) return showSummary(t('admin.form.summary'))
 

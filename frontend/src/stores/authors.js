@@ -39,9 +39,10 @@ export const useAuthorsStore = defineStore('authors', {
         async fetchAuthors() {
             return withLoading(this, async () => {
                 const response = await authorsApi.fetchAll()
-                const authors = response?.data ?? response
-                this.list = Array.isArray(authors) ? authors : []
-                return authors
+                this.list = response.data
+                const { page, limit, total, pages } = response.pagination
+                Object.assign(this, { page, limit, total, pages })
+                return this.list
             })
         },
 
@@ -50,9 +51,9 @@ export const useAuthorsStore = defineStore('authors', {
          */
         async fetchAuthorById(id) {
             return withLoading(this, async () => {
-                const author = await authorsApi.fetchById(id)
-                this.current = author
-                return author
+                const { data } = await authorsApi.fetchById(id, { includeBooks: true })
+                this.current = { ...data.author, books: data.books }
+                return this.current
             })
         },
 

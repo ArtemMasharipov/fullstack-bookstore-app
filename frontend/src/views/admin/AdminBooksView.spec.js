@@ -58,7 +58,7 @@ beforeEach(async () => {
     vi.stubGlobal('fetch', async (url) => new Response(JSON.stringify(String(url).includes('/en.json') ? en : cs)))
     for (const mock of [...Object.values(books), authors.fetchAll]) mock.mockReset()
     books.fetchAll.mockImplementation(async ({ page }) => pageOf(page))
-    authors.fetchAll.mockResolvedValue({ success: true, data: [{ _id: 'a1', firstName: 'Karel', lastName: 'Čapek' }] })
+    authors.fetchAll.mockResolvedValue({ success: true, data: [{ id: 'a1', firstName: 'Karel', lastName: 'Čapek' }] })
     useNotifications().clear()
     await loadLocale('cs')
     activateLocale('cs')

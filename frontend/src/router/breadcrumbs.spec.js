@@ -49,7 +49,13 @@ beforeEach(() => {
         freeShippingThreshold: 100000,
         paymentMethods: [],
     })
-    vi.spyOn(authorsApi, 'fetchById').mockResolvedValue({ _id: 'fixture-author', name: 'Fixture Author', books: [] })
+    vi.spyOn(authorsApi, 'fetchById').mockResolvedValue({
+        success: true,
+        data: {
+            author: { id: 'fixture-author', firstName: 'Fixture', lastName: 'Author', bio: '', booksCount: 0 },
+            books: [],
+        },
+    })
     vi.spyOn(orderApi, 'get').mockResolvedValue({
         id: 'fixture-order',
         orderNumber: 'ORD-20261015-000001',

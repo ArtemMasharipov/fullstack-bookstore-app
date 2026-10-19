@@ -6,13 +6,13 @@
                     <span class="text-h6 font-weight-bold text-white">{{ initials }}</span>
                 </v-avatar>
             </template>
-            <v-card-title class="text-h6">{{ author.name }}</v-card-title>
-            <v-card-subtitle v-if="author.books?.length">
-                {{ author.books.length }} {{ author.books.length === 1 ? 'book' : 'books' }}
+            <v-card-title class="text-h6">{{ author.firstName }} {{ author.lastName }}</v-card-title>
+            <v-card-subtitle v-if="author.booksCount">
+                {{ author.booksCount }} {{ author.booksCount === 1 ? 'book' : 'books' }}
             </v-card-subtitle>
         </v-card-item>
-        <v-card-text v-if="author.biography" class="pt-0">
-            <p class="text-body-2 text-medium-emphasis text-truncate-3">{{ author.biography }}</p>
+        <v-card-text v-if="author.bio" class="pt-0">
+            <p class="text-body-2 text-medium-emphasis text-truncate-3">{{ author.bio }}</p>
         </v-card-text>
     </v-card>
 </template>
@@ -30,7 +30,7 @@ const props = defineProps({
 const emit = defineEmits(['click'])
 
 const initials = computed(() => {
-    return (props.author.name || '')
+    return `${props.author.firstName} ${props.author.lastName}`
         .split(' ')
         .map((w) => w[0])
         .join('')

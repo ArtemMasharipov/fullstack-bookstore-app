@@ -17,12 +17,12 @@ import BookFormDialog from './BookFormDialog.vue'
 const dictionaries = { cs, en }
 const fill = (text, values) => Object.entries(values).reduce((s, [k, v]) => s.replace(`{${k}}`, v), text)
 
-// GET /authors as it answers before the authors contract: raw documents with _id
+// GET /authors by the author view contract.
 const AUTHORS = {
     success: true,
     data: [
-        { _id: 'a1', firstName: 'Karel', lastName: 'Čapek' },
-        { _id: 'a2', firstName: 'Božena', lastName: 'Němcová' },
+        { id: 'a1', firstName: 'Karel', lastName: 'Čapek' },
+        { id: 'a2', firstName: 'Božena', lastName: 'Němcová' },
     ],
     pagination: { page: 1, limit: 100, total: 2, pages: 1 },
 }
@@ -305,6 +305,35 @@ describe('BookFormDialog', () => {
 
         await vi.waitFor(() => expect(dialog().textContent).toContain(cs.admin.bookForm.authorsError))
         expect(button(cs.admin.form.save).disabled).toBe(true)
+    })
+
+    it('retries author loading without discarding the entered book', async () => {
+        authors.fetchAll.mockRejectedValueOnce({ code: 'INTERNAL' }).mockResolvedValue(AUTHORS)
+        await mount({ book: BOOK })
+        await type(cs.admin.bookForm.title, 'Entered title')
+        await vi.waitFor(() => expect(button(cs.errors.retry)).toBeDefined())
+        button(cs.errors.retry).click()
+        await vi.waitFor(() => expect(button(cs.admin.form.save).disabled).toBe(false))
+        expect(input(cs.admin.bookForm.title).value).toBe('Entered title')
+        expect(input(fill(cs.common.priceLabel, { currency: 'CZK' })).value).toBe('249.9')
+        expect(await options(cs.admin.bookForm.author)).toEqual(['Čapek, Karel', 'Němcová, Božena'])
+    })
+
+    it('blocks saving while an author retry is pending and allows retry after another failure', async () => {
+        const pending = deferred()
+        authors.fetchAll
+            .mockRejectedValueOnce({ code: 'INTERNAL' })
+            .mockReturnValueOnce(pending.promise)
+            .mockResolvedValue(AUTHORS)
+        await mount({ book: BOOK })
+        await vi.waitFor(() => expect(button(cs.errors.retry)).toBeDefined())
+        button(cs.errors.retry).click()
+        await nextTick()
+        expect(button(cs.admin.form.save).disabled).toBe(true)
+        pending.reject({ code: 'INTERNAL' })
+        await vi.waitFor(() => expect(button(cs.errors.retry).disabled).toBe(false))
+        button(cs.errors.retry).click()
+        await vi.waitFor(() => expect(button(cs.admin.form.save).disabled).toBe(false))
     })
 
     it('returns focus to the button that opened it', async () => {

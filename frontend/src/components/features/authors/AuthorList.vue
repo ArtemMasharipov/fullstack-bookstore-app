@@ -28,8 +28,8 @@
 
         <v-card-text v-else class="pa-4">
             <v-row>
-                <v-col v-for="author in filteredAuthors" :key="author._id" cols="12" sm="6" md="4">
-                    <author-list-item :author="author" @click="handleAuthorClick(author._id)" />
+                <v-col v-for="author in filteredAuthors" :key="author.id" cols="12" sm="6" md="4">
+                    <author-list-item :author="author" @click="handleAuthorClick(author.id)" />
                 </v-col>
             </v-row>
         </v-card-text>
@@ -57,7 +57,7 @@ const searchQuery = ref('')
 const filteredAuthors = computed(() => {
     if (!searchQuery.value) return authors.value
     const q = searchQuery.value.toLowerCase()
-    return authors.value.filter((a) => a.name?.toLowerCase().includes(q))
+    return authors.value.filter((a) => `${a.firstName} ${a.lastName}`.toLowerCase().includes(q))
 })
 
 const fetchAuthors = async () => {
