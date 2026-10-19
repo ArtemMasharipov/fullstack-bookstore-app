@@ -76,6 +76,7 @@
             :message="t('admin.authors.deleteMessage', { name: authorToDelete ? nameOf(authorToDelete) : '' })"
             :confirm-text="t('admin.authors.deleteConfirm')"
             @confirm="deleteAuthor"
+            @after-leave="onDeleteClosed"
         />
     </div>
 </template>
@@ -159,27 +160,30 @@ const addButton = ref(null)
 const deleteFocus = useReturnFocus()
 let deleteOpener = null
 const deletedId = ref(null)
-watch([items, deletedId], async () => {
+const deleteDialogClosed = ref(true)
+watch([items, deletedId, deleting, deleteDialogClosed], async () => {
+    if (!deleteDialogClosed.value || deleteOpen.value || deleting.value) return
     const removed = deletedId.value
-    if (!removed || items.value.some((item) => item.id === removed)) return
+    if (removed && items.value.some((item) => item.id === removed)) return
     await nextTick()
     if (removed !== deletedId.value) return
-    if (document.activeElement === document.body) addButton.value?.$el?.focus()
-    deletedId.value = null
+    const mayRestore = document.activeElement === document.body || document.activeElement === deleteOpener
+    if (removed) {
+        if (mayRestore) addButton.value?.$el?.focus()
+        deletedId.value = null
+    } else if (mayRestore) deleteFocus.restore()
 })
+function onDeleteClosed() {
+    deleteDialogClosed.value = true
+}
 function askDelete(author) {
     if (deleting.value) return
     deleteOpener = document.activeElement
+    deleteDialogClosed.value = false
     deleteFocus.remember()
     authorToDelete.value = author
     deleteOpen.value = true
 }
-watch(deleteOpen, async (open) => {
-    if (!open) {
-        await nextTick()
-        deleteFocus.restore()
-    }
-})
 async function deleteAuthor() {
     if (deleting.value || !authorToDelete.value) return
     const author = authorToDelete.value
@@ -197,13 +201,6 @@ async function deleteAuthor() {
         })
     } finally {
         deleting.value = false
-        await nextTick()
-        if (
-            document.activeElement === document.body &&
-            items.value.some((item) => item.id === author.id) &&
-            deleteOpener?.isConnected
-        )
-            deleteOpener.focus()
     }
 }
 </script>
