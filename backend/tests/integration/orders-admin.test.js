@@ -33,7 +33,7 @@ const listAll = (query = "", token) => asAdmin(request(app).get(`/api/v1/orders/
 const stats = (token) => asAdmin(request(app).get("/api/v1/orders/admin/stats"), token);
 const setStatus = (id, status, token) =>
   asAdmin(request(app).patch(`/api/v1/orders/${id}/status`), token).send({ status });
-const pay = (id, token) => asAdmin(request(app).patch(`/api/v1/orders/${id}/pay`), token);
+const pay = (id, token) => asAdmin(request(app).patch(`/api/v1/orders/${id}/payment`), token).send({ paymentStatus: "paid" });
 
 const lastEntries = (order, count) => order.statusHistory.slice(-count);
 
@@ -109,14 +109,14 @@ describe("GET /api/v1/orders/admin/stats", () => {
 
 describe("PATCH /api/v1/orders/:id/status", () => {
   it("status changes are recorded", async () => {
-    const order = await createPlacedOrder(customer);
+    const order = await createPlacedOrder(customer, { status: "processing", paymentStatus: "paid" });
 
     const res = await setStatus(order._id.toString(), "shipped");
 
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe("shipped");
     expect(lastEntries(res.body.data, 1)).toEqual([
-      { axis: "status", from: "pending", to: "shipped", by: "admin", at: expect.any(String) },
+      { axis: "status", from: "processing", to: "shipped", by: "admin", at: expect.any(String) },
     ]);
   });
 
@@ -140,7 +140,7 @@ describe("PATCH /api/v1/orders/:id/status", () => {
   });
 });
 
-describe("PATCH /api/v1/orders/:id/pay", () => {
+describe("PATCH /api/v1/orders/:id/payment", () => {
   it("paying records the payment and moves a pending order on", async () => {
     const order = await createPlacedOrder(customer);
 

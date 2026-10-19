@@ -57,7 +57,7 @@ const historyEntrySchema = new mongoose.Schema(
 );
 
 export const ORDER_STATUSES = ["pending", "processing", "shipped", "delivered", "cancelled"];
-export const PAYMENT_STATUSES = ["unpaid", "paid", "failed"];
+export const PAYMENT_STATUSES = ["unpaid", "paid", "failed", "refunded"];
 
 const orderSchema = new mongoose.Schema(
   {

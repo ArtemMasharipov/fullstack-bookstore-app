@@ -12,9 +12,11 @@ import { validate } from "../middleware/validate.js";
 import {
   adminListOrdersQuery,
   createOrderBody,
+  emptyOrderQuery,
   listOrdersQuery,
   orderIdParams,
   orderStatusBody,
+  orderPaymentBody,
 } from "../schemas/order.js";
 
 const router = express.Router();
@@ -63,20 +65,20 @@ router.get(
 router.patch(
   "/:id/status",
   authorize("admin"),
-  validate({ params: orderIdParams, body: orderStatusBody }),
+  validate({ params: orderIdParams, query: emptyOrderQuery, body: orderStatusBody }),
   asyncHandler(orderController.setOrderStatus)
 );
 
 /**
- * @route   PATCH /api/v1/orders/:id/pay
- * @desc    Record the payment of an order
+ * @route   PATCH /api/v1/orders/:id/payment
+ * @desc    Record a payment or a manually completed refund
  * @access  Private/Admin
  */
 router.patch(
-  "/:id/pay",
+  "/:id/payment",
   authorize("admin"),
-  validate({ params: orderIdParams }),
-  asyncHandler(orderController.markOrderPaid)
+  validate({ params: orderIdParams, query: emptyOrderQuery, body: orderPaymentBody }),
+  asyncHandler(orderController.setOrderPayment)
 );
 
 // =============================================================================

@@ -10,7 +10,8 @@ import Order from "../models/Order.js";
 import { ConflictError, NotFoundError, UnprocessableError } from "../utils/errors.js";
 import { getCartView } from "./cartService.js";
 import { nextOrderNumber } from "./orderNumber.js";
-import { paymentStatusOf, toOrderSummary, toOrderView } from "./orderView.js";
+import { toOrderSummary, toOrderView } from "./orderView.js";
+import { planOrderTransition } from "./orderTransitions.js";
 
 // JSON with the keys of every object sorted, so equal bodies hash equally
 function canonicalJson(value) {
@@ -162,33 +163,14 @@ export async function getOrder(userId, orderId) {
   return toOrderView(order);
 }
 
-// Older orders have no paymentStatus; theirs is read from isPaid
-const unpaid = {
-  $or: [
-    { paymentStatus: { $in: ["unpaid", "failed"] } },
-    { paymentStatus: { $exists: false }, isPaid: { $ne: true } },
-  ],
-};
-
 /**
  * Cancels a pending order that is not paid. One conditional update, so a
  * payment or a status change arriving at the same moment cannot be overwritten.
  */
 export async function cancelOrder(userId, orderId) {
-  const order = await Order.findOneAndUpdate(
-    { _id: orderId, user: userId, status: "pending", ...unpaid },
-    {
-      $set: { status: "cancelled", cancelledAt: new Date() },
-      $push: {
-        statusHistory: { axis: "status", from: "pending", to: "cancelled", by: "user", at: new Date() },
-      },
-    },
-    { new: true, strict: false }
-  ).lean();
-  if (order) return toOrderView(order);
-
-  if (!(await Order.exists({ _id: orderId, user: userId }))) throw orderNotFound();
-  throw new ConflictError("Only a pending unpaid order can be cancelled", "INVALID_TRANSITION");
+  const order = await Order.findOne({ _id: orderId, user: userId }).lean();
+  if (!order) throw orderNotFound();
+  return writeTransition(order, { axis: "status", to: "cancelled", by: "user" });
 }
 
 // =============================================================================
@@ -232,7 +214,6 @@ export async function listAllOrders({ page, limit, status, paymentStatus }) {
   };
 }
 
-const invalidTransition = (message) => new ConflictError(message, "INVALID_TRANSITION");
 const changedMeanwhile = () =>
   new ConflictError("The order changed meanwhile, reload it", "CONFLICT");
 
@@ -242,54 +223,29 @@ async function findOrder(orderId) {
   return order;
 }
 
-/**
- * Sets the status of an order. The only rule until the admin stage: a
- * cancelled order keeps its status. The update applies only if the status is
- * still the one read, so two admins cannot overwrite each other unnoticed.
- */
-export async function setOrderStatus(orderId, status) {
-  const order = await findOrder(orderId);
-  if (order.status === "cancelled") throw invalidTransition("A cancelled order keeps its status");
-  if (order.status === status) throw invalidTransition(`The order is already ${status}`);
-
+// Missing paymentStatus is a legacy snapshot, distinct from a newly written
+// status with the same meaning: compare both stored axes before changing either.
+async function writeTransition(order, action) {
+  const { set, history } = planOrderTransition(order, { ...action, at: new Date() });
+  const payment = Object.hasOwn(order, "paymentStatus")
+    ? { paymentStatus: order.paymentStatus }
+    : { paymentStatus: { $exists: false }, isPaid: Object.hasOwn(order, "isPaid") ? order.isPaid : { $exists: false } };
   const updated = await Order.findOneAndUpdate(
-    { _id: orderId, status: order.status },
-    {
-      $set: { status, ...(status === "cancelled" && { cancelledAt: new Date() }) },
-      $push: {
-        statusHistory: { axis: "status", from: order.status, to: status, by: "admin", at: new Date() },
-      },
-    },
-    { new: true, strict: false }
+    { _id: order._id, status: order.status, ...payment },
+    { $set: set, $push: { statusHistory: { $each: history } } },
+    { new: true, runValidators: true, strict: false }
   ).lean();
   if (!updated) throw changedMeanwhile();
   return toOrderView(updated);
 }
 
-/**
- * Records the payment of an order; a pending order moves on to processing.
- * Until online payment exists this is the admin's manual confirmation.
- */
-export async function markOrderPaid(orderId) {
-  const order = await findOrder(orderId);
-  const payment = paymentStatusOf(order);
-  if (payment === "paid") throw invalidTransition("The order is already paid");
+export async function setOrderStatus(orderId, status) {
+  return writeTransition(await findOrder(orderId), { axis: "status", to: status, by: "admin" });
+}
 
-  const at = new Date();
-  const history = [{ axis: "payment", from: payment, to: "paid", by: "admin", at }];
-  const set = { paymentStatus: "paid" };
-  if (order.status === "pending") {
-    set.status = "processing";
-    history.push({ axis: "status", from: "pending", to: "processing", by: "admin", at });
-  }
-
-  const updated = await Order.findOneAndUpdate(
-    { _id: orderId, status: order.status, ...unpaid },
-    { $set: set, $push: { statusHistory: { $each: history } } },
-    { new: true, strict: false }
-  ).lean();
-  if (!updated) throw changedMeanwhile();
-  return toOrderView(updated);
+/** Manual accounting only; this function never calls a payment provider. */
+export async function setOrderPayment(orderId, paymentStatus) {
+  return writeTransition(await findOrder(orderId), { axis: "payment", to: paymentStatus, by: "admin" });
 }
 
 // An older order's total is a float in crowns; it counts in geller

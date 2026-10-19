@@ -29,7 +29,7 @@ const ADMIN_ENDPOINTS = [
   ["get", "/api/v1/orders/admin/all"],
   ["get", "/api/v1/orders/admin/stats"],
   ["patch", `/api/v1/orders/${ID}/status`],
-  ["patch", `/api/v1/orders/${ID}/pay`],
+  ["patch", `/api/v1/orders/${ID}/payment`],
 ];
 
 const send = (method, path, token) => {

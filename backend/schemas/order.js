@@ -21,6 +21,8 @@ export const adminListOrdersQuery = z.strictObject({
 });
 
 export const orderStatusBody = z.strictObject({ status: z.enum(ORDER_STATUSES) });
+export const orderPaymentBody = z.strictObject({ paymentStatus: z.enum(["paid", "refunded"]) });
+export const emptyOrderQuery = z.strictObject({});
 
 // Trimmed first; then the length and no control characters (line breaks, NUL)
 const text = (min, max) =>

@@ -78,12 +78,12 @@ export async function setOrderStatus(req, res) {
 }
 
 /**
- * @route   PATCH /api/v1/orders/:id/pay
- * @desc    Record the payment of an order
+ * @route   PATCH /api/v1/orders/:id/payment
+ * @desc    Record a payment or a manually completed refund
  * @access  Private/Admin
  */
-export async function markOrderPaid(req, res) {
-  ok(res, await orderService.markOrderPaid(req.valid.params.id));
+export async function setOrderPayment(req, res) {
+  ok(res, await orderService.setOrderPayment(req.valid.params.id, req.valid.body.paymentStatus));
 }
 
 /**
