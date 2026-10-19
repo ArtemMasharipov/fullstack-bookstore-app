@@ -69,7 +69,7 @@ timestamps; `Session` has `createdAt`.
 
 | Model | Key fields | Relations |
 | --- | --- | --- |
-| `Author` | `firstName`, `lastName`, `bio`, `birthYear`, `country`, `website` | `books`: ids of the author's books |
+| `Author` | `firstName`, `lastName`, `bio`, `birthYear` (1000 through the year at validation time), `country`, `website` | Books are queried through `Book.author` |
 | `Book` | `title`, `publicationYear` (1450 up to the current year), `category`, `description`, `price`, `image`, `inStock` | `author` (an `Author`, required) |
 | `User` | `username` and `email` (both unique), `password` (bcrypt hash, left out of query results by default), `role` (`user` or `admin`; a stored older `moderator` reads as `user`), `isActive`, `lastLogin` | none |
 | `Session` | `jti` (unique, the id in the token), `expiresAt` (a TTL index deletes the session then) | `user` (a `User`) |
@@ -77,7 +77,12 @@ timestamps; `Session` has `createdAt`.
 | `Order` | `orderNumber` (`ORD-YYYYMMDD-NNNNNN`), `items` (`book`, `title`, `unitPrice`, `quantity`, `lineTotal`), `shippingAddress`, `quote`, `status`, `paymentStatus`, `statusHistory`, `idempotencyKey`, `requestHash`, `schemaVersion: 2` | `user` (a `User`); `items.book` (a `Book`) |
 | `Counter` | `_id` (the sequence name, `order:YYYYMMDD`), `seq` | none |
 
-- Saving a book adds it to its author's `books` list.
+- `Book.author` is the only stored source of the author/book relation. Author views use a whitelist; old author
+  documents may still hold an ignored `books` array, which the next successful author replacement unsets.
+  Author lists count books in one aggregation for the page, and book moves/deletions need no author hooks.
+  Author reads validate their query, combine literal name search with the country filter and sort ties by id.
+  Author writes validate strict bodies and replace optional fields; deleting an author that has books answers
+  409 `AUTHOR_HAS_BOOKS` with their count, so it never silently cascades through the catalogue.
 - A cart keeps no prices. `services/cartService.js` prices it on every request from the books as they are now, in
   whole geller (1/100 CZK), and `services/pricing.js` builds the quote: lines of deleted or out-of-stock books do not
   count, shipping is free from a threshold, and VAT is part of the total. The VAT rate, the shipping fee and the
@@ -162,6 +167,8 @@ the three plugins.
   - `books` holds one page of books with the server's pagination. Search and filters are not kept there: the
     catalogue reads them from its address, and the home page loads its latest books into a list of its own. The open
     book has a loading and error state of its own. The admin changes books through `booksApi` from its screen.
+  - `authors` holds storefront reads only and unwraps the author's explicit included-books container for the existing
+    public components. The admin screen owns its list and operations, independent of the storefront's loading state.
   - `shopConfig` loads the shop settings of `GET /config/public` once; the home page and the book page state shipping
     and VAT only from them.
   - The cart store holds the server's lines and quote and runs its changes one after another; a guest cart keeps only
@@ -193,8 +200,11 @@ the three plugins.
   Shared pieces live in `components/ui`, `components/layout` and `components/notifications`. `src/views/` holds the
   pages that the router loads, grouped as `public`, `auth`, `orders`, `admin` and `errors`. An admin table is
   `AdminTable` (Vuetify's server-side table with its loading, empty and error states) fed by `useAdminList`
-  (`src/composables/`), which loads the page the address names and keeps only the newest answer; the books screen adds
-  `BookFormDialog` and a confirmation for deleting.
+  (`src/composables/`), which loads the page the address names and keeps only the newest answer while its own route
+  and scope are active. Leaving a screen cancels its search timer and prevents queued updates or late answers from
+  changing another screen's address. The books screen adds `BookFormDialog`, the authors screen `AuthorFormDialog`;
+  both confirm deletions and keep form errors at their fields with a focused summary. The author screen explains a
+  refused deletion with its book count and restores keyboard focus after the pending operation and list update.
 
 ## Configuration and environments
 
@@ -257,7 +267,7 @@ absolute `VITE_API_URL`.
   with accessibility checks, the server cart, checkout with retries, price changes and order cancellation, the whole
   purchase journey from a guest cart to a cancelled order and sign-out in both languages, expired sessions, the admin
   area for the seeded admin and for other accounts, sessions that end on the server, the admin layout, the books table
-  with its accessibility checks, a storefront that loads no admin code, and the shop terms against
+  with its accessibility checks, author forms and paging, a storefront that loads no admin code, and the shop terms against
   `GET /config/public`. The tests that change the catalogue (`admin-catalog.spec.js`) run in a Playwright project of
   their own after all the others, which count the seeded books. Shared helpers live in `e2e/support.js`, the seeded
   accounts in `e2e/credentials.js`.

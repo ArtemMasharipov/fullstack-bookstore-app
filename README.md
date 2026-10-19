@@ -25,14 +25,17 @@ The purchase path works from the catalogue to the order:
 - The admin panel has its own layout and manages the books: a table loaded page by page from the API, with the
   search, filters, sort and page in the address; a form to add and edit a book; the stock switched in its row; and
   deletion after a confirmation. Its code loads only when an admin page opens.
+- Authors have a server-side admin table too, with search and sort in the address and a form for their name,
+  biography, birth year, country and website. An author with books cannot be deleted: the message gives the number
+  of books to reassign or delete first. Book counts come from the books themselves, including after a move or deletion.
 - The interface is in Czech (default) and English (`/en`), with prices in CZK. Delivery and VAT terms are built from
   the shop settings (`GET /api/v1/config/public`), which hold demo values.
 
 Known limitations:
 
 - There is no online payment: a new order waits for payment.
-- The admin sections for authors, orders and users and the dashboard are still being rebuilt and do not work yet.
-- Author pages, the profile and those admin sections are still in English only. The Czech texts are a draft.
+- The admin sections for orders and users and the dashboard are still being rebuilt and do not work yet.
+- Public author pages, the profile and those remaining admin sections are still in English only. The Czech texts are a draft.
 - Book categories are a fixed list, and their names are not translated yet.
 - Development tools (nodemon, ESLint 7) still depend on packages with known vulnerabilities and no fix within their
   current major versions; [docs/dependency-audit.md](docs/dependency-audit.md) lists them with review dates.

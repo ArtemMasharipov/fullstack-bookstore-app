@@ -91,6 +91,16 @@ Every book read answers the same book view: `id`, `title`, `author` (`{ id, firs
 in crowns), `image`, `inStock`, `createdAt` and `updatedAt`. `/books/category/:category` lists books in stock of
 exactly that category.
 
+Book writes use that same view: POST answers 201, PUT and stock PATCH answer 200, without a message or Mongoose
+fields; DELETE answers 204 with no body. POST and PUT take a strict body: `title` (trimmed, 2–100), `authorId`,
+`publicationYear` (JSON integer, 1450 through the current year), `category` (1–50), `price` (0–999999.99, at most two
+decimals), optional `description` (up to 1000) and `image`, and `inStock` (boolean, defaults to true).
+The cover is an `https://` URL up to 2048 characters or a PNG/JPEG/WebP/SVG data URI up to 200000 characters.
+PUT replaces the book, removing omitted description/image and resetting omitted inStock to true. The stock PATCH
+takes only `{ inStock: boolean }`. An unknown author answers 400 `VALIDATION_FAILED` with `authorId: "not_found"`;
+a duplicate title/author/year answers 409 `CONFLICT` with `title: "duplicate"`. Unknown fields and wrong types
+answer 400 with field codes.
+
 ### Authors (`/authors`)
 
 | Method | Path                         | Access | Description                  |
@@ -104,8 +114,40 @@ exactly that category.
 | PUT    | `/authors/:id`               | Admin  | Update an author             |
 | DELETE | `/authors/:id`               | Admin  | Delete an author             |
 
-`GET /authors?country=` and `/authors/country/:country` match the country as a whole value, case included. Both
-lists check their query like `GET /books`: an unknown parameter or a sort outside the list answers 400.
+Every author view contains `id` (string), `firstName`, `lastName`, `bio` (empty string when absent), optional
+`birthYear`, `country`, `website`, optional `booksCount`, and `createdAt`/`updatedAt`. It never contains `_id`, `__v`
+or a stored `books` array. List and detail counts derive from `Book.author`; a list page uses one batch aggregation.
+
+- `GET /authors`: page from 1, limit 1–100 (default 20), optional country and search, sortBy (default `-createdAt`).
+  Sort keys are `createdAt`, `firstName`, `lastName`, `birthYear` and their `-` forms; id breaks ties in the same
+  direction. Search matches literal text inside either name without case sensitivity, including a surname prefix,
+  and combines with the exact country filter. The response is `{ success, data: AuthorView[], pagination }`, where
+  pagination is exactly `{ page, limit, total, pages }`.
+- `GET /authors/country/:country`: exact country, case included; limit 1–100 (default 50), same sort keys (default
+  `lastName`). The response is `{ success, data: AuthorView[] }`, without count or pagination.
+- `GET /authors/:id`: `{ success, data: AuthorView }`. The only query is `includeBooks=true|false` (default false).
+  With true, data is `{ author: AuthorView, books: BookView[] }`: all books by this author, ordered by publication
+  year descending, with id breaking ties. This explicit container replaces the old populated array inside an author.
+- `GET /authors/:id/books`: `{ success, data: BookView[] }`, no count. Limit 1–100 (default 50), the book sort keys
+  (default `-publicationYear`), optional `inStock=true|false`. A book carries the same view as the book endpoints.
+- `GET /authors/:id/stats`: `{ success, data: { author: AuthorView, statistics } }`. Statistics contains numeric
+  totalBooks, booksInStock and booksOutOfStock; categories is an array of strings. publicationYears
+  `{ earliest, latest }` contains numbers or null, and pricing `{ lowest, highest, average }` contains numeric
+  extrema or null and a two-decimal average string or null. Prices are CZK. This endpoint accepts no query parameters.
+
+All params and query values are validated. A malformed id, unknown query, repeated value, bracket object or invalid
+sort/boolean/limit answers 400 `VALIDATION_FAILED` with fields; a well-formed missing id answers 404 `NOT_FOUND`.
+
+POST/PUT require firstName and lastName (trimmed, 2–50). Optional fields: bio (trimmed, up to 2000), birthYear
+(JSON integer, 1000 through the year at validation time), country (trimmed, up to 100), website (trimmed HTTP/HTTPS
+URL, up to 2048). Unknown fields and wrong types answer 400; writes accept no query parameters. POST answers 201,
+PUT 200, both `{ success, data: AuthorView }`. PUT fully replaces the author: omitted optional fields are unset,
+and any ignored legacy books array is removed on that successful write. An exact duplicate firstName/lastName after
+trimming answers 409 `CONFLICT` with `fields: { lastName: "duplicate" }`; an author may keep its own name.
+
+DELETE answers 204 with no body when the author has no books. Otherwise it answers 409 `AUTHOR_HAS_BOOKS`,
+`details: { books: number }`, leaving both the author and books intact. The old `deleteBooks` query parameter is
+removed and answers 400; no author endpoint deletes books implicitly.
 
 ### Cart (`/cart`, every route except `/cart/quote` needs a token)
 
