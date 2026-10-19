@@ -31,8 +31,7 @@ describe("PUT /api/v1/books/:id: an update with a dotted __proto__ path", () => 
     expect(Object.hasOwn(Object.prototype, "$fullPath")).toBe(false);
     expect(Object.hasOwn(Object.prototype, "$parentSchemaDocArray")).toBe(false);
     expect((await Book.findById(book.id).lean()).title).toBe("R.U.R.");
-    // 400: the strict body schema refuses the update before Mongoose sees it; 200 would mean
-    // Mongoose cast it. 401, 403 or 404 would mean the checks above proved nothing.
-    expect([200, 400]).toContain(res.status);
+    // The strict body schema refuses the update before Mongoose sees it.
+    expect(res.status).toBe(400);
   });
 });

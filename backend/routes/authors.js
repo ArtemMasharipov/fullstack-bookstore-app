@@ -8,7 +8,7 @@ import * as authorController from "../controllers/authorController.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { authorize, protect } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
-import { authorBooksQuery, authorDetailQuery, authorIdParams, countryAuthorsQuery, countryParams, emptyAuthorQuery, listAuthorsQuery } from "../schemas/author.js";
+import { authorBody, authorBooksQuery, authorDetailQuery, authorIdParams, countryAuthorsQuery, countryParams, emptyAuthorQuery, listAuthorsQuery } from "../schemas/author.js";
 
 const router = express.Router();
 
@@ -75,6 +75,7 @@ router.post(
   "/",
   protect,
   authorize("admin"),
+  validate({ query: emptyAuthorQuery, body: authorBody }),
   asyncHandler(authorController.createAuthor)
 );
 
@@ -82,26 +83,28 @@ router.post(
  * @route   PUT /api/v1/authors/:id
  * @desc    Update author
  * @params  :id (required)
- * @body    { firstName?, lastName?, bio?, birthYear?, country?, website? }
+ * @body    { firstName, lastName, bio?, birthYear?, country?, website? } (replacement)
  * @access  Private/Admin
  */
 router.put(
   "/:id",
   protect,
   authorize("admin"),
+  validate({ params: authorIdParams, query: emptyAuthorQuery, body: authorBody }),
   asyncHandler(authorController.updateAuthor)
 );
 
 /**
  * @route   DELETE /api/v1/authors/:id
  * @desc    Delete author
- * @params  :id (required), ?deleteBooks=true
+ * @params  :id (required); refuses authors that still have books
  * @access  Private/Admin
  */
 router.delete(
   "/:id",
   protect,
   authorize("admin"),
+  validate({ params: authorIdParams, query: emptyAuthorQuery }),
   asyncHandler(authorController.deleteAuthor)
 );
 

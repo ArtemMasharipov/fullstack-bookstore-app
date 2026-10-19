@@ -45,3 +45,23 @@ export const authorBooksQuery = z.strictObject({
   sortBy: sortBy(BOOK_SORTS, "-publicationYear"),
   inStock: z.enum(["true", "false"]).transform((value) => value === "true").optional(),
 });
+
+const birthYear = z.number().int().min(1000).superRefine((year, ctx) => {
+  const maximum = new Date().getFullYear();
+  if (year > maximum) ctx.addIssue({ code: "too_big", origin: "number", maximum, inclusive: true });
+});
+const website = z.string().trim().max(2048).superRefine((value, ctx) => {
+  try {
+    if (["http:", "https:"].includes(new URL(value).protocol)) return;
+  } catch { /* Invalid URLs use the same public validation code. */ }
+  ctx.addIssue({ code: "invalid_format", format: "url" });
+});
+
+export const authorBody = z.strictObject({
+  firstName: z.string().trim().min(2).max(50),
+  lastName: z.string().trim().min(2).max(50),
+  bio: z.string().trim().max(2000).optional(),
+  birthYear: birthYear.optional(),
+  country: z.string().trim().max(100).optional(),
+  website: website.optional(),
+});

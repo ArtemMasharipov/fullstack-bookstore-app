@@ -32,13 +32,7 @@ export async function getAuthor(req, res) {
  * @access  Private/Admin
  */
 export async function createAuthor(req, res) {
-  const author = await authorService.createAuthor(req.body);
-
-  res.status(201).json({
-    success: true,
-    data: author,
-    message: "Author created successfully",
-  });
+  ok(res, await authorService.createAuthor(req.valid.body), { status: 201 });
 }
 
 /**
@@ -47,13 +41,7 @@ export async function createAuthor(req, res) {
  * @access  Private/Admin
  */
 export async function updateAuthor(req, res) {
-  const author = await authorService.updateAuthor(req.params.id, req.body);
-
-  res.status(200).json({
-    success: true,
-    data: author,
-    message: "Author updated successfully",
-  });
+  ok(res, await authorService.updateAuthor(req.valid.params.id, req.valid.body));
 }
 
 /**
@@ -62,14 +50,8 @@ export async function updateAuthor(req, res) {
  * @access  Private/Admin
  */
 export async function deleteAuthor(req, res) {
-  const deleteBooks = req.query.deleteBooks === "true";
-  const result = await authorService.deleteAuthor(req.params.id, deleteBooks);
-
-  res.status(200).json({
-    success: true,
-    message: result.message,
-    booksDeleted: result.booksDeleted,
-  });
+  await authorService.deleteAuthor(req.valid.params.id);
+  res.status(204).end();
 }
 
 /**

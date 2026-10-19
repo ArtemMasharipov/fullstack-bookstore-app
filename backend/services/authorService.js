@@ -10,9 +10,9 @@ import { toAuthorView } from "./authorView.js";
 import { toBookView } from "./bookView.js";
 import { sortOf } from "../utils/listSort.js";
 import {
+  AppError,
   ConflictError,
   NotFoundError,
-  ValidationError,
 } from "../utils/errors.js";
 
 /**
@@ -64,40 +64,18 @@ export async function getAuthorById(id, includeBooks = false) {
  * @param {Object} authorData - Author data (firstName, lastName, bio, birthYear, country, website)
  * @returns {Object} Created author
  */
+const AUTHOR_FIELDS = ["firstName", "lastName", "bio", "birthYear", "country", "website"];
+const OPTIONAL_FIELDS = ["bio", "birthYear", "country", "website"];
+const storedFields = (data) => Object.fromEntries(AUTHOR_FIELDS.filter((field) => Object.hasOwn(data, field)).map((field) => [field, data[field]]));
+
+async function refuseDuplicate({ firstName, lastName }, id) {
+  const duplicate = await Author.exists({ firstName, lastName, ...(id && { _id: { $ne: id } }) });
+  if (duplicate) throw new AppError("An author with this name already exists", 409, "CONFLICT", { fields: { lastName: "duplicate" } });
+}
+
 export async function createAuthor(authorData) {
-  // Validate required fields
-  if (!authorData.firstName || !authorData.lastName) {
-    throw new ValidationError("First name and last name are required");
-  }
-
-  // Check for duplicate author (same first + last name)
-  const existingAuthor = await Author.findOne({
-    firstName: authorData.firstName,
-    lastName: authorData.lastName,
-  });
-
-  if (existingAuthor) {
-    throw new ConflictError(
-      `Author ${authorData.firstName} ${authorData.lastName} already exists`
-    );
-  }
-
-  // Validate birth year if provided
-  if (authorData.birthYear) {
-    const currentYear = new Date().getFullYear();
-    if (authorData.birthYear > currentYear) {
-      throw new ValidationError("Birth year cannot be in the future");
-    }
-    if (authorData.birthYear < 1000) {
-      throw new ValidationError("Birth year cannot be before 1000");
-    }
-  }
-
-  // Create author
-  const author = new Author(authorData);
-  await author.save();
-
-  return author;
+  await refuseDuplicate(authorData);
+  return toAuthorView(await Author.create(storedFields(authorData)));
 }
 
 /**
@@ -107,75 +85,29 @@ export async function createAuthor(authorData) {
  * @returns {Object} Updated author
  */
 export async function updateAuthor(id, updateData) {
-  // Check author exists
-  const existingAuthor = await Author.findById(id);
-  if (!existingAuthor) {
-    throw new NotFoundError("Author not found");
-  }
-
-  // If updating name, check for duplicates
-  if (updateData.firstName || updateData.lastName) {
-    const firstName = updateData.firstName || existingAuthor.firstName;
-    const lastName = updateData.lastName || existingAuthor.lastName;
-
-    const duplicate = await Author.findOne({
-      firstName,
-      lastName,
-      _id: { $ne: id }, // Exclude current author
-    });
-
-    if (duplicate) {
-      throw new ConflictError(`Author ${firstName} ${lastName} already exists`);
-    }
-  }
-
-  // Prevent modifying certain fields
-  delete updateData.createdAt;
-  delete updateData._id;
-  delete updateData.books; // Managed automatically
-
-  // Update
-  const author = await Author.findByIdAndUpdate(id, updateData, {
-    new: true,
-    runValidators: true,
+  if (!(await Author.exists({ _id: id }))) throw new NotFoundError("Author not found");
+  await refuseDuplicate(updateData, id);
+  const unset = Object.fromEntries(OPTIONAL_FIELDS.filter((field) => !Object.hasOwn(updateData, field)).map((field) => [field, ""]));
+  const author = await Author.findByIdAndUpdate(id, {
+    $set: storedFields(updateData), $unset: { ...unset, books: "" },
+  }, {
+    // Only the allowlisted update above may unset the removed legacy schema path.
+    new: true, runValidators: true, strict: false,
   }).lean();
-
-  return author;
+  if (!author) throw new NotFoundError("Author not found");
+  return toAuthorView(author);
 }
 
 /**
  * Delete author
  * @param {string} id - Author ID
- * @param {boolean} deleteBooks - Whether to delete author's books
- * @returns {Object} Success message
+ * @returns {Promise<void>} Refuses an author that still has books
  */
-export async function deleteAuthor(id, deleteBooks = false) {
-  const author = await Author.findById(id);
-
-  if (!author) {
-    throw new NotFoundError("Author not found");
-  }
-
-  // Check if author has books
+export async function deleteAuthor(id) {
+  if (!(await Author.exists({ _id: id }))) throw new NotFoundError("Author not found");
   const bookCount = await Book.countDocuments({ author: id });
-
-  if (bookCount > 0 && !deleteBooks) {
-    throw new ValidationError(
-      `Cannot delete author with ${bookCount} book(s). Set deleteBooks=true to delete books as well.`
-    );
-  }
-
-  // Delete books if requested
-  if (deleteBooks && bookCount > 0) {
-    await Book.deleteMany({ author: id });
-  }
-
+  if (bookCount > 0) throw new ConflictError("This author still has books", "AUTHOR_HAS_BOOKS", { books: bookCount });
   await Author.findByIdAndDelete(id);
-
-  return {
-    message: "Author deleted successfully",
-    booksDeleted: deleteBooks ? bookCount : 0,
-  };
 }
 
 /**
