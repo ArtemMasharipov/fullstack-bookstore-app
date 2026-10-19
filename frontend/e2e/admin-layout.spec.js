@@ -253,11 +253,19 @@ for (const locale of ['cs', 'en']) {
         await signIn(page, SEEDED.admin, prefix)
         await page.goto(`${prefix}/admin/books`)
         await expect(page.locator('main tbody tr')).toHaveCount(10)
+        let authorChunks = 0
+        await page.route('**/assets/AdminAuthorsView-*.js', async (route) => {
+            authorChunks++
+            // Keep route.name on Books longer than its search debounce, as on a slow first load.
+            await new Promise((resolve) => setTimeout(resolve, 1000))
+            await route.continue()
+        })
         await page.getByLabel(words.admin.books.search, { exact: true }).fill('pending author navigation')
         await page
             .getByRole('navigation', { name: words.admin.navLabel })
             .getByRole('link', { name: new RegExp(`^${words.routes.AdminAuthors}`) })
             .click()
+        await expect.poll(() => authorChunks).toBe(1)
         await expect(page.getByRole('heading', { level: 1 })).toHaveText(words.routes.AdminAuthors)
         await page.waitForTimeout(400)
         await expect(page).toHaveURL((url) => url.pathname === `${prefix}/admin/authors` && !url.searchParams.has('q'))

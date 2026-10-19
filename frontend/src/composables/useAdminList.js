@@ -1,6 +1,6 @@
 import { canonicalListQuery, listQuery, parseListQuery, toListParams } from '@/router/adminListQuery'
 import { computed, onScopeDispose, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 
 /**
  * A page of an admin list, kept in the address (router/adminListQuery.js). The rows load whenever the address
@@ -24,10 +24,26 @@ export function useAdminList({ config, load }) {
     const error = ref(null)
     let request = 0
     let alive = true
-    const active = () => alive && route.name === name
+    let leavingTo = null
+    const active = () => alive && !leavingTo && route.name === name
+    onBeforeRouteLeave((to) => {
+        leavingTo = to
+        request++
+    })
+    // An aborted guard or failed lazy import leaves this screen mounted and usable.
+    function resume(to) {
+        if (alive && leavingTo === to && route.name === name) {
+            leavingTo = null
+            reload()
+        }
+    }
+    const stopAfter = router.afterEach((to) => resume(to))
+    const stopError = router.onError((_failure, to) => resume(to))
     onScopeDispose(() => {
         alive = false
         request++
+        stopAfter()
+        stopError()
     })
     watch(
         () => route.name,
@@ -71,8 +87,8 @@ export function useAdminList({ config, load }) {
         { immediate: true }
     )
 
-    // The changes of one tick make one navigation: the table reports a new sort or page size and then page 1 at once,
-    // and a second push built from the address not yet changed would cancel the first
+    // Batch the table's related events on the next turn, allowing a user's route-leave guard to run first.
+    // A same-turn microtask push could otherwise cancel a navigation that has already started.
     let pending = null
     let navigation = null
 
@@ -81,7 +97,7 @@ export function useAdminList({ config, load }) {
         if (!active()) return Promise.resolve()
         pending = { ...pending, ...patch }
         if (!navigation) {
-            navigation = Promise.resolve().then(() => {
+            navigation = new Promise((resolve) => setTimeout(resolve, 0)).then(() => {
                 if (!active()) {
                     pending = null
                     navigation = null

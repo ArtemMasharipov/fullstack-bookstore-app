@@ -93,7 +93,7 @@ import { authorsApi } from '@/services/api/authorsApi'
 import { resolveErrorKey } from '@/utils/errorResolver'
 import { debounce } from '@/utils/helpers/debounce'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { onBeforeRouteLeave, useRoute } from 'vue-router'
 
 const LIST = {
     sorts: ['-createdAt', 'createdAt', 'firstName', '-firstName', 'lastName', '-lastName', 'birthYear', '-birthYear'],
@@ -131,12 +131,17 @@ watch(
     }
 )
 onBeforeUnmount(() => sendSearch.cancel())
+onBeforeRouteLeave(() => {
+    sendSearch.cancel()
+})
 watch(search, (value) => {
+    sendSearch.cancel()
     if ((value ?? '').trim() !== state.value.q) sendSearch(value)
 })
 watch(
     () => state.value.q,
     (value) => {
+        sendSearch.cancel()
         if ((search.value ?? '').trim() !== value) search.value = value
     }
 )

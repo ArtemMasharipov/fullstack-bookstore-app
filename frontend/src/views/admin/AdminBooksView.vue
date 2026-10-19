@@ -122,7 +122,7 @@ import { BOOK_CATEGORIES } from '@/utils/constants/app'
 import { resolveErrorKey } from '@/utils/errorResolver'
 import { debounce } from '@/utils/helpers/debounce'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { onBeforeRouteLeave, useRoute } from 'vue-router'
 
 /**
  * The admin's books: a page of GET /books with its search, filters, sort and page in the address; the stock is
@@ -181,12 +181,17 @@ watch(
     }
 )
 onBeforeUnmount(() => sendSearch.cancel())
+onBeforeRouteLeave(() => {
+    sendSearch.cancel()
+})
 watch(search, (value) => {
+    sendSearch.cancel()
     if ((value ?? '').trim() !== state.value.q) sendSearch(value)
 })
 watch(
     () => state.value.q,
     (q) => {
+        sendSearch.cancel()
         if ((search.value ?? '').trim() !== q) search.value = q
     }
 )

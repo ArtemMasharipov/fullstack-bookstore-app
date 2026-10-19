@@ -72,6 +72,7 @@ const summaryAlert = ref(null)
 const saving = ref(false)
 const returnFocus = useReturnFocus()
 let generation = 0
+let disposed = false
 const currentYear = () => new Date().getFullYear()
 
 function check(field) {
@@ -139,8 +140,10 @@ async function save() {
     summary.value = ''
     try {
         const response = author ? await authorsApi.update(author.id, body()) : await authorsApi.create(body())
-        if (attempt !== generation || !props.modelValue) return
+        if (disposed) return
+        // The write committed even if this opening was closed; only its own dialog state is stale.
         emit('saved', response.data, !author)
+        if (attempt !== generation || !props.modelValue) return
         close()
     } catch (failure) {
         if (attempt !== generation || !props.modelValue) return
@@ -184,6 +187,7 @@ watch(
     }
 )
 onScopeDispose(() => {
+    disposed = true
     generation++
 })
 </script>

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, h, nextTick } from 'vue'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { createMemoryHistory, createRouter, RouterView } from 'vue-router'
 import { createPinia, setActivePinia } from 'pinia'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
@@ -28,7 +28,9 @@ import AdminBooksView from './AdminBooksView.vue'
 const fill = (text, values) => Object.entries(values).reduce((s, [k, v]) => s.replace(`{${k}}`, v), text)
 const Page = { render: () => null }
 const prepare = (record) =>
-    record.children ? { ...record, children: record.children.map(prepare) } : { ...record, component: Page }
+    record.children
+        ? { ...record, children: record.children.map(prepare) }
+        : { ...record, component: record.name === 'AdminBooks' ? AdminBooksView : Page }
 
 // A page of GET /books: 24 books in pages of 10
 function pageOf(page, { total = 24 } = {}) {
@@ -78,7 +80,7 @@ async function mount(path = '/admin/books') {
     await router.push(path)
     const root = document.createElement('div')
     document.body.append(root)
-    app = createApp({ render: () => h(components.VApp, null, { default: () => h(AdminBooksView) }) })
+    app = createApp({ render: () => h(components.VApp, null, { default: () => h(RouterView) }) })
         .use(pinia)
         .use(i18n)
         .use(router)
@@ -108,6 +110,33 @@ const choose = async (label, option) => {
 }
 const header = (text) => [...document.querySelectorAll('th')].find((th) => th.textContent.includes(text))
 const settle = () => new Promise((resolve) => setTimeout(resolve, 50))
+
+it('cancels the draft when synchronizing a book search from the address', async () => {
+    await mount('/admin/books?q=Writer')
+    const field = input(cs.admin.books.search)
+    field.value = 'stale draft'
+    field.dispatchEvent(new Event('input', { bubbles: true }))
+    await nextTick()
+    await router.push('/admin/books?q=Restored')
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    expect(router.currentRoute.value.query.q).toBe('Restored')
+    expect(field.value).toBe('Restored')
+})
+
+it.each(['', 'Writer'])('cancels a draft book search when it returns to the applied query %j', async (applied) => {
+    await mount(applied ? '/admin/books?q=Writer' : '/admin/books')
+    const field = input(cs.admin.books.search)
+    field.value = 'stale draft'
+    field.dispatchEvent(new Event('input', { bubbles: true }))
+    await nextTick()
+    field.value = applied
+    field.dispatchEvent(new Event('input', { bubbles: true }))
+    await nextTick()
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    expect(router.currentRoute.value.query.q ?? '').toBe(applied)
+    expect(field.value).toBe(applied)
+    expect(books.fetchAll).toHaveBeenCalledTimes(1)
+})
 const notices = () => useNotifications().notifications.value.map((n) => [n.type, n.messageKey])
 
 describe('AdminBooksView', () => {

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { createApp, h, nextTick, resolveComponent } from 'vue'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { createMemoryHistory, createRouter, RouterView } from 'vue-router'
 import { createPinia, setActivePinia } from 'pinia'
 
 // Every API answers an empty page: the screens render, and no test reaches a server
@@ -65,7 +65,8 @@ async function warningsOf(path, screen) {
     const warnings = []
     const root = document.createElement('div')
     document.body.append(root)
-    app = createApp({ render: () => h(resolveComponent('v-app'), null, { default: () => h(screen) }) })
+    const content = screen === AdminBooksView || screen === AdminAuthorsView ? RouterView : screen
+    app = createApp({ render: () => h(resolveComponent('v-app'), null, { default: () => h(content) }) })
     app.config.warnHandler = (message) => warnings.push(message)
     app.use(pinia).use(i18n).use(router).use(vuetify)
     app.mount(root)

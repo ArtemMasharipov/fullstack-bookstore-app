@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, h, nextTick } from 'vue'
 import { createPinia } from 'pinia'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { createMemoryHistory, createRouter, RouterView } from 'vue-router'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
@@ -32,7 +32,9 @@ const pageOf = ({ page = 1, limit = 10 } = {}, total = 12) => ({
 })
 const Page = { render: () => null }
 const prepare = (route) =>
-    route.children ? { ...route, children: route.children.map(prepare) } : { ...route, component: Page }
+    route.children
+        ? { ...route, children: route.children.map(prepare) }
+        : { ...route, component: route.name === 'AdminAuthors' ? AdminAuthorsView : Page }
 const fill = (text, params) =>
     Object.entries(params).reduce((value, [key, part]) => value.replace(`{${key}}`, part), text)
 let app, router, root, words
@@ -57,7 +59,7 @@ async function mount(path = '/admin/authors', locale = 'cs') {
     await router.push(path)
     root = document.createElement('div')
     document.body.append(root)
-    app = createApp({ render: () => h(components.VApp, null, { default: () => h(AdminAuthorsView) }) })
+    app = createApp({ render: () => h(components.VApp, null, { default: () => h(RouterView) }) })
         .use(createPinia())
         .use(router)
         .use(i18n)
@@ -102,6 +104,61 @@ const askDelete = async (author) => {
 }
 
 describe('AdminAuthorsView', () => {
+    it('cancels the draft when synchronizing an author search from the address', async () => {
+        await mount('/admin/authors?q=Writer')
+        const field = input(words.admin.authors.search)
+        await type(field, 'stale draft')
+        await router.push('/admin/authors?q=Restored')
+        await new Promise((resolve) => setTimeout(resolve, 400))
+        expect(router.currentRoute.value.query.q).toBe('Restored')
+        expect(field.value).toBe('Restored')
+    })
+    it.each(['', 'Writer'])('cancels a draft search when it returns to the applied query %j', async (applied) => {
+        await mount(applied ? '/admin/authors?q=Writer' : '/admin/authors')
+        const field = input(words.admin.authors.search)
+        await type(field, 'stale draft')
+        await type(field, applied)
+        await new Promise((resolve) => setTimeout(resolve, 400))
+        expect(router.currentRoute.value.query.q ?? '').toBe(applied)
+        expect(field.value).toBe(applied)
+        expect(authors.fetchAll).toHaveBeenCalledTimes(1)
+    })
+    it.each([false, true])('reflects a committed save after closing the form (reopen: %s)', async (reopen) => {
+        let resolveSave
+        authors.create.mockReturnValue(
+            new Promise((resolve) => {
+                resolveSave = resolve
+            })
+        )
+        const created = { ...DATA[0], id: 'new-author', firstName: 'New', lastName: 'Saved' }
+        authors.fetchAll.mockResolvedValueOnce(pageOf()).mockResolvedValueOnce({
+            ...pageOf(),
+            data: [created, ...DATA.slice(0, 9)],
+        })
+        await mount()
+        button(words.admin.authors.add).click()
+        await vi.waitFor(() => expect(dialog()?.querySelector('form')).not.toBeNull())
+        await type(input(words.admin.authorForm.firstName, dialog()), 'New')
+        await type(input(words.admin.authorForm.lastName, dialog()), 'Saved')
+        button(words.admin.form.save, dialog()).click()
+        await vi.waitFor(() => expect(authors.create).toHaveBeenCalledTimes(1))
+        button(words.modal.cancel, dialog()).click()
+        await nextTick()
+        if (reopen) {
+            byLabel(fill(words.admin.authors.edit, { name: name(DATA[0]) })).click()
+            await vi.waitFor(() => expect(input(words.admin.authorForm.firstName, dialog()).value).toBe('Karel 1'))
+            await type(input(words.admin.authorForm.bio, dialog()), 'Keep this draft')
+        }
+        resolveSave({ success: true, data: created })
+        await vi.waitFor(() => expect(notices()).toHaveLength(1))
+        expect(notices()[0].messageKey).toBe('admin.authors.created')
+        await vi.waitFor(() => expect(root.textContent).toContain('New Saved'))
+        expect(authors.fetchAll).toHaveBeenCalledTimes(2)
+        if (reopen) {
+            expect(dialog().textContent).toContain(words.admin.authorForm.editTitle)
+            expect(input(words.admin.authorForm.bio, dialog()).value).toBe('Keep this draft')
+        }
+    })
     it('loads the server page and displays its canonical fields and book count', async () => {
         await mount('/admin/authors?page=2&limit=10&q=Writer&sortBy=lastName')
         expect(authors.fetchAll).toHaveBeenCalledWith({ page: 2, limit: 10, search: 'Writer', sortBy: 'lastName' })

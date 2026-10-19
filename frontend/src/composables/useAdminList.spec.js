@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, h, nextTick } from 'vue'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { createMemoryHistory, createRouter, RouterView } from 'vue-router'
 import { useAdminList } from './useAdminList'
 
 const CONFIG = { sorts: ['-createdAt', 'price', '-price'], defaultSort: '-createdAt', filters: {} }
@@ -36,24 +36,24 @@ afterEach(() => {
 })
 
 async function mount(path) {
-    router = createRouter({
-        history: createMemoryHistory(),
-        routes: [
-            { path: '/admin/books', name: 'AdminBooks', component: Page },
-            { path: '/admin/authors', name: 'AdminAuthors', component: Page },
-            { path: '/admin', name: 'AdminDashboard', component: Page },
-        ],
-    })
-    await router.push(path)
     const Screen = {
         setup() {
             list = useAdminList({ config: CONFIG, load })
             return () => h('div')
         },
     }
+    router = createRouter({
+        history: createMemoryHistory(),
+        routes: [
+            { path: '/admin/books', name: 'AdminBooks', component: Screen },
+            { path: '/admin/authors', name: 'AdminAuthors', component: Page },
+            { path: '/admin', name: 'AdminDashboard', component: Page },
+        ],
+    })
+    await router.push(path)
     const root = document.createElement('div')
     document.body.append(root)
-    app = createApp(Screen).use(router)
+    app = createApp({ render: () => h(RouterView) }).use(router)
     app.mount(root)
     // A wrong address is replaced before anything loads
     await vi.waitFor(() => expect(load).toHaveBeenCalled())
@@ -66,6 +66,71 @@ const settle = async () => {
 }
 
 describe('useAdminList', () => {
+    it('drops an update queued immediately before navigation to another screen', async () => {
+        await mount('/admin/books')
+        const queued = list.update({ q: 'stale' })
+        const moving = router.push('/admin/authors?q=keep')
+        await Promise.all([queued, moving])
+        expect(router.currentRoute.value.fullPath).toBe('/admin/authors?q=keep')
+    })
+    it('does not update while another screen waits for its navigation guard', async () => {
+        await mount('/admin/books')
+        const gate = deferred()
+        const entered = deferred()
+        router.beforeResolve(async (to) => {
+            if (to.name === 'AdminAuthors') {
+                entered.resolve()
+                await gate.promise
+            }
+        })
+        const moving = router.push('/admin/authors?q=keep')
+        await entered.promise
+        try {
+            await list.update({ q: 'stale' })
+        } finally {
+            gate.resolve()
+        }
+        await moving
+        expect(router.currentRoute.value.fullPath).toBe('/admin/authors?q=keep')
+    })
+    it('does not normalize an old page while the destination is still loading', async () => {
+        await mount('/admin/books?page=2')
+        const response = deferred()
+        load.mockReturnValueOnce(response.promise)
+        const reloading = list.reload()
+        const gate = deferred()
+        const entered = deferred()
+        router.beforeResolve(async (to) => {
+            if (to.name === 'AdminAuthors') {
+                entered.resolve()
+                await gate.promise
+            }
+        })
+        const moving = router.push('/admin/authors?q=keep')
+        await entered.promise
+        response.resolve(answer(2, { pages: 1 }))
+        try {
+            await reloading
+        } finally {
+            gate.resolve()
+        }
+        await moving
+        expect(router.currentRoute.value.fullPath).toBe('/admin/authors?q=keep')
+    })
+    it.each(['aborted', 'errored'])('remains usable after an %s navigation', async (kind) => {
+        await mount('/admin/books')
+        router.onError(() => {})
+        router.beforeResolve((to) => {
+            if (to.name !== 'AdminAuthors') return
+            if (kind === 'errored') throw new Error('destination failed')
+            return false
+        })
+        await router.push('/admin/authors').catch(() => {})
+        await list.update({ q: 'fresh' })
+        await settle()
+        expect(router.currentRoute.value.fullPath).toBe('/admin/books?q=fresh')
+        expect(load).toHaveBeenLastCalledWith({ page: 1, limit: 10, sortBy: '-createdAt', search: 'fresh' })
+    })
     it('does not apply an update or reload to another route', async () => {
         await mount('/admin/books')
         await router.push('/admin/authors?q=novy')
