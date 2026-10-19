@@ -166,6 +166,12 @@ export const routeManifest = [
                 titleKey: 'routes.AdminUsers',
                 nav: { section: 'main', order: 50, icon: 'mdi-account-group', subtitleKey: 'admin.nav.users' },
             },
+            {
+                id: 'AdminOrderDetails',
+                path: 'orders/:id',
+                view: () => import('@/views/admin/AdminOrderDetailsView.vue'),
+                titleKey: 'routes.AdminOrderDetails',
+            },
         ],
     },
 

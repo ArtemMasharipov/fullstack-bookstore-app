@@ -5,9 +5,39 @@ import { createPinia, setActivePinia } from 'pinia'
 
 // Every API answers an empty page: the screens render, and no test reaches a server
 const api = vi.hoisted(() => {
-    const answer = () =>
+    const answer = (url) =>
         Promise.resolve({
-            data: { success: true, data: [], pagination: { page: 1, limit: 10, total: 0, pages: 0 } },
+            data: {
+                success: true,
+                data: String(url).endsWith('/orders/o1')
+                    ? {
+                          id: 'o1',
+                          orderNumber: 'ORD-1',
+                          status: 'pending',
+                          paymentStatus: 'unpaid',
+                          customer: null,
+                          shippingAddress: {
+                              fullName: 'Jan',
+                              line1: 'Street 1',
+                              postalCode: '11000',
+                              city: 'Praha',
+                              country: 'CZ',
+                          },
+                          quote: {
+                              currency: 'CZK',
+                              total: 0,
+                              itemsTotal: 0,
+                              shipping: 0,
+                              vatAmount: 0,
+                              vatIncluded: true,
+                          },
+                          items: [],
+                          statusHistory: [],
+                          allowedTransitions: [],
+                      }
+                    : [],
+                pagination: { page: 1, limit: 10, total: 0, pages: 0 },
+            },
         })
     return { get: answer, post: answer, put: answer, patch: answer, delete: answer }
 })
@@ -26,12 +56,14 @@ import UserFormDialog from '@/components/features/admin/UserFormDialog.vue'
 import AdminBooksView from './AdminBooksView.vue'
 import AdminDashboardView from './AdminDashboardView.vue'
 import AdminOrdersView from './AdminOrdersView.vue'
+import AdminOrderDetailsView from './AdminOrderDetailsView.vue'
 import AdminUsersView from './AdminUsersView.vue'
 
 // Each admin screen with the app's own Vuetify setup, which registers only the components it lists: a component a
 // screen uses but the setup leaves out renders as an unknown element. A change that adds an admin screen adds it
 // to this list.
 const SCREENS = [
+    ['AdminOrderDetailsView', '/admin/orders/o1', AdminOrderDetailsView],
     ['AdminLayout', '/admin', AdminLayout],
     ['AdminDashboardView', '/admin', AdminDashboardView],
     ['AdminBooksView', '/admin/books', AdminBooksView],
@@ -67,7 +99,16 @@ async function warningsOf(path, screen) {
     const warnings = []
     const root = document.createElement('div')
     document.body.append(root)
-    const content = screen === AdminBooksView || screen === AdminAuthorsView ? RouterView : screen
+    const content = [
+        AdminBooksView,
+        AdminAuthorsView,
+        AdminOrdersView,
+        AdminUsersView,
+        AdminOrderDetailsView,
+        AdminDashboardView,
+    ].includes(screen)
+        ? RouterView
+        : screen
     app = createApp({ render: () => h(resolveComponent('v-app'), null, { default: () => h(content) }) })
     app.config.warnHandler = (message) => warnings.push(message)
     app.use(pinia).use(i18n).use(router).use(vuetify)

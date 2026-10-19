@@ -112,3 +112,13 @@ it('distinguishes an empty result from a load failure', async () => {
     expect(mounted.root.textContent).toContain(words.admin.orders.empty)
     expect(mounted.root.textContent).not.toContain(words.admin.table.loadError)
 })
+it('carries the canonical list query into the detail and returns with Back', async () => {
+    await mount('/en/admin/orders?page=2&paymentStatus=refunded', 'en')
+    const link = rows()[0].querySelector('a')
+    expect(link.getAttribute('href')).toBe('/en/admin/orders/o11?page=2&paymentStatus=refunded')
+    link.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0 }))
+    await vi.waitFor(() => expect(mounted.router.currentRoute.value.name).toBe('AdminOrderDetails'))
+    expect(mounted.router.currentRoute.value.query).toEqual({ page: '2', paymentStatus: 'refunded' })
+    mounted.router.back()
+    await vi.waitFor(() => expect(rows()[0]?.textContent).toContain('ORD-11'))
+})

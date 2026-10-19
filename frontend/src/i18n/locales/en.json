@@ -1,5 +1,6 @@
 {
     "common": {
+        "loading": "Loading…",
         "notAvailable": "Not available",
         "priceLabel": "Price ({currency})"
     },
@@ -27,6 +28,7 @@
         "AdminBooks": "Books",
         "AdminAuthors": "Authors",
         "AdminOrders": "Orders",
+        "AdminOrderDetails": "Order details",
         "AdminUsers": "Users",
         "Error": "Error",
         "Unauthorized": "Access Denied",
@@ -51,6 +53,24 @@
         "userInitial": "U"
     },
     "admin": {
+        "orderDetails": {
+            "historyChange": "{from} → {to}",
+            "back": "Back to orders",
+            "actionsTitle": "Order actions",
+            "noActions": "No actions are available.",
+            "noHistory": "No changes recorded.",
+            "confirmText": "Record this change for the order?",
+            "manualRefund": "Return the money in your payment provider dashboard first. This action only records the refund in this app.",
+            "updated": "The order was updated.",
+            "actions": {
+                "paid": "Record payment received",
+                "refunded": "Record refund",
+                "processing": "Start processing",
+                "shipped": "Mark as shipped",
+                "delivered": "Mark as delivered",
+                "cancelled": "Cancel order"
+            }
+        },
         "orders": {
             "status": "Order status",
             "payment": "Payment status",

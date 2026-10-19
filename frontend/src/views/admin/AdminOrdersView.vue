@@ -52,6 +52,14 @@
             }}</v-btn>
         </template>
         <template #item.customer="{ item }">{{ item.customer?.email ?? t('admin.orders.deletedCustomer') }}</template>
+        <template #item.orderNumber="{ item }"
+            ><router-link
+                :to="
+                    localeRoute('AdminOrderDetails', { params: { id: item.id }, query: listQuery(state, ORDERS_LIST) })
+                "
+                >{{ item.orderNumber }}</router-link
+            ></template
+        >
         <template #item.createdAt="{ item }">{{ formatDateTime(item.createdAt) }}</template>
         <template #item.total="{ item }">{{ formatMoney(item.quote.total, item.quote.currency) }}</template>
         <template #item.status="{ item }"
@@ -74,6 +82,8 @@ import { formatDateTime } from '@/utils/date'
 import { formatMoney } from '@/utils/money'
 import { STATUS_COLORS } from '@/utils/orderStatus'
 import { ORDERS_LIST } from './adminListConfig'
+import { localeRoute } from '@/router/locale'
+import { listQuery } from '@/router/adminListQuery'
 const { state, items, total, loading, error, update, reload } = useAdminList({
     config: ORDERS_LIST,
     load: async (params) => {

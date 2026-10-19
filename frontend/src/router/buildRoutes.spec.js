@@ -29,11 +29,14 @@ describe('localized route manifest', () => {
                 .filter((r) => r.name?.startsWith('Admin'))
                 .map((r) => r.name)
                 .sort()
-        ).toEqual(['AdminAuthors', 'AdminBooks', 'AdminDashboard', 'AdminOrders', 'AdminUsers'])
-        for (const path of ['/admin', '/en/admin', '/en/admin/books']) {
+        ).toEqual(['AdminAuthors', 'AdminBooks', 'AdminDashboard', 'AdminOrderDetails', 'AdminOrders', 'AdminUsers'])
+        for (const path of ['/admin', '/en/admin', '/en/admin/books', '/admin/orders/o1', '/en/admin/orders/o1']) {
             expect(routes.resolve(path).meta.access).toEqual({ auth: true, capability: 'admin' })
         }
         expect(routes.resolve('/en/admin').name).toBe('AdminDashboard')
+        expect(routes.resolve('/en/admin/orders/o1').name).toBe('AdminOrderDetails')
+        expect(routes.resolve('/en/admin/orders/o1').meta.titleKey).toBe('routes.AdminOrderDetails')
+        expect(buildAdminNav().main.map((item) => item.id)).not.toContain('AdminOrderDetails')
         expect(routes.getRoutes().find((r) => r.path.endsWith('/admin') && r.children.length)?.name).toBeUndefined()
     })
 

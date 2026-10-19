@@ -1,5 +1,6 @@
 {
     "common": {
+        "loading": "Načítání…",
         "notAvailable": "Není k dispozici",
         "priceLabel": "Cena ({currency})"
     },
@@ -27,6 +28,7 @@
         "AdminBooks": "Knihy",
         "AdminAuthors": "Autoři",
         "AdminOrders": "Objednávky",
+        "AdminOrderDetails": "Detail objednávky",
         "AdminUsers": "Uživatelé",
         "Error": "Chyba",
         "Unauthorized": "Přístup odepřen",
@@ -51,6 +53,24 @@
         "userInitial": "U"
     },
     "admin": {
+        "orderDetails": {
+            "historyChange": "{from} → {to}",
+            "back": "Zpět na objednávky",
+            "actionsTitle": "Akce objednávky",
+            "noActions": "Nejsou dostupné žádné akce.",
+            "noHistory": "Zatím nebyly zaznamenány žádné změny.",
+            "confirmText": "Zaznamenat tuto změnu objednávky?",
+            "manualRefund": "Nejprve vraťte peníze v administraci poskytovatele plateb. Tato akce pouze zaznamená vrácení platby v této aplikaci.",
+            "updated": "Objednávka byla aktualizována.",
+            "actions": {
+                "paid": "Zaznamenat přijetí platby",
+                "refunded": "Zaznamenat vrácení platby",
+                "processing": "Zahájit zpracování",
+                "shipped": "Označit jako odeslanou",
+                "delivered": "Označit jako doručenou",
+                "cancelled": "Zrušit objednávku"
+            }
+        },
         "orders": {
             "status": "Stav objednávky",
             "payment": "Stav platby",

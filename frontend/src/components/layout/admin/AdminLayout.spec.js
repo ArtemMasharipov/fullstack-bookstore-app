@@ -94,6 +94,12 @@ describe.each(['cs', 'en'])('AdminLayout (%s)', (locale) => {
         expect(document.querySelector('nav [role="listbox"]')).toBeNull()
         expect(document.querySelector('nav').closest('[role="listbox"]')).toBeNull()
     })
+    it('marks only Orders on an order detail page', async () => {
+        await mount(`${prefix}/admin/orders/o1`, locale)
+        expect(current()).toHaveLength(1)
+        expect(current()[0].textContent).toContain(words.routes.AdminOrders)
+        expect(document.querySelectorAll('nav a')).toHaveLength(5)
+    })
 
     it('links every section in the page language', async () => {
         await mount(`${prefix}/admin`, locale)
