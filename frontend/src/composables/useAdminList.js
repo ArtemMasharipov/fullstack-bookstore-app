@@ -1,5 +1,5 @@
 import { canonicalListQuery, listQuery, parseListQuery, toListParams } from '@/router/adminListQuery'
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 /**
@@ -23,18 +23,32 @@ export function useAdminList({ config, load }) {
     const loading = ref(false)
     const error = ref(null)
     let request = 0
+    let alive = true
+    const active = () => alive && route.name === name
+    onScopeDispose(() => {
+        alive = false
+        request++
+    })
+    watch(
+        () => route.name,
+        (next) => {
+            if (next !== name) request++
+        }
+    )
 
     async function reload() {
+        if (!active()) return
         const current = ++request
-        const latest = () => current === request
+        const latest = () => active() && current === request
         loading.value = true
         error.value = null
         try {
             const { data, pagination } = await load(toListParams(state.value))
             if (!latest()) return
-            if (pagination.pages > 0 && state.value.page > pagination.pages) {
+            const lastPage = Math.max(1, pagination.pages)
+            if (state.value.page > lastPage) {
                 // The page is gone (its last row was deleted): the last page takes its place
-                await router.replace({ query: listQuery({ ...state.value, page: pagination.pages }, config) })
+                await router.replace({ query: listQuery({ ...state.value, page: lastPage }, config) })
                 return
             }
             items.value = data
@@ -49,7 +63,7 @@ export function useAdminList({ config, load }) {
     watch(
         () => route.query,
         (query) => {
-            if (route.name !== name) return
+            if (!active()) return
             const canonical = canonicalListQuery(query, config)
             if (canonical) router.replace({ query: canonical })
             else reload()
@@ -64,9 +78,15 @@ export function useAdminList({ config, load }) {
 
     /** Changes the list through the address; a new search, filter, page size or sort starts from page 1 */
     function update(patch) {
+        if (!active()) return Promise.resolve()
         pending = { ...pending, ...patch }
         if (!navigation) {
             navigation = Promise.resolve().then(() => {
+                if (!active()) {
+                    pending = null
+                    navigation = null
+                    return
+                }
                 const next = { ...state.value, page: 1, ...pending }
                 pending = null
                 navigation = null

@@ -111,6 +111,17 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 50))
 const notices = () => useNotifications().notifications.value.map((n) => [n.type, n.messageKey])
 
 describe('AdminBooksView', () => {
+    it('cancels its pending search when the person opens authors', async () => {
+        await mount('/admin/books')
+        const search = input(cs.admin.books.search)
+        search.value = 'stale book search'
+        search.dispatchEvent(new Event('input', { bubbles: true }))
+        await nextTick()
+        await router.push('/admin/authors?q=keep')
+        await new Promise((resolve) => setTimeout(resolve, 400))
+        expect(router.currentRoute.value.fullPath).toBe('/admin/authors?q=keep')
+    })
+
     it('lists the page of books the address names, with their author, category, year, price and stock', async () => {
         await mount('/admin/books?page=2')
 

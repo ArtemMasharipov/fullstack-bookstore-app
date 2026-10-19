@@ -121,7 +121,8 @@ import { formatPrice } from '@/utils'
 import { BOOK_CATEGORIES } from '@/utils/constants/app'
 import { resolveErrorKey } from '@/utils/errorResolver'
 import { debounce } from '@/utils/helpers/debounce'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 /**
  * The admin's books: a page of GET /books with its search, filters, sort and page in the address; the stock is
@@ -171,6 +172,15 @@ const setFilter = (name, value) => update({ filters: { ...state.value.filters, [
 // The search goes to the address once typing pauses; Back and a link bring their own search into the field
 const search = ref(state.value.q)
 const sendSearch = debounce((value) => update({ q: (value ?? '').trim() }), 300)
+const route = useRoute()
+const ownRoute = route.name
+watch(
+    () => route.name,
+    (name) => {
+        if (name !== ownRoute) sendSearch.cancel()
+    }
+)
+onBeforeUnmount(() => sendSearch.cancel())
 watch(search, (value) => {
     if ((value ?? '').trim() !== state.value.q) sendSearch(value)
 })

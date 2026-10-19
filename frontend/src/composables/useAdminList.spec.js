@@ -40,6 +40,7 @@ async function mount(path) {
         history: createMemoryHistory(),
         routes: [
             { path: '/admin/books', name: 'AdminBooks', component: Page },
+            { path: '/admin/authors', name: 'AdminAuthors', component: Page },
             { path: '/admin', name: 'AdminDashboard', component: Page },
         ],
     })
@@ -65,6 +66,60 @@ const settle = async () => {
 }
 
 describe('useAdminList', () => {
+    it('does not apply an update or reload to another route', async () => {
+        await mount('/admin/books')
+        await router.push('/admin/authors?q=novy')
+        const calls = load.mock.calls.length
+        await list.update({ q: 'stary' })
+        await list.reload()
+        expect(router.currentRoute.value.fullPath).toBe('/admin/authors?q=novy')
+        expect(load).toHaveBeenCalledTimes(calls)
+    })
+
+    it('drops a queued navigation when its scope is disposed before the microtask', async () => {
+        await mount('/admin/books')
+        const push = vi.spyOn(router, 'push')
+        const queued = list.update({ q: 'stale' })
+        app.unmount()
+        app = undefined
+        await queued.catch(() => {})
+        await list.reload()
+        expect(push).not.toHaveBeenCalled()
+        expect(load).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not redirect a new route when a late answer removes the old page', async () => {
+        await mount('/admin/books')
+        const pending = deferred()
+        load.mockReturnValueOnce(pending.promise)
+        const reloading = list.reload()
+        await router.push('/admin/authors?page=3&q=keep')
+        pending.resolve(answer(1, { pages: 1 }))
+        await reloading
+        await settle()
+        expect(router.currentRoute.value.fullPath).toBe('/admin/authors?page=3&q=keep')
+    })
+
+    it('does not write a late answer after unmount', async () => {
+        await mount('/admin/books')
+        const pending = deferred()
+        load.mockReturnValueOnce(pending.promise)
+        const reloading = list.reload()
+        app.unmount()
+        app = undefined
+        pending.resolve(answer(2))
+        await reloading
+        expect(list.items.value).toEqual(['row-1'])
+    })
+
+    it('returns an empty page past the end to page one without a replace loop', async () => {
+        load.mockResolvedValue({ data: [], pagination: { page: 3, limit: 10, total: 0, pages: 0 } })
+        await mount('/admin/books?page=3')
+        await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/admin/books'))
+        await settle()
+        expect(load).toHaveBeenCalledTimes(2)
+    })
+
     it('loads the page the address names', async () => {
         await mount('/admin/books?page=2&limit=20')
 
