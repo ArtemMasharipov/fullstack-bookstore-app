@@ -8,7 +8,7 @@ import * as authorController from "../controllers/authorController.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { authorize, protect } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
-import { countryAuthorsQuery, countryParams, listAuthorsQuery } from "../schemas/author.js";
+import { authorBooksQuery, authorDetailQuery, authorIdParams, countryAuthorsQuery, countryParams, emptyAuthorQuery, listAuthorsQuery } from "../schemas/author.js";
 
 const router = express.Router();
 
@@ -43,7 +43,7 @@ router.get(
  * @params  :id (required), ?includeBooks=true
  * @access  Public
  */
-router.get("/:id", asyncHandler(authorController.getAuthor));
+router.get("/:id", validate({ params: authorIdParams, query: authorDetailQuery }), asyncHandler(authorController.getAuthor));
 
 /**
  * @route   GET /api/v1/authors/:id/books
@@ -51,7 +51,7 @@ router.get("/:id", asyncHandler(authorController.getAuthor));
  * @params  :id (required), ?limit=50&sortBy=-publicationYear&inStock=true
  * @access  Public
  */
-router.get("/:id/books", asyncHandler(authorController.getAuthorBooks));
+router.get("/:id/books", validate({ params: authorIdParams, query: authorBooksQuery }), asyncHandler(authorController.getAuthorBooks));
 
 /**
  * @route   GET /api/v1/authors/:id/stats
@@ -59,7 +59,7 @@ router.get("/:id/books", asyncHandler(authorController.getAuthorBooks));
  * @params  :id (required)
  * @access  Public
  */
-router.get("/:id/stats", asyncHandler(authorController.getAuthorStats));
+router.get("/:id/stats", validate({ params: authorIdParams, query: emptyAuthorQuery }), asyncHandler(authorController.getAuthorStats));
 
 // =============================================================================
 // PROTECTED ROUTES (Admin Only)

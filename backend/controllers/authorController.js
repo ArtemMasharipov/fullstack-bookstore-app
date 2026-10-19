@@ -5,6 +5,7 @@
  */
 
 import * as authorService from "../services/authorService.js";
+import { ok } from "../utils/respond.js";
 
 /**
  * @route   GET /api/v1/authors
@@ -12,13 +13,8 @@ import * as authorService from "../services/authorService.js";
  * @access  Public
  */
 export async function getAuthors(req, res) {
-  const result = await authorService.getAuthors(req.valid.query);
-
-  res.status(200).json({
-    success: true,
-    data: result.authors,
-    pagination: result.pagination,
-  });
+  const { authors, pagination } = await authorService.getAuthors(req.valid.query);
+  ok(res, authors, { pagination });
 }
 
 /**
@@ -27,13 +23,7 @@ export async function getAuthors(req, res) {
  * @access  Public
  */
 export async function getAuthor(req, res) {
-  const includeBooks = req.query.includeBooks === "true";
-  const author = await authorService.getAuthorById(req.params.id, includeBooks);
-
-  res.status(200).json({
-    success: true,
-    data: author,
-  });
+  ok(res, await authorService.getAuthorById(req.valid.params.id, req.valid.query.includeBooks));
 }
 
 /**
@@ -93,11 +83,7 @@ export async function getAuthorsByCountry(req, res) {
     req.valid.query
   );
 
-  res.status(200).json({
-    success: true,
-    count: authors.length,
-    data: authors,
-  });
+  ok(res, authors);
 }
 
 /**
@@ -106,13 +92,7 @@ export async function getAuthorsByCountry(req, res) {
  * @access  Public
  */
 export async function getAuthorBooks(req, res) {
-  const books = await authorService.getAuthorBooks(req.params.id, req.query);
-
-  res.status(200).json({
-    success: true,
-    count: books.length,
-    data: books,
-  });
+  ok(res, await authorService.getAuthorBooks(req.valid.params.id, req.valid.query));
 }
 
 /**
@@ -121,10 +101,5 @@ export async function getAuthorBooks(req, res) {
  * @access  Public
  */
 export async function getAuthorStats(req, res) {
-  const stats = await authorService.getAuthorStats(req.params.id);
-
-  res.status(200).json({
-    success: true,
-    data: stats,
-  });
+  ok(res, await authorService.getAuthorStats(req.valid.params.id));
 }

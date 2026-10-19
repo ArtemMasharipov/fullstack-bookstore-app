@@ -8,19 +8,7 @@ import Author from "../models/Author.js";
 import Book from "../models/Book.js";
 import { AppError, NotFoundError, ValidationError } from "../utils/errors.js";
 import { toBookView } from "./bookView.js";
-
-/**
- * The sort of a sortBy key ("price", "-price"). _id breaks ties in the same
- * direction: MongoDB does not keep equal values in a stable order, and
- * without it skip and limit could show a book on two pages and another on
- * none.
- * @param {string} sortBy - A key from BOOK_SORTS
- * @returns {Object} Mongoose sort
- */
-export function sortOf(sortBy) {
-  const direction = sortBy.startsWith("-") ? -1 : 1;
-  return { [sortBy.replace(/^-/, "")]: direction, _id: direction };
-}
+import { sortOf } from "../utils/listSort.js";
 
 /**
  * Get books with filtering and pagination

@@ -6,6 +6,9 @@
 
 import Author from "../models/Author.js";
 import Book from "../models/Book.js";
+import { toAuthorView } from "./authorView.js";
+import { toBookView } from "./bookView.js";
+import { sortOf } from "../utils/listSort.js";
 import {
   ConflictError,
   NotFoundError,
@@ -18,48 +21,24 @@ import {
  * @returns {Object} { authors, pagination }
  */
 export async function getAuthors({ page, limit, country, search, sortBy }) {
-  // The country is compared as a whole value, not as a pattern
   const query = {};
   if (country) query.country = country;
-
-  const skip = (page - 1) * limit;
-
-  // Search vs regular query
-  let authorsQuery;
   if (search) {
-    authorsQuery = Author.searchAuthors(search).skip(skip).limit(limit);
-  } else {
-    authorsQuery = Author.find(query)
-      .sort(sortBy)
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const pattern = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    query.$or = [{ firstName: pattern }, { lastName: pattern }];
   }
-
-  // Execute queries in parallel
   const [authors, total] = await Promise.all([
-    authorsQuery,
-    Author.countDocuments(search ? { $text: { $search: search } } : query),
+    Author.find(query).sort(sortOf(sortBy)).skip((page - 1) * limit).limit(limit).lean(),
+    Author.countDocuments(query),
   ]);
-
-  // Get book count for each author
-  const authorsWithBookCount = await Promise.all(
-    authors.map(async (author) => {
-      const bookCount = await Book.countDocuments({ author: author._id });
-      return { ...author, booksCount: bookCount };
-    })
-  );
-
+  const counts = authors.length ? await Book.aggregate([
+    { $match: { author: { $in: authors.map((author) => author._id) } } },
+    { $group: { _id: "$author", count: { $sum: 1 } } },
+  ]) : [];
+  const byId = new Map(counts.map((row) => [String(row._id), row.count]));
   return {
-    authors: authorsWithBookCount,
-    pagination: {
-      page: Number(page),
-      limit: Number(limit),
-      total,
-      pages: Math.ceil(total / limit),
-      hasNext: page * limit < total,
-      hasPrev: page > 1,
-    },
+    authors: authors.map((author) => toAuthorView(author, byId.get(String(author._id)) ?? 0)),
+    pagination: { page, limit, total, pages: Math.ceil(total / limit) },
   };
 }
 
@@ -70,28 +49,14 @@ export async function getAuthors({ page, limit, country, search, sortBy }) {
  * @returns {Object} Author document
  */
 export async function getAuthorById(id, includeBooks = false) {
-  let query = Author.findById(id);
-
+  const author = await Author.findById(id).lean();
+  if (!author) throw new NotFoundError("Author not found");
   if (includeBooks) {
-    query = query.populate(
-      "books",
-      "title publicationYear price inStock category"
-    );
+    const books = await Book.find({ author: id }).populate("author", "firstName lastName")
+      .sort(sortOf("-publicationYear")).lean();
+    return { author: toAuthorView(author, books.length), books: books.map(toBookView) };
   }
-
-  const author = await query.lean();
-
-  if (!author) {
-    throw new NotFoundError("Author not found");
-  }
-
-  // Get book count if not populated
-  if (!includeBooks) {
-    const bookCount = await Book.countDocuments({ author: id });
-    author.booksCount = bookCount;
-  }
-
-  return author;
+  return toAuthorView(author, await Book.countDocuments({ author: id }));
 }
 
 /**
@@ -220,9 +185,8 @@ export async function deleteAuthor(id, deleteBooks = false) {
  * @returns {Array} Authors from country
  */
 export async function getAuthorsByCountry(country, { limit, sortBy }) {
-  const authors = await Author.find({ country }).sort(sortBy).limit(limit).lean();
-
-  return authors;
+  const authors = await Author.find({ country }).sort(sortOf(sortBy)).limit(limit).lean();
+  return authors.map((author) => toAuthorView(author));
 }
 
 /**
@@ -243,12 +207,12 @@ export async function getAuthorBooks(id, filters = {}) {
   // Build query
   const query = { author: id };
   if (inStock !== undefined) {
-    query.inStock = inStock === "true";
+    query.inStock = inStock;
   }
 
-  const books = await Book.find(query).sort(sortBy).limit(Number(limit)).lean();
-
-  return books;
+  const books = await Book.find(query).populate("author", "firstName lastName")
+    .sort(sortOf(sortBy)).limit(limit).lean();
+  return books.map(toBookView);
 }
 
 /**
@@ -294,12 +258,7 @@ export async function getAuthorStats(id) {
   };
 
   return {
-    author: {
-      id: author._id,
-      fullName: `${author.firstName} ${author.lastName}`,
-      country: author.country,
-      birthYear: author.birthYear,
-    },
+    author: toAuthorView(author, books.length),
     statistics: stats,
   };
 }
