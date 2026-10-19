@@ -51,6 +51,50 @@
         "userInitial": "U"
     },
     "admin": {
+        "users": {
+            "search": "Hledat uživatele",
+            "add": "Přidat uživatele",
+            "role": "Role",
+            "status": "Stav",
+            "sort": "Řazení uživatelů",
+            "allRoles": "Všechny role",
+            "allStatuses": "Všechny stavy",
+            "active": "Aktivní",
+            "inactive": "Neaktivní",
+            "edit": "Upravit uživatele {name}",
+            "activate": "Aktivovat uživatele {name}",
+            "deactivate": "Deaktivovat uživatele {name}",
+            "created": "Uživatel „{name}“ byl vytvořen.",
+            "updated": "Uživatel „{name}“ byl uložen.",
+            "activated": "Uživatel „{name}“ byl aktivován.",
+            "deactivated": "Uživatel „{name}“ byl deaktivován.",
+            "statusTitle": "Změnit stav účtu?",
+            "activateMessage": "Aktivovat účet uživatele {name}?",
+            "deactivateMessage": "Deaktivovat účet uživatele {name}? Jeho relace budou ihned ukončeny.",
+            "selfHint": "Vlastní účet nemůžete deaktivovat.",
+            "empty": "Zatím zde nejsou žádní uživatelé.",
+            "noResults": "Těmto filtrům neodpovídá žádný uživatel.",
+            "columns": {
+                "username": "Uživatelské jméno",
+                "email": "E-mail",
+                "name": "Celé jméno",
+                "role": "Role",
+                "isActive": "Stav",
+                "createdAt": "Registrace",
+                "lastLogin": "Poslední přihlášení",
+                "actions": "Akce"
+            },
+            "sorts": {
+                "createdAtAsc": "Registrace: od nejstarší",
+                "createdAtDesc": "Registrace: od nejnovější",
+                "usernameAsc": "Uživatelské jméno: A–Z",
+                "usernameDesc": "Uživatelské jméno: Z–A",
+                "emailAsc": "E-mail: A–Z",
+                "emailDesc": "E-mail: Z–A",
+                "lastLoginAsc": "Poslední přihlášení: od nejstaršího",
+                "lastLoginDesc": "Poslední přihlášení: od nejnovějšího"
+            }
+        },
         "roles": { "user": "Zákazník", "admin": "Administrátor" },
         "userForm": {
             "createTitle": "Přidat uživatele",

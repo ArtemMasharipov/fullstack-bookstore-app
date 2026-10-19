@@ -51,6 +51,50 @@
         "userInitial": "U"
     },
     "admin": {
+        "users": {
+            "search": "Search users",
+            "add": "Add user",
+            "role": "Role",
+            "status": "Status",
+            "sort": "Sort users",
+            "allRoles": "All roles",
+            "allStatuses": "All statuses",
+            "active": "Active",
+            "inactive": "Inactive",
+            "edit": "Edit {name}",
+            "activate": "Activate {name}",
+            "deactivate": "Deactivate {name}",
+            "created": "User “{name}” created.",
+            "updated": "User “{name}” saved.",
+            "activated": "User “{name}” activated.",
+            "deactivated": "User “{name}” deactivated.",
+            "statusTitle": "Change account status?",
+            "activateMessage": "Activate the account for {name}?",
+            "deactivateMessage": "Deactivate the account for {name}? Their sessions will end immediately.",
+            "selfHint": "You cannot deactivate your own account.",
+            "empty": "There are no users yet.",
+            "noResults": "No users match these filters.",
+            "columns": {
+                "username": "Username",
+                "email": "Email",
+                "name": "Full name",
+                "role": "Role",
+                "isActive": "Status",
+                "createdAt": "Registered",
+                "lastLogin": "Last sign-in",
+                "actions": "Actions"
+            },
+            "sorts": {
+                "createdAtAsc": "Registered: oldest first",
+                "createdAtDesc": "Registered: newest first",
+                "usernameAsc": "Username: A–Z",
+                "usernameDesc": "Username: Z–A",
+                "emailAsc": "Email: A–Z",
+                "emailDesc": "Email: Z–A",
+                "lastLoginAsc": "Last sign-in: earliest first",
+                "lastLoginDesc": "Last sign-in: latest first"
+            }
+        },
         "roles": { "user": "Customer", "admin": "Administrator" },
         "userForm": {
             "createTitle": "Add user",
