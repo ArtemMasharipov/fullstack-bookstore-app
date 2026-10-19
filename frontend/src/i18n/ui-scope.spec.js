@@ -11,6 +11,7 @@ const eslint = new CLIEngine({ cwd: process.cwd() })
 const inventoryPath = path.resolve('eslint-legacy-sfc.json')
 const legacy = existsSync(inventoryPath) ? JSON.parse(readFileSync(inventoryPath, 'utf8')) : []
 const strict = [
+    'src/views/admin/AdminDashboardView.vue',
     'src/views/admin/AdminOrderDetailsView.vue',
     'src/views/admin/AdminOrdersView.vue',
     'src/views/admin/AdminUsersView.vue',

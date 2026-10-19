@@ -9,8 +9,8 @@ const codeOf = (error) => error?.code ?? 'UNKNOWN'
 
 /**
  * Orders Store
- * The user's orders (a page of the list and one order's details) and the
- * admin's view of all orders. Each part keeps its own status
+ * The user's orders (a page of the list and one order's details).
+ * Each part keeps its own status
  * (idle | loading | ready | error) and the code of its last error.
  */
 export const useOrdersStore = defineStore('orders', {
@@ -24,14 +24,6 @@ export const useOrdersStore = defineStore('orders', {
         currentStatus: 'idle',
         currentError: null,
         cancelling: false,
-
-        admin: {
-            list: [],
-            pagination: null,
-            status: 'idle',
-            error: null,
-            stats: null,
-        },
     }),
 
     actions: {
@@ -86,31 +78,6 @@ export const useOrdersStore = defineStore('orders', {
             } finally {
                 this.cancelling = false
             }
-        },
-
-        async fetchAdminList(params = {}) {
-            this.admin.status = 'loading'
-            this.admin.error = null
-            try {
-                const { items, pagination } = await orderApi.adminList(params)
-                this.admin.list = items
-                this.admin.pagination = pagination
-                this.admin.status = 'ready'
-            } catch (error) {
-                this.admin.status = 'error'
-                this.admin.error = codeOf(error)
-            }
-        },
-
-        async fetchAdminStats() {
-            this.admin.stats = await orderApi.adminStats()
-        },
-
-        async setAdminStatus(id, status) {
-            const order = await orderApi.adminSetStatus(id, status)
-            const index = this.admin.list.findIndex((item) => item.id === id)
-            if (index !== -1) this.admin.list[index] = { ...this.admin.list[index], ...order }
-            return order
         },
     },
 })

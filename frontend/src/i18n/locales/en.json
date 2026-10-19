@@ -53,6 +53,21 @@
         "userInitial": "U"
     },
     "admin": {
+        "dashboard": {
+            "recent": "Latest five orders",
+            "loadError": "Could not load this data.",
+            "retry": "Retry {name}",
+            "activeUsers": "Active: {count}",
+            "cards": {
+                "books": "Books",
+                "authors": "Authors",
+                "total": "Orders",
+                "pending": "Pending orders",
+                "paid": "Paid orders",
+                "revenue": "Revenue",
+                "users": "Users"
+            }
+        },
         "orderDetails": {
             "historyChange": "{from} → {to}",
             "back": "Back to orders",

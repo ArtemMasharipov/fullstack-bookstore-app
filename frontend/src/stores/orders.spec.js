@@ -84,15 +84,4 @@ describe('orders store', () => {
         expect(notify.showError).toHaveBeenCalledWith(undefined, { messageKey: 'errors.INVALID_TRANSITION' })
         expect(orders.cancelling).toBe(false)
     })
-
-    it('loads the admin list and changes a status there', async () => {
-        api.adminList.mockResolvedValueOnce({ items: [summary('a')], pagination })
-        api.adminSetStatus.mockResolvedValueOnce(summary('a', 'shipped'))
-
-        await orders.fetchAdminList({ page: 1 })
-        await orders.setAdminStatus('a', 'shipped')
-
-        expect(orders.admin.status).toBe('ready')
-        expect(orders.admin.list[0].status).toBe('shipped')
-    })
 })

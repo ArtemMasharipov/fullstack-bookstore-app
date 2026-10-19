@@ -53,6 +53,21 @@
         "userInitial": "U"
     },
     "admin": {
+        "dashboard": {
+            "recent": "Posledních pět objednávek",
+            "loadError": "Tato data se nepodařilo načíst.",
+            "retry": "Zkusit znovu: {name}",
+            "activeUsers": "Aktivní: {count}",
+            "cards": {
+                "books": "Knihy",
+                "authors": "Autoři",
+                "total": "Objednávky",
+                "pending": "Čekající objednávky",
+                "paid": "Zaplacené objednávky",
+                "revenue": "Tržby",
+                "users": "Uživatelé"
+            }
+        },
         "orderDetails": {
             "historyChange": "{from} → {to}",
             "back": "Zpět na objednávky",
