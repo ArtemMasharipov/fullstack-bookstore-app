@@ -16,6 +16,7 @@ export const ERROR_CODES = Object.freeze([
     'IDEMPOTENCY_CONFLICT',
     'ADMIN_SELF_CHANGE',
     'LAST_ADMIN',
+    'AUTHOR_HAS_BOOKS',
 ])
 
 export function resolveErrorKey(error) {

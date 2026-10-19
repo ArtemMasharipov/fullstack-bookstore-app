@@ -63,6 +63,38 @@
         "table": {
             "loadError": "The list could not be loaded."
         },
+        "authors": {
+            "search": "Search first or last name",
+            "sort": "Sort authors",
+            "add": "Add author",
+            "edit": "Edit: {name}",
+            "delete": "Delete: {name}",
+            "empty": "There are no authors yet.",
+            "noResults": "No author matches this search.",
+            "created": "Author “{name}” added.",
+            "updated": "Author “{name}” saved.",
+            "deleted": "Author “{name}” deleted.",
+            "deleteTitle": "Delete this author?",
+            "deleteMessage": "“{name}” will be deleted. Authors with books cannot be deleted.",
+            "deleteConfirm": "Delete",
+            "columns": {
+                "name": "Name",
+                "country": "Country",
+                "birthYear": "Birth year",
+                "booksCount": "Books",
+                "actions": "Actions"
+            },
+            "sorts": {
+                "createdAtDesc": "Newest first",
+                "createdAtAsc": "Oldest first",
+                "firstNameAsc": "First name: A–Z",
+                "firstNameDesc": "First name: Z–A",
+                "lastNameAsc": "Last name: A–Z",
+                "lastNameDesc": "Last name: Z–A",
+                "birthYearAsc": "Birth year: ascending",
+                "birthYearDesc": "Birth year: descending"
+            }
+        },
         "authorForm": {
             "createTitle": "New author",
             "editTitle": "Edit author",
@@ -347,6 +379,7 @@
         "IDEMPOTENCY_CONFLICT": "This order may already have been placed. Check My orders before you try again.",
         "ADMIN_SELF_CHANGE": "You cannot remove your own admin role or deactivate your own account.",
         "LAST_ADMIN": "The shop needs at least one active administrator.",
+        "AUTHOR_HAS_BOOKS": "This author has {count} books. Reassign or delete the books first.",
         "retry": "Retry",
         "contact": "Contact support",
         "supportUnavailable": "Support channel is not configured in this demo. No message has been sent.",

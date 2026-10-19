@@ -1,303 +1,209 @@
 <template>
-    <div class="admin-authors">
-        <!-- Authors management data table -->
-        <admin-data-table
+    <div>
+        <admin-table
             :headers="headers"
-            :items="authors"
+            :items="items"
+            :items-length="total"
             :loading="loading"
-            :total-items="totalItems"
-            :page="page"
-            :items-per-page="itemsPerPage"
-            :sort-by="sortBy"
-            :search="search"
-            title="Authors Management"
-            @update:page="updatePage"
-            @update:items-per-page="updateItemsPerPage"
-            @update:sort-by="updateSortBy"
-            @update:search="updateSearch"
-            @reset-filters="resetFilters"
+            :error="error"
+            :page="state.page"
+            :limit="state.limit"
+            :sort-by="state.sortBy"
+            :filtered="filtered"
+            :empty-text="t(filtered ? 'admin.authors.noResults' : 'admin.authors.empty')"
+            @update:page="update({ page: $event })"
+            @update:limit="update({ limit: $event })"
+            @update:sort-by="update({ sortBy: $event ?? LIST.defaultSort })"
+            @retry="reload"
+            @reset-filters="update({ q: '', filters: {} })"
         >
-            <!-- Table actions -->
-            <template #actions>
-                <v-btn color="primary" prepend-icon="mdi-plus" @click="openAuthorDialog()"> Add New Author </v-btn>
-            </template>
-
-            <!-- Books count column -->
-            <template #item.bookCount="{ item }">
-                <v-chip size="small" color="primary" variant="tonal">
-                    {{ item.raw && item.raw.books ? item.raw.books.length : 0 }}
-                </v-chip>
-            </template>
-
-            <!-- Actions column -->
-            <template #item.actions="{ item }">
-                <div class="d-flex justify-center">
-                    <v-btn
-                        icon
-                        variant="text"
-                        size="small"
-                        color="primary"
-                        class="mr-1"
-                        @click="openAuthorDialog(item.raw)"
-                    >
-                        <v-icon>mdi-pencil</v-icon>
-                        <v-tooltip activator="parent" location="top">Edit</v-tooltip>
-                    </v-btn>
-                    <v-btn icon variant="text" size="small" color="error" @click="confirmDeleteAuthor(item.raw)">
-                        <v-icon>mdi-delete</v-icon>
-                        <v-tooltip activator="parent" location="top">Delete</v-tooltip>
+            <template #toolbar>
+                <div class="admin-authors__toolbar">
+                    <v-text-field
+                        v-model="search"
+                        :label="t('admin.authors.search')"
+                        type="search"
+                        maxlength="100"
+                        prepend-inner-icon="mdi-magnify"
+                        clearable
+                        hide-details
+                    />
+                    <v-select
+                        :model-value="state.sortBy"
+                        :items="sortOptions"
+                        :label="t('admin.authors.sort')"
+                        :open-text="t('admin.authors.sort')"
+                        :close-text="t('admin.authors.sort')"
+                        hide-details
+                        @update:model-value="update({ sortBy: $event })"
+                    />
+                    <v-btn ref="addButton" class="admin-authors__add" prepend-icon="mdi-plus" @click="openForm(null)">
+                        {{ t('admin.authors.add') }}
                     </v-btn>
                 </div>
             </template>
-        </admin-data-table>
-
-        <!-- Author edit/create dialog -->
-        <v-dialog v-model="authorDialogOpen" max-width="700px">
-            <v-card>
-                <v-card-title class="text-h5 bg-primary text-white">
-                    {{ isEditMode ? 'Edit Author' : 'Add New Author' }}
-                </v-card-title>
-
-                <v-card-text class="pt-4">
-                    <v-form ref="authorForm" @submit.prevent="handleSaveAuthor" validate-on="submit">
-                        <v-row>
-                            <v-col cols="12">
-                                <v-text-field
-                                    v-model="editedAuthor.name"
-                                    label="Author Name"
-                                    variant="outlined"
-                                    density="comfortable"
-                                    :rules="[(v) => !!v || 'Name is required']"
-                                    required
-                                ></v-text-field>
-                            </v-col>
-
-                            <v-col cols="12">
-                                <v-textarea
-                                    v-model="editedAuthor.biography"
-                                    label="Biography"
-                                    variant="outlined"
-                                    auto-grow
-                                    rows="4"
-                                    density="comfortable"
-                                ></v-textarea>
-                            </v-col>
-
-                            <v-col cols="12">
-                                <v-text-field
-                                    v-model="editedAuthor.photoUrl"
-                                    label="Photo URL"
-                                    variant="outlined"
-                                    density="comfortable"
-                                    hint="URL to author's photo"
-                                ></v-text-field>
-                            </v-col>
-                        </v-row>
-                    </v-form>
-                </v-card-text>
-
-                <v-card-actions class="pb-4 px-4">
-                    <v-spacer></v-spacer>
-                    <v-btn variant="text" @click="closeAuthorDialog">Cancel</v-btn>
-                    <v-btn color="primary" :loading="saving" type="submit" @click.prevent="handleSaveAuthor">
-                        Save
-                    </v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
-
-        <!-- Delete confirmation dialog -->
-        <v-dialog v-model="deleteDialogOpen" max-width="500px">
-            <v-card>
-                <v-card-title class="text-h5 bg-error text-white"> Confirm Delete </v-card-title>
-
-                <v-card-text class="pt-4">
-                    <p>
-                        Are you sure you want to delete <strong>{{ authorToDelete?.name }}</strong
-                        >? This action cannot be undone.
-                    </p>
-
-                    <v-alert
-                        v-if="authorToDelete?.books?.length > 0"
-                        type="warning"
-                        variant="tonal"
-                        icon="mdi-alert"
-                        class="mt-4"
-                    >
-                        This author has {{ authorToDelete?.books?.length }} books associated with them. Deleting this
-                        author may affect these books.
-                    </v-alert>
-                </v-card-text>
-
-                <v-card-actions class="pb-4 px-4">
-                    <v-spacer></v-spacer>
-                    <v-btn variant="text" @click="closeDeleteDialog">Cancel</v-btn>
-                    <v-btn color="error" :loading="deleting" @click="handleDeleteAuthor"> Delete </v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
+            <template #item.lastName="{ item }">{{ nameOf(item) }}</template>
+            <template #item.country="{ item }">{{ item.country || t('common.notAvailable') }}</template>
+            <template #item.birthYear="{ item }">{{ item.birthYear ?? t('common.notAvailable') }}</template>
+            <template #item.actions="{ item }">
+                <div class="d-flex justify-end">
+                    <v-btn
+                        icon="mdi-pencil"
+                        variant="text"
+                        size="small"
+                        :aria-label="t('admin.authors.edit', { name: nameOf(item) })"
+                        @click="openForm(item)"
+                    />
+                    <v-btn
+                        icon="mdi-delete"
+                        variant="text"
+                        size="small"
+                        color="error"
+                        :disabled="deleting"
+                        :aria-label="t('admin.authors.delete', { name: nameOf(item) })"
+                        @click="askDelete(item)"
+                    />
+                </div>
+            </template>
+            <template #empty-action>
+                <v-btn prepend-icon="mdi-plus" @click="openForm(null)">{{ t('admin.authors.add') }}</v-btn>
+            </template>
+        </admin-table>
+        <author-form-dialog v-model="formOpen" :author="editedAuthor" @saved="onSaved" />
+        <confirm-modal
+            v-model="deleteOpen"
+            :title="t('admin.authors.deleteTitle')"
+            :message="t('admin.authors.deleteMessage', { name: authorToDelete ? nameOf(authorToDelete) : '' })"
+            :confirm-text="t('admin.authors.deleteConfirm')"
+            @confirm="deleteAuthor"
+        />
     </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import AdminTable from '@/components/features/admin/AdminTable.vue'
+import AuthorFormDialog from '@/components/features/admin/AuthorFormDialog.vue'
+import ConfirmModal from '@/components/ui/ConfirmModal.vue'
+import { useAdminList } from '@/composables/useAdminList'
+import { useNotifications } from '@/composables/useNotifications'
+import { useReturnFocus } from '@/composables/useReturnFocus'
+import { t } from '@/i18n'
+import { authorsApi } from '@/services/api/authorsApi'
+import { resolveErrorKey } from '@/utils/errorResolver'
+import { debounce } from '@/utils/helpers/debounce'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
-// Components
-import AdminDataTable from '@/components/features/admin/AdminDataTable.vue'
-
-// Stores
-import { useAuthorsStore } from '@/stores'
-
-// Utils
-import { logger } from '@/utils/logger'
-
-// Store instance
-const authorsStore = useAuthorsStore()
-
-// Table configuration
-const headers = [
-    { title: 'Name', align: 'start', key: 'name' },
-    { title: 'Books', align: 'center', key: 'bookCount' },
-    { title: 'Actions', align: 'center', key: 'actions', sortable: false },
-]
-
-// Data table state
-const page = ref(1)
-const itemsPerPage = ref(10)
-const sortBy = ref([{ key: 'name', order: 'asc' }])
-const search = ref('')
-const totalItems = ref(0)
-
-// Dialog states
-const authorDialogOpen = ref(false)
-const deleteDialogOpen = ref(false)
-const saving = ref(false)
-const deleting = ref(false)
-
-// Edit state
-const isEditMode = ref(false)
-const editedAuthor = ref({
-    name: '',
-    biography: '',
-    photoUrl: '',
+const LIST = {
+    sorts: ['-createdAt', 'createdAt', 'firstName', '-firstName', 'lastName', '-lastName', 'birthYear', '-birthYear'],
+    defaultSort: '-createdAt',
+    filters: {},
+}
+const { state, items, total, loading, error, update, reload } = useAdminList({
+    config: LIST,
+    load: (params) => authorsApi.fetchAll(params),
 })
+const { showSuccess, showError } = useNotifications()
+const filtered = computed(() => Boolean(state.value.q))
+const nameOf = (author) => `${author.firstName} ${author.lastName}`
+const headers = computed(() => [
+    { key: 'lastName', title: t('admin.authors.columns.name'), sortable: true },
+    { key: 'country', title: t('admin.authors.columns.country'), sortable: false },
+    { key: 'birthYear', title: t('admin.authors.columns.birthYear'), sortable: true },
+    { key: 'booksCount', title: t('admin.authors.columns.booksCount'), sortable: false },
+    { key: 'actions', title: t('admin.authors.columns.actions'), sortable: false, align: 'end' },
+])
+const sortOptions = computed(() =>
+    LIST.sorts.map((value) => ({
+        value,
+        title: t(`admin.authors.sorts.${value.replace(/^-/, '')}${value.startsWith('-') ? 'Desc' : 'Asc'}`),
+    }))
+)
+const search = ref(state.value.q)
+const sendSearch = debounce((value) => update({ q: (value ?? '').trim() }), 300)
+const route = useRoute()
+const ownRoute = route.name
+watch(
+    () => route.name,
+    (name) => {
+        if (name !== ownRoute) sendSearch.cancel()
+    }
+)
+onBeforeUnmount(() => sendSearch.cancel())
+watch(search, (value) => {
+    if ((value ?? '').trim() !== state.value.q) sendSearch(value)
+})
+watch(
+    () => state.value.q,
+    (value) => {
+        if ((search.value ?? '').trim() !== value) search.value = value
+    }
+)
+const formOpen = ref(false)
+const editedAuthor = ref(null)
+function openForm(author) {
+    editedAuthor.value = author
+    formOpen.value = true
+}
+function onSaved(author, created) {
+    showSuccess(undefined, {
+        messageKey: created ? 'admin.authors.created' : 'admin.authors.updated',
+        messageParams: { name: nameOf(author) },
+    })
+    reload()
+}
+const deleteOpen = ref(false)
 const authorToDelete = ref(null)
-
-// Computed properties
-const authors = computed(() => authorsStore.list || [])
-const loading = computed(() => authorsStore.loading)
-
-// Data table methods
-const updatePage = (newPage) => {
-    page.value = newPage
-}
-
-const updateItemsPerPage = (newValue) => {
-    itemsPerPage.value = newValue
-    page.value = 1
-}
-
-const updateSortBy = (newValue) => {
-    sortBy.value = newValue
-}
-
-const updateSearch = (newValue) => {
-    search.value = newValue
-    page.value = 1
-}
-
-const resetFilters = () => {
-    search.value = ''
-    page.value = 1
-    sortBy.value = [{ key: 'name', order: 'asc' }]
-}
-
-// Author management methods
-const loadAuthors = async () => {
-    try {
-        await authorsStore.fetchAuthors()
-        totalItems.value = authors.value.length || 0
-    } catch (error) {
-        // Error loading authors
-        logger.error('Failed to load authors:', error, 'admin-authors')
-    }
-}
-
-const getDefaultAuthor = () => {
-    return {
-        name: '',
-        biography: '',
-        photoUrl: '',
-    }
-}
-
-const openAuthorDialog = (author = null) => {
-    isEditMode.value = !!author
-    editedAuthor.value = author ? { ...author } : getDefaultAuthor()
-    authorDialogOpen.value = true
-}
-
-const closeAuthorDialog = () => {
-    authorDialogOpen.value = false
-    saving.value = false
-    isEditMode.value = false
-    editedAuthor.value = getDefaultAuthor()
-}
-
-const handleSaveAuthor = async () => {
-    // Note: Form validation would need to be handled differently in Composition API
-    // This assumes validation is done elsewhere or simplified for migration
-
-    saving.value = true
-    try {
-        const authorData = { ...editedAuthor.value }
-
-        if (isEditMode.value) {
-            await authorsStore.updateAuthor(authorData)
-            logger.info(`Author "${authorData.name}" updated successfully`, 'admin-authors')
-        } else {
-            await authorsStore.createAuthor(authorData)
-            logger.info(`Author "${authorData.name}" created successfully`, 'admin-authors')
-        }
-
-        closeAuthorDialog()
-        await loadAuthors()
-    } catch (error) {
-        logger.error(`Failed to save author: ${error.message || 'Unknown error'}`, error, 'admin-authors')
-    } finally {
-        saving.value = false
-    }
-}
-
-const confirmDeleteAuthor = (author) => {
+const deleting = ref(false)
+const addButton = ref(null)
+const deleteFocus = useReturnFocus()
+function askDelete(author) {
+    if (deleting.value) return
+    deleteFocus.remember()
     authorToDelete.value = author
-    deleteDialogOpen.value = true
+    deleteOpen.value = true
 }
-
-const closeDeleteDialog = () => {
-    deleteDialogOpen.value = false
-    deleting.value = false
-    authorToDelete.value = null
-}
-
-const handleDeleteAuthor = async () => {
-    if (!authorToDelete.value) return
-
+watch(deleteOpen, async (open) => {
+    if (!open) {
+        await nextTick()
+        deleteFocus.restore()
+    }
+})
+async function deleteAuthor() {
+    if (deleting.value || !authorToDelete.value) return
+    const author = authorToDelete.value
     deleting.value = true
     try {
-        await authorsStore.deleteAuthor(authorToDelete.value._id)
-        logger.info(`Author "${authorToDelete.value.name}" deleted successfully`, 'admin-authors')
-
-        closeDeleteDialog()
-        await loadAuthors()
-    } catch (error) {
-        logger.error(`Failed to delete author: ${error.message || 'Unknown error'}`, error, 'admin-authors')
+        await authorsApi.delete(author.id)
+        showSuccess(undefined, { messageKey: 'admin.authors.deleted', messageParams: { name: nameOf(author) } })
+        await reload()
+        await nextTick()
+        if (document.activeElement === document.body) addButton.value?.$el?.focus()
+    } catch (failure) {
+        const messageKey = resolveErrorKey(failure)
+        showError(undefined, {
+            messageKey,
+            ...(messageKey === 'errors.AUTHOR_HAS_BOOKS' && { messageParams: { count: failure.details?.books } }),
+        })
     } finally {
         deleting.value = false
     }
 }
-
-onMounted(() => {
-    loadAuthors()
-})
 </script>
+
+<style scoped>
+.admin-authors__toolbar {
+    display: grid;
+    grid-template-columns: minmax(14rem, 2fr) minmax(14rem, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+}
+@media (max-width: 959px) {
+    .admin-authors__toolbar {
+        grid-template-columns: 1fr;
+    }
+    .admin-authors__add {
+        justify-self: start;
+    }
+}
+</style>

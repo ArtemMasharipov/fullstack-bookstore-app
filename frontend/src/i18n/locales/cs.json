@@ -63,6 +63,38 @@
         "table": {
             "loadError": "Seznam se nepodařilo načíst."
         },
+        "authors": {
+            "search": "Hledat podle jména nebo příjmení",
+            "sort": "Řazení autorů",
+            "add": "Přidat autora",
+            "edit": "Upravit: {name}",
+            "delete": "Smazat: {name}",
+            "empty": "Zatím tu nejsou žádní autoři.",
+            "noResults": "Hledání neodpovídá žádný autor.",
+            "created": "Autor „{name}“ byl přidán.",
+            "updated": "Autor „{name}“ byl uložen.",
+            "deleted": "Autor „{name}“ byl smazán.",
+            "deleteTitle": "Smazat autora?",
+            "deleteMessage": "Autor „{name}“ bude smazán. Autory s knihami nelze smazat.",
+            "deleteConfirm": "Smazat",
+            "columns": {
+                "name": "Jméno",
+                "country": "Země",
+                "birthYear": "Rok narození",
+                "booksCount": "Knihy",
+                "actions": "Akce"
+            },
+            "sorts": {
+                "createdAtDesc": "Nejnovější první",
+                "createdAtAsc": "Nejstarší první",
+                "firstNameAsc": "Jméno: A–Z",
+                "firstNameDesc": "Jméno: Z–A",
+                "lastNameAsc": "Příjmení: A–Z",
+                "lastNameDesc": "Příjmení: Z–A",
+                "birthYearAsc": "Rok narození: vzestupně",
+                "birthYearDesc": "Rok narození: sestupně"
+            }
+        },
         "authorForm": {
             "createTitle": "Nový autor",
             "editTitle": "Upravit autora",
@@ -347,6 +379,7 @@
         "IDEMPOTENCY_CONFLICT": "Objednávka už možná byla odeslána. Než to zkusíte znovu, podívejte se do Mých objednávek.",
         "ADMIN_SELF_CHANGE": "Nemůžete odebrat vlastní roli správce ani deaktivovat vlastní účet.",
         "LAST_ADMIN": "Obchod musí mít alespoň jednoho aktivního správce.",
+        "AUTHOR_HAS_BOOKS": "Autor má {count} knih. Nejprve knihy přiřaďte jinému autorovi nebo smažte.",
         "retry": "Zkusit znovu",
         "contact": "Kontaktovat podporu",
         "supportUnavailable": "Kanál podpory není v této ukázce nastaven. Žádná zpráva nebyla odeslána.",

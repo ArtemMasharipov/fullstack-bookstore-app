@@ -21,6 +21,7 @@ import { buildRoutes } from '@/router/buildRoutes'
 import { useAuthStore } from '@/stores'
 import AdminLayout from '@/components/layout/admin/AdminLayout.vue'
 import AdminAuthorsView from './AdminAuthorsView.vue'
+import AuthorFormDialog from '@/components/features/admin/AuthorFormDialog.vue'
 import AdminBooksView from './AdminBooksView.vue'
 import AdminDashboardView from './AdminDashboardView.vue'
 import AdminOrdersView from './AdminOrdersView.vue'
@@ -34,6 +35,7 @@ const SCREENS = [
     ['AdminDashboardView', '/admin', AdminDashboardView],
     ['AdminBooksView', '/admin/books', AdminBooksView],
     ['AdminAuthorsView', '/admin/authors', AdminAuthorsView],
+    ['AuthorFormDialog', '/admin/authors', { render: () => h(AuthorFormDialog, { modelValue: true }) }],
     ['AdminOrdersView', '/admin/orders', AdminOrdersView],
     ['AdminUsersView', '/admin/users', AdminUsersView],
 ]

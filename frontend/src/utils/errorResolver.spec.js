@@ -14,6 +14,11 @@ beforeAll(async () => {
 afterAll(() => vi.unstubAllGlobals())
 
 describe('safe error code resolution', () => {
+    it('resolves an author deletion refused because it still has books', () => {
+        expect(resolveErrorKey({ data: { error: { code: 'AUTHOR_HAS_BOOKS', details: { books: 3 } } } })).toBe(
+            'errors.AUTHOR_HAS_BOOKS'
+        )
+    })
     const codes = [
         'VALIDATION_FAILED',
         'UNAUTHORIZED',

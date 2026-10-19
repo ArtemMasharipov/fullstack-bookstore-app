@@ -11,6 +11,8 @@ const eslint = new CLIEngine({ cwd: process.cwd() })
 const inventoryPath = path.resolve('eslint-legacy-sfc.json')
 const legacy = existsSync(inventoryPath) ? JSON.parse(readFileSync(inventoryPath, 'utf8')) : []
 const strict = [
+    'src/views/admin/AdminAuthorsView.vue',
+    'src/components/features/admin/AuthorFormDialog.vue',
     'src/components/layout/NavBar.vue',
     'src/components/layout/FooterLayout.vue',
     'src/components/layout/admin/AdminLayout.vue',
@@ -57,12 +59,7 @@ describe('translation lint boundary', () => {
             expect(existsSync(path.resolve(filename)), filename).toBe(true)
             expect(diagnostics('<template><p>Legacy copy</p></template>', filename)).toEqual([])
         }
-        for (const filename of [
-            'src/views/admin/AdminAuthorsView.vue',
-            'src/components/features/authors/AuthorForm.vue',
-            'src/views/admin/AdminUsersView.vue',
-        ])
-            expect(legacy).toContain(filename)
+        for (const filename of ['src/views/admin/AdminUsersView.vue']) expect(legacy).toContain(filename)
     })
     it.each(['label', 'subtitle', 'placeholder', 'title', 'hint', 'alt', 'aria-label'])(
         'rejects literal %s copy and accepts translated expressions',
