@@ -55,7 +55,6 @@ describe("ending sessions", () => {
   });
 
   it.each([
-    ["PUT with isActive: false", (token, id) => put(token, id, { isActive: false })],
     ["DELETE", (token, id) => remove(token, id)],
   ])("ends the sessions of a user deactivated by %s", async (name, deactivate) => {
     const admin = await signedIn({ role: "admin" });
@@ -82,7 +81,6 @@ describe("an admin's own access", () => {
 
   it.each([
     ["PATCH status", (token, id) => setStatus(token, id, false)],
-    ["PUT with isActive: false", (token, id) => put(token, id, { isActive: false })],
     ["DELETE", (token, id) => remove(token, id)],
   ])("refuses to deactivate oneself by %s", async (name, deactivate) => {
     const admin = await signedIn({ role: "admin" });
@@ -109,7 +107,7 @@ describe("an admin's own access", () => {
         expect(res.status).toBe(400);
         expect(res.body.error).toMatchObject({
           code: "VALIDATION_FAILED",
-          fields: { isActive: "invalid_type" },
+          fields: { isActive: "unrecognized_keys" },
         });
       }
       expect(await activeAdmins()).toBe(1);

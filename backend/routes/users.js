@@ -7,6 +7,8 @@ import express from "express";
 import * as userController from "../controllers/userController.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { authorize, protect } from "../middleware/auth.js";
+import { validate } from "../middleware/validate.js";
+import { emptyUserQuery, updateUserBody, userIdParams, userStatusBody } from "../schemas/user.js";
 
 const router = express.Router();
 
@@ -61,10 +63,10 @@ router.post("/", asyncHandler(userController.createUser));
  * @route   PUT /api/v1/users/:id
  * @desc    Update user
  * @params  :id (required)
- * @body    { username?, email?, role?, isActive? }
+ * @body    { username?, email?, firstName?, lastName?, role? }
  * @access  Private/Admin
  */
-router.put("/:id", asyncHandler(userController.updateUser));
+router.put("/:id", validate({ params: userIdParams, query: emptyUserQuery, body: updateUserBody }), asyncHandler(userController.updateUser));
 
 /**
  * @route   PATCH /api/v1/users/:id/status
@@ -73,7 +75,7 @@ router.put("/:id", asyncHandler(userController.updateUser));
  * @body    { isActive: boolean }
  * @access  Private/Admin
  */
-router.patch("/:id/status", asyncHandler(userController.toggleUserStatus));
+router.patch("/:id/status", validate({ params: userIdParams, query: emptyUserQuery, body: userStatusBody }), asyncHandler(userController.toggleUserStatus));
 
 /**
  * @route   DELETE /api/v1/users/:id

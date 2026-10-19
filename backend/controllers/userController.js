@@ -4,7 +4,6 @@
  */
 
 import * as userService from "../services/userService.js";
-import { ValidationError } from "../utils/errors.js";
 
 /**
  * @route   GET /api/v1/users
@@ -56,7 +55,7 @@ export async function createUser(req, res) {
  * @access  Private/Admin
  */
 export async function updateUser(req, res) {
-  const user = await userService.updateUser(req.params.id, req.body, req.user.id);
+  const user = await userService.updateUser(req.valid.params.id, req.valid.body, req.user.id);
 
   res.status(200).json({
     success: true,
@@ -131,15 +130,8 @@ export async function getUserStats(req, res) {
  * @access  Private/Admin
  */
 export async function toggleUserStatus(req, res) {
-  const { isActive } = req.body;
-
-  if (typeof isActive !== "boolean") {
-    throw new ValidationError("isActive must be a boolean value", {
-      isActive: "invalid_type",
-    });
-  }
-
-  const user = await userService.toggleUserStatus(req.params.id, isActive, req.user.id);
+  const { isActive } = req.valid.body;
+  const user = await userService.toggleUserStatus(req.valid.params.id, isActive, req.user.id);
 
   res.status(200).json({
     success: true,

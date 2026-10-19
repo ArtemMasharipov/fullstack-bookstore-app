@@ -11,7 +11,8 @@ import { ValidationError } from "../utils/errors.js";
 const PARTS = ["params", "query", "body"];
 
 function fieldsOf(part, issues) {
-  const fields = {};
+  // Request keys such as __proto__ must remain ordinary field names.
+  const fields = Object.create(null);
   for (const issue of issues) {
     if (issue.code === "unrecognized_keys") {
       for (const key of issue.keys) fields[[...issue.path, key].join(".")] = issue.code;
