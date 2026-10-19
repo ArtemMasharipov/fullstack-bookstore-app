@@ -65,52 +65,6 @@ export async function updateUser(req, res) {
 }
 
 /**
- * @route   DELETE /api/v1/users/:id
- * @desc    Delete user (soft delete)
- * @access  Private/Admin
- */
-export async function deleteUser(req, res) {
-  const result = await userService.deleteUser(req.params.id, req.user.id);
-
-  res.status(200).json({
-    success: true,
-    message: result.message,
-  });
-}
-
-/**
- * @route   DELETE /api/v1/users/:id/permanent
- * @desc    Permanently delete user
- * @access  Private/Admin
- */
-export async function permanentlyDeleteUser(req, res) {
-  const result = await userService.permanentlyDeleteUser(
-    req.params.id,
-    req.user.id
-  );
-
-  res.status(200).json({
-    success: true,
-    message: result.message,
-  });
-}
-
-/**
- * @route   GET /api/v1/users/role/:role
- * @desc    Get users by role
- * @access  Private/Admin
- */
-export async function getUsersByRole(req, res) {
-  const users = await userService.getUsersByRole(req.params.role);
-
-  res.status(200).json({
-    success: true,
-    count: users.length,
-    data: users,
-  });
-}
-
-/**
  * @route   GET /api/v1/users/stats
  * @desc    Get user statistics
  * @access  Private/Admin

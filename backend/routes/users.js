@@ -36,14 +36,6 @@ router.get("/", asyncHandler(userController.getUsers));
 router.get("/stats", asyncHandler(userController.getUserStats));
 
 /**
- * @route   GET /api/v1/users/role/:role
- * @desc    Get users by role
- * @params  :role (required)
- * @access  Private/Admin
- */
-router.get("/role/:role", asyncHandler(userController.getUsersByRole));
-
-/**
  * @route   GET /api/v1/users/:id
  * @desc    Get user by ID
  * @params  :id (required)
@@ -76,24 +68,5 @@ router.put("/:id", validate({ params: userIdParams, query: emptyUserQuery, body:
  * @access  Private/Admin
  */
 router.patch("/:id/status", validate({ params: userIdParams, query: emptyUserQuery, body: userStatusBody }), asyncHandler(userController.toggleUserStatus));
-
-/**
- * @route   DELETE /api/v1/users/:id
- * @desc    Delete user (soft delete)
- * @params  :id (required)
- * @access  Private/Admin
- */
-router.delete("/:id", asyncHandler(userController.deleteUser));
-
-/**
- * @route   DELETE /api/v1/users/:id/permanent
- * @desc    Permanently delete user
- * @params  :id (required)
- * @access  Private/Admin
- */
-router.delete(
-  "/:id/permanent",
-  asyncHandler(userController.permanentlyDeleteUser)
-);
 
 export default router;

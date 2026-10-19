@@ -56,13 +56,16 @@ describe("ending sessions", () => {
 
   it.each([
     ["DELETE", (token, id) => remove(token, id)],
-  ])("ends the sessions of a user deactivated by %s", async (name, deactivate) => {
+    ["permanent DELETE", (token, id) => as(request(app).delete(`/api/v1/users/${id}/permanent`), token)],
+    ["role list", (token) => as(request(app).get("/api/v1/users/role/user"), token)],
+  ])("removes the old %s endpoint without changing users or sessions", async (name, removed) => {
     const admin = await signedIn({ role: "admin" });
     const target = await signedIn();
 
-    expect((await deactivate(admin.token, target.user._id)).status).toBe(200);
+    expect((await removed(admin.token, target.user._id)).status).toBe(404);
 
-    expect((await me(target.token)).status).toBe(401);
+    expect((await me(target.token)).status).toBe(200);
+    expect((await User.findById(target.user._id)).isActive).toBe(true);
   });
 });
 
@@ -81,7 +84,6 @@ describe("an admin's own access", () => {
 
   it.each([
     ["PATCH status", (token, id) => setStatus(token, id, false)],
-    ["DELETE", (token, id) => remove(token, id)],
   ])("refuses to deactivate oneself by %s", async (name, deactivate) => {
     const admin = await signedIn({ role: "admin" });
     await signedIn({ role: "admin" });
@@ -134,10 +136,27 @@ describe("an admin's own access", () => {
 });
 
 describe("the last active admin", () => {
+  it("keeps a successful concurrent profile edit when an admin update is rejected", async () => {
+    for (let round = 0; round < 5; round += 1) {
+      await mongoose.connection.collection("users").deleteMany({});
+      await mongoose.connection.collection("sessions").deleteMany({});
+      const a = await signedIn({ role: "admin" });
+      const b = await signedIn({ role: "admin" });
+      const [changeB, changeA, profile] = await Promise.all([
+        put(a.token, b.user._id, { role: "user", username: `changed_${b.user._id}`, email: `changed_${b.user._id}@example.com` }),
+        put(b.token, a.user._id, { role: "user" }),
+        as(request(app).put("/api/v1/auth/profile"), b.token).send({ firstName: "A newer profile" }),
+      ]);
+      expect([changeB.status, changeA.status]).not.toEqual([200, 200]);
+      expect(await activeAdmins()).toBeGreaterThanOrEqual(1);
+      if (profile.status === 200) expect((await User.findById(b.user._id)).firstName).toBe("A newer profile");
+      else expect(profile.status).toBe(401);
+    }
+  });
   // Two admins who take each other's access at the same moment: whatever the
   // order the requests run in, the shop keeps an active admin
   it.each([
-    ["demote", (token, id) => put(token, id, { role: "user" })],
+    ["demote", (token, id) => put(token, id, { role: "user", username: `changed_${id}`, email: `changed_${id}@example.com`, firstName: "Changed", lastName: "Changed" })],
     ["deactivate", (token, id) => setStatus(token, id, false)],
   ])("never leaves the shop without an active admin when two admins %s each other at once", async (name, change) => {
     for (let round = 0; round < 5; round += 1) {
@@ -154,6 +173,12 @@ describe("the last active admin", () => {
       for (const res of answers.filter((answer) => answer.status !== 200)) {
         if (res.status === 409) expect(res.body.error.code).toBe("LAST_ADMIN");
         else expect([401, 403]).toContain(res.status);
+      }
+      for (const [index, answer] of answers.entries()) {
+        if (answer.body.error?.code !== "LAST_ADMIN") continue;
+        const target = index === 0 ? b.user : a.user;
+        const stored = await User.findById(target._id).lean();
+        for (const field of ["username", "email", "firstName", "lastName"]) expect(stored[field]).toBe(target[field]);
       }
     }
   });

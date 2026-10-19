@@ -6,7 +6,6 @@
 import User, { ROLES } from "../models/User.js";
 import {
   ConflictError,
-  ForbiddenError,
   NotFoundError,
   ValidationError,
 } from "../utils/errors.js";
@@ -27,9 +26,9 @@ const takesAdminAccess = (user, changes) =>
  * @param {Object} user - The user as stored before the change
  * @param {Object} changes - The fields being written ({ role?, isActive?, … })
  * @param {string} actorId - Id of the acting admin
- * @param {Function} write - Writes the change and returns the updated user
+ * @param {Function} prepare - Validates profile conflicts before any write
  */
-async function changeAccess(user, changes, actorId, write) {
+async function changeAccess(user, changes, actorId, prepare = async () => {}) {
   const takesAccess = takesAdminAccess(user, changes);
   if (takesAccess && user._id.toString() === actorId) {
     throw new ConflictError(
@@ -38,19 +37,40 @@ async function changeAccess(user, changes, actorId, write) {
     );
   }
 
-  const updated = await write();
-
-  if (takesAccess && !(await User.exists({ role: "admin", isActive: true }))) {
-    // Only while it still holds what this request wrote
-    await User.updateOne(
-      {
-        _id: user._id,
-        role: changes.role ?? user.role,
-        isActive: changes.isActive ?? user.isActive,
-      },
-      { $set: { role: user.role, isActive: user.isActive } }
+  await prepare();
+  const conflict = () => new ConflictError("The user changed meanwhile, reload it");
+  const access = { role: user.role, isActive: user.isActive };
+  const profile = Object.fromEntries(Object.entries(changes).filter(([key]) => !["role", "isActive"].includes(key)));
+  const previousProfile = Object.fromEntries(Object.keys(profile).map((key) => [key, user[key] ?? null]));
+  const write = (filter, updates) => User.findOneAndUpdate(
+    { _id: user._id, ...filter }, { $set: updates }, { new: true, runValidators: true }
+  ).select("-password");
+  let updated;
+  if (takesAccess) {
+    const accessChanges = Object.fromEntries(Object.entries(changes).filter(([key]) => ["role", "isActive"].includes(key)));
+    const staged = await write(access, accessChanges);
+    if (!staged) throw conflict();
+    const writtenAccess = { role: staged.role, isActive: staged.isActive };
+    const undo = () => User.updateOne(
+      { _id: user._id, ...writtenAccess },
+      { $set: Object.fromEntries(Object.keys(accessChanges).map((key) => [key, user[key]])) }
     );
-    throw new ConflictError("The shop needs at least one active admin", "LAST_ADMIN");
+    if (!(await User.exists({ role: "admin", isActive: true }))) {
+      await undo();
+      throw new ConflictError("The shop needs at least one active admin", "LAST_ADMIN");
+    }
+    // The rejected LAST_ADMIN path never writes a profile. A concurrent profile
+    // edit is not undone, nor silently replaced by this request's later write.
+    try {
+      updated = Object.keys(profile).length ? await write({ ...writtenAccess, ...previousProfile }, profile) : staged;
+      if (!updated) throw conflict();
+    } catch (error) {
+      await undo();
+      throw error;
+    }
+  } else {
+    updated = Object.keys(changes).length ? await write({ ...access, ...previousProfile }, changes) : user;
+    if (!updated) throw conflict();
   }
 
   const roleChanged = changes.role !== undefined && changes.role !== user.role;
@@ -202,14 +222,6 @@ export async function createUser(userData) {
  * @returns {Object} Updated user
  */
 export async function updateUser(id, updateData, actorId) {
-  // Strictly true or false: a form-encoded "false", 0 or null would reach the
-  // database as false while the access checks below look for false itself
-  if (updateData.isActive !== undefined && typeof updateData.isActive !== "boolean") {
-    throw new ValidationError("isActive must be a boolean value", {
-      isActive: "invalid_type",
-    });
-  }
-
   // Check user exists
   const existingUser = await User.findById(id);
   if (!existingUser) {
@@ -223,7 +235,6 @@ export async function updateUser(id, updateData, actorId) {
     "firstName",
     "lastName",
     "role",
-    "isActive",
   ];
   const updates = {};
 
@@ -233,114 +244,21 @@ export async function updateUser(id, updateData, actorId) {
     }
   }
 
-  // Check for duplicate username/email if updating
-  if (updates.username || updates.email) {
-    const duplicateQuery = { _id: { $ne: id } };
-
-    if (updates.username) {
-      duplicateQuery.username = updates.username;
-    }
-
-    if (updates.email) {
-      duplicateQuery.email = updates.email;
-    }
-
-    const duplicate = await User.findOne(duplicateQuery);
-
-    if (duplicate) {
-      if (duplicate.username === updates.username) {
-        throw new ValidationError("Username already exists");
-      }
-      if (duplicate.email === updates.email) {
-        throw new ValidationError("Email already exists");
+  return changeAccess(existingUser, updates, actorId, async () => {
+    if (updates.username || updates.email) {
+      const duplicateQuery = { _id: { $ne: id } };
+      if (updates.username) duplicateQuery.username = updates.username;
+      if (updates.email) duplicateQuery.email = updates.email;
+      const duplicate = await User.findOne(duplicateQuery);
+      if (duplicate) {
+        if (duplicate.username === updates.username) throw new ValidationError("Username already exists");
+        if (duplicate.email === updates.email) throw new ValidationError("Email already exists");
       }
     }
-  }
-
-  // Validate role if updating
-  if (updates.role) {
-    if (!ROLES.includes(updates.role)) {
-      throw new ValidationError(
-        `Role must be one of: ${ROLES.join(", ")}`
-      );
+    if (updates.role && !ROLES.includes(updates.role)) {
+      throw new ValidationError(`Role must be one of: ${ROLES.join(", ")}`);
     }
-  }
-
-  // Prevent modifying certain fields
-  delete updates.password;
-  delete updates.createdAt;
-  delete updates._id;
-
-  return changeAccess(existingUser, updates, actorId, () =>
-    User.findByIdAndUpdate(id, updates, {
-      new: true,
-      runValidators: true,
-    }).select("-password")
-  );
-}
-
-/**
- * Delete user (admin only): deactivates the account
- * @param {string} id - User ID
- * @param {string} currentUserId - ID of user performing deletion
- * @returns {Object} Success message
- */
-export async function deleteUser(id, currentUserId) {
-  const user = await User.findById(id);
-
-  if (!user) {
-    throw new NotFoundError("User not found");
-  }
-
-  // Soft delete by deactivating
-  await changeAccess(user, { isActive: false }, currentUserId, () =>
-    User.findByIdAndUpdate(id, { isActive: false })
-  );
-
-  return {
-    message: "User deactivated successfully",
-  };
-}
-
-/**
- * Permanently delete user (admin only)
- * @param {string} id - User ID
- * @param {string} currentUserId - ID of user performing deletion
- * @returns {Object} Success message
- */
-export async function permanentlyDeleteUser(id, currentUserId) {
-  // Prevent self-deletion
-  if (id === currentUserId) {
-    throw new ForbiddenError("You cannot delete your own account");
-  }
-
-  const user = await User.findById(id);
-
-  if (!user) {
-    throw new NotFoundError("User not found");
-  }
-
-  await User.findByIdAndDelete(id);
-
-  return {
-    message: "User permanently deleted",
-  };
-}
-
-/**
- * Get users by role
- * @param {string} role - User role
- * @returns {Array} Users with specified role
- */
-export async function getUsersByRole(role) {
-
-  if (!ROLES.includes(role)) {
-    throw new ValidationError(`Role must be one of: ${ROLES.join(", ")}`);
-  }
-
-  const users = await User.findByRole(role).lean();
-
-  return users;
+  });
 }
 
 /**
@@ -389,9 +307,5 @@ export async function toggleUserStatus(id, isActive, actorId) {
     throw new NotFoundError("User not found");
   }
 
-  return changeAccess(user, { isActive }, actorId, () =>
-    User.findByIdAndUpdate(id, { isActive }, { new: true, runValidators: true }).select(
-      "-password"
-    )
-  );
+  return changeAccess(user, { isActive }, actorId);
 }
