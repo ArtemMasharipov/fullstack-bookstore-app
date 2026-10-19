@@ -181,7 +181,13 @@ describe('AdminAuthorsView', () => {
     })
     it('returns from a deleted last page and focuses the add button', async () => {
         let total = 11
-        authors.fetchAll.mockImplementation(async (params) => pageOf(params, total))
+        let resolvePage
+        const nextPage = new Promise((resolve) => {
+            resolvePage = resolve
+        })
+        authors.fetchAll.mockImplementation(async (params) =>
+            total === 10 && params.page === 1 ? nextPage : pageOf(params, total)
+        )
         authors.delete.mockImplementation(async () => {
             total = 10
         })
@@ -189,6 +195,7 @@ describe('AdminAuthorsView', () => {
         await askDelete(DATA[10])
         button(words.admin.authors.deleteConfirm, dialog()).click()
         await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/admin/authors'))
+        resolvePage(pageOf({ page: 1, limit: 10 }, 10))
         await vi.waitFor(() => expect(rows()).toHaveLength(10))
         expect(authors.delete).toHaveBeenCalledWith('a11')
         expect(notices()).toHaveLength(1)
@@ -227,6 +234,22 @@ describe('AdminAuthorsView', () => {
         expect(authors.delete).toHaveBeenCalledTimes(1)
         reject({ code: 'INTERNAL' })
         await vi.waitFor(() => expect(notices()).toHaveLength(1))
+    })
+    it('restores the row focus after a delayed deletion failure re-enables it', async () => {
+        let reject
+        authors.delete.mockReturnValue(
+            new Promise((_, no) => {
+                reject = no
+            })
+        )
+        await mount()
+        const opener = await askDelete(DATA[0])
+        button(words.admin.authors.deleteConfirm, dialog()).click()
+        await nextTick()
+        await new Promise((resolve) => setTimeout(resolve, 30))
+        reject({ code: 'AUTHOR_HAS_BOOKS', details: { books: 3 } })
+        await vi.waitFor(() => expect(notices()).toHaveLength(1))
+        await vi.waitFor(() => expect(document.activeElement).toBe(opener))
     })
     it('cancels pending author search when opening books', async () => {
         await mount()

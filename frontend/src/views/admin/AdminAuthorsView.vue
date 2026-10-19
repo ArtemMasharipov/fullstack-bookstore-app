@@ -157,8 +157,19 @@ const authorToDelete = ref(null)
 const deleting = ref(false)
 const addButton = ref(null)
 const deleteFocus = useReturnFocus()
+let deleteOpener = null
+const deletedId = ref(null)
+watch([items, deletedId], async () => {
+    const removed = deletedId.value
+    if (!removed || items.value.some((item) => item.id === removed)) return
+    await nextTick()
+    if (removed !== deletedId.value) return
+    if (document.activeElement === document.body) addButton.value?.$el?.focus()
+    deletedId.value = null
+})
 function askDelete(author) {
     if (deleting.value) return
+    deleteOpener = document.activeElement
     deleteFocus.remember()
     authorToDelete.value = author
     deleteOpen.value = true
@@ -175,10 +186,9 @@ async function deleteAuthor() {
     deleting.value = true
     try {
         await authorsApi.delete(author.id)
+        deletedId.value = author.id
         showSuccess(undefined, { messageKey: 'admin.authors.deleted', messageParams: { name: nameOf(author) } })
         await reload()
-        await nextTick()
-        if (document.activeElement === document.body) addButton.value?.$el?.focus()
     } catch (failure) {
         const messageKey = resolveErrorKey(failure)
         showError(undefined, {
@@ -187,6 +197,13 @@ async function deleteAuthor() {
         })
     } finally {
         deleting.value = false
+        await nextTick()
+        if (
+            document.activeElement === document.body &&
+            items.value.some((item) => item.id === author.id) &&
+            deleteOpener?.isConnected
+        )
+            deleteOpener.focus()
     }
 }
 </script>
