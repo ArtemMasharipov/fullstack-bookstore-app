@@ -3,19 +3,9 @@
  */
 
 import { z } from "zod";
-
-// The rules of the User model
-const username = z
-  .string()
-  .trim()
-  .min(3)
-  .max(50)
-  .regex(/^[a-zA-Z0-9_-]+$/);
-const email = z.string().trim().toLowerCase().max(254).pipe(z.email());
-const name = z.string().trim().max(50);
+import { email, name, newPassword, username } from "./userFields.js";
 
 // A new password; a stored one of any length still signs in
-const newPassword = z.string().min(6).max(1024);
 const anyPassword = z.string().min(1).max(1024);
 
 export const registerBody = z.strictObject({

@@ -8,7 +8,7 @@ import * as userController from "../controllers/userController.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { authorize, protect } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
-import { emptyUserQuery, updateUserBody, userIdParams, userStatusBody } from "../schemas/user.js";
+import { createUserBody, emptyUserQuery, listUsersQuery, updateUserBody, userIdParams, userStatusBody } from "../schemas/user.js";
 
 const router = express.Router();
 
@@ -26,14 +26,14 @@ router.use(authorize("admin"));
  * @query   page?, limit?, role?, isActive?, search?
  * @access  Private/Admin
  */
-router.get("/", asyncHandler(userController.getUsers));
+router.get("/", validate({ query: listUsersQuery }), asyncHandler(userController.getUsers));
 
 /**
  * @route   GET /api/v1/users/stats
  * @desc    Get user statistics
  * @access  Private/Admin
  */
-router.get("/stats", asyncHandler(userController.getUserStats));
+router.get("/stats", validate({ query: emptyUserQuery }), asyncHandler(userController.getUserStats));
 
 /**
  * @route   GET /api/v1/users/:id
@@ -41,15 +41,15 @@ router.get("/stats", asyncHandler(userController.getUserStats));
  * @params  :id (required)
  * @access  Private/Admin
  */
-router.get("/:id", asyncHandler(userController.getUser));
+router.get("/:id", validate({ params: userIdParams, query: emptyUserQuery }), asyncHandler(userController.getUser));
 
 /**
  * @route   POST /api/v1/users
  * @desc    Create new user
- * @body    { username, email, password, role? }
+ * @body    { username, email, password, role, firstName?, lastName? }
  * @access  Private/Admin
  */
-router.post("/", asyncHandler(userController.createUser));
+router.post("/", validate({ query: emptyUserQuery, body: createUserBody }), asyncHandler(userController.createUser));
 
 /**
  * @route   PUT /api/v1/users/:id

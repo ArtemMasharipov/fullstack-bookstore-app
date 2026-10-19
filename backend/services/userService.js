@@ -3,13 +3,15 @@
  * Handles user management logic (admin operations)
  */
 
-import User, { ROLES } from "../models/User.js";
+import User from "../models/User.js";
 import {
+  AppError,
   ConflictError,
   NotFoundError,
-  ValidationError,
 } from "../utils/errors.js";
 import { endUserSessions } from "./sessions.js";
+import { roleOf, toUserView } from "./userView.js";
+import { sortOf } from "../utils/listSort.js";
 
 const takesAdminAccess = (user, changes) =>
   user.role === "admin" &&
@@ -83,68 +85,22 @@ async function changeAccess(user, changes, actorId, prepare = async () => {}) {
  * @param {Object} filters - Query filters (page, limit, role, isActive, search, sortBy)
  * @returns {Object} { users, pagination }
  */
-export async function getUsers(filters = {}) {
-  const {
-    page = 1,
-    limit = 20,
-    role,
-    isActive,
-    search,
-    sortBy = "-createdAt",
-  } = filters;
-
-  // Validate pagination
-  if (page < 1 || limit < 1) {
-    throw new ValidationError("Page and limit must be greater than 0");
-  }
-
-  if (limit > 100) {
-    throw new ValidationError("Maximum limit is 100");
-  }
-
-  // Build query
+export async function getUsers({ page, limit, role, isActive, search, sortBy }) {
   const query = {};
-
-  if (role) {
-    query.role = role;
-  }
-
-  if (isActive !== undefined) {
-    query.isActive = isActive === "true";
-  }
-
+  if (role) query.role = role === "admin" ? "admin" : { $ne: "admin" };
+  if (isActive !== undefined) query.isActive = isActive;
   if (search) {
-    query.$or = [
-      { username: new RegExp(search, "i") },
-      { email: new RegExp(search, "i") },
-      { firstName: new RegExp(search, "i") },
-      { lastName: new RegExp(search, "i") },
-    ];
+    const pattern = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    query.$or = ["username", "email", "firstName", "lastName"].map((field) => ({ [field]: pattern }));
   }
-
-  const skip = (page - 1) * limit;
-
-  // Execute queries in parallel
   const [users, total] = await Promise.all([
-    User.find(query)
-      .select("-password")
-      .sort(sortBy)
-      .skip(skip)
-      .limit(Number(limit))
-      .lean(),
+    User.find(query).sort(sortOf(sortBy)).skip((page - 1) * limit).limit(limit).lean(),
     User.countDocuments(query),
   ]);
 
   return {
-    users,
-    pagination: {
-      page: Number(page),
-      limit: Number(limit),
-      total,
-      pages: Math.ceil(total / limit),
-      hasNext: page * limit < total,
-      hasPrev: page > 1,
-    },
+    users: users.map(toUserView),
+    pagination: { page, limit, total, pages: Math.ceil(total / limit) },
   };
 }
 
@@ -160,7 +116,7 @@ export async function getUserById(id) {
     throw new NotFoundError("User not found");
   }
 
-  return user;
+  return toUserView(user);
 }
 
 /**
@@ -168,50 +124,23 @@ export async function getUserById(id) {
  * @param {Object} userData - User data
  * @returns {Object} Created user
  */
-export async function createUser(userData) {
-  const { username, email, password, role, firstName, lastName } = userData;
-
-  // Validate required fields
-  if (!username || !email || !password) {
-    throw new ValidationError("Username, email and password are required");
-  }
-
-  // Check if user exists
-  const existingUser = await User.findOne({
-    $or: [{ email }, { username }],
+async function refuseDuplicate(data, id) {
+  const identities = ["username", "email"].filter((field) => Object.hasOwn(data, field));
+  if (!identities.length) return;
+  const duplicate = await User.findOne({
+    ...(id && { _id: { $ne: id } }),
+    $or: identities.map((field) => ({ [field]: data[field] })),
   });
-
-  if (existingUser) {
-    if (existingUser.email === email) {
-      throw new ValidationError("Email already exists");
-    }
-    if (existingUser.username === username) {
-      throw new ValidationError("Username already exists");
-    }
+  if (duplicate) {
+    const fields = Object.fromEntries(identities.filter((field) => duplicate[field] === data[field]).map((field) => [field, "duplicate"]));
+    throw new AppError("A user with this identity already exists", 409, "CONFLICT", { fields });
   }
+}
 
-  // Validate role
-  if (role && !ROLES.includes(role)) {
-    throw new ValidationError(`Role must be one of: ${ROLES.join(", ")}`);
-  }
-
-  // Create user
-  const user = new User({
-    username,
-    email,
-    password,
-    role: role || "user",
-    firstName,
-    lastName,
-  });
-
-  await user.save();
-
-  // Return without password
-  const userObject = user.toJSON();
-  delete userObject.password;
-
-  return userObject;
+export async function createUser({ username, email, password, role, firstName, lastName }) {
+  await refuseDuplicate({ username, email });
+  const user = await User.create({ username, email, password, role, firstName, lastName });
+  return toUserView(user);
 }
 
 /**
@@ -244,21 +173,7 @@ export async function updateUser(id, updateData, actorId) {
     }
   }
 
-  return changeAccess(existingUser, updates, actorId, async () => {
-    if (updates.username || updates.email) {
-      const duplicateQuery = { _id: { $ne: id } };
-      if (updates.username) duplicateQuery.username = updates.username;
-      if (updates.email) duplicateQuery.email = updates.email;
-      const duplicate = await User.findOne(duplicateQuery);
-      if (duplicate) {
-        if (duplicate.username === updates.username) throw new ValidationError("Username already exists");
-        if (duplicate.email === updates.email) throw new ValidationError("Email already exists");
-      }
-    }
-    if (updates.role && !ROLES.includes(updates.role)) {
-      throw new ValidationError(`Role must be one of: ${ROLES.join(", ")}`);
-    }
-  });
+  return toUserView(await changeAccess(existingUser, updates, actorId, () => refuseDuplicate(updates, id)));
 }
 
 /**
@@ -280,9 +195,9 @@ export async function getUserStats() {
     ]),
   ]);
 
-  const roleStats = {};
+  const roleStats = { user: 0, admin: 0 };
   byRole.forEach((item) => {
-    roleStats[item._id] = item.count;
+    roleStats[roleOf({ role: item._id })] += item.count;
   });
 
   return {
@@ -307,5 +222,5 @@ export async function toggleUserStatus(id, isActive, actorId) {
     throw new NotFoundError("User not found");
   }
 
-  return changeAccess(user, { isActive }, actorId);
+  return toUserView(await changeAccess(user, { isActive }, actorId));
 }
