@@ -63,6 +63,16 @@
         "table": {
             "loadError": "Seznam se nepodařilo načíst."
         },
+        "authorForm": {
+            "createTitle": "Nový autor",
+            "editTitle": "Upravit autora",
+            "firstName": "Jméno",
+            "lastName": "Příjmení",
+            "bio": "Životopis",
+            "birthYear": "Rok narození",
+            "country": "Země",
+            "website": "Webové stránky"
+        },
         "bookForm": {
             "createTitle": "Nová kniha",
             "editTitle": "Upravit knihu",
@@ -87,6 +97,8 @@
                 "image": "Použijte odkaz začínající https://.",
                 "authorNotFound": "Tento autor už neexistuje. Vyberte jiného.",
                 "duplicateBook": "Kniha se stejným názvem, autorem a rokem už existuje.",
+                "duplicateAuthor": "Autor se stejným jménem a příjmením už existuje.",
+                "website": "Použijte webovou adresu začínající http:// nebo https://.",
                 "invalid": "Zkontrolujte tuto hodnotu."
             }
         },

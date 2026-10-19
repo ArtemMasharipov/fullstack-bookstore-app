@@ -63,6 +63,16 @@
         "table": {
             "loadError": "The list could not be loaded."
         },
+        "authorForm": {
+            "createTitle": "New author",
+            "editTitle": "Edit author",
+            "firstName": "First name",
+            "lastName": "Last name",
+            "bio": "Biography",
+            "birthYear": "Birth year",
+            "country": "Country",
+            "website": "Website"
+        },
         "bookForm": {
             "createTitle": "New book",
             "editTitle": "Edit book",
@@ -87,6 +97,8 @@
                 "image": "Use a link that starts with https://.",
                 "authorNotFound": "This author no longer exists. Choose another one.",
                 "duplicateBook": "A book with this title, author and year already exists.",
+                "duplicateAuthor": "An author with this first and last name already exists.",
+                "website": "Use a web address that starts with http:// or https://.",
                 "invalid": "Check this value."
             }
         },
