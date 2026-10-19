@@ -13,6 +13,11 @@ const CONFIG = {
 const DEFAULTS = { page: 1, limit: 10, sortBy: '-createdAt', q: '', filters: {} }
 
 describe('admin list state in the address', () => {
+    it('removes a search from an address for a list that does not support search', () => {
+        const config = { ...CONFIG, search: false }
+        expect(canonicalListQuery({ page: '2', q: 'unsupported' }, config)).toEqual({ page: '2' })
+        expect(toListParams(parseListQuery({ q: 'unsupported' }, config))).not.toHaveProperty('search')
+    })
     it('offers 10, 20 and 50 rows per page', () => {
         expect(ADMIN_PAGE_SIZES).toEqual([10, 20, 50])
     })

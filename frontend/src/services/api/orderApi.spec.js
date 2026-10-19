@@ -12,6 +12,13 @@ const answer = (status, data, extra = {}) => ({ status, data: { success: true, d
 beforeEach(() => vi.clearAllMocks())
 
 describe('orderApi', () => {
+    it('records a payment or refund through the payment endpoint', async () => {
+        http.patch.mockResolvedValue(answer(200, order))
+        for (const payment of ['paid', 'refunded']) {
+            expect(await orderApi.adminSetPayment('o1', payment)).toEqual(order)
+            expect(http.patch).toHaveBeenCalledWith('/orders/o1/payment', { paymentStatus: payment })
+        }
+    })
     it('places an order with the idempotency key and tells a new order from a repeated one', async () => {
         const body = { shippingAddress: { fullName: 'Jan Novák' }, expectedTotal: 29800 }
         http.post.mockResolvedValueOnce(answer(201, order)).mockResolvedValueOnce(answer(200, order))

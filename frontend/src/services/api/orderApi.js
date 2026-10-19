@@ -29,4 +29,6 @@ export const orderApi = {
     adminStats: () => baseApi.get('/orders/admin/stats').then(unwrap),
 
     adminSetStatus: (id, status) => baseApi.patch(`/orders/${id}/status`, { status }).then(unwrap),
+
+    adminSetPayment: (id, paymentStatus) => baseApi.patch(`/orders/${id}/payment`, { paymentStatus }).then(unwrap),
 }

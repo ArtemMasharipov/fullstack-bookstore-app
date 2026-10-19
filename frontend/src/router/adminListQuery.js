@@ -21,11 +21,11 @@ const single = (value) => (typeof value === 'string' ? value.trim() : '')
 const whole = (value) => (/^\d+$/.test(value) && Number.isSafeInteger(Number(value)) ? Number(value) : 0)
 
 /** The list state of a route query; anything that is not a valid value reads as the default */
-export function parseListQuery(query, { sorts, defaultSort, filters = {} }) {
+export function parseListQuery(query, { sorts, defaultSort, filters = {}, search = true }) {
     const page = whole(single(query.page))
     const limit = whole(single(query.limit))
     const sortBy = single(query.sortBy)
-    const q = single(query.q)
+    const q = search ? single(query.q) : ''
     return {
         page: page >= 1 ? page : 1,
         limit: ADMIN_PAGE_SIZES.includes(limit) ? limit : DEFAULT_LIMIT,
