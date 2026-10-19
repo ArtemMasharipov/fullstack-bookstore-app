@@ -22,6 +22,7 @@ import { useAuthStore } from '@/stores'
 import AdminLayout from '@/components/layout/admin/AdminLayout.vue'
 import AdminAuthorsView from './AdminAuthorsView.vue'
 import AuthorFormDialog from '@/components/features/admin/AuthorFormDialog.vue'
+import UserFormDialog from '@/components/features/admin/UserFormDialog.vue'
 import AdminBooksView from './AdminBooksView.vue'
 import AdminDashboardView from './AdminDashboardView.vue'
 import AdminOrdersView from './AdminOrdersView.vue'
@@ -36,6 +37,7 @@ const SCREENS = [
     ['AdminBooksView', '/admin/books', AdminBooksView],
     ['AdminAuthorsView', '/admin/authors', AdminAuthorsView],
     ['AuthorFormDialog', '/admin/authors', { render: () => h(AuthorFormDialog, { modelValue: true }) }],
+    ['UserFormDialog', '/admin/users', { render: () => h(UserFormDialog, { modelValue: true }) }],
     ['AdminOrdersView', '/admin/orders', AdminOrdersView],
     ['AdminUsersView', '/admin/users', AdminUsersView],
 ]

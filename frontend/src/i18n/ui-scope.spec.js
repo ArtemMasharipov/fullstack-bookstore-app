@@ -11,6 +11,7 @@ const eslint = new CLIEngine({ cwd: process.cwd() })
 const inventoryPath = path.resolve('eslint-legacy-sfc.json')
 const legacy = existsSync(inventoryPath) ? JSON.parse(readFileSync(inventoryPath, 'utf8')) : []
 const strict = [
+    'src/components/features/admin/UserFormDialog.vue',
     'src/views/admin/AdminAuthorsView.vue',
     'src/components/features/admin/AuthorFormDialog.vue',
     'src/components/layout/NavBar.vue',

@@ -51,6 +51,24 @@
         "userInitial": "U"
     },
     "admin": {
+        "roles": { "user": "Customer", "admin": "Administrator" },
+        "userForm": {
+            "createTitle": "Add user",
+            "editTitle": "Edit user",
+            "loading": "Loading user",
+            "username": "Username",
+            "email": "Email",
+            "firstName": "First name",
+            "lastName": "Last name",
+            "role": "Role",
+            "password": "Password",
+            "passwordHint": "Use at least 6 characters.",
+            "selfHint": "You can edit your details, but cannot remove your own administrator role.",
+            "duplicate": "This value already belongs to another user.",
+            "usernameError": "Use 3–50 letters, numbers, underscores or hyphens.",
+            "emailError": "Enter a valid email address, up to 254 characters.",
+            "passwordError": "Use 6–1024 characters."
+        },
         "nav": {
             "dashboard": "Overview & stats",
             "books": "Manage inventory",

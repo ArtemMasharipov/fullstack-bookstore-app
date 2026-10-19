@@ -51,6 +51,24 @@
         "userInitial": "U"
     },
     "admin": {
+        "roles": { "user": "Zákazník", "admin": "Administrátor" },
+        "userForm": {
+            "createTitle": "Přidat uživatele",
+            "editTitle": "Upravit uživatele",
+            "loading": "Načítání uživatele",
+            "username": "Uživatelské jméno",
+            "email": "E-mail",
+            "firstName": "Jméno",
+            "lastName": "Příjmení",
+            "role": "Role",
+            "password": "Heslo",
+            "passwordHint": "Použijte alespoň 6 znaků.",
+            "selfHint": "Své údaje můžete upravit, ale nemůžete si odebrat roli administrátora.",
+            "duplicate": "Tuto hodnotu již používá jiný uživatel.",
+            "usernameError": "Použijte 3–50 písmen, číslic, podtržítek nebo pomlček.",
+            "emailError": "Zadejte platnou e-mailovou adresu do 254 znaků.",
+            "passwordError": "Použijte 6–1024 znaků."
+        },
         "nav": {
             "dashboard": "Přehled a statistiky",
             "books": "Správa knih",
