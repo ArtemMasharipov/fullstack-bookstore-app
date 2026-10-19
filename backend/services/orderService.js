@@ -11,7 +11,8 @@ import { ConflictError, NotFoundError, UnprocessableError } from "../utils/error
 import { getCartView } from "./cartService.js";
 import { nextOrderNumber } from "./orderNumber.js";
 import { toOrderSummary, toOrderView } from "./orderView.js";
-import { planOrderTransition } from "./orderTransitions.js";
+import { allowedOrderTransitions, planOrderTransition } from "./orderTransitions.js";
+import { sortOf } from "../utils/listSort.js";
 
 // JSON with the keys of every object sorted, so equal bodies hash equally
 function canonicalJson(value) {
@@ -157,10 +158,14 @@ export async function listOrders(userId, { page, limit }) {
 // Another user's order answers like a missing one, so its existence stays hidden
 const orderNotFound = () => new NotFoundError("Order not found");
 
-export async function getOrder(userId, orderId) {
-  const order = await Order.findOne({ _id: orderId, user: userId }).lean();
+export async function getOrder(userId, orderId, role = "user") {
+  const admin = role === "admin";
+  const query = Order.findOne({ _id: orderId, ...(!admin && { user: userId }) });
+  if (admin) query.populate("user", "username email");
+  const order = await query.lean();
   if (!order) throw orderNotFound();
-  return toOrderView(order);
+  const view = toOrderView(order);
+  return admin ? { ...view, customer: customerOf(order.user), allowedTransitions: allowedOrderTransitions(order, "admin") } : view;
 }
 
 /**
@@ -184,6 +189,7 @@ const PAYMENT_FILTERS = {
     $or: [{ paymentStatus: "unpaid" }, { paymentStatus: { $exists: false }, isPaid: { $ne: true } }],
   },
   failed: { paymentStatus: "failed" },
+  refunded: { paymentStatus: "refunded" },
 };
 
 const customerOf = (user) =>
@@ -193,7 +199,7 @@ const customerOf = (user) =>
  * A page of all orders, newest first, with their customer (null when the
  * account no longer exists)
  */
-export async function listAllOrders({ page, limit, status, paymentStatus }) {
+export async function listAllOrders({ page, limit, status, paymentStatus, sortBy }) {
   const filter = {
     ...(status && { status }),
     ...(paymentStatus && PAYMENT_FILTERS[paymentStatus]),
@@ -201,7 +207,7 @@ export async function listAllOrders({ page, limit, status, paymentStatus }) {
   const [orders, total] = await Promise.all([
     Order.find(filter)
       .populate("user", "username email")
-      .sort({ createdAt: -1 })
+      .sort(sortOf(sortBy))
       .skip((page - 1) * limit)
       .limit(limit)
       .lean(),
@@ -258,15 +264,20 @@ const totalInGeller = {
 };
 
 /**
- * Order counts and the revenue of paid orders, in geller
+ * total/byStatus count all orders. pendingOrders/deliveredOrders read those
+ * groups, defaulting to zero. paidOrders counts paymentStatus=paid, excluding
+ * cancelled orders; legacy isPaid=true counts only when paymentStatus is absent.
+ * totalRevenue sums the same orders' quote.total in geller (legacy totalPrice
+ * is converted once). Refunded and cancelled orders never contribute revenue.
  */
 export async function orderStats() {
+  const paid = { status: { $ne: "cancelled" }, ...PAYMENT_FILTERS.paid };
   const [total, byStatus, paidOrders, revenue] = await Promise.all([
     Order.countDocuments(),
     Order.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
-    Order.countDocuments(PAYMENT_FILTERS.paid),
+    Order.countDocuments(paid),
     Order.aggregate([
-      { $match: PAYMENT_FILTERS.paid },
+      { $match: paid },
       { $group: { _id: null, total: { $sum: totalInGeller } } },
     ]),
   ]);

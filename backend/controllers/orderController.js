@@ -36,11 +36,11 @@ export async function listOrders(req, res) {
 
 /**
  * @route   GET /api/v1/orders/:id
- * @desc    One of the user's orders; another user's order is NOT_FOUND
+ * @desc    Admins may read any order; other users may read only their own
  * @access  Private
  */
 export async function getOrder(req, res) {
-  ok(res, await orderService.getOrder(req.user.id, req.valid.params.id));
+  ok(res, await orderService.getOrder(req.user.id, req.valid.params.id, req.user.role));
 }
 
 /**

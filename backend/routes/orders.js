@@ -53,6 +53,7 @@ router.get(
 router.get(
   "/admin/stats",
   authorize("admin"),
+  validate({ query: emptyOrderQuery }),
   asyncHandler(orderController.orderStats)
 );
 
@@ -113,13 +114,13 @@ router.get(
 
 /**
  * @route   GET /api/v1/orders/:id
- * @desc    One of the user's orders
+ * @desc    One order, with customer and allowed actions for admins
  * @params  :id (required)
  * @access  Private
  */
 router.get(
   "/:id",
-  validate({ params: orderIdParams }),
+  validate({ params: orderIdParams, query: emptyOrderQuery }),
   asyncHandler(orderController.getOrder)
 );
 

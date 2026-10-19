@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import { ORDER_STATUSES, PAYMENT_STATUSES } from "../models/Order.js";
-import { limit, objectId, page } from "./common.js";
+import { limit, objectId, page, sortBy } from "./common.js";
 
 export const orderIdParams = z.strictObject({ id: objectId });
 
@@ -18,6 +18,7 @@ export const adminListOrdersQuery = z.strictObject({
   limit: limit(100, 20),
   status: z.enum(ORDER_STATUSES).optional(),
   paymentStatus: z.enum(PAYMENT_STATUSES).optional(),
+  sortBy: sortBy(["createdAt", "-createdAt"], "-createdAt"),
 });
 
 export const orderStatusBody = z.strictObject({ status: z.enum(ORDER_STATUSES) });

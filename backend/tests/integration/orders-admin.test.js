@@ -1,6 +1,8 @@
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 import app from "../../app.js";
+import Order from "../../models/Order.js";
+import User from "../../models/User.js";
 import { createUser, loginAs } from "../helpers/auth.js";
 import { useTestDatabase } from "../helpers/db.js";
 import { createLegacyOrder, createPlacedOrder } from "../helpers/factories.js";
@@ -38,6 +40,28 @@ const pay = (id, token) => asAdmin(request(app).patch(`/api/v1/orders/${id}/paym
 const lastEntries = (order, count) => order.statusHistory.slice(-count);
 
 describe("GET /api/v1/orders/admin/all", () => {
+  it("combines refunded and status filters", async () => {
+    const delivered = await createPlacedOrder(customer, { status: "delivered", paymentStatus: "refunded" });
+    await createPlacedOrder(customer, { status: "cancelled", paymentStatus: "refunded" });
+    await createPlacedOrder(customer, { status: "delivered", paymentStatus: "paid" });
+    const res = await listAll("?status=delivered&paymentStatus=refunded");
+    expect(res.status).toBe(200);
+    expect(res.body.data.map((row) => row.id)).toEqual([String(delivered._id)]);
+    expect(res.body.pagination.total).toBe(1);
+  });
+
+  it.each(["createdAt", "-createdAt"])("sorts equal dates by id across pages with %s", async (sortBy) => {
+    const at = new Date("2026-10-01T00:00:00Z");
+    const orders = [];
+    for (let index = 0; index < 21; index++) orders.push(await createPlacedOrder(customer, { createdAt: at }));
+    const ids = orders.map((order) => String(order._id)).sort();
+    if (sortBy.startsWith("-")) ids.reverse();
+    const pages = await Promise.all([1, 2, 3].map((page) => listAll(`?page=${page}&limit=10&sortBy=${sortBy}`)));
+    for (const page of pages) expect(page.status).toBe(200);
+    expect(pages.flatMap((page) => page.body.data.map((order) => order.id))).toEqual(ids);
+    expect(pages[1].body.pagination).toEqual({ page: 2, limit: 10, total: 21, pages: 3 });
+    expect((await listAll("?sortBy=paymentStatus")).status).toBe(400);
+  });
   it("lists all orders by the contract with the customer", async () => {
     const current = await createPlacedOrder(customer, { createdAt: new Date("2026-10-02T10:00:00Z") });
     const older = await createLegacyOrder(customer);
@@ -79,6 +103,28 @@ describe("GET /api/v1/orders/admin/all", () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error.fields).toHaveProperty(["status"]);
+  });
+});
+
+describe("admin order details", () => {
+  it("opens another customer's order with only customer identity and allowed actions", async () => {
+    const order = await createPlacedOrder(customer);
+    const res = await asAdmin(request(app).get(`/api/v1/orders/${order._id}`));
+    expect(res.status).toBe(200);
+    expect(Object.keys(res.body.data).sort()).toEqual([...CONTRACT_KEYS, "allowedTransitions"].sort());
+    expect(res.body.data.customer).toEqual({ id: String(customer._id), username: customer.username, email: customer.email });
+    expect(res.body.data.allowedTransitions).toEqual([{ axis: "status", to: "cancelled" }, { axis: "payment", to: "paid" }]);
+    expect((await asAdmin(request(app).get(`/api/v1/orders/${order._id}?extra=1`))).status).toBe(400);
+  });
+
+  it("opens an order whose customer no longer exists", async () => {
+    const order = await createPlacedOrder(customer, { status: "delivered", paymentStatus: "paid" });
+    await User.deleteOne({ _id: customer._id });
+    const res = await asAdmin(request(app).get(`/api/v1/orders/${order._id}`));
+    expect(res.status).toBe(200);
+    expect(res.body.data.customer).toBeNull();
+    expect(res.body.data.allowedTransitions).toEqual([{ axis: "payment", to: "refunded" }]);
+    expect((await Order.findById(order._id)).user.toString()).toBe(String(customer._id));
   });
 });
 
