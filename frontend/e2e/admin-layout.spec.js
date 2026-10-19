@@ -188,3 +188,91 @@ for (const locale of ['cs', 'en']) {
         }
     })
 }
+
+for (const locale of ['cs', 'en']) {
+    const prefix = locale === 'en' ? '/en' : ''
+    const words = dictionaries[locale]
+
+    test(`${locale}: authors and their form are accessible and fit narrow screens`, async ({ page }, testInfo) => {
+        test.setTimeout(60000)
+        await signIn(page, SEEDED.admin, prefix)
+        await page.goto(`${prefix}/admin/authors`)
+        await expect(page.locator('main tbody tr')).toHaveCount(5)
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText(words.routes.AdminAuthors)
+        await expect(page.getByLabel(words.admin.authors.search, { exact: true })).toBeVisible()
+        await expect(page.getByLabel(words.admin.authors.sort, { exact: true })).toBeVisible()
+        expect(await wcagViolations(page, 'body')).toEqual([])
+        for (const width of [1280, 1440, 390]) {
+            await page.setViewportSize({ width, height: width < 600 ? 844 : 900 })
+            await page.evaluate(async () => {
+                // Resize updates Vuetify's breakpoint on the next frame; drawer CSS transitions have no Vue class.
+                await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+                await Promise.all(
+                    document
+                        .getAnimations()
+                        .filter((animation) => animation.effect.getComputedTiming().iterations !== Infinity)
+                        .map((animation) => animation.finished.catch(() => {}))
+                )
+            })
+            await page.waitForFunction(
+                () => !document.querySelector('[class*="-enter-active"], [class*="-leave-active"]')
+            )
+            await page.screenshot({
+                path: testInfo.outputPath(`pr-b2--admin-authors-${locale}-${width}.png`),
+                fullPage: true,
+            })
+            await page.getByRole('button', { name: words.admin.authors.add, exact: true }).click()
+            const form = page.getByRole('dialog', { name: words.admin.authorForm.createTitle })
+            await expect(form).toBeVisible()
+            await page.waitForFunction(
+                () => !document.querySelector('[class*="-enter-active"], [class*="-leave-active"]')
+            )
+            if (width === 1280) expect(await wcagViolations(page, '[role="dialog"]')).toEqual([])
+            await page.screenshot({
+                path: testInfo.outputPath(`pr-b2--admin-author-form-${locale}-${width}.png`),
+                fullPage: true,
+            })
+            await page.keyboard.press('Escape')
+            await expect(form).toBeHidden()
+        }
+        await page.setViewportSize({ width: 320, height: 800 })
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320)
+        const small = await page.locator('main button, main a, nav a, header button').evaluateAll((elements) =>
+            elements
+                .map((el) => [el, el.getBoundingClientRect()])
+                .filter(([, box]) => box.width > 0 && (box.width < 24 || box.height < 24))
+                .map(
+                    ([el, box]) =>
+                        `${el.getAttribute('aria-label') ?? el.textContent.trim()} ${box.width}x${box.height}`
+                )
+        )
+        expect(small).toEqual([])
+    })
+
+    test(`${locale}: pending book search stays out of the authors address`, async ({ page }) => {
+        await signIn(page, SEEDED.admin, prefix)
+        await page.goto(`${prefix}/admin/books`)
+        await expect(page.locator('main tbody tr')).toHaveCount(10)
+        await page.getByLabel(words.admin.books.search, { exact: true }).fill('pending author navigation')
+        await page
+            .getByRole('navigation', { name: words.admin.navLabel })
+            .getByRole('link', { name: new RegExp(`^${words.routes.AdminAuthors}`) })
+            .click()
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText(words.routes.AdminAuthors)
+        await page.waitForTimeout(400)
+        await expect(page).toHaveURL((url) => url.pathname === `${prefix}/admin/authors` && !url.searchParams.has('q'))
+    })
+
+    test(`${locale}: the public author link uses the new id and opens their books`, async ({ page }) => {
+        const authors = (await (await page.request.get('/api/v1/authors')).json()).data
+        const author = authors.find((entry) => entry.lastName === 'Čapek')
+        await page.goto(`${prefix}/authors`)
+        await page
+            .locator('.author-card')
+            .filter({ hasText: `${author.firstName} ${author.lastName}` })
+            .click()
+        await expect(page).toHaveURL((url) => url.pathname === `${prefix}/authors/${author.id}`)
+        await expect(page.locator('.book-card')).toHaveCount(author.booksCount)
+        await expect(page.locator('.v-breadcrumbs a').first()).toHaveAttribute('href', `${prefix}/authors`)
+    })
+}
