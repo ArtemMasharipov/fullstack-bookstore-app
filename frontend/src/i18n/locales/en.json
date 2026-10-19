@@ -51,6 +51,26 @@
         "userInitial": "U"
     },
     "admin": {
+        "orders": {
+            "status": "Order status",
+            "payment": "Payment status",
+            "sort": "Sort orders",
+            "allStatuses": "All order statuses",
+            "allPayments": "All payment statuses",
+            "newest": "Newest first",
+            "oldest": "Oldest first",
+            "deletedCustomer": "Deleted account",
+            "empty": "No orders yet.",
+            "noResults": "No orders match these filters.",
+            "columns": {
+                "orderNumber": "Order",
+                "customer": "Customer",
+                "createdAt": "Placed on",
+                "total": "Total",
+                "status": "Status",
+                "paymentStatus": "Payment"
+            }
+        },
         "users": {
             "search": "Search users",
             "add": "Add user",
@@ -401,7 +421,8 @@
         "payment": {
             "unpaid": "Awaiting payment",
             "paid": "Paid",
-            "failed": "Payment failed"
+            "failed": "Payment failed",
+            "refunded": "Refund recorded"
         },
         "itemsTitle": "Books",
         "addressTitle": "Delivery address",

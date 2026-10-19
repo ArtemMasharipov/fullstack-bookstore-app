@@ -21,6 +21,7 @@
                 :items-per-page="limit"
                 :items-per-page-options="ADMIN_PAGE_SIZES"
                 :sort-by="vuetifySort"
+                :must-sort="mustSort"
                 @update:page="emit('update:page', $event)"
                 @update:items-per-page="emit('update:limit', $event)"
                 @update:sort-by="onSort"
@@ -76,6 +77,7 @@ const props = defineProps({
     page: { type: Number, default: 1 },
     limit: { type: Number, default: 10 },
     sortBy: { type: String, default: null },
+    mustSort: Boolean,
     // Why the list is empty
     emptyText: { type: String, required: true },
     // The list is empty because of the search or the filters

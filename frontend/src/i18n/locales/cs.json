@@ -51,6 +51,26 @@
         "userInitial": "U"
     },
     "admin": {
+        "orders": {
+            "status": "Stav objednávky",
+            "payment": "Stav platby",
+            "sort": "Řazení objednávek",
+            "allStatuses": "Všechny stavy objednávky",
+            "allPayments": "Všechny stavy platby",
+            "newest": "Od nejnovějších",
+            "oldest": "Od nejstarších",
+            "deletedCustomer": "Smazaný účet",
+            "empty": "Zatím žádné objednávky.",
+            "noResults": "Žádné objednávky neodpovídají filtrům.",
+            "columns": {
+                "orderNumber": "Objednávka",
+                "customer": "Zákazník",
+                "createdAt": "Vytvořeno",
+                "total": "Celkem",
+                "status": "Stav",
+                "paymentStatus": "Platba"
+            }
+        },
         "users": {
             "search": "Hledat uživatele",
             "add": "Přidat uživatele",
@@ -401,7 +421,8 @@
         "payment": {
             "unpaid": "Čeká na platbu",
             "paid": "Zaplaceno",
-            "failed": "Platba se nezdařila"
+            "failed": "Platba se nezdařila",
+            "refunded": "Vrácení platby zaznamenáno"
         },
         "itemsTitle": "Knihy",
         "addressTitle": "Doručovací adresa",
