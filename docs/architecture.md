@@ -101,8 +101,15 @@ timestamps; `Session` has `createdAt`.
   4. The ordered lines leave the cart, but only while their quantity is the ordered one: a line changed meanwhile
      stays. There is no transaction yet; a retry with the same key answers the order if this step did not run.
 - `status` is one of `pending`, `processing`, `shipped`, `delivered` or `cancelled`; `paymentStatus` is `unpaid`,
-  `paid` or `failed`, and every change of either is added to `statusHistory`. A customer can cancel a pending order
+  `paid`, `failed` or `refunded`, and every change of either is added to `statusHistory`. A customer can cancel a pending order
   that is not paid.
+- Admin transitions are declared once in `services/orderTransitions.js`, used to validate writes and expose
+  `allowedTransitions` in admin detail. A conditional update compares both stored axes; a concurrent change is 409.
+  Recording payment also starts processing; cancelling a paid order also records a refund. Each double operation
+  has two history entries with one timestamp. Delivered paid orders can be marked refunded. These are accounting
+  records, with an explicit instruction to return money through the provider first; there is no provider integration.
+- Admin order stats count all orders but revenue and paid counts exclude cancelled/refunded orders. Legacy `isPaid`
+  is considered only when the new payment status is absent. Revenue uses the same normalized totals in geller.
 - Orders stored before `schemaVersion: 2` (float amounts in crowns, `isPaid`, the street in `address`) are never
   rewritten. `services/orderView.js` reads both shapes into the same order view, converting the old amounts to geller.
 - The server builds every declared index before it takes requests (`ensureIndexes` in `config/database.js`); the
@@ -162,7 +169,7 @@ the three plugins.
   canonical form: no first page, no empty values, an invalid page replaced. `adminListQuery.js` does the same for the
   admin tables: page, page size, sort, search and the screen's filters.
 - **State** (`src/stores/`). One Pinia store per area: `auth`, `authors`, `books`, `cart`, `checkout`, `orders`,
-  `shopConfig` and `users`. The stores call their API modules and track their loading and error state.
+  and `shopConfig`. The stores call their API modules and track their loading and error state.
   - `auth` holds the token and the user; whether the user is an admin comes from their role through `can()`.
   - `books` holds one page of books with the server's pagination. Search and filters are not kept there: the
     catalogue reads them from its address, and the home page loads its latest books into a list of its own. The open
@@ -176,8 +183,10 @@ the three plugins.
     sign-in.
   - The checkout store holds the idempotency key of the current checkout and keeps it for every retry of the same
     order.
+  - `orders` holds only the customer's list, detail and cancellation. Admin lists, detail and dashboard resources
+    stay local to their routed screens/composables and do not replace the storefront's state. There is no users store.
 - **API client** (`src/services/api/`). One module per resource (`booksApi.js`, `authorsApi.js`, `cartApi.js`,
-  `orderApi.js`, `configApi.js`, `usersApi.js`, `rolesApi.js`, `authService.js`), all on the Axios instance in
+  `orderApi.js`, `configApi.js`, `usersApi.js`, `authService.js`), all on the Axios instance in
   `baseApi.js`. It sets
   the base URL and a 15-second timeout, adds the token from `localStorage` to every request while there is one (a
   request that brings its own token keeps it), turns failures into
@@ -205,6 +214,13 @@ the three plugins.
   changing another screen's address. The books screen adds `BookFormDialog`, the authors screen `AuthorFormDialog`;
   both confirm deletions and keep form errors at their fields with a focused summary. The author screen explains a
   refused deletion with its book count and restores keyboard focus after the pending operation and list update.
+  Users use `UserFormDialog` with a fresh read before editing and a separate confirmed status action; changing
+  one's own admin access is disabled with an explanation. The replaced roles API/composables and old user dialog
+  have been removed. Orders use filters for both axes and date sorting, with no unsupported search; their lazy detail
+  route inherits admin access and layout without adding a navigation item. It keeps the canonical list query for Back.
+  `useAdminOrder` ignores obsolete reads/writes and blocks further actions until a fresh read after a change.
+  `useAdminDashboard` loads five independent resources: books/authors pagination totals via limit1, user stats,
+  order stats and five latest orders. The four order cards share one deduplicated request and retry.
 
 ## Configuration and environments
 
@@ -269,7 +285,10 @@ absolute `VITE_API_URL`.
   area for the seeded admin and for other accounts, sessions that end on the server, the admin layout, the books table
   with its accessibility checks, author forms and paging, a storefront that loads no admin code, and the shop terms against
   `GET /config/public`. The tests that change the catalogue (`admin-catalog.spec.js`) run in a Playwright project of
-  their own after all the others, which count the seeded books. Shared helpers live in `e2e/support.js`, the seeded
+  their own after all the others, which count the seeded books. User/order/dashboard writes share this project with
+  one worker so aggregate checks see stable current API values. Temporary accounts are deactivated in fixture teardown;
+  orders that cannot be cancelled remain until the isolated e2e database is stopped. Shared helpers live in
+  `e2e/support.js` and `e2e/admin-support.js`, the seeded
   accounts in `e2e/credentials.js`.
   Playwright starts its own servers on dedicated ports: the API on 3100 (`npm run e2e:server`, an in-memory MongoDB
   with the demo data) and `vite preview` on 4173. Existing servers are never reused, so a busy port fails the run

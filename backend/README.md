@@ -18,6 +18,9 @@ Run them from `backend/`.
 | `npm run seed`     | demo users, authors and books (`npm run seed -- --reset` to start over)   |
 | `npm run e2e:server` | the API for the Playwright smoke test; started by Playwright, not by hand |
 
+Vitest uses half the available CPU count, at least one worker and at most four. This keeps MongoDB workers and
+spawned CLI tests from saturating large local hosts; assertions and test timeouts are unchanged.
+
 ## Structure
 
 ```
@@ -173,12 +176,12 @@ geller (1/100 CZK). A quantity is a JSON integer from 1 to 99 per book; `quote` 
 | ------ | --------------------- | ------ | ---------------------------------------------------------------------------- |
 | POST   | `/orders`             | User   | Place an order from the cart (`Idempotency-Key` header, see below)           |
 | GET    | `/orders`             | User   | The user's orders, newest first (`page = 1`, `limit = 10`, at most 50)       |
-| GET    | `/orders/:id`         | User   | One of the user's orders; another user's order is `NOT_FOUND`               |
+| GET    | `/orders/:id`         | User/Admin | Own order for a user; any order with customer and allowed actions for an admin |
 | PATCH  | `/orders/:id/cancel`  | User   | Cancel a `pending` order that is `unpaid` or `failed`                        |
-| GET    | `/orders/admin/all`   | Admin  | All orders with their `customer` (`page`, `limit = 20`, `status`, `paymentStatus`) |
+| GET    | `/orders/admin/all`   | Admin  | All orders with their `customer` (`page`, `limit = 20`, `status`, `paymentStatus`, `sortBy`) |
 | GET    | `/orders/admin/stats` | Admin  | Order counts and `totalRevenue` of paid orders, in geller                    |
-| PATCH  | `/orders/:id/status`  | Admin  | Set the status (`{ status }`); a cancelled order keeps its status            |
-| PATCH  | `/orders/:id/pay`     | Admin  | Record the payment; a `pending` order moves on to `processing`               |
+| PATCH  | `/orders/:id/status`  | Admin  | Record an allowed status transition (`{ status }`) |
+| PATCH  | `/orders/:id/payment` | Admin  | Record payment received or a refund (`{ paymentStatus: "paid" \| "refunded" }`) |
 
 `POST /orders` takes the address and the total the customer saw, in geller:
 
@@ -210,7 +213,30 @@ sent again. A unique index on the user and the key settles two requests arriving
 An order is `{ id, orderNumber, status, paymentStatus, items: [{ bookId, title, unitPrice, quantity, lineTotal }],
 shippingAddress, quote, statusHistory: [{ axis, from, to, by, at }], createdAt }`. The number is
 `ORD-YYYYMMDD-NNNNNN` from a counter per UTC day; gaps are possible. A new order is `pending` and `unpaid`: there is
-no online payment yet. A status change that is not allowed is `INVALID_TRANSITION` (409).
+no online payment yet. Admin detail adds `customer: { id, email, username } | null` and
+`allowedTransitions: [{ axis: "status" | "payment", to }]`. A non-admin asking for somebody else's order gets 404.
+
+The transition rules live in `services/orderTransitions.js`; both validation and allowed actions use them:
+
+| Actor | Axis | From → to | Condition / simultaneous change |
+| --- | --- | --- | --- |
+| Admin | status | pending → processing | Already paid |
+| User | status | pending → cancelled | Own order, unpaid or failed |
+| Admin | status | pending/processing → cancelled | Paid orders also become refunded |
+| Admin | status | processing → shipped | |
+| Admin | status | shipped → delivered | |
+| Admin | payment | unpaid → paid | Pending order also becomes processing |
+| Admin | payment | paid → refunded | Delivered order only |
+
+Anything else is 409 `INVALID_TRANSITION`. Refunded orders have no more transitions. Each operation compares both
+stored axes before writing; a competing change answers 409 `CONFLICT`. A double transition writes two history
+entries with the same timestamp in one update. The old `/orders/:id/pay` route is removed (404 for an admin).
+Recording a refund does not contact a payment provider: return the money in the provider dashboard first.
+
+The admin list accepts `sortBy=createdAt` or `-createdAt` (default); `_id` breaks ties in the same direction.
+`paidOrders` counts paid orders except cancelled ones, and `totalRevenue` sums those orders' totals in geller.
+Legacy `isPaid: true` counts only when `paymentStatus` is absent. Modern refunded orders and all cancelled orders
+are excluded even if an old `isPaid` flag is still true. Counts include all orders, including cancelled ones.
 
 Orders stored by the previous version (amounts as floats in crowns, the street in `address`, `isPaid`) are read in
 the same shape without changing the stored document: amounts are converted to geller, their quote says
@@ -220,15 +246,30 @@ the same shape without changing the stored document: amounts are converted to ge
 
 | Method | Path                    | Access | Description                  |
 | ------ | ----------------------- | ------ | ---------------------------- |
-| GET    | `/users`                | Admin  | List users (filter, search)  |
+| GET    | `/users`                | Admin  | Validated server page, filters, literal search and stable sort |
 | GET    | `/users/stats`          | Admin  | User statistics              |
-| GET    | `/users/role/:role`     | Admin  | Users with a role            |
 | GET    | `/users/:id`            | Admin  | One user                     |
-| POST   | `/users`                | Admin  | Create a user                |
-| PUT    | `/users/:id`            | Admin  | Update a user                |
+| POST   | `/users`                | Admin  | Create a user (201), explicit role required |
+| PUT    | `/users/:id`            | Admin  | Partial update; omitted fields stay unchanged; `{}` is a no-op |
 | PATCH  | `/users/:id/status`     | Admin  | Set the active status (`{ isActive: boolean }`) |
-| DELETE | `/users/:id`            | Admin  | Delete a user (soft delete)  |
-| DELETE | `/users/:id/permanent`  | Admin  | Delete a user permanently    |
+
+Users and auth return the same DTO: `{ id, username, email, firstName, lastName, role, isActive, lastLogin, createdAt }`.
+Names and dates may be null; password, hash, `_id` and `__v` never leave the API. Older stored roles read as `user`.
+`GET /users` accepts `page`, `limit` (1–100), `role=user|admin`, `isActive=true|false`, plain-text `search` (1–100
+characters), and `sortBy` ±`createdAt`, `username`, `email` or `lastLogin`. `_id` breaks sort ties. Pagination has
+exactly `page`, `limit`, `total`, `pages`. Stats are `{ total, active, inactive, byRole: { user, admin } }`.
+
+POST takes username, email, password, role and optional firstName/lastName. PUT takes any subset of username, email,
+firstName, lastName and role; `isActive` belongs only to PATCH status. Unknown fields, operator objects and non-boolean
+status bodies answer 400. Username/email conflicts answer 409 `CONFLICT` with field errors; either changed field can
+conflict independently. Role changes and deactivation revoke the affected user's sessions.
+
+`ADMIN_SELF_CHANGE` prevents removing one's own admin access. `LAST_ADMIN` prevents removing the last active admin.
+Access changes are staged and checked before profile fields are written; rejected access does not leave profile
+changes behind. Conditional compensation restores only the changed access fields and does not overwrite a newer
+access state. This is not a multi-document transaction: a process crash can interrupt the compensation sequence.
+The duplicate GET `/users/role/:role` and both DELETE routes (`/users/:id`, `/users/:id/permanent`) are removed;
+an authenticated admin gets 404. Deactivate an account through PATCH instead.
 
 ## Authentication
 
@@ -238,7 +279,7 @@ the same shape without changing the stored document: amounts are converted to ge
 {
   "success": true,
   "data": {
-    "user": { "_id": "...", "username": "...", "email": "...", "role": "user", "...": "..." },
+    "user": { "id": "...", "username": "...", "email": "...", "role": "user", "...": "..." },
     "token": "eyJhbGciOi..."
   },
   "message": "Login successful"
@@ -252,7 +293,7 @@ Authorization: Bearer <token>
 ```
 
 The token is signed with `JWT_SECRET` and expires after `JWT_EXPIRATION` (default `7d`). Roles are `user` (the
-default), `admin` and `moderator`; the routes check for `admin` only.
+default) and `admin`; a legacy stored `moderator` reads as `user`.
 
 ## Response format
 

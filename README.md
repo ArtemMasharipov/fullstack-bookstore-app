@@ -28,14 +28,20 @@ The purchase path works from the catalogue to the order:
 - Authors have a server-side admin table too, with search and sort in the address and a form for their name,
   biography, birth year, country and website. An author with books cannot be deleted: the message gives the number
   of books to reassign or delete first. Book counts come from the books themselves, including after a move or deletion.
+- Users have a server-side admin table with search, role and active-status filters, creation and profile editing,
+  and confirmed activation or deactivation. The last active administrator is protected by the API.
+- Orders have a filtered admin table and a separate detail page with the customer, delivery address, lines and
+  history. The API supplies the allowed status and payment actions; recording a paid cancellation or refund asks
+  the admin to return the money in the payment provider dashboard first. The app records the change only.
+- The dashboard reads catalogue totals, user totals and active accounts, order counts, paid revenue and the latest
+  five orders from server aggregates. Each resource has its own loading, error and retry state.
 - The interface is in Czech (default) and English (`/en`), with prices in CZK. Delivery and VAT terms are built from
   the shop settings (`GET /api/v1/config/public`), which hold demo values.
 
 Known limitations:
 
 - There is no online payment: a new order waits for payment.
-- The admin sections for orders and users and the dashboard are still being rebuilt and do not work yet.
-- Public author pages, the profile and those remaining admin sections are still in English only. The Czech texts are a draft.
+- Public author pages and the profile are still in English only. The Czech texts are a draft.
 - Book categories are a fixed list, and their names are not translated yet.
 - Development tools (nodemon, ESLint 7) still depend on packages with known vulnerabilities and no fix within their
   current major versions; [docs/dependency-audit.md](docs/dependency-audit.md) lists them with review dates.
