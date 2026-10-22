@@ -69,6 +69,7 @@
             }
         },
         "orderDetails": {
+            "historyBy": { "user": "by the customer", "admin": "by an administrator" },
             "historyChange": "{from} → {to}",
             "back": "Back to orders",
             "actionsTitle": "Order actions",

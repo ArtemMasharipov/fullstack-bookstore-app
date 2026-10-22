@@ -134,6 +134,11 @@ describe.each(['cs', 'en'])('AdminUsersView (%s)', (locale) => {
 })
 
 describe('user list navigation and failures', () => {
+    it('sorts the creation date in both directions from its header', async () => {
+        await mount()
+        button(words.admin.users.columns.createdAt, mounted.root).click()
+        await vi.waitFor(() => expect(api.list).toHaveBeenLastCalledWith({ page: 1, limit: 10, sortBy: 'createdAt' }))
+    })
     it('canonicalizes the URL, sorts from the header and changes page size', async () => {
         await mount('/admin/users?page=bad&role=owner&unknown=x')
         await vi.waitFor(() => expect(mounted.router.currentRoute.value.query).toEqual({}))

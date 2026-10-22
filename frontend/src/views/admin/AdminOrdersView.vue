@@ -54,6 +54,7 @@
         <template #item.customer="{ item }">{{ item.customer?.email ?? t('admin.orders.deletedCustomer') }}</template>
         <template #item.orderNumber="{ item }"
             ><router-link
+                class="admin-orders__link"
                 :to="
                     localeRoute('AdminOrderDetails', { params: { id: item.id }, query: listQuery(state, ORDERS_LIST) })
                 "
@@ -117,6 +118,11 @@ const filter = (key, value) => update({ filters: { ...state.value.filters, [key]
 const resetFilters = () => update({ filters: {} })
 </script>
 <style scoped>
+.admin-orders__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+}
 .admin-orders__filters {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

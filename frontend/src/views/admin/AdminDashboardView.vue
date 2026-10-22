@@ -52,9 +52,11 @@
             <tbody>
                 <tr v-for="order in resources.recent.data" :key="order.id">
                     <td>
-                        <router-link :to="localeRoute('AdminOrderDetails', { params: { id: order.id } })">{{
-                            order.orderNumber
-                        }}</router-link>
+                        <router-link
+                            class="admin-dashboard__link"
+                            :to="localeRoute('AdminOrderDetails', { params: { id: order.id } })"
+                            >{{ order.orderNumber }}</router-link
+                        >
                     </td>
                     <td>{{ order.customer?.email ?? t('admin.orders.deletedCustomer') }}</td>
                     <td>{{ formatDateTime(order.createdAt) }}</td>
@@ -93,3 +95,10 @@ const cards = computed(() =>
     ].map((card) => ({ ...card, label: t(`admin.dashboard.cards.${card.key}`) }))
 )
 </script>
+<style scoped>
+.admin-dashboard__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+}
+</style>

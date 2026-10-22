@@ -72,7 +72,7 @@
                                             to: changeLabel(entry.axis, entry.to),
                                         })
                                     }}
-                                    · {{ t(`orders.historyBy.${entry.by}`) }}
+                                    · {{ t(`admin.orderDetails.historyBy.${entry.by}`) }}
                                 </li>
                             </ol>
                         </v-card-text></v-card

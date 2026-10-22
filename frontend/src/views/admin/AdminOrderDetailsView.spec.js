@@ -49,6 +49,11 @@ async function mount(locale = 'cs') {
 }
 const dialog = () => document.querySelector('[role="dialog"]')
 describe.each(['cs', 'en'])('AdminOrderDetailsView (%s)', (locale) => {
+    it('describes a customer history entry as the customer rather than the current administrator', async () => {
+        api.get.mockResolvedValue({ ...original, statusHistory: [{ ...original.statusHistory[0], by: 'user' }] })
+        await mount(locale)
+        expect(mounted.root.textContent).toContain(locale === 'en' ? 'by the customer' : 'zákazníkem')
+    })
     it('renders the snapshot, customer fallback, history, allowed actions and canonical Back link', async () => {
         await mount(locale)
         for (const text of [

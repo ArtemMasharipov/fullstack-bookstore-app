@@ -37,7 +37,17 @@
                         :loading="authorsLoading"
                         :error-messages="errors.authorId"
                         :aria-invalid="errors.authorId ? 'true' : undefined"
-                    />
+                    >
+                        <template #loader="{ color, isActive }">
+                            <v-progress-linear
+                                :active="isActive"
+                                :color="color"
+                                height="2"
+                                indeterminate
+                                :aria-label="t('common.loading')"
+                            />
+                        </template>
+                    </v-autocomplete>
                     <v-row>
                         <v-col cols="12" sm="6">
                             <v-text-field

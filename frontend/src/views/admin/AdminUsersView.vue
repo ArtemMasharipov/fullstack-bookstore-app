@@ -1,6 +1,7 @@
 <template>
     <div>
         <admin-table
+            must-sort
             :headers="headers"
             :items="error ? [] : items"
             :items-length="total"
@@ -22,6 +23,7 @@
                     <v-text-field
                         v-model="search"
                         :label="t('admin.users.search')"
+                        :aria-label="t('admin.users.search')"
                         type="search"
                         maxlength="100"
                         prepend-inner-icon="mdi-magnify"

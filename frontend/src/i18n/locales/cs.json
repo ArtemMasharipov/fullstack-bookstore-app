@@ -69,6 +69,7 @@
             }
         },
         "orderDetails": {
+            "historyBy": { "user": "zákazníkem", "admin": "administrátorem" },
             "historyChange": "{from} → {to}",
             "back": "Zpět na objednávky",
             "actionsTitle": "Akce objednávky",

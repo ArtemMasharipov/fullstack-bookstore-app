@@ -142,8 +142,22 @@ for (const locale of ['cs', 'en']) {
 
         expect(await wcagViolations(page, 'body')).toEqual([])
 
-        await page.getByRole('button', { name: words.admin.books.add }).click()
-        await expect(page.getByRole('dialog', { name: words.admin.bookForm.createTitle })).toBeVisible()
+        let releaseAuthors
+        const authorsPending = new Promise((resolve) => (releaseAuthors = resolve))
+        await page.route('**/api/v1/authors?*', async (route) => {
+            await authorsPending
+            await route.continue()
+        })
+        try {
+            await page.getByRole('button', { name: words.admin.books.add }).click()
+            const form = page.getByRole('dialog', { name: words.admin.bookForm.createTitle })
+            await expect(form).toBeVisible()
+            await expect(form.getByRole('progressbar', { name: words.common.loading, exact: true })).toBeVisible()
+            expect(await wcagViolations(page, '[role="dialog"]')).toEqual([])
+        } finally {
+            releaseAuthors()
+        }
+        await expect(page.getByRole('dialog').getByRole('button', { name: words.admin.form.save })).toBeEnabled()
         expect(await wcagViolations(page, '[role="dialog"]')).toEqual([])
     })
 

@@ -204,6 +204,21 @@ describe('BookFormDialog', () => {
         expect(books.create).not.toHaveBeenCalled()
     })
 
+    it.each(['cs', 'en'])('names the author loading indicator in %s while its request is pending', async (locale) => {
+        const response = deferred()
+        authors.fetchAll.mockReturnValue(response.promise)
+        await mount({ locale })
+
+        const field = input(words.admin.bookForm.author).closest('.v-input')
+        const progress = field.querySelector('[role="progressbar"]')
+        expect(progress).not.toBeNull()
+        expect(progress.getAttribute('aria-label')).toBe(words.common.loading)
+        expect(button(words.admin.form.save).disabled).toBe(true)
+
+        response.resolve(AUTHORS)
+        await vi.waitFor(() => expect(button(words.admin.form.save).disabled).toBe(false))
+    })
+
     it('marks the fields with an error as invalid', async () => {
         await mount()
 

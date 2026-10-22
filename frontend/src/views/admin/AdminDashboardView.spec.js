@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mountAdmin } from '@/test/admin'
+import { deferred, mountAdmin } from '@/test/admin'
 import { useBooksStore, useAuthorsStore, useOrdersStore } from '@/stores'
 import { formatMoney } from '@/utils/money'
 const api = vi.hoisted(() => ({ books: vi.fn(), authors: vi.fn(), orders: vi.fn(), users: vi.fn(), recent: vi.fn() }))
@@ -46,6 +46,27 @@ async function mount(locale = 'cs') {
     await vi.waitFor(() => expect(mounted.root.querySelectorAll('[role="status"]')).toHaveLength(0))
 }
 describe.each(['cs', 'en'])('AdminDashboardView (%s)', (locale) => {
+    it('distinguishes loading from legitimate zero totals and empty recent orders', async () => {
+        const pending = deferred()
+        api.books.mockResolvedValue({ data: [], pagination: { total: 0 } })
+        api.authors.mockResolvedValue({ data: [], pagination: { total: 0 } })
+        api.users.mockResolvedValue({ total: 0, active: 0 })
+        api.recent.mockResolvedValue({ items: [] })
+        api.orders.mockReturnValueOnce(pending.promise)
+        mounted = await mountAdmin(View, {
+            path: locale === 'en' ? '/en/admin' : '/admin',
+            locale,
+            routeName: 'AdminDashboard',
+        })
+        words = mounted.words
+        const total = mounted.root.querySelector('[data-card="total"]')
+        expect(total.textContent).toContain(words.common.loading)
+        expect(total.querySelector('.text-h4')).toBeNull()
+        pending.resolve({ total: 0, pendingOrders: 0, paidOrders: 0, totalRevenue: 0, currency: 'CZK' })
+        await vi.waitFor(() => expect(total.querySelector('.text-h4')?.textContent).toBe('0'))
+        expect(mounted.root.querySelector('[data-card="revenue"]').textContent).toContain(formatMoney(0))
+        expect(mounted.root.textContent).toContain(words.admin.orders.empty)
+    })
     it('shows aggregate counts, money and real recent links without changing storefront state', async () => {
         await mount(locale)
         for (const [name, value] of Object.entries({

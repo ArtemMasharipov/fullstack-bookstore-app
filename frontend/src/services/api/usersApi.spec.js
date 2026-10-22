@@ -18,6 +18,9 @@ const pagination = { page: 2, limit: 20, total: 25, pages: 2 }
 const response = (data, extra = {}) => ({ data: { success: true, data, ...extra } })
 beforeEach(() => vi.resetAllMocks())
 describe('usersApi', () => {
+    it('exposes exactly the six supported user operations', () => {
+        expect(Object.keys(usersApi).sort()).toEqual(['create', 'get', 'list', 'setStatus', 'stats', 'update'])
+    })
     it('unwraps writes into the shared user DTO', async () => {
         http.post.mockResolvedValue(response(user))
         http.put.mockResolvedValue(response(user))

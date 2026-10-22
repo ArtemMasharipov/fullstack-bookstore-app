@@ -14,13 +14,18 @@ export default defineConfig({
         trace: 'retain-on-failure',
     },
     projects: [
-        { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: /admin-catalog\.spec\.js/ },
-        // Tests that change the catalogue run after every other test: the catalogue tests count the seeded books
-        // and look for the newest one
+        {
+            name: 'chromium',
+            use: { ...devices['Desktop Chrome'] },
+            testIgnore: /admin-(catalog|users|orders|dashboard)\.spec\.js/,
+        },
+        // Admin writes run after read-only tests, which count the seeded books. One worker also keeps
+        // user/order mutations and dashboard aggregate comparisons from racing each other.
         {
             name: 'admin-writes',
             use: { ...devices['Desktop Chrome'] },
-            testMatch: /admin-catalog\.spec\.js/,
+            testMatch: /admin-(catalog|users|orders|dashboard)\.spec\.js/,
+            workers: 1,
             dependencies: ['chromium'],
         },
     ],
