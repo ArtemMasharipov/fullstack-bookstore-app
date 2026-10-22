@@ -74,7 +74,7 @@ export async function listAllOrders(req, res) {
  * @access  Private/Admin
  */
 export async function setOrderStatus(req, res) {
-  ok(res, await orderService.setOrderStatus(req.valid.params.id, req.valid.body.status));
+  ok(res, await orderService.setOrderStatus(req.valid.params.id, req.valid.body.status, req.valid.body.expectedState));
 }
 
 /**
@@ -83,7 +83,7 @@ export async function setOrderStatus(req, res) {
  * @access  Private/Admin
  */
 export async function setOrderPayment(req, res) {
-  ok(res, await orderService.setOrderPayment(req.valid.params.id, req.valid.body.paymentStatus));
+  ok(res, await orderService.setOrderPayment(req.valid.params.id, req.valid.body.paymentStatus, req.valid.body.expectedState));
 }
 
 /**

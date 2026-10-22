@@ -21,8 +21,12 @@ export const adminListOrdersQuery = z.strictObject({
   sortBy: sortBy(["createdAt", "-createdAt"], "-createdAt"),
 });
 
-export const orderStatusBody = z.strictObject({ status: z.enum(ORDER_STATUSES) });
-export const orderPaymentBody = z.strictObject({ paymentStatus: z.enum(["paid", "refunded"]) });
+const expectedState = z.strictObject({
+  status: z.enum(ORDER_STATUSES),
+  paymentStatus: z.enum(PAYMENT_STATUSES),
+}).optional();
+export const orderStatusBody = z.strictObject({ status: z.enum(ORDER_STATUSES), expectedState });
+export const orderPaymentBody = z.strictObject({ paymentStatus: z.enum(["paid", "refunded"]), expectedState });
 export const emptyOrderQuery = z.strictObject({});
 
 // Trimmed first; then the length and no control characters (line breaks, NUL)

@@ -145,14 +145,19 @@ const confirming = ref(false),
 let opener = null
 const confirmTitle = computed(() => (selected.value ? actionLabel(selected.value) : ''))
 const confirmMessage = computed(() =>
-    selected.value?.to === 'refunded' || (selected.value?.to === 'cancelled' && order.value?.paymentStatus === 'paid')
+    selected.value?.to === 'refunded' ||
+    (selected.value?.to === 'cancelled' && selected.value.expectedState.paymentStatus === 'paid')
         ? t('admin.orderDetails.manualRefund')
         : t('admin.orderDetails.confirmText')
 )
 function ask(action) {
     if (loading.value || mutating.value) return
     opener = document.activeElement
-    selected.value = { ...action, id: route.params.id }
+    selected.value = {
+        ...action,
+        id: route.params.id,
+        expectedState: { status: order.value.status, paymentStatus: order.value.paymentStatus },
+    }
     confirming.value = true
 }
 async function restoreFocus() {

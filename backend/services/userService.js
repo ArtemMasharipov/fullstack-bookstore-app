@@ -21,10 +21,14 @@ const takesAdminAccess = (user, changes) =>
 /**
  * Writes a change of a user's role or status. Nobody takes away their own
  * admin access. The acting admin is an active admin, so the shop can lose its
- * last one only when two admins take each other's access at the same moment;
- * the count is therefore checked after the write, and a write that left no
- * active admin is undone. A role change or a deactivation ends the user's
- * sessions, once it stands.
+ * last one when authorized requests overlap. Access writes reserve the user's
+ * existing version counter: a negative version is pending, nonnegative versions
+ * are committed. Other access writers fail with CONFLICT until it settles.
+ * Only committed active admins can justify removing another admin's access;
+ * a provisional promotion must not become somebody else's safety witness.
+ * The reservation is stored in MongoDB, so it also coordinates API processes.
+ * A crash can leave a pending version requiring operator recovery; this is not
+ * a transaction and there is deliberately no unsafe time-based lock stealing.
  * @param {Object} user - The user as stored before the change
  * @param {Object} changes - The fields being written ({ role?, isActive?, … })
  * @param {string} actorId - Id of the acting admin
@@ -42,29 +46,44 @@ async function changeAccess(user, changes, actorId, prepare = async () => {}) {
   await prepare();
   const conflict = () => new ConflictError("The user changed meanwhile, reload it");
   const access = { role: user.role, isActive: user.isActive };
+  const accessChanges = Object.fromEntries(Object.entries(changes).filter(([key]) => ["role", "isActive"].includes(key)));
+  const writesAccess = Object.keys(accessChanges).length > 0;
+  const previousVersion = user.__v;
+  if (writesAccess && previousVersion !== undefined && (!Number.isSafeInteger(previousVersion) || previousVersion < 0)) {
+    throw conflict();
+  }
+  const nextVersion = (previousVersion ?? 0) + 1;
+  if (writesAccess && !Number.isSafeInteger(nextVersion)) throw conflict();
+  const pendingVersion = -nextVersion;
   const profile = Object.fromEntries(Object.entries(changes).filter(([key]) => !["role", "isActive"].includes(key)));
   const previousProfile = Object.fromEntries(Object.keys(profile).map((key) => [key, user[key] ?? null]));
   const write = (filter, updates) => User.findOneAndUpdate(
     { _id: user._id, ...filter }, { $set: updates }, { new: true, runValidators: true }
   ).select("-password");
   let updated;
-  if (takesAccess) {
-    const accessChanges = Object.fromEntries(Object.entries(changes).filter(([key]) => ["role", "isActive"].includes(key)));
-    const staged = await write(access, accessChanges);
-    if (!staged) throw conflict();
-    const writtenAccess = { role: staged.role, isActive: staged.isActive };
-    const undo = () => User.updateOne(
-      { _id: user._id, ...writtenAccess },
-      { $set: Object.fromEntries(Object.keys(accessChanges).map((key) => [key, user[key]])) }
+  let writtenAccess;
+  if (writesAccess) {
+    const staged = await write(
+      { ...access, __v: previousVersion === undefined ? { $exists: false } : previousVersion },
+      { ...accessChanges, __v: pendingVersion }
     );
-    if (!(await User.exists({ role: "admin", isActive: true }))) {
+    if (!staged) throw conflict();
+    writtenAccess = { role: staged.role, isActive: staged.isActive };
+    const undo = () => User.updateOne(
+      { _id: user._id, ...writtenAccess, __v: pendingVersion },
+      { $set: { ...Object.fromEntries(Object.keys(accessChanges).map((key) => [key, user[key]])), __v: nextVersion } }
+    );
+    if (takesAccess && !(await User.exists({
+      role: "admin", isActive: true,
+      $or: [{ __v: { $gte: 0 } }, { __v: { $exists: false } }],
+    }))) {
       await undo();
       throw new ConflictError("The shop needs at least one active admin", "LAST_ADMIN");
     }
     // The rejected LAST_ADMIN path never writes a profile. A concurrent profile
     // edit is not undone, nor silently replaced by this request's later write.
     try {
-      updated = Object.keys(profile).length ? await write({ ...writtenAccess, ...previousProfile }, profile) : staged;
+      updated = Object.keys(profile).length ? await write({ ...writtenAccess, ...previousProfile, __v: pendingVersion }, profile) : staged;
       if (!updated) throw conflict();
     } catch (error) {
       await undo();
@@ -77,6 +96,10 @@ async function changeAccess(user, changes, actorId, prepare = async () => {}) {
 
   const roleChanged = changes.role !== undefined && changes.role !== user.role;
   if (roleChanged || changes.isActive === false) await endUserSessions(user._id);
+  if (writesAccess) await User.updateOne(
+    { _id: user._id, ...writtenAccess, __v: pendingVersion },
+    { $set: { __v: nextVersion } }
+  );
   return updated;
 }
 

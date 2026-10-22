@@ -70,7 +70,7 @@ export function useAdminOrder() {
         },
         { immediate: true }
     )
-    async function transition({ axis, to }) {
+    async function transition({ axis, to, expectedState }) {
         if (
             !active() ||
             loading.value ||
@@ -81,13 +81,14 @@ export function useAdminOrder() {
             return false
         const id = route.params.id,
             current = generation
+        const confirmedState = expectedState ?? { status: order.value.status, paymentStatus: order.value.paymentStatus }
         const latest = () => active() && current === generation && route.params.id === id
         mutating.value = true
         writing = true
         actionError.value = null
         try {
-            if (axis === 'payment') await orderApi.adminSetPayment(id, to)
-            else await orderApi.adminSetStatus(id, to)
+            if (axis === 'payment') await orderApi.adminSetPayment(id, to, confirmedState)
+            else await orderApi.adminSetStatus(id, to, confirmedState)
             if (!latest()) return false
             showSuccess(undefined, { messageKey: 'admin.orderDetails.updated' })
             await reload()

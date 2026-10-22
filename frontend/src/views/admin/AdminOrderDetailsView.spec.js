@@ -49,6 +49,24 @@ async function mount(locale = 'cs') {
 }
 const dialog = () => document.querySelector('[role="dialog"]')
 describe.each(['cs', 'en'])('AdminOrderDetailsView (%s)', (locale) => {
+    it('reloads a stale cancellation and requires a new manual-refund confirmation', async () => {
+        await mount(locale)
+        api.adminSetStatus.mockRejectedValueOnce({ status: 409, code: 'CONFLICT' })
+        api.get.mockResolvedValueOnce({ ...original, status: 'processing', paymentStatus: 'paid' })
+        button(words.admin.orderDetails.actions.cancelled).click()
+        await vi.waitFor(() => expect(dialog()?.textContent).toContain(words.admin.orderDetails.confirmText))
+        expect(dialog().textContent).not.toContain(words.admin.orderDetails.manualRefund)
+        button(words.modal.confirm, dialog()).click()
+        await vi.waitFor(() => expect(api.get).toHaveBeenCalledTimes(2))
+        expect(api.adminSetStatus).toHaveBeenCalledWith('o1', 'cancelled', {
+            status: 'pending',
+            paymentStatus: 'unpaid',
+        })
+        expect(api.adminSetStatus).toHaveBeenCalledTimes(1)
+        await vi.waitFor(() => expect(dialog()).toBeNull())
+        button(words.admin.orderDetails.actions.cancelled).click()
+        await vi.waitFor(() => expect(dialog()?.textContent).toContain(words.admin.orderDetails.manualRefund))
+    })
     it('describes a customer history entry as the customer rather than the current administrator', async () => {
         api.get.mockResolvedValue({ ...original, statusHistory: [{ ...original.statusHistory[0], by: 'user' }] })
         await mount(locale)

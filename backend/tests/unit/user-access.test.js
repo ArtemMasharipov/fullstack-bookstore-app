@@ -8,7 +8,8 @@ vi.mock("../../models/User.js", () => {
     select() { return this; }, lean() { return this; },
   });
   const matches = (filter) => Object.entries(filter).every(([key, value]) =>
-    value === storage.row[key] || (value === null && storage.row[key] === undefined));
+    value === storage.row[key] || (value === null && storage.row[key] === undefined) ||
+    (typeof value === "object" && value !== null && value.$exists === false && storage.row[key] === undefined));
   const write = (filter, updates) => {
     if (!matches(filter)) return query(null);
     Object.assign(storage.row, updates.$set ?? updates);
@@ -33,6 +34,8 @@ import { updateUser } from "../../services/userService.js";
 const ORIGINAL = { _id: "target", username: "original", email: "original@example.com",
   firstName: "Jan", lastName: "Novák", role: "admin", isActive: true };
 const PROFILE = { username: "rejected", email: "rejected@example.com", firstName: "Rejected", lastName: "Rejected" };
+// Internal concurrency metadata is covered against MongoDB in the HTTP suite.
+const profileState = () => Object.fromEntries(Object.entries(storage.row).filter(([key]) => key !== "__v"));
 beforeEach(() => {
   storage.row = { ...ORIGINAL };
   storage.afterAccess = () => null;
@@ -43,7 +46,7 @@ describe("access change compensation", () => {
   it("rejects LAST_ADMIN before writing the profile", async () => {
     await expect(updateUser("target", { role: "user", ...PROFILE }, "actor"))
       .rejects.toMatchObject({ code: "LAST_ADMIN" });
-    expect(storage.row).toEqual(ORIGINAL);
+    expect(profileState()).toEqual(ORIGINAL);
     expect(sessions.ended).toEqual([]);
   });
 
@@ -51,7 +54,7 @@ describe("access change compensation", () => {
     storage.afterAccess = () => { storage.row.firstName = "A newer name"; return null; };
     await expect(updateUser("target", { role: "user", ...PROFILE }, "actor"))
       .rejects.toMatchObject({ code: "LAST_ADMIN" });
-    expect(storage.row).toEqual({ ...ORIGINAL, firstName: "A newer name" });
+    expect(profileState()).toEqual({ ...ORIGINAL, firstName: "A newer name" });
     expect(sessions.ended).toEqual([]);
   });
 
@@ -59,14 +62,14 @@ describe("access change compensation", () => {
     storage.afterAccess = () => { storage.row.role = "admin"; storage.row.isActive = false; return null; };
     await expect(updateUser("target", { role: "user" }, "actor"))
       .rejects.toMatchObject({ code: "LAST_ADMIN" });
-    expect(storage.row).toEqual({ ...ORIGINAL, isActive: false });
+    expect(profileState()).toEqual({ ...ORIGINAL, isActive: false });
   });
 
   it("refuses to overwrite a competing profile and compensates its role change", async () => {
     storage.afterAccess = () => { storage.row.firstName = "A newer name"; return { _id: "actor" }; };
     await expect(updateUser("target", { role: "user", firstName: "Rejected" }, "actor"))
       .rejects.toMatchObject({ code: "CONFLICT" });
-    expect(storage.row).toEqual({ ...ORIGINAL, firstName: "A newer name" });
+    expect(profileState()).toEqual({ ...ORIGINAL, firstName: "A newer name" });
     expect(sessions.ended).toEqual([]);
   });
 });

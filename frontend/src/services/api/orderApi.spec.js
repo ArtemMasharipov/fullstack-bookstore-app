@@ -12,6 +12,14 @@ const answer = (status, data, extra = {}) => ({ status, data: { success: true, d
 beforeEach(() => vi.clearAllMocks())
 
 describe('orderApi', () => {
+    it('forwards the state the administrator confirmed on both mutation axes', async () => {
+        http.patch.mockResolvedValue(answer(200, order))
+        const expectedState = { status: 'pending', paymentStatus: 'unpaid' }
+        await orderApi.adminSetStatus('o1', 'cancelled', expectedState)
+        await orderApi.adminSetPayment('o1', 'paid', expectedState)
+        expect(http.patch).toHaveBeenCalledWith('/orders/o1/status', { status: 'cancelled', expectedState })
+        expect(http.patch).toHaveBeenCalledWith('/orders/o1/payment', { paymentStatus: 'paid', expectedState })
+    })
     it('records a payment or refund through the payment endpoint', async () => {
         http.patch.mockResolvedValue(answer(200, order))
         for (const payment of ['paid', 'refunded']) {

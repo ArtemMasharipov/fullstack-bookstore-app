@@ -44,6 +44,10 @@ README lists them.
   ([decision 0005](decisions/0005-server-sessions-and-sign-in-protection.md)). `rateLimit.js` counts the failed
   requests to `/auth` per client and answers 429 `RATE_LIMITED` past the limit. `validate.js` checks the params,
   query and body of a route against its zod schemas (`schemas/`) and puts the parsed values on `req.valid`.
+  Role/status writes reserve the existing MongoDB user version counter with a negative value until commit or
+  compensation. Conflicting access writes and authorization of pending roles answer 409; only committed active
+  admins can justify removing another admin. A process crash can leave a pending reservation requiring operator
+  recovery; this is not a transaction. [The backend guide](../backend/README.md) documents the protocol.
   `errorHandler.js` comes last and answers every error as
   `{ success: false, error: { code, message, fields?, details? } }`: failed validation, Mongoose validation errors and
   malformed ids become 400 `VALIDATION_FAILED` with the invalid `fields`, duplicate keys 409 `CONFLICT`, and the app's
@@ -108,6 +112,8 @@ timestamps; `Session` has `createdAt`.
   Recording payment also starts processing; cancelling a paid order also records a refund. Each double operation
   has two history entries with one timestamp. Delivered paid orders can be marked refunded. These are accounting
   records, with an explicit instruction to return money through the provider first; there is no provider integration.
+  Admin writes also accept the status/payment snapshot shown in the confirmation; a stale snapshot is 409 with no
+  write. The UI refreshes and requires another confirmation rather than automatically retrying a changed operation.
 - Admin order stats count all orders but revenue and paid counts exclude cancelled/refunded orders. Legacy `isPaid`
   is considered only when the new payment status is absent. Revenue uses the same normalized totals in geller.
 - Orders stored before `schemaVersion: 2` (float amounts in crowns, `isPaid`, the street in `address`) are never

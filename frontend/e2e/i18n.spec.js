@@ -101,6 +101,8 @@ for (const initial of ['cs', 'en']) {
         expect(await language(page, other).evaluate((el) => getComputedStyle(el).outlineStyle)).toBe('solid')
         expect(await page.evaluate(() => localStorage.getItem('cart'))).toBe(cart)
         await page.reload()
+        // The shell's default lang="cs" can match before bootstrap mounts the router.
+        await expect(page.getByRole('heading', { level: 1, name: SMOKE_BOOK_TITLE })).toBeVisible()
         await expect(page.locator('html')).toHaveAttribute('lang', other)
         await expect(page).toHaveURL(`http://localhost:4173${switched}`)
         expect(await page.evaluate(() => localStorage.getItem('cart'))).toBe(cart)

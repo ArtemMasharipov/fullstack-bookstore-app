@@ -35,6 +35,51 @@ const matrix = ORDER_CASES.flatMap(([status, payment, allowed]) => ORDER_TARGETS
   [status, payment, axis, to, allowed.some(([a, t]) => a === axis && t === to) ? 200 : 409]));
 
 describe("order transition HTTP matrix", () => {
+  it("refuses cancellation of a newly paid order when the confirmed snapshot was unpaid", async () => {
+    const order = await placed("pending", "unpaid");
+    expect((await send(order._id, "payment", "paid")).status).toBe(200);
+    const paid = await Order.findById(order._id).lean();
+    const response = await request(app).patch(`/api/v1/orders/${order._id}/status`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ status: "cancelled", expectedState: { status: "pending", paymentStatus: "unpaid" } });
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe("CONFLICT");
+    const saved = await Order.findById(order._id).lean();
+    expect(saved.status).toBe("processing");
+    expect(saved.paymentStatus).toBe("paid");
+    expect(saved.statusHistory).toEqual(paid.statusHistory);
+  });
+
+  it.each([false, true])("accepts the confirmed snapshot for a current order (legacy=%s)", async (legacy) => {
+    const order = await placed("pending", "unpaid");
+    if (legacy) await Order.collection.updateOne({ _id: order._id }, { $unset: { paymentStatus: "" }, $set: { isPaid: false } });
+    const response = await request(app).patch(`/api/v1/orders/${order._id}/status`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ status: "cancelled", expectedState: { status: "pending", paymentStatus: "unpaid" } });
+    expect(response.status).toBe(200);
+    expect(response.body.data.paymentStatus).toBe("unpaid");
+  });
+  it.each([
+    { status: "processing", paymentStatus: "unpaid" },
+    { status: "pending", paymentStatus: "paid" },
+  ])("checks both confirmed axes before recording payment: %j", async (expectedState) => {
+    const order = await placed("pending", "unpaid");
+    const response = await request(app).patch(`/api/v1/orders/${order._id}/payment`)
+      .set("Authorization", `Bearer ${adminToken}`).send({ paymentStatus: "paid", expectedState });
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe("CONFLICT");
+    expect((await Order.findById(order._id)).statusHistory).toHaveLength(1);
+  });
+  it.each([null, {}, { status: "pending" }, { status: "pending", paymentStatus: "unpaid", extra: true }])(
+    "refuses a malformed confirmed snapshot %j", async (expectedState) => {
+      const order = await placed("pending", "unpaid");
+      const response = await request(app).patch(`/api/v1/orders/${order._id}/status`)
+        .set("Authorization", `Bearer ${adminToken}`).send({ status: "cancelled", expectedState });
+      expect(response.status).toBe(400);
+      expect((await Order.findById(order._id)).statusHistory).toHaveLength(1);
+    }
+  );
+
   it.each(matrix)("%s/%s → %s:%s gives admin %i and denies non-admins", async (status, payment, axis, to, expected) => {
     const order = await placed(status, payment);
     for (const [token, code] of [[null, 401], [ownerToken, 403], [otherToken, 403]]) {

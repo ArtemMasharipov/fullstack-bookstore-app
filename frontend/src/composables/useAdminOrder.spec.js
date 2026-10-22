@@ -7,6 +7,8 @@ vi.mock('@/services/api/orderApi', () => ({ orderApi: api }))
 import { useAdminOrder } from './useAdminOrder'
 const original = {
     id: 'a',
+    status: 'pending',
+    paymentStatus: 'unpaid',
     orderNumber: 'A',
     customer: { email: 'a@example.com' },
     allowedTransitions: [{ axis: 'payment', to: 'paid' }],
@@ -49,6 +51,12 @@ it('loads by id and waits for a fresh GET before enabling new actions', async ()
     expect(state.mutating.value).toBe(false)
     expect(state.order.value.allowedTransitions).toEqual([{ axis: 'status', to: 'shipped' }])
     expect(useNotifications().notifications.value).toHaveLength(1)
+})
+it('sends the confirmed state with an administrative transition', async () => {
+    await mount()
+    const expectedState = { status: 'pending', paymentStatus: 'unpaid' }
+    await state.transition({ axis: 'payment', to: 'paid', expectedState })
+    expect(api.adminSetPayment).toHaveBeenCalledWith('a', 'paid', expectedState)
 })
 it('reports one confirmed success even when the fresh GET fails, and can retry', async () => {
     await mount()

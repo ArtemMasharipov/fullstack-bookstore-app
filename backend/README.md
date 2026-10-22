@@ -233,6 +233,12 @@ stored axes before writing; a competing change answers 409 `CONFLICT`. A double 
 entries with the same timestamp in one update. The old `/orders/:id/pay` route is removed (404 for an admin).
 Recording a refund does not contact a payment provider: return the money in the provider dashboard first.
 
+Both admin transition bodies optionally accept `expectedState: { status, paymentStatus }`. The admin UI always sends
+the state shown by its confirmation. A mismatch returns 409 `CONFLICT` without changing the order or its history;
+the UI reloads and asks for a new confirmation, including the manual-refund instruction when payment changed.
+Calls that omit the precondition retain the unconditional transition contract. The stored-state CAS still guards
+the write itself, including legacy orders without `paymentStatus`.
+
 The admin list accepts `sortBy=createdAt` or `-createdAt` (default); `_id` breaks ties in the same direction.
 `paidOrders` counts paid orders except cancelled ones, and `totalRevenue` sums those orders' totals in geller.
 Legacy `isPaid: true` counts only when `paymentStatus` is absent. Modern refunded orders and all cancelled orders
@@ -266,8 +272,21 @@ conflict independently. Role changes and deactivation revoke the affected user's
 
 `ADMIN_SELF_CHANGE` prevents removing one's own admin access. `LAST_ADMIN` prevents removing the last active admin.
 Access changes are staged and checked before profile fields are written; rejected access does not leave profile
-changes behind. Conditional compensation restores only the changed access fields and does not overwrite a newer
-access state. This is not a multi-document transaction: a process crash can interrupt the compensation sequence.
+changes behind. Each access operation reserves the existing MongoDB `__v` counter with a negative value, then
+commits or compensates it to the next nonnegative version. Other role/status writers return 409 `CONFLICT` while
+it is reserved, including same-value writes. The reservation coordinates API processes, not just one Node process.
+Profile-only writes still use field comparisons and are not overwritten by compensation.
+
+The last-admin check counts only committed active admins, so a provisional promotion cannot justify another
+demotion. Session authorization returns 409 during an active reservation and cannot grant provisional admin rights;
+it does not end the session for this conflict. Session revocation completes before an access operation releases its
+reservation. Missing and existing nonnegative legacy version counters need no migration. All role/status writers
+must use this service protocol; direct database writes do not participate.
+
+This is not a multi-document transaction: a process/database failure can leave a negative version and intermediate
+access state requiring operator recovery. There is no automatic timeout that could steal a still-running operation's
+reservation. Recover such an account only after stopping conflicting writers and establishing its intended access
+state; do not blindly reset a pending counter while an API process might still own it.
 The duplicate GET `/users/role/:role` and both DELETE routes (`/users/:id`, `/users/:id/permanent`) are removed;
 an authenticated admin gets 404. Deactivate an account through PATCH instead.
 

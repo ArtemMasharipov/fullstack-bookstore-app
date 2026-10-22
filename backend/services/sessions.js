@@ -11,7 +11,7 @@ import jwt from "jsonwebtoken";
 import { config } from "../config/index.js";
 import Session from "../models/Session.js";
 import User from "../models/User.js";
-import { UnauthorizedError } from "../utils/errors.js";
+import { ConflictError, UnauthorizedError } from "../utils/errors.js";
 import { roleOf } from "./userView.js";
 
 const OBJECT_ID = /^[0-9a-f]{24}$/i;
@@ -63,9 +63,13 @@ export async function readSession(token) {
 
   const [session, user] = await Promise.all([
     Session.exists({ jti, user: sub, expiresAt: { $gt: new Date() } }),
-    User.findOne({ _id: sub, isActive: true }).select("username email role").lean(),
+    User.findOne({ _id: sub }).select("username email role isActive __v").lean(),
   ]);
   if (!session || !user) throw notValid();
+  // A reserved access write is not an authoritative role snapshot yet. In
+  // particular, an uncommitted promotion must never grant admin capabilities.
+  if (user.__v < 0) throw new ConflictError("Account access is changing, retry the request");
+  if (!user.isActive) throw notValid();
 
   return {
     user: { id: user._id.toString(), username: user.username, email: user.email, role: roleOf(user) },

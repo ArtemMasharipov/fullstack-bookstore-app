@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-18
+- Updated: 2026-10-22 (concurrent access changes)
 
 ## Context
 
@@ -28,9 +29,13 @@ password, about ten times faster than for an existing one: the time told whether
   deletes all of their sessions. Changing the password deletes them too and starts a new one for the device that made
   the change, so its user stays signed in.
 - **Admins keep their access and the shop keeps an admin.** An admin cannot take away their own admin role or
-  deactivate their own account (409 `ADMIN_SELF_CHANGE`). The acting admin is an active admin, so the shop can lose
-  its last one only when two admins take each other's access at the same moment: the count of active admins is
-  checked after the write, and a write that left none is undone (409 `LAST_ADMIN`).
+  deactivate their own account (409 `ADMIN_SELF_CHANGE`). A removal checks for another committed active admin after
+  staging; a write that left none is undone (409 `LAST_ADMIN`). All role/status writes reserve the user's existing
+  MongoDB `__v` counter with a negative value, then commit or compensate to the next nonnegative version. Another
+  access writer gets 409 `CONFLICT` until it settles, including a same-value write; compensation cannot reverse a
+  later acknowledged change. Profile-only writes retain field comparisons and their newer values are preserved.
+  Pending promotions do not count as safety witnesses and do not authorize protected requests. Session revocation
+  completes before releasing the reservation. This coordinates API processes without a process-local mutex.
 - **Failed attempts are limited per client** (`middleware/rateLimit.js`, express-rate-limit): past
   `AUTH_RATE_LIMIT_MAX` failed requests to `/api/v1/auth` in `AUTH_RATE_LIMIT_WINDOW_MINUTES` (10 in 15 by default)
   the answer is 429 `RATE_LIMITED` with `Retry-After`. Only answers with status 400 and up count, so signing in and the
@@ -46,6 +51,10 @@ password, about ten times faster than for an existing one: the time told whether
 
 - Signing out, deactivation and role changes act at once, on every device of the user.
 - Tokens issued before this change have no session: every user signs in again once.
+- Access changes are still not transactions. An interrupted operation can leave a negative version and intermediate
+  access state requiring operator recovery; there is no time-based stealing of another operation's reservation.
+  Existing nonnegative or missing version counters need no migration. Future role/status writers must use the same
+  service protocol, and transaction hardening must account for this temporary reservation mechanism.
 - The counts of failed attempts live in the API process. A restart forgets them, and several processes would count
   apart; a shared store would be needed to run more than one.
 - Behind a reverse proxy `TRUST_PROXY` has to be set, or every client shares the proxy's address and one limit.
@@ -53,4 +62,4 @@ password, about ten times faster than for an existing one: the time told whether
   protection is a separate decision before a public launch), and `jsonwebtoken` is to be replaced by `jose`.
 - Integration tests pin each case: a token refused after each of the four events, with another audience, issuer or
   algorithm, without a session; the 429 on the eleventh failure; the sign-in times; the two admins changing each
-  other at once.
+  other at once, crossed demotion/deactivation, same-value demotion, provisional promotion and pending-session access.

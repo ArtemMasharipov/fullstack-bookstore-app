@@ -5,6 +5,59 @@ import { SEEDED } from './credentials.js'
 for (const locale of ['cs', 'en']) {
     const prefix = locale === 'en' ? '/en' : '',
         words = dictionaries[locale]
+    test(`${locale}: a stale cancellation needs a fresh explicit refund confirmation`, async ({ page, adminData }) => {
+        const buyer = await adminData.createUser('stale'),
+            session = await loginApi(page.request, buyer),
+            order = await adminData.createOrder(session.token)
+        await signIn(page, SEEDED.admin, prefix)
+        await page.goto(`${prefix}/admin/orders/${order.id}`)
+        const cancel = page.getByRole('button', { name: words.admin.orderDetails.actions.cancelled, exact: true })
+        await cancel.click()
+        let confirm = page.getByRole('dialog', { name: words.admin.orderDetails.actions.cancelled, exact: true })
+        await expect(confirm).toContainText(words.admin.orderDetails.confirmText)
+        await expect(confirm).not.toContainText(words.admin.orderDetails.manualRefund)
+        expect(
+            (
+                await page.request.patch(`/api/v1/orders/${order.id}/payment`, {
+                    headers: adminData.headers,
+                    data: { paymentStatus: 'paid' },
+                })
+            ).status()
+        ).toBe(200)
+        const responseTo = () =>
+            page.waitForResponse(
+                (response) =>
+                    response.request().method() === 'PATCH' &&
+                    new URL(response.url()).pathname === `/api/v1/orders/${order.id}/status`
+            )
+        const staleWrite = responseTo()
+        await confirm.getByRole('button', { name: words.modal.confirm, exact: true }).click()
+        const rejected = await staleWrite
+        expect(rejected.status()).toBe(409)
+        expect(rejected.request().postDataJSON().expectedState).toEqual({ status: 'pending', paymentStatus: 'unpaid' })
+        await expect(
+            page.getByRole('button', { name: words.admin.orderDetails.actions.shipped, exact: true })
+        ).toBeEnabled()
+        let saved = (
+            await (await page.request.get(`/api/v1/orders/${order.id}`, { headers: adminData.headers })).json()
+        ).data
+        expect(saved.status).toBe('processing')
+        expect(saved.paymentStatus).toBe('paid')
+        expect(saved.statusHistory).toHaveLength(3)
+        await cancel.click()
+        confirm = page.getByRole('dialog', { name: words.admin.orderDetails.actions.cancelled, exact: true })
+        await expect(confirm).toContainText(words.admin.orderDetails.manualRefund)
+        const freshWrite = responseTo()
+        await confirm.getByRole('button', { name: words.modal.confirm, exact: true }).click()
+        const accepted = await freshWrite
+        expect(accepted.status()).toBe(200)
+        expect(accepted.request().postDataJSON().expectedState).toEqual({ status: 'processing', paymentStatus: 'paid' })
+        saved = (await (await page.request.get(`/api/v1/orders/${order.id}`, { headers: adminData.headers })).json())
+            .data
+        expect(saved.status).toBe('cancelled')
+        expect(saved.paymentStatus).toBe('refunded')
+        expect(saved.statusHistory).toHaveLength(5)
+    })
     test(`${locale}: admin records allowed order transitions, manual refunds and stable pages`, async ({
         page,
         adminData,

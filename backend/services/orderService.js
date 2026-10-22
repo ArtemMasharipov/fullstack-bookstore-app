@@ -10,7 +10,7 @@ import Order from "../models/Order.js";
 import { ConflictError, NotFoundError, UnprocessableError } from "../utils/errors.js";
 import { getCartView } from "./cartService.js";
 import { nextOrderNumber } from "./orderNumber.js";
-import { toOrderSummary, toOrderView } from "./orderView.js";
+import { paymentStatusOf, toOrderSummary, toOrderView } from "./orderView.js";
 import { allowedOrderTransitions, planOrderTransition } from "./orderTransitions.js";
 import { sortOf } from "../utils/listSort.js";
 
@@ -231,7 +231,10 @@ async function findOrder(orderId) {
 
 // Missing paymentStatus is a legacy snapshot, distinct from a newly written
 // status with the same meaning: compare both stored axes before changing either.
-async function writeTransition(order, action) {
+async function writeTransition(order, action, expectedState) {
+  if (expectedState && (expectedState.status !== order.status || expectedState.paymentStatus !== paymentStatusOf(order))) {
+    throw changedMeanwhile();
+  }
   const { set, history } = planOrderTransition(order, { ...action, at: new Date() });
   const payment = Object.hasOwn(order, "paymentStatus")
     ? { paymentStatus: order.paymentStatus }
@@ -245,13 +248,13 @@ async function writeTransition(order, action) {
   return toOrderView(updated);
 }
 
-export async function setOrderStatus(orderId, status) {
-  return writeTransition(await findOrder(orderId), { axis: "status", to: status, by: "admin" });
+export async function setOrderStatus(orderId, status, expectedState) {
+  return writeTransition(await findOrder(orderId), { axis: "status", to: status, by: "admin" }, expectedState);
 }
 
 /** Manual accounting only; this function never calls a payment provider. */
-export async function setOrderPayment(orderId, paymentStatus) {
-  return writeTransition(await findOrder(orderId), { axis: "payment", to: paymentStatus, by: "admin" });
+export async function setOrderPayment(orderId, paymentStatus, expectedState) {
+  return writeTransition(await findOrder(orderId), { axis: "payment", to: paymentStatus, by: "admin" }, expectedState);
 }
 
 // An older order's total is a float in crowns; it counts in geller
