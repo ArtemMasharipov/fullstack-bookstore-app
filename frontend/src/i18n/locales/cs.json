@@ -162,12 +162,12 @@
             "lastName": "Příjmení",
             "role": "Role",
             "password": "Heslo",
-            "passwordHint": "Použijte alespoň 6 znaků.",
+            "passwordHint": "Použijte 15–128 znaků.",
             "selfHint": "Své údaje můžete upravit, ale nemůžete si odebrat roli administrátora.",
             "duplicate": "Tuto hodnotu již používá jiný uživatel.",
             "usernameError": "Použijte 3–50 písmen, číslic, podtržítek nebo pomlček.",
             "emailError": "Zadejte platnou e-mailovou adresu do 254 znaků.",
-            "passwordError": "Použijte 6–1024 znaků."
+            "passwordError": "Použijte 15–128 znaků."
         },
         "nav": {
             "dashboard": "Přehled a statistiky",
@@ -345,7 +345,7 @@
             "emailRequired": "Zadejte e-mail.",
             "passwordRequired": "Zadejte heslo.",
             "usernameRequired": "Zadejte uživatelské jméno.",
-            "passwordTooShort": "Použijte alespoň 6 znaků.",
+            "passwordTooShort": "Použijte alespoň 15 znaků.",
             "confirmRequired": "Zopakujte heslo.",
             "passwordsDiffer": "Hesla se neshodují."
         },
@@ -567,6 +567,8 @@
         "hideCurrent": "Skrýt současné heslo",
         "showNew": "Zobrazit nové heslo",
         "hideNew": "Skrýt nové heslo",
+        "showPassword": "Zobrazit hesla",
+        "hidePassword": "Skrýt hesla",
         "summary": "Zkontrolujte zvýrazněná pole.",
         "nameError": "Použijte nejvýše 50 znaků.",
         "usernameError": "Použijte 3–50 písmen, číslic, podtržítek nebo spojovníků.",

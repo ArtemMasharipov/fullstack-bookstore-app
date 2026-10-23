@@ -162,12 +162,12 @@
             "lastName": "Last name",
             "role": "Role",
             "password": "Password",
-            "passwordHint": "Use at least 6 characters.",
+            "passwordHint": "Use 15–128 characters.",
             "selfHint": "You can edit your details, but cannot remove your own administrator role.",
             "duplicate": "This value already belongs to another user.",
             "usernameError": "Use 3–50 letters, numbers, underscores or hyphens.",
             "emailError": "Enter a valid email address, up to 254 characters.",
-            "passwordError": "Use 6–1024 characters."
+            "passwordError": "Use 15–128 characters."
         },
         "nav": {
             "dashboard": "Overview & stats",
@@ -345,7 +345,7 @@
             "emailRequired": "Enter your email.",
             "passwordRequired": "Enter your password.",
             "usernameRequired": "Enter a username.",
-            "passwordTooShort": "Use at least 6 characters.",
+            "passwordTooShort": "Use at least 15 characters.",
             "confirmRequired": "Repeat your password.",
             "passwordsDiffer": "The passwords do not match."
         },
@@ -567,6 +567,8 @@
         "hideCurrent": "Hide current password",
         "showNew": "Show new password",
         "hideNew": "Hide new password",
+        "showPassword": "Show passwords",
+        "hidePassword": "Hide passwords",
         "summary": "Check the highlighted fields.",
         "nameError": "Use no more than 50 characters.",
         "usernameError": "Use 3–50 letters, numbers, underscores or hyphens.",
