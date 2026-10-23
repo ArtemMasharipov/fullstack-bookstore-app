@@ -545,6 +545,11 @@
         "cancel": "Zrušit",
         "close": "Zavřít dialog"
     },
+    "profile": {
+        "saved": "Profil byl uložen.",
+        "passwordChanged": "Heslo bylo změněno.",
+        "signedOutAll": "Byli jste odhlášeni ze všech zařízení."
+    },
     "footer": {
         "about": "O nás",
         "description": "Objevte svou další skvělou knihu v Bookstore: knihy všech žánrů, od klasiky po novinky.",

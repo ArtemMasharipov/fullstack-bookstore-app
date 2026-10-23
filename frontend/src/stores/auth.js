@@ -23,6 +23,9 @@ export const useAuthStore = defineStore('auth', {
         // Loading & error states
         loading: false,
         error: null,
+        accountBusy: false,
+        _accountRevision: 0,
+        _accountOperation: 0,
     }),
 
     getters: {
@@ -38,6 +41,115 @@ export const useAuthStore = defineStore('auth', {
     },
 
     actions: {
+        _accountMarker() {
+            return { token: this.token, revision: this._accountRevision }
+        },
+
+        _isCurrentAccount(marker) {
+            return this.token === marker.token && this._accountRevision === marker.revision
+        },
+
+        _invalidateAccountWork() {
+            this._accountRevision += 1
+            this._accountOperation += 1
+            this.accountBusy = false
+        },
+
+        _storeAccountUser(user) {
+            localStorage.setItem('userData', JSON.stringify(user))
+            this.user = user
+            this.userChecked = true
+        },
+
+        async loadProfile() {
+            if (!this.token) return null
+            const marker = this._accountMarker()
+            try {
+                const response = await authApi.getCurrentUser(marker.token)
+                if (!this._isCurrentAccount(marker)) return null
+                if (!response?.data || typeof response.data !== 'object') throw new Error('Invalid profile response')
+                this._storeAccountUser(response.data)
+                return response.data
+            } catch (error) {
+                if (!this._isCurrentAccount(marker)) return null
+                throw error
+            }
+        },
+
+        async _mutateAccount(request, apply) {
+            if (this.accountBusy || !this.token) return null
+            this._accountRevision += 1
+            const marker = this._accountMarker()
+            const operation = ++this._accountOperation
+            this.accountBusy = true
+            try {
+                let response
+                try {
+                    response = await request(marker.token)
+                } catch (error) {
+                    if (!this._isCurrentAccount(marker)) return null
+                    throw error
+                }
+                if (!this._isCurrentAccount(marker)) return null
+                return await apply(response, marker)
+            } finally {
+                if (this._accountOperation === operation) this.accountBusy = false
+            }
+        },
+
+        async updateProfile(body) {
+            return this._mutateAccount(
+                (token) => authApi.updateProfile(body, token),
+                (response) => {
+                    const user = response?.data
+                    if (!user || typeof user.id !== 'string') throw new Error('Invalid profile response')
+                    this._storeAccountUser(user)
+                    this._accountRevision += 1
+                    useNotifications().showSuccess(undefined, { messageKey: 'profile.saved' })
+                    return user
+                }
+            )
+        },
+
+        async changePassword(body) {
+            return this._mutateAccount(
+                (token) => authApi.changePassword(body, token),
+                (response) => {
+                    const { user, token } = response?.data ?? {}
+                    if (!user || typeof user.id !== 'string' || typeof token !== 'string' || !token)
+                        throw new Error('Invalid password response')
+                    localStorage.setItem('userData', JSON.stringify(user))
+                    localStorage.setItem('token', token)
+                    this.user = user
+                    this.token = token
+                    this.userChecked = true
+                    this._accountRevision += 1
+                    useNotifications().showSuccess(undefined, { messageKey: 'profile.passwordChanged' })
+                    return { user, token }
+                }
+            )
+        },
+
+        async logoutAll() {
+            return this._mutateAccount(
+                (token) => authApi.logoutAll(token),
+                async (_response, marker) => {
+                    const { resetSession } = await import('@/services/session')
+                    if (!this._isCurrentAccount(marker)) return null
+                    const navigation = resetSession({ wayBack: false })
+                    const revision = this._accountRevision
+                    await navigation
+                    if (!this.token && this._accountRevision === revision)
+                        useNotifications().showSuccess(undefined, { messageKey: 'profile.signedOutAll' })
+                }
+            )
+        },
+
+        /** Session reset invalidates pending work without resetting the revision counter. */
+        forget() {
+            this.clearAuth()
+            this.loading = false
+        },
         /**
          * Takes the user from the server once per app load, so the role is the server's and not the one cached
          * in localStorage. Without a connection the cached user stays; an answer with an error status is thrown on
@@ -46,12 +158,7 @@ export const useAuthStore = defineStore('auth', {
         async ensureFreshUser() {
             if (this.userChecked || !this.token) return
             try {
-                const response = await authApi.getCurrentUser()
-                if (response?.data) {
-                    this.user = response.data
-                    localStorage.setItem('userData', JSON.stringify(response.data))
-                }
-                this.userChecked = true
+                await this.loadProfile()
             } catch (error) {
                 if (error?.status) throw error
             }
@@ -97,6 +204,7 @@ export const useAuthStore = defineStore('auth', {
                 }
 
                 const { user, token } = response.data
+                this._invalidateAccountWork()
 
                 // Update state
                 this.user = user
@@ -128,6 +236,7 @@ export const useAuthStore = defineStore('auth', {
             return withLoading(this, async () => {
                 const response = await authApi.register(userData)
                 const { user, token } = response.data
+                this._invalidateAccountWork()
 
                 // Update state
                 this.user = user
@@ -197,11 +306,7 @@ export const useAuthStore = defineStore('auth', {
             return withLoading(
                 this,
                 async () => {
-                    const response = await authApi.getCurrentUser()
-                    if (response?.data) {
-                        this.user = response.data
-                        localStorage.setItem('userData', JSON.stringify(response.data))
-                    }
+                    await this.loadProfile()
                 },
                 { throwError: false }
             )
@@ -234,6 +339,7 @@ export const useAuthStore = defineStore('auth', {
          * Clear auth state
          */
         clearAuth() {
+            this._invalidateAccountWork()
             this.user = null
             this.token = null
             this.userChecked = false

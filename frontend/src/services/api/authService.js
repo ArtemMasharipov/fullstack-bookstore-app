@@ -1,9 +1,10 @@
 import baseApi from './baseApi'
 
-/**
- * Authentication API - direct axios implementation
- * No factory abstractions (PHASE 3)
- */
+const forSession = (token) => (token ? { headers: { Authorization: 'Bearer ' + token } } : undefined)
+const pick = (value, fields) =>
+    Object.fromEntries(fields.filter((field) => Object.hasOwn(value, field)).map((field) => [field, value[field]]))
+
+/** Auth endpoints; account operations may bind the session captured by their caller. */
 export const authApi = {
     login: (credentials) => {
         const payload = {
@@ -15,24 +16,20 @@ export const authApi = {
 
     register: (userData) => baseApi.post('/auth/register', userData).then((res) => res.data),
 
-    refreshToken: () => baseApi.post('/auth/refresh-token').then((res) => res.data),
+    /** No body; the token belongs to the session that has already ended locally. */
+    logout: (token) => baseApi.post('/auth/logout', undefined, forSession(token)).then((res) => res.data),
 
-    /** Tells the server about a sign-out; the token is the one of the session that ended */
-    logout: (token) =>
+    getCurrentUser: (token) => baseApi.get('/auth/me', forSession(token)).then((res) => res.data),
+
+    updateProfile: (body, token) =>
         baseApi
-            // No body: a JSON "null" is not a valid request body for the API
-            .post('/auth/logout', undefined, { headers: { Authorization: `Bearer ${token}` } })
+            .put('/auth/profile', pick(body, ['firstName', 'lastName', 'username']), forSession(token))
             .then((res) => res.data),
 
-    verifyToken: (token) => baseApi.post('/auth/verify-token', { token }).then((res) => res.data),
+    changePassword: (body, token) =>
+        baseApi
+            .put('/auth/password', pick(body, ['currentPassword', 'newPassword']), forSession(token))
+            .then((res) => res.data),
 
-    getCurrentUser: () => baseApi.get('/auth/me').then((res) => res.data),
-
-    forgotPassword: (email) => baseApi.post('/auth/forgot-password', { email }).then((res) => res.data),
-
-    resetPassword: (data) => baseApi.post('/auth/reset-password', data).then((res) => res.data),
-
-    updateProfile: (userData) => baseApi.put('/users/profile', userData).then((res) => res.data),
-
-    changePassword: (passwordData) => baseApi.put('/users/change-password', passwordData).then((res) => res.data),
+    logoutAll: (token) => baseApi.delete('/auth/sessions', forSession(token)).then((res) => res.data),
 }

@@ -545,6 +545,11 @@
         "cancel": "Cancel",
         "close": "Close dialog"
     },
+    "profile": {
+        "saved": "Profile saved.",
+        "passwordChanged": "Password changed.",
+        "signedOutAll": "Signed out on all devices."
+    },
     "footer": {
         "about": "About",
         "description": "Discover your next great read at Bookstore: books across every genre, from classics to new releases.",
