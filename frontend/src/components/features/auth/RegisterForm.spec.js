@@ -155,6 +155,15 @@ describe('RegisterForm', () => {
 describe.each(['cs', 'en'])('registration password policy (%s)', (locale) => {
     const words = { cs, en }[locale]
     const path = locale === 'en' ? '/en/register' : '/register'
+    it('keeps focus on the named password reveal button', async () => {
+        await mount(path, locale)
+        const reveal = document.querySelector('button[aria-label="' + words.profile.showPassword + '"]')
+        reveal.focus()
+        reveal.click()
+        await nextTick()
+        expect(document.activeElement).toBe(reveal)
+        expect(document.getElementById('password').type).toBe('text')
+    })
     it.each(['a'.repeat(14), '😀'.repeat(129)])(
         'rejects normalized length with linked error and focus',
         async (password) => {

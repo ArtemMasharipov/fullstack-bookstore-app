@@ -66,9 +66,12 @@
                 <v-card-actions>
                     <v-spacer />
                     <v-btn variant="text" @click="emit('update:modelValue', false)">{{ t('modal.cancel') }}</v-btn>
-                    <v-btn type="submit" :loading="saving" :disabled="busy || !loaded">{{
-                        t('admin.form.save')
-                    }}</v-btn>
+                    <v-btn type="submit" :loading="saving" :disabled="busy || !loaded">
+                        {{ t('admin.form.save') }}
+                        <template #loader
+                            ><v-progress-circular indeterminate size="24" :aria-label="t('common.loading')"
+                        /></template>
+                    </v-btn>
                 </v-card-actions>
             </v-form>
         </v-card>
@@ -212,3 +215,9 @@ onScopeDispose(() => {
     generation++
 })
 </script>
+
+<style scoped>
+:deep(.v-input--disabled .v-input__details) {
+    opacity: 1;
+}
+</style>

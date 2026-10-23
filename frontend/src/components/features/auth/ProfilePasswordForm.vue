@@ -6,6 +6,7 @@
             id="profile-current-password"
             v-model="currentPassword"
             :label="t('profile.currentPassword')"
+            :aria-label="t('profile.currentPassword')"
             :type="showCurrent ? 'text' : 'password'"
             autocomplete="current-password"
             maxlength="1024"
@@ -22,7 +23,8 @@
                     :aria-label="t(showCurrent ? 'profile.hideCurrent' : 'profile.showCurrent')"
                     :aria-pressed="showCurrent"
                     :disabled="busy"
-                    @click="showCurrent = !showCurrent"
+                    @mousedown.stop
+                    @click.stop="showCurrent = !showCurrent"
                 />
             </template>
         </v-text-field>
@@ -30,6 +32,7 @@
             id="profile-new-password"
             v-model="newPassword"
             :label="t('profile.newPassword')"
+            :aria-label="t('profile.newPassword')"
             :type="showNew ? 'text' : 'password'"
             autocomplete="new-password"
             :hint="t('profile.passwordHint')"
@@ -47,13 +50,17 @@
                     :aria-label="t(showNew ? 'profile.hideNew' : 'profile.showNew')"
                     :aria-pressed="showNew"
                     :disabled="busy"
-                    @click="showNew = !showNew"
+                    @mousedown.stop
+                    @click.stop="showNew = !showNew"
                 />
             </template>
         </v-text-field>
-        <v-btn type="submit" color="primary" class="mt-4" :loading="saving" :disabled="busy">{{
-            t('profile.changePassword')
-        }}</v-btn>
+        <v-btn type="submit" color="primary" class="mt-4" :loading="saving" :disabled="busy">
+            {{ t('profile.changePassword') }}
+            <template #loader
+                ><v-progress-circular indeterminate size="24" :aria-label="t('common.loading')"
+            /></template>
+        </v-btn>
     </v-form>
 </template>
 
@@ -112,3 +119,9 @@ async function save() {
     }
 }
 </script>
+
+<style scoped>
+:deep(.v-input--disabled .v-input__details) {
+    opacity: 1;
+}
+</style>

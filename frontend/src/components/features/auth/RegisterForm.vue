@@ -7,6 +7,7 @@
             id="username"
             v-model="username"
             :label="t('auth.fields.username')"
+            :aria-label="t('auth.fields.username')"
             required
             autocomplete="username"
             prepend-inner-icon="mdi-account-outline"
@@ -18,6 +19,7 @@
             id="email"
             v-model="email"
             :label="t('auth.fields.email')"
+            :aria-label="t('auth.fields.email')"
             type="email"
             required
             autocomplete="email"
@@ -30,6 +32,7 @@
             id="password"
             v-model="password"
             :label="t('auth.fields.password')"
+            :aria-label="t('auth.fields.password')"
             :type="showPassword ? 'text' : 'password'"
             required
             autocomplete="new-password"
@@ -49,7 +52,8 @@
                     :aria-label="t(showPassword ? 'profile.hidePassword' : 'profile.showPassword')"
                     :aria-pressed="showPassword"
                     :disabled="busy"
-                    @click="showPassword = !showPassword"
+                    @mousedown.stop
+                    @click.stop="showPassword = !showPassword"
                 />
             </template>
         </v-text-field>
@@ -57,6 +61,7 @@
             id="confirmPassword"
             v-model="confirmPassword"
             :label="t('auth.fields.confirmPassword')"
+            :aria-label="t('auth.fields.confirmPassword')"
             :type="showPassword ? 'text' : 'password'"
             required
             autocomplete="new-password"
@@ -67,6 +72,9 @@
         />
         <v-btn type="submit" color="primary" block :loading="pending" :disabled="busy" size="large" class="mt-2">
             {{ t('auth.register.submit') }}
+            <template #loader
+                ><v-progress-circular indeterminate size="24" :aria-label="t('common.loading')"
+            /></template>
         </v-btn>
     </v-form>
 </template>
@@ -140,3 +148,9 @@ async function handleSubmit() {
     }
 }
 </script>
+
+<style scoped>
+:deep(.v-input--disabled .v-input__details) {
+    opacity: 1;
+}
+</style>

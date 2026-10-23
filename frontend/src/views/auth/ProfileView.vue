@@ -20,6 +20,7 @@
                         :key="field"
                         v-model="form[field]"
                         :label="t('profile.' + field)"
+                        :aria-label="t('profile.' + field)"
                         :autocomplete="AUTOCOMPLETE[field]"
                         maxlength="50"
                         :disabled="busy"
@@ -31,17 +32,23 @@
                         <dd class="profile-email">{{ email }}</dd>
                     </dl>
                     <p class="text-body-2 mb-4">{{ t('profile.emailHint') }}</p>
-                    <v-btn type="submit" color="primary" :loading="saving" :disabled="busy || !dirty || !valid">{{
-                        t('profile.save')
-                    }}</v-btn>
+                    <v-btn type="submit" color="primary" :loading="saving" :disabled="busy || !dirty || !valid">
+                        {{ t('profile.save') }}
+                        <template #loader
+                            ><v-progress-circular indeterminate size="24" :aria-label="t('common.loading')"
+                        /></template>
+                    </v-btn>
                 </v-form>
             </v-card>
             <v-card class="pa-4 pa-sm-6 mb-6"><ProfilePasswordForm /></v-card>
             <div class="d-flex flex-wrap ga-4">
                 <v-btn :to="localeRoute('Orders')" variant="outlined">{{ t('profile.orders') }}</v-btn>
-                <v-btn :disabled="busy" :loading="signingOut" variant="outlined" @click="logoutAll">{{
-                    t('profile.logoutAll')
-                }}</v-btn>
+                <v-btn :disabled="busy" :loading="signingOut" variant="outlined" @click="logoutAll">
+                    {{ t('profile.logoutAll') }}
+                    <template #loader
+                        ><v-progress-circular indeterminate size="24" :aria-label="t('common.loading')"
+                    /></template>
+                </v-btn>
             </div>
         </template>
     </v-container>
