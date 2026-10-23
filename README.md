@@ -97,7 +97,7 @@ Run each code block from the repository root; the install block starts one level
 
 ### Requirements
 
-- **Node.js 24** (`.nvmrc`; both packages declare `engines.node` `24.x`). Node 25 and newer are not supported:
+- **Node.js 24.7 or newer within 24.x** (`.nvmrc`; the backend requires native Argon2id). Node 25 and newer are not supported:
   `jsonwebtoken` needs `SlowBuffer`, which Node 25 removed, so the backend does not start there. Install Node 24 with
   fnm (`fnm install`, then `fnm use`; both read `.nvmrc`), nvm-windows (`nvm install 24`, then `nvm use 24`) or volta
   (`volta install node@24`); `node -v` must print `v24.x.x`.

@@ -6,7 +6,7 @@
 
 import User from "../models/User.js";
 import { ConflictError, UnauthorizedError, ValidationError } from "../utils/errors.js";
-import { verifyAgainstDummy } from "../utils/passwords.js";
+import { verifyLoginPassword } from "../utils/passwords.js";
 import { endUserSessions, issueToken } from "./sessions.js";
 import { toUserView } from "./userView.js";
 
@@ -43,9 +43,7 @@ export async function login({ emailOrUsername, password }) {
 
   // The password is checked in every case, against a dummy hash when there is
   // no account, so the time of the answer does not tell which case it was
-  const passwordMatches = user
-    ? await user.comparePassword(password)
-    : await verifyAgainstDummy(password);
+  const passwordMatches = await verifyLoginPassword(password, user?.password);
 
   if (!user || !passwordMatches || !user.isActive) {
     throw new UnauthorizedError("Invalid credentials");
