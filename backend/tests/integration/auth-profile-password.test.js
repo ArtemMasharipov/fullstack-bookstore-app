@@ -1,6 +1,7 @@
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 import app from "../../app.js";
+import { config } from "../../config/index.js";
 import User from "../../models/User.js";
 import Session from "../../models/Session.js";
 import { resetAuthRateLimit } from "../../middleware/rateLimit.js";
@@ -75,5 +76,74 @@ describe("seed password validation precedes every write and deletion", () => {
     const ids = (await User.find().sort("_id")).map(user => String(user._id));
     await seed({ adminPassword: GOOD, userPassword: "Trail READER moon 47!", reset: true }).catch(() => {});
     expect((await User.find().sort("_id")).map(user => String(user._id))).toEqual(ids);
+  });
+});
+
+describe("profile and account session contracts", () => {
+  it("rejects an effectively unchanged normalized password without ending the session", async () => {
+    const user = await createUser({ password: GOOD });
+    const token = await issueToken(user._id);
+    const response = await request(app).put("/api/v1/auth/password").set("Authorization", "Bearer " + token)
+      .send({ currentPassword: GOOD, newPassword: "Ｃｅｄａｒ lantern 47!" });
+    expect(response.status).toBe(400);
+    expect(response.body.error.fields).toEqual({ newPassword: "same_as_current" });
+    expect((await request(app).get("/api/v1/auth/me").set("Authorization", "Bearer " + token)).status).toBe(200);
+  });
+
+  it.each(["user", "admin"])("revokes every %s session and preserves other accounts", async role => {
+    const user = await createUser({ role });
+    const other = await createUser();
+    const first = await issueToken(user._id), second = await issueToken(user._id), otherToken = await issueToken(other._id);
+    const response = await request(app).delete("/api/v1/auth/sessions").set("Authorization", "Bearer " + first);
+    expect(response.status).toBe(204);
+    expect(response.text).toBe("");
+    expect(await Session.countDocuments({ user: user._id })).toBe(0);
+    for (const token of [first, second]) expect((await request(app).get("/api/v1/auth/me").set("Authorization", "Bearer " + token)).status).toBe(401);
+    expect((await request(app).get("/api/v1/auth/me").set("Authorization", "Bearer " + otherToken)).status).toBe(200);
+    expect((await User.findById(user._id)).role).toBe(role);
+  });
+
+  it.each(["profile", "password", "sessions"])("requires authentication before validating %s", async endpoint => {
+    const call = endpoint === "sessions" ? request(app).delete("/api/v1/auth/sessions") : request(app).put("/api/v1/auth/" + endpoint);
+    expect((await call.send({ unknown: true })).status).toBe(401);
+  });
+
+  it.each([{ email: "other@example.com" }, { role: "admin" }, { password: GOOD }, { phone: "123" }, { firstName: "x".repeat(51) }, { username: "bad name" }, [], null])("rejects invalid profile data without persisting: %j", async body => {
+    const user = await createUser({ firstName: "Original" }), token = await issueToken(user._id);
+    const call = request(app).put("/api/v1/auth/profile").set("Authorization", "Bearer " + token);
+    const response = body === null ? await call.set("Content-Type", "application/json").send("null") : await call.send(body);
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe("VALIDATION_FAILED");
+    expect((await User.findById(user._id)).firstName).toBe("Original");
+  });
+
+  it("persists all profile fields with the shared user view", async () => {
+    const user = await createUser(), token = await issueToken(user._id);
+    const response = await request(app).put("/api/v1/auth/profile").set("Authorization", "Bearer " + token)
+      .send({ username: "new_profile", firstName: " Jana ", lastName: " Novák " });
+    expect(response.status).toBe(200);
+    expect(response.body.data).toMatchObject({ username: "new_profile", firstName: "Jana", lastName: "Novák", email: user.email, role: "user" });
+    expect(response.body.data).not.toHaveProperty("_id");
+    expect(response.body.data).not.toHaveProperty("__v");
+    expect(response.body.data).not.toHaveProperty("password");
+    expect((await User.findById(user._id)).username).toBe("new_profile");
+  });
+
+  it("rejects unknown logout-all body and query keys without ending sessions", async () => {
+    const user = await createUser(), token = await issueToken(user._id);
+    for (const [path, body] of [["/api/v1/auth/sessions", { all: true }], ["/api/v1/auth/sessions?user=other", {}]]) {
+      const response = await request(app).delete(path).set("Authorization", "Bearer " + token).send(body);
+      expect(response.status).toBe(400);
+      expect(response.body.error.code).toBe("VALIDATION_FAILED");
+      expect((await request(app).get("/api/v1/auth/me").set("Authorization", "Bearer " + token)).status).toBe(200);
+    }
+  });
+
+  it("allows logout-all after the failed-auth limit is exhausted", async () => {
+    const user = await createUser(), token = await issueToken(user._id);
+    let last;
+    for (let attempt = 0; attempt <= config.authRateLimit.max; attempt += 1) last = await login("unknown@example.com", "wrong");
+    expect(last.status).toBe(429);
+    expect((await request(app).delete("/api/v1/auth/sessions").set("Authorization", "Bearer " + token)).status).toBe(204);
   });
 });

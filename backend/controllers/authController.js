@@ -5,6 +5,7 @@
 
 import * as authService from "../services/authService.js";
 import { endSession } from "../services/sessions.js";
+import { revokeAllSessions } from "../services/accountCredentials.js";
 import { ok } from "../utils/respond.js";
 
 /**
@@ -40,7 +41,7 @@ export async function getCurrentUser(req, res) {
  * @access  Private
  */
 export async function changePassword(req, res) {
-  ok(res, await authService.changePassword(req.user.id, req.valid.body));
+  ok(res, await authService.changePassword(req.user.id, req.valid.body, req.sessionId));
 }
 
 /**
@@ -59,5 +60,11 @@ export async function updateProfile(req, res) {
  */
 export async function logout(req, res) {
   await endSession(req.sessionId);
+  res.status(204).end();
+}
+
+/** DELETE /api/v1/auth/sessions: revoke this account on every device. */
+export async function logoutAll(req, res) {
+  await revokeAllSessions(req.user.id, req.sessionId);
   res.status(204).end();
 }

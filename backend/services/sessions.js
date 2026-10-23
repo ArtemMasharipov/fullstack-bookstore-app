@@ -86,3 +86,43 @@ export async function endSession(sessionId) {
 export async function endUserSessions(userId) {
   await Session.deleteMany({ user: userId });
 }
+
+/** A negative version belongs to an unfinished access or credential write. */
+export function isCommittedUser(user) {
+  return Boolean(user) && (user.__v === undefined || (Number.isSafeInteger(user.__v) && user.__v >= 0));
+}
+
+/** Exact credential/access revision; an absent legacy version is distinct from zero. */
+export function credentialFilter(user) {
+  return {
+    _id: user._id,
+    password: user.password,
+    role: user.role === undefined ? { $exists: false } : user.role,
+    isActive: user.isActive,
+    __v: user.__v === undefined ? { $exists: false } : user.__v,
+  };
+}
+
+/** Checks a token we just minted against its original committed account revision. */
+export async function readIssuedUser(token, snapshot) {
+  const claims = jwt.decode(token);
+  if (!isCommittedUser(snapshot) || !snapshot.isActive || claims?.sub !== String(snapshot._id) || typeof claims?.jti !== "string") throw notValid();
+  const [user, session] = await Promise.all([
+    User.findOne(credentialFilter(snapshot)).lean(),
+    Session.exists({ jti: claims.jti, user: snapshot._id, expiresAt: { $gt: new Date() } }),
+  ]);
+  if (!user || !session) throw notValid();
+  return user;
+}
+
+/** Late inserts cannot outlive password changes, logout-all or access writes. */
+export async function issueTokenForSnapshot(snapshot) {
+  if (!isCommittedUser(snapshot) || !snapshot.isActive) throw notValid();
+  const token = await issueToken(snapshot._id);
+  try {
+    return { user: await readIssuedUser(token, snapshot), token };
+  } catch (error) {
+    await endSession(jwt.decode(token).jti);
+    throw error;
+  }
+}

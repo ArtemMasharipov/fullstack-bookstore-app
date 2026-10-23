@@ -1,4 +1,5 @@
 import request from "supertest";
+import bcrypt from "bcrypt";
 import { describe, expect, it } from "vitest";
 import app from "../../app.js";
 import User from "../../models/User.js";
@@ -49,5 +50,32 @@ describe("password hashes", () => {
     expect(stored.password).not.toBe(BCRYPT5_HASH);
     expect(await stored.comparePassword(BCRYPT5_HASH)).toBe(true);
     expect(await stored.comparePassword("secret123")).toBe(false);
+  });
+
+  it.each([undefined, 7])("upgrades a successful legacy login without resetting version %s", async (version) => {
+    const user = await createUser();
+    await User.collection.updateOne({ _id: user._id }, {
+      $set: { password: BCRYPT5_HASH, ...(version === undefined ? {} : { __v: version }) },
+      ...(version === undefined ? { $unset: { __v: "" } } : {}),
+    });
+    expect((await login(user.email, "secret124")).status).toBe(401);
+    expect((await User.findById(user._id).select("+password")).password).toBe(BCRYPT5_HASH);
+    expect((await login(user.email, "secret123")).status).toBe(200);
+    const updated = await User.findById(user._id).select("+password").lean();
+    expect(updated.password).toMatch(/^\$argon2id\$/);
+    expect(updated.__v).toBe(version);
+    expect((await login(user.email, "secret123")).status).toBe(200);
+  });
+
+  it("checks raw legacy input before upgrading to normalized Argon2id", async () => {
+    const user = await createUser();
+    const raw = "Ｃafe\u0301 lantern 47!";
+    const hash = await bcrypt.hash(raw, 10);
+    await User.updateOne({ _id: user._id }, { $set: { password: hash } });
+    expect((await login(user.email, raw.normalize("NFKC"))).status).toBe(401);
+    expect((await User.findById(user._id).select("+password")).password).toBe(hash);
+    expect((await login(user.email, raw)).status).toBe(200);
+    expect((await User.findById(user._id).select("+password")).password).toMatch(/^\$argon2id\$/);
+    expect((await login(user.email, raw.normalize("NFKC"))).status).toBe(200);
   });
 });

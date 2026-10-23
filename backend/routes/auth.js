@@ -9,7 +9,7 @@ import { asyncHandler } from "../middleware/asyncHandler.js";
 import { protect } from "../middleware/auth.js";
 import { authRateLimit } from "../middleware/rateLimit.js";
 import { validate } from "../middleware/validate.js";
-import { loginBody, passwordBody, profileBody, registerBody } from "../schemas/auth.js";
+import { emptyAuthQuery, emptySessionBody, loginBody, passwordBody, profileBody, registerBody } from "../schemas/auth.js";
 
 const router = express.Router();
 
@@ -79,5 +79,12 @@ router.put(
  * @access  Private
  */
 router.post("/logout", protect, asyncHandler(authController.logout));
+
+router.delete(
+  "/sessions",
+  protect,
+  validate({ query: emptyAuthQuery, body: emptySessionBody }),
+  asyncHandler(authController.logoutAll)
+);
 
 export default router;
