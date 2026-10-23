@@ -2,7 +2,7 @@
     <v-container class="py-8 profile-page">
         <h1 class="text-h4 font-weight-bold mb-2">{{ t('profile.title') }}</h1>
         <p class="mb-6">{{ t('profile.description') }}</p>
-        <v-progress-linear v-if="loading" indeterminate :aria-label="t('profile.loading')" />
+        <v-progress-linear v-if="loading || waitingForAccount" indeterminate :aria-label="t('profile.loading')" />
         <v-alert v-if="loadError" type="error">
             <p>{{ t(resolveErrorKey(loadError)) }}</p>
             <v-btn class="mt-3" variant="outlined" :disabled="loading" @click="load">{{ t('errors.retry') }}</v-btn>
@@ -55,7 +55,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, onScopeDispose, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, onScopeDispose, reactive, ref, watch } from 'vue'
 import ProfilePasswordForm from '@/components/features/auth/ProfilePasswordForm.vue'
 import { t } from '@/i18n'
 import { localeRoute } from '@/router/locale'
@@ -77,6 +77,7 @@ const signingOut = ref(false)
 const summary = ref('')
 const summaryAlert = ref(null)
 const busy = computed(() => saving.value || signingOut.value || auth.accountBusy)
+const waitingForAccount = computed(() => !loaded.value && !loadError.value && auth.accountBusy)
 const dirty = computed(() => FIELDS.some((field) => form[field] !== original[field]))
 const valid = computed(() => FIELDS.every((field) => !issue(field)))
 let disposed = false
@@ -99,12 +100,13 @@ async function showSummary(message) {
     if (!disposed) summaryAlert.value?.$el?.focus()
 }
 async function load() {
-    if (loading.value) return
+    if (disposed || loading.value || auth.accountBusy) return
     loading.value = true
     loadError.value = null
     try {
         const user = await auth.loadProfile()
-        if (disposed || !user) return
+        if (disposed) return
+        if (!user) throw new Error('Profile read invalidated')
         setProfile(user)
         loaded.value = true
     } catch (failure) {
@@ -152,6 +154,13 @@ async function logoutAll() {
         if (!disposed) signingOut.value = false
     }
 }
+// A reopened page waits for the previous mutation; loaded drafts are never refreshed by this watcher.
+watch(
+    () => auth.accountBusy,
+    (pending) => {
+        if (!pending && !loaded.value && !loading.value && !loadError.value) load()
+    }
+)
 onMounted(load)
 </script>
 

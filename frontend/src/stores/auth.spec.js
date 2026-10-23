@@ -211,4 +211,82 @@ describe('account store actions', () => {
         expect(store.token).toBe('original-token')
         expect(store.accountBusy).toBe(false)
     })
+
+    describe.each(['removed', 'replaced'])('%s persisted session in another tab', (session) => {
+        function changePersistedSession() {
+            if (session === 'removed') {
+                localStorage.removeItem('token')
+                localStorage.removeItem('userData')
+            } else {
+                localStorage.setItem('token', 'other-token')
+                localStorage.setItem('userData', JSON.stringify(OTHER))
+            }
+        }
+        function expectUntouched() {
+            expect(localStorage.getItem('token')).toBe(session === 'removed' ? null : 'other-token')
+            expect(localStorage.getItem('userData')).toBe(session === 'removed' ? null : JSON.stringify(OTHER))
+            expect(store.token).toBe('original-token')
+            expect(store.user).toEqual(USER)
+            expect(store.accountBusy).toBe(false)
+            expect(reset).not.toHaveBeenCalled()
+            expect(notifications.notifications.value).toHaveLength(0)
+        }
+        it.each(['loadProfile', 'updateProfile', 'changePassword', 'logoutAll'])(
+            'ignores late %s success without changing the other tab session',
+            async (action) => {
+                const wait = deferred()
+                api[action === 'loadProfile' ? 'getCurrentUser' : action].mockReturnValue(wait.promise)
+                const pending = store[action]({})
+                changePersistedSession()
+                wait.resolve({
+                    success: true,
+                    data: action === 'changePassword' ? { user: UPDATED, token: 'stale-token' } : UPDATED,
+                })
+                expect(await pending).toBeNull()
+                expectUntouched()
+            }
+        )
+        it.each(['loadProfile', 'updateProfile', 'changePassword', 'logoutAll'])(
+            'ignores late %s failure belonging to the old persisted session',
+            async (action) => {
+                const wait = deferred()
+                api[action === 'loadProfile' ? 'getCurrentUser' : action].mockReturnValue(wait.promise)
+                const pending = store[action]({})
+                changePersistedSession()
+                wait.reject(new Error('old request failed'))
+                expect(await pending).toBeNull()
+                expectUntouched()
+            }
+        )
+    })
+
+    it.each(['loadProfile', 'updateProfile', 'changePassword', 'logoutAll'])(
+        'does not start %s under an already replaced persisted session',
+        async (action) => {
+            localStorage.setItem('token', 'other-token')
+            localStorage.setItem('userData', JSON.stringify(OTHER))
+            expect(await store[action]({})).toBeNull()
+            expect(api[action === 'loadProfile' ? 'getCurrentUser' : action]).not.toHaveBeenCalled()
+            expect(store.accountBusy).toBe(false)
+            expect(reset).not.toHaveBeenCalled()
+            expect(notifications.notifications.value).toHaveLength(0)
+        }
+    )
+
+    it('does not announce logout-all after another tab signs in during navigation', async () => {
+        const navigation = deferred()
+        api.logoutAll.mockResolvedValue(undefined)
+        reset.mockImplementation(() => {
+            store.forget()
+            return navigation.promise
+        })
+        const pending = store.logoutAll()
+        await vi.waitFor(() => expect(reset).toHaveBeenCalled())
+        localStorage.setItem('token', 'other-token')
+        localStorage.setItem('userData', JSON.stringify(OTHER))
+        navigation.resolve()
+        await pending
+        expect(localStorage.getItem('token')).toBe('other-token')
+        expect(notifications.notifications.value).toHaveLength(0)
+    })
 })

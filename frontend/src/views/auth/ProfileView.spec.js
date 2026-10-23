@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { button, deferred, input, mountAdmin, type } from '@/test/admin'
+import { useAuthStore } from '@/stores/auth'
 const api = vi.hoisted(() => ({ getCurrentUser: vi.fn(), updateProfile: vi.fn(), logoutAll: vi.fn() }))
 vi.mock('@/services/api/authService', () => ({ authApi: api }))
 import ProfileView from './ProfileView.vue'
@@ -88,5 +89,57 @@ describe('profile', () => {
         await vi.waitFor(() => expect(document.activeElement?.getAttribute('role')).toBe('alert'))
         expect(input(mounted.words.profile.firstName).value).toBe('Draft')
         expect(input(mounted.words.profile.firstName).getAttribute('aria-invalid')).toBe('true')
+    })
+
+    it.each([
+        ['cs', true],
+        ['en', true],
+        ['cs', false],
+        ['en', false],
+    ])('loads a reopened profile after pending save settles (%s, success=%s)', async (locale, success) => {
+        const saving = deferred()
+        const reading = deferred()
+        api.updateProfile.mockReturnValueOnce(saving.promise)
+        api.getCurrentUser.mockResolvedValueOnce({ data: USER }).mockReturnValueOnce(reading.promise)
+        await mount(locale)
+        await vi.waitFor(() => expect(input(mounted.words.profile.firstName)?.value).toBe('Jan'))
+        const store = useAuthStore()
+        await type(input(mounted.words.profile.firstName), 'Jana')
+        save().click()
+        await vi.waitFor(() => expect(api.updateProfile).toHaveBeenCalledTimes(1))
+        const prefix = locale === 'en' ? '/en' : ''
+        await mounted.router.push(prefix + '/orders')
+        await nextTick()
+        expect(input(mounted.words.profile.firstName)).toBeNull()
+        await mounted.router.push(prefix + '/profile')
+        await nextTick()
+        expect(useAuthStore()).toBe(store)
+        const latest = success ? { ...USER, firstName: 'Jana' } : USER
+        if (success) saving.resolve({ data: latest })
+        else saving.reject(new Error('offline'))
+        await vi.waitFor(() => expect(store.accountBusy).toBe(false))
+        reading.resolve({ data: latest })
+        await vi.waitFor(() => expect(input(mounted.words.profile.firstName)?.value).toBe(latest.firstName))
+        expect(button(mounted.words.profile.logoutAll)).toBeTruthy()
+        expect(button(mounted.words.errors.retry)).toBeUndefined()
+        await type(input(mounted.words.profile.firstName), 'Unsaved draft')
+        store.user = { ...latest, firstName: 'Background update' }
+        await nextTick()
+        expect(input(mounted.words.profile.firstName).value).toBe('Unsaved draft')
+    })
+
+    it('offers retry if an initial read is invalidated instead of showing a blank page', async () => {
+        const pending = deferred()
+        api.getCurrentUser.mockReturnValueOnce(pending.promise)
+        await mount()
+        const store = useAuthStore()
+        store.clearAuth()
+        pending.resolve({ data: USER })
+        await vi.waitFor(() => expect(button(mounted.words.errors.retry)).toBeTruthy())
+        expect(document.querySelector('[role="progressbar"]')).toBeNull()
+        localStorage.setItem('token', 'fresh')
+        store.token = 'fresh'
+        button(mounted.words.errors.retry).click()
+        await vi.waitFor(() => expect(input(mounted.words.profile.firstName)?.value).toBe('Jan'))
     })
 })

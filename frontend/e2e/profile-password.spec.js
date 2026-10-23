@@ -97,9 +97,38 @@ for (const locale of ['cs', 'en']) {
         const saved = page.waitForResponse(
             (response) => response.url().endsWith('/auth/profile') && response.status() === 200
         )
-        await save.click()
-        await saved
-        await expect(page.locator('header button:has(.v-avatar)')).toContainText('Jana Nováková')
+        let releaseSave, releaseRead
+        const saveHold = new Promise((resolve) => {
+            releaseSave = resolve
+        })
+        const readHold = new Promise((resolve) => {
+            releaseRead = resolve
+        })
+        await page.route('**/auth/profile', async (route) => {
+            await saveHold
+            await route.continue()
+        })
+        await page.route('**/auth/me', async (route) => {
+            await readHold
+            await route.continue()
+        })
+        try {
+            await save.click()
+            await expect(save).toBeDisabled()
+            await page.getByRole('main').getByRole('link', { name: words.profile.orders, exact: true }).click()
+            await expect(page).toHaveURL((url) => url.pathname === prefix + '/orders')
+            await page.goBack()
+            await expect(page.getByRole('heading', { name: words.profile.title, exact: true })).toBeVisible()
+            releaseSave()
+            await saved
+            await expect(page.locator('header button:has(.v-avatar)')).toContainText('Jana Nováková')
+            releaseRead()
+            await expect(first).toHaveValue('Jana')
+        } finally {
+            releaseSave()
+            releaseRead()
+            await page.unrouteAll({ behavior: 'wait' })
+        }
         await page.reload()
         await expect(first).toHaveValue('Jana')
         const oldToken = await page.evaluate(() => localStorage.getItem('token'))

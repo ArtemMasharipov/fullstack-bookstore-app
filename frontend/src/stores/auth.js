@@ -46,7 +46,11 @@ export const useAuthStore = defineStore('auth', {
         },
 
         _isCurrentAccount(marker) {
-            return this.token === marker.token && this._accountRevision === marker.revision
+            return (
+                this.token === marker.token &&
+                localStorage.getItem('token') === marker.token &&
+                this._accountRevision === marker.revision
+            )
         },
 
         _invalidateAccountWork() {
@@ -62,7 +66,7 @@ export const useAuthStore = defineStore('auth', {
         },
 
         async loadProfile() {
-            if (!this.token) return null
+            if (!this.token || this.token !== localStorage.getItem('token')) return null
             const marker = this._accountMarker()
             try {
                 const response = await authApi.getCurrentUser(marker.token)
@@ -77,7 +81,7 @@ export const useAuthStore = defineStore('auth', {
         },
 
         async _mutateAccount(request, apply) {
-            if (this.accountBusy || !this.token) return null
+            if (this.accountBusy || !this.token || this.token !== localStorage.getItem('token')) return null
             this._accountRevision += 1
             const marker = this._accountMarker()
             const operation = ++this._accountOperation
@@ -139,7 +143,7 @@ export const useAuthStore = defineStore('auth', {
                     const navigation = resetSession({ wayBack: false })
                     const revision = this._accountRevision
                     await navigation
-                    if (!this.token && this._accountRevision === revision)
+                    if (!this.token && !localStorage.getItem('token') && this._accountRevision === revision)
                         useNotifications().showSuccess(undefined, { messageKey: 'profile.signedOutAll' })
                 }
             )
