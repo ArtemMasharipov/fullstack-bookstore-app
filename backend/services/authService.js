@@ -7,6 +7,7 @@
 import User from "../models/User.js";
 import { ConflictError, UnauthorizedError, ValidationError } from "../utils/errors.js";
 import { verifyLoginPassword } from "../utils/passwords.js";
+import { validateNewPassword } from "../utils/passwordPolicy.js";
 import { endUserSessions, issueToken } from "./sessions.js";
 import { toUserView } from "./userView.js";
 
@@ -16,6 +17,7 @@ import { toUserView } from "./userView.js";
  * @returns {Object} { user, token }
  */
 export async function register({ username, email, password, firstName, lastName }) {
+  password = validateNewPassword(password, { username, email });
   const existingUser = await User.findOne({ $or: [{ email }, { username }] });
 
   if (existingUser) {
@@ -93,6 +95,8 @@ export async function changePassword(userId, { currentPassword, newPassword }) {
   if (currentPassword === newPassword) {
     throw new ValidationError("Validation failed", { newPassword: "same_as_current" });
   }
+
+  newPassword = validateNewPassword(newPassword, user, "newPassword");
 
   // The pre-save hook hashes it; only the password is checked, so a stored
   // role the app no longer has does not stop the change

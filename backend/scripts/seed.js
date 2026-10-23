@@ -23,6 +23,7 @@ import {
 import Author from "../models/Author.js";
 import Book from "../models/Book.js";
 import User from "../models/User.js";
+import { newPasswordIssue, validateNewPassword } from "../utils/passwordPolicy.js";
 import { AUTHORS, BOOKS, SEED_USERS } from "./seed-data.js";
 
 /**
@@ -32,6 +33,9 @@ import { AUTHORS, BOOKS, SEED_USERS } from "./seed-data.js";
  * connection that is not local before it deletes anything.
  */
 export async function seed({ adminPassword, userPassword, reset = false }) {
+  // Check both accounts before any persistence, including a destructive reset.
+  adminPassword = validateNewPassword(adminPassword, SEED_USERS.admin);
+  userPassword = validateNewPassword(userPassword, SEED_USERS.user);
   const users = [
     new User({ ...SEED_USERS.admin, password: adminPassword, role: "admin" }),
     new User({ ...SEED_USERS.user, password: userPassword, role: "user" }),
@@ -96,7 +100,9 @@ function choosePasswords(env) {
 
   for (const role of Object.keys(passwords)) {
     if (!passwords[role] && process.stdout.isTTY) {
-      generated[role] = randomBytes(12).toString("base64url");
+      do {
+        generated[role] = randomBytes(12).toString("base64url");
+      } while (newPasswordIssue(generated[role], SEED_USERS[role]));
       passwords[role] = generated[role];
     }
   }

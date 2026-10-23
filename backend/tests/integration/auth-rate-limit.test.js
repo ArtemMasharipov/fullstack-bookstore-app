@@ -48,7 +48,7 @@ describe("failed attempts on /api/v1/auth", () => {
     for (let attempt = 0; attempt < LIMIT / 2; attempt += 1) {
       const taken = await request(app)
         .post("/api/v1/auth/register")
-        .send({ username: `taken${attempt}`, email: user.email, password: "secret123" });
+        .send({ username: `taken${attempt}`, email: user.email, password: "Silver meadow 58!" });
       expect(taken.status).toBe(409);
       expect((await wrongLogin(user.email)).status).toBe(401);
     }

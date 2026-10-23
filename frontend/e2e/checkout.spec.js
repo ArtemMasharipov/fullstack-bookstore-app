@@ -26,7 +26,7 @@ async function seededBookId(request) {
 // A new account signed in through the login form; answers its token
 async function signIn(page) {
     const stamp = `${Date.now()}${Math.floor(Math.random() * 1000)}`
-    const user = { username: `buyer${stamp}`, email: `buyer-${stamp}@example.com`, password: 'secret123' }
+    const user = { username: `buyer${stamp}`, email: `buyer-${stamp}@example.com`, password: 'Silver meadow 58!' }
     const registered = await page.request.post('/api/v1/auth/register', { data: user })
     expect(registered.status()).toBe(201)
     await page.goto('/login')

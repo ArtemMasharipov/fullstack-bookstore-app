@@ -71,7 +71,7 @@ const submit = async () => {
 async function fillCreate() {
     await type(field('username'), ' new_user ')
     await type(field('email'), ' NEW@EXAMPLE.COM ')
-    await type(field('password'), 'secret123')
+    await type(field('password'), 'Silver meadow 58!')
 }
 
 describe.each(['cs', 'en'])('UserFormDialog (%s)', (locale) => {
@@ -96,7 +96,7 @@ describe.each(['cs', 'en'])('UserFormDialog (%s)', (locale) => {
         expect(api.create).toHaveBeenCalledWith({
             username: 'new_user',
             email: 'new@example.com',
-            password: 'secret123',
+            password: 'Silver meadow 58!',
             role: 'user',
         })
         pending.resolve(USER)

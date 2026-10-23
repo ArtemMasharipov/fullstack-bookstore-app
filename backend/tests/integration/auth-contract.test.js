@@ -20,7 +20,7 @@ const USER_KEYS = [
   "username",
 ];
 
-const alice = { username: "alice", email: "alice@example.com", password: "secret123" };
+const alice = { username: "alice", email: "alice@example.com", password: "Silver meadow 58!" };
 
 const register = (body) => request(app).post("/api/v1/auth/register").send(body);
 const login = (emailOrUsername, password) =>
@@ -100,7 +100,7 @@ describe("PUT /api/v1/auth/password", () => {
     const here = await loginAs(app, user);
     const elsewhere = await loginAs(app, user);
 
-    const res = await changePassword(here, { currentPassword: "secret123", newPassword: "another-secret" });
+    const res = await changePassword(here, { currentPassword: "secret123", newPassword: "Velvet compass 92!" });
 
     expect(res.status).toBe(200);
     expect(Object.keys(res.body.data).sort()).toEqual(["token", "user"]);
@@ -108,13 +108,13 @@ describe("PUT /api/v1/auth/password", () => {
     expect((await me(here)).status).toBe(401);
     expect((await me(elsewhere)).status).toBe(401);
     expect((await me(res.body.data.token)).status).toBe(200);
-    expect((await login(user.email, "another-secret")).status).toBe(200);
+    expect((await login(user.email, "Velvet compass 92!")).status).toBe(200);
   });
 
   it("answers a wrong current password with 400 on the field, never 401", async () => {
     const token = await loginAs(app, await createUser());
 
-    const wrong = await changePassword(token, { currentPassword: "not-it", newPassword: "another-secret" });
+    const wrong = await changePassword(token, { currentPassword: "not-it", newPassword: "Velvet compass 92!" });
     const same = await changePassword(token, { currentPassword: "secret123", newPassword: "secret123" });
 
     expect(wrong.status).toBe(400);
@@ -178,7 +178,7 @@ describe("a stored moderator", () => {
     const token = res.body.data.token;
     expect((await as(request(app).get("/api/v1/users"), token)).status).toBe(403);
 
-    const changed = await changePassword(token, { currentPassword: "secret123", newPassword: "another-secret" });
+    const changed = await changePassword(token, { currentPassword: "secret123", newPassword: "Velvet compass 92!" });
     expect(changed.status).toBe(200);
   });
 });

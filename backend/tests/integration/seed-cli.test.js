@@ -23,8 +23,8 @@ const JWT_SECRET = "seed-cli-test-secret-0123456789abcdef0123456789";
 
 const REMOTE_URI = "mongodb://db.example.com/shop";
 
-const ADMIN_PASSWORD = "cli-admin-pass-1";
-const USER_PASSWORD = "cli-user-pass-1";
+const ADMIN_PASSWORD = "Cedar lantern 47!";
+const USER_PASSWORD = "Velvet compass 92!";
 const PASSWORDS = {
   SEED_ADMIN_PASSWORD: ADMIN_PASSWORD,
   SEED_USER_PASSWORD: USER_PASSWORD,
