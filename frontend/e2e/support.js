@@ -109,7 +109,7 @@ export async function wcagViolations(page, selector) {
 // A new account, registered through the API; answers its credentials
 export async function signUp(page) {
     const stamp = `${Date.now()}${Math.floor(Math.random() * 1000)}`
-    const user = { username: `buyer${stamp}`, email: `buyer-${stamp}@example.com`, password: 'secret123' }
+    const user = { username: `buyer${stamp}`, email: `buyer-${stamp}@example.com`, password: 'Silver meadow 58!' }
     const registered = await page.request.post('/api/v1/auth/register', { data: user })
     expect(registered.status()).toBe(201)
     return user

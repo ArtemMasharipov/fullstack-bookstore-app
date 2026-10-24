@@ -3,9 +3,8 @@
  * Schema for user authentication and profile
  */
 
-import bcrypt from "bcrypt";
 import mongoose from "mongoose";
-import { verifyPassword } from "../utils/passwords.js";
+import { hashPassword, verifyPassword } from "../utils/passwords.js";
 
 // A stored role outside this list (an older "moderator") reads as "user": services/userView.js
 export const ROLES = Object.freeze(["user", "admin"]);
@@ -46,7 +45,6 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, "Password is required"],
-      minlength: [6, "Password must be at least 6 characters"],
       select: false, // Don't return password by default
     },
     role: {
@@ -111,8 +109,7 @@ userSchema.pre("save", async function (next) {
   }
 
   try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    this.password = await hashPassword(this.password);
     next();
   } catch (error) {
     next(error);

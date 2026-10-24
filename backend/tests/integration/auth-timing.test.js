@@ -1,7 +1,9 @@
 import { performance } from "node:perf_hooks";
+import { argon2Sync } from "node:crypto";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import app from "../../app.js";
+import User from "../../models/User.js";
 import { resetAuthRateLimit } from "../../middleware/rateLimit.js";
 import { createUser } from "../helpers/auth.js";
 import { useTestDatabase } from "../helpers/db.js";
@@ -22,16 +24,30 @@ async function timedLogin(emailOrUsername, password) {
 
 describe("sign-in time", () => {
   it(
-    "answers an unknown, an inactive and a known account in the same time",
+    "answers unknown, inactive and known accounts uniformly with mixed stored hash formats",
     async () => {
       const known = await createUser();
       const inactive = await createUser({ isActive: false });
+      const legacy = await createUser();
+      const inactiveLegacy = await createUser({ isActive: false });
+      // Independent native fixture: the HTTP boundary must handle both formats
+      // even before the model starts generating the new one.
+      const salt = Buffer.alloc(16, 7);
+      const tag = argon2Sync("argon2id", { message: "secret123", nonce: salt, memory: 19456, passes: 2, parallelism: 1, tagLength: 32 });
+      const phc = "$argon2id$v=19$m=19456,t=2,p=1$" + salt.toString("base64").replace(/=+$/, "") + "$" + tag.toString("base64").replace(/=+$/, "");
+      const bcrypt = "$2b$10$MPbgVxQ8zfl/WU2Q6GCTJOaN7G3JmLurBXQ9jN08fiqIpmpHXTnyy";
+      await User.updateOne({ _id: known._id }, { $set: { password: phc } });
+      await User.updateOne({ _id: inactive._id }, { $set: { password: phc } });
+      await User.updateOne({ _id: legacy._id }, { $set: { password: bcrypt } });
+      await User.updateOne({ _id: inactiveLegacy._id }, { $set: { password: bcrypt } });
       const accounts = {
         known: known.email,
         unknown: "nobody@example.com",
         inactive: inactive.email,
+        legacy: legacy.email,
+        inactiveLegacy: inactiveLegacy.email,
       };
-      const times = { known: [], unknown: [], inactive: [] };
+      const times = Object.fromEntries(Object.keys(accounts).map((kind) => [kind, []]));
       const bodies = new Set();
 
       // Two rounds to warm up, then the measured ones, the three kinds in turn
@@ -47,6 +63,7 @@ describe("sign-in time", () => {
       expect(bodies.size).toBe(1);
       const medians = Object.fromEntries(Object.entries(times).map(([kind, ms]) => [kind, median(ms)]));
       const values = Object.values(medians);
+      console.info("Sign-in medians (ms):", JSON.stringify(medians));
       expect(Math.max(...values) - Math.min(...values), JSON.stringify(medians)).toBeLessThan(10);
     },
     60000

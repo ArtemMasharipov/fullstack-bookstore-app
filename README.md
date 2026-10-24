@@ -15,6 +15,10 @@ The purchase path works from the catalogue to the order:
 - Checkout validates the delivery address, orders at the server's total and places an order at most once, also when
   the request is retried.
 - My Orders lists the user's orders, shows each one with its history and cancels an order that is not paid yet.
+- The profile edits first name, last name and username, shows email, changes the password and signs out all devices.
+  A password change ends the previous sessions and keeps the current page signed in with one replacement token.
+  New passwords use 15–128 Unicode code points after NFKC normalization, with common and account-related passwords
+  rejected by the server. Existing shorter passwords still work at sign-in.
 - Signing out and an expired session clear the session the same way; signing in returns to the page that asked for
   it.
 - Sessions live on the server: signing out, deactivating an account or changing its role or password ends its
@@ -41,7 +45,7 @@ The purchase path works from the catalogue to the order:
 Known limitations:
 
 - There is no online payment: a new order waits for payment.
-- Public author pages and the profile are still in English only. The Czech texts are a draft.
+- Public author pages are still in English only. The Czech texts are a draft.
 - Book categories are a fixed list, and their names are not translated yet.
 - Development tools (nodemon, ESLint 7) still depend on packages with known vulnerabilities and no fix within their
   current major versions; [docs/dependency-audit.md](docs/dependency-audit.md) lists them with review dates.
@@ -56,7 +60,7 @@ Known limitations:
 ## Tech stack
 
 - **Frontend:** Vue 3, Vuetify 3, Pinia 3, Vue Router 4, Vite 6, Axios 1.
-- **Backend:** Node.js 24, Express 4, Mongoose 8, MongoDB, JWT (`jsonwebtoken` 9), bcrypt 6, Helmet 8.
+- **Backend:** Node.js 24.7+, Express 4, Mongoose 8, MongoDB, JWT (`jsonwebtoken` 9), native Argon2id, bcrypt 6 for legacy verification, Helmet 8.
 - **Tests:** Vitest 4.1.11, Supertest 7.3.0, mongodb-memory-server 11.3.0, happy-dom 20.14.5, Playwright 1.63.0.
 - **Tooling:** ESLint 7 and Prettier 2 (frontend), GitHub Actions.
 
@@ -90,6 +94,8 @@ runs away from databases that are not local. [docs/architecture.md](docs/archite
 - [0005, server sessions and sign-in protection](docs/decisions/0005-server-sessions-and-sign-in-protection.md): the
   token names a server session that signing out, deactivation and role or password changes end at once; failed
   sign-in attempts are limited per client, and sign-in takes the same time for every account.
+- [0006, password policy and Argon2id](docs/decisions/0006-password-policy-and-argon2id.md): new-password validation,
+  native hashing, compatible bcrypt upgrades, credential concurrency and replacement sessions.
 
 ## Getting started
 
@@ -97,7 +103,7 @@ Run each code block from the repository root; the install block starts one level
 
 ### Requirements
 
-- **Node.js 24** (`.nvmrc`; both packages declare `engines.node` `24.x`). Node 25 and newer are not supported:
+- **Node.js 24.7 or newer within 24.x** (`.nvmrc`; the backend requires native Argon2id). Node 25 and newer are not supported:
   `jsonwebtoken` needs `SlowBuffer`, which Node 25 removed, so the backend does not start there. Install Node 24 with
   fnm (`fnm install`, then `fnm use`; both read `.nvmrc`), nvm-windows (`nvm install 24`, then `nvm use 24`) or volta
   (`volta install node@24`); `node -v` must print `v24.x.x`.
@@ -209,7 +215,8 @@ cd backend
 $env:SEED_ADMIN_PASSWORD = 'choose-a-password'; $env:SEED_USER_PASSWORD = 'choose-another-one'; npm run seed
 ```
 
-- **Passwords** come from the two variables (the shell or `backend/.env`; at least 6 characters). A missing one is
+- **Passwords** come from the two variables (the shell or `backend/.env`; 15–128 code points after NFKC normalization,
+  excluding common passwords, username, email local part and Bookstore). Validation happens before reset or writes. A missing one is
   generated and printed once in an interactive terminal; without a terminal it is an error.
 - **Only a local database** (`localhost`, `127.0.0.1`, `::1`) is seeded. For another one set `SEED_ALLOW_REMOTE=true`
   in the shell for that one run: `SEED_ALLOW_REMOTE=true npm run seed`.

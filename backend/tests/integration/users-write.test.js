@@ -13,7 +13,7 @@ beforeEach(async () => {
   person = await createUser({ firstName: "Jan", lastName: "Novák" });
 });
 const send = (method, path, body) => request(app)[method](`/api/v1/users${path}`).set("Authorization", `Bearer ${token}`).send(body);
-const newUser = { username: "new_user", email: "new@example.com", password: "123456", role: "user" };
+const newUser = { username: "new_user", email: "new@example.com", password: "Silver meadow 58!", role: "user" };
 const contract = (res, status) => {
   expect(res.status).toBe(status);
   expect(Object.keys(res.body).sort()).toEqual(["data", "success"]);
@@ -37,7 +37,7 @@ describe("admin user writes", () => {
 
   it.each([
     ["password", { ...newUser, password: "12345" }],
-    ["role", { username: "new_user", email: "new@example.com", password: "123456" }],
+    ["role", { username: "new_user", email: "new@example.com", password: "Silver meadow 58!" }],
     ["role", { ...newUser, role: { $ne: "user" } }],
     ["isActive", { ...newUser, isActive: false }],
     ["email", { ...newUser, email: "new@example..com" }],

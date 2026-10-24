@@ -146,6 +146,38 @@ for (const locale of ['cs', 'en']) {
             const outOfStock = page.locator('.book-card').filter({ hasText: OUT_OF_STOCK_TITLE })
             await expect(outOfStock.locator('a[href], button:not([disabled])')).toHaveCount(1)
         })
+
+        test(`${locale}: the keyboard reaches every card below the first mobile screen`, async ({ page }) => {
+            await page.setViewportSize({ width: 390, height: 844 })
+            await page.goto(`${prefix}/books`)
+            const links = page.locator('.book-card__link')
+            await expect(links).toHaveCount(12)
+            const titles = await trimmed(page)
+            const reached = []
+            await links.first().focus()
+
+            // Tab must reveal the real content, including cards initially far below the viewport.
+            for (let step = 0; step < 24 && reached.length < 12; step++) {
+                const focusedLink = page.locator('.book-card__link:focus')
+                if (await focusedLink.count()) {
+                    await expect(focusedLink).toBeInViewport()
+                    reached.push((await focusedLink.textContent()).trim())
+                    const card = page.locator('.book-card:has(.book-card__link:focus)')
+                    await expect(card.locator('.book-card__price')).toBeVisible()
+                    const cover = await card.locator('.book-cover').boundingBox()
+                    expect(cover.height).toBeGreaterThan(100)
+                }
+                if (reached.length < 12) await page.keyboard.press('Tab')
+            }
+            expect(reached).toEqual(titles)
+            expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+
+            await page.keyboard.press('Enter')
+            await expect(page.getByRole('heading', { level: 1, name: titles[11], exact: true })).toBeVisible()
+            await page.goBack()
+            await expect(links).toHaveCount(12)
+            expect(await trimmed(page)).toEqual(titles)
+        })
     })
 
     test.describe(`${locale}: catalogue accessibility`, () => {

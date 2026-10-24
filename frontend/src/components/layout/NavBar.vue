@@ -53,7 +53,7 @@
                                 <v-avatar size="28" color="secondary" class="mr-2">
                                     <span class="text-caption font-weight-bold">{{ userInitials }}</span>
                                 </v-avatar>
-                                {{ user?.name }}
+                                {{ userDisplayName }}
                                 <v-icon end size="small" icon="mdi-chevron-down"></v-icon>
                             </v-btn>
                         </template>
@@ -187,8 +187,11 @@ const { isAuthenticated, isAdmin, user } = storeToRefs(authStore)
 
 const drawer = ref(false)
 const cartItemsCount = computed(() => cartStore.totalQuantity)
+const userDisplayName = computed(
+    () => [user.value?.firstName, user.value?.lastName].filter(Boolean).join(' ') || user.value?.username || ''
+)
 const userInitials = computed(() => {
-    const name = user.value?.name || ''
+    const name = userDisplayName.value
     return (
         name
             .split(' ')

@@ -41,7 +41,7 @@ test.describe('server cart', () => {
         await expect(page.locator('.cart-summary')).toContainText(total)
 
         const stamp = Date.now()
-        const user = { username: `cart${stamp}`, email: `cart-${stamp}@example.com`, password: 'secret123' }
+        const user = { username: `cart${stamp}`, email: `cart-${stamp}@example.com`, password: 'Silver meadow 58!' }
         const registered = await page.request.post('/api/v1/auth/register', { data: user })
         expect(registered.status()).toBe(201)
         await page.goto('/login')

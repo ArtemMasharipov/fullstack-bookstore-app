@@ -163,7 +163,7 @@ describe('user list navigation and failures', () => {
         for (const [key, value] of Object.entries({
             username: 'created',
             email: 'created@example.com',
-            password: 'password123',
+            password: 'Silver meadow 58!',
         }))
             await type(input(words.admin.userForm[key], dialog()), value)
         button(words.admin.form.save, dialog()).click()

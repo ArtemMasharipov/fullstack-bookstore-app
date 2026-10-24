@@ -1,4 +1,5 @@
 import request from "supertest";
+import bcrypt from "bcrypt";
 import { describe, expect, it } from "vitest";
 import app from "../../app.js";
 import User from "../../models/User.js";
@@ -28,11 +29,53 @@ describe("password hashes", () => {
     expect(wrong.status).toBe(401);
   });
 
-  it("stores a new password as a $2b$ hash of cost 10", async () => {
+  it("stores a new password as an Argon2id PHC credential", async () => {
     const user = await createUser();
 
     const stored = await User.findById(user._id).select("+password");
 
-    expect(stored.password).toMatch(/^\$2b\$10\$/);
+    expect(stored.password).toMatch(/^\$argon2id\$v=19\$m=19456,t=2,p=1\$/);
+    expect(await stored.comparePassword("secret123")).toBe(true);
+  });
+
+  it("does not accept a different password with the same first 72 bytes", async () => {
+    const user = await createUser({ password: "a".repeat(72) + "x" });
+    expect((await login(user.email, "a".repeat(72) + "y")).status).toBe(401);
+    expect((await login(user.email, "a".repeat(72) + "x")).status).toBe(200);
+  });
+
+  it("treats hash-looking plaintext as a password, not as a pre-hashed credential", async () => {
+    const user = await createUser({ password: BCRYPT5_HASH });
+    const stored = await User.findById(user._id).select("+password");
+    expect(stored.password).not.toBe(BCRYPT5_HASH);
+    expect(await stored.comparePassword(BCRYPT5_HASH)).toBe(true);
+    expect(await stored.comparePassword("secret123")).toBe(false);
+  });
+
+  it.each([undefined, 7])("upgrades a successful legacy login without resetting version %s", async (version) => {
+    const user = await createUser();
+    await User.collection.updateOne({ _id: user._id }, {
+      $set: { password: BCRYPT5_HASH, ...(version === undefined ? {} : { __v: version }) },
+      ...(version === undefined ? { $unset: { __v: "" } } : {}),
+    });
+    expect((await login(user.email, "secret124")).status).toBe(401);
+    expect((await User.findById(user._id).select("+password")).password).toBe(BCRYPT5_HASH);
+    expect((await login(user.email, "secret123")).status).toBe(200);
+    const updated = await User.findById(user._id).select("+password").lean();
+    expect(updated.password).toMatch(/^\$argon2id\$/);
+    expect(updated.__v).toBe(version);
+    expect((await login(user.email, "secret123")).status).toBe(200);
+  });
+
+  it("checks raw legacy input before upgrading to normalized Argon2id", async () => {
+    const user = await createUser();
+    const raw = "Ｃafe\u0301 lantern 47!";
+    const hash = await bcrypt.hash(raw, 10);
+    await User.updateOne({ _id: user._id }, { $set: { password: hash } });
+    expect((await login(user.email, raw.normalize("NFKC"))).status).toBe(401);
+    expect((await User.findById(user._id).select("+password")).password).toBe(hash);
+    expect((await login(user.email, raw)).status).toBe(200);
+    expect((await User.findById(user._id).select("+password")).password).toMatch(/^\$argon2id\$/);
+    expect((await login(user.email, raw.normalize("NFKC"))).status).toBe(200);
   });
 });

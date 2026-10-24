@@ -1,5 +1,5 @@
 <template>
-    <v-card class="book-card" height="100%">
+    <article class="book-card rounded-lg elevation-1">
         <book-cover :src="book.image" :title="book.title" :author="book.author?.name" :eager="eager" />
 
         <div class="book-card__body">
@@ -41,7 +41,7 @@
                 {{ t('catalog.addToCart') }}
             </v-btn>
         </div>
-    </v-card>
+    </article>
 </template>
 
 <script setup>
@@ -90,7 +90,13 @@ const addToCart = async () => {
 <style scoped>
 .book-card {
     position: relative;
+    z-index: 0;
     display: flex;
+    height: 100%;
+    overflow: hidden;
+    overflow-wrap: break-word;
+    background: rgb(var(--v-theme-surface));
+    color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity));
     flex-direction: column;
     transition: transform 200ms ease, box-shadow 200ms ease;
 }

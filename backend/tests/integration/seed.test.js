@@ -17,8 +17,8 @@ import { createAuthor } from "../helpers/factories.js";
 useTestDatabase();
 
 const passwords = {
-  adminPassword: "admin-pass-123",
-  userPassword: "user-pass-123",
+  adminPassword: "Cedar lantern 47!",
+  userPassword: "Velvet compass 92!",
 };
 
 const SEEDED = { users: 2, authors: 5, books: 24 };
@@ -101,9 +101,9 @@ describe("seed()", () => {
   });
 
   it("writes nothing, and with reset deletes nothing, when a password is invalid", async () => {
-    // Shorter than the 6 characters the User model asks for. The reader is the
+    // Shorter than the 15 codepoints required by the shared policy. The reader is the
     // second user: without the check up front the admin would already be saved.
-    const invalid = { adminPassword: "admin-pass-123", userPassword: "123" };
+    const invalid = { adminPassword: "Cedar lantern 47!", userPassword: "123" };
 
     await expect(seed(invalid)).rejects.toThrow(/password/i);
     expect(await countDocuments()).toEqual({ users: 0, authors: 0, books: 0 });
@@ -118,11 +118,11 @@ describe("seed()", () => {
   it("lets the admin and the reader log in with the given passwords", async () => {
     await seed(passwords);
 
-    const admin = await login("admin@bookstore.local", "admin-pass-123");
+    const admin = await login("admin@bookstore.local", "Cedar lantern 47!");
     expect(admin.status).toBe(200);
     expect(admin.body.data.user.role).toBe("admin");
 
-    const reader = await login("reader@bookstore.local", "user-pass-123");
+    const reader = await login("reader@bookstore.local", "Velvet compass 92!");
     expect(reader.status).toBe(200);
     expect(reader.body.data.user.role).toBe("user");
   });

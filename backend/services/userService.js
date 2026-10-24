@@ -12,6 +12,7 @@ import {
 import { endUserSessions } from "./sessions.js";
 import { roleOf, toUserView } from "./userView.js";
 import { sortOf } from "../utils/listSort.js";
+import { validateNewPassword } from "../utils/passwordPolicy.js";
 
 const takesAdminAccess = (user, changes) =>
   user.role === "admin" &&
@@ -161,6 +162,7 @@ async function refuseDuplicate(data, id) {
 }
 
 export async function createUser({ username, email, password, role, firstName, lastName }) {
+  password = validateNewPassword(password, { username, email });
   await refuseDuplicate({ username, email });
   const user = await User.create({ username, email, password, role, firstName, lastName });
   return toUserView(user);

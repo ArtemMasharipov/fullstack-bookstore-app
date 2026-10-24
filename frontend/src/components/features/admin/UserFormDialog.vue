@@ -56,8 +56,7 @@
                         :aria-label="t('admin.userForm.password')"
                         type="password"
                         autocomplete="new-password"
-                        maxlength="1024"
-                        :hint="t('admin.userForm.passwordHint')"
+                        :hint="t('profile.passwordHint')"
                         persistent-hint
                         :disabled="busy"
                         :error-messages="errors.password"
@@ -67,9 +66,12 @@
                 <v-card-actions>
                     <v-spacer />
                     <v-btn variant="text" @click="emit('update:modelValue', false)">{{ t('modal.cancel') }}</v-btn>
-                    <v-btn type="submit" :loading="saving" :disabled="busy || !loaded">{{
-                        t('admin.form.save')
-                    }}</v-btn>
+                    <v-btn type="submit" :loading="saving" :disabled="busy || !loaded">
+                        {{ t('admin.form.save') }}
+                        <template #loader
+                            ><v-progress-circular indeterminate size="24" :aria-label="t('common.loading')"
+                        /></template>
+                    </v-btn>
                 </v-card-actions>
             </v-form>
         </v-card>
@@ -82,6 +84,7 @@ import { useReturnFocus } from '@/composables/useReturnFocus'
 import { t } from '@/i18n'
 import { usersApi } from '@/services/api/usersApi'
 import { resolveErrorKey } from '@/utils/errorResolver'
+import { passwordErrorKey, passwordLengthIssue } from '@/utils/passwordRules'
 
 const props = defineProps({ modelValue: Boolean, user: { type: Object, default: null }, isSelf: Boolean })
 const emit = defineEmits(['update:modelValue', 'saved'])
@@ -131,6 +134,7 @@ async function loadFresh() {
 }
 
 function message(field, code) {
+    if (field === 'password') return t(passwordErrorKey(code))
     if (code === 'duplicate') return t('admin.userForm.duplicate')
     if (['username', 'email', 'password'].includes(field)) return t(`admin.userForm.${field}Error`)
     if (['firstName', 'lastName'].includes(field)) return t('admin.form.errors.maxLength', { max: 50 })
@@ -142,7 +146,10 @@ function check(field) {
     if (field === 'username' && !/^[a-zA-Z0-9_-]{3,50}$/.test(value.trim())) return message(field)
     if (field === 'email' && (value.trim().length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())))
         return message(field)
-    if (field === 'password' && !props.user && (value.length < 6 || value.length > 1024)) return message(field)
+    if (field === 'password' && !props.user) {
+        const issue = passwordLengthIssue(value)
+        if (issue) return message(field, issue)
+    }
     if (['firstName', 'lastName'].includes(field) && value.trim().length > 50) return message(field)
     if (field === 'role' && !['user', 'admin'].includes(value)) return message(field)
     return ''
@@ -208,3 +215,9 @@ onScopeDispose(() => {
     generation++
 })
 </script>
+
+<style scoped>
+:deep(.v-input--disabled .v-input__details) {
+    opacity: 1;
+}
+</style>

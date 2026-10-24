@@ -75,7 +75,7 @@ timestamps; `Session` has `createdAt`.
 | --- | --- | --- |
 | `Author` | `firstName`, `lastName`, `bio`, `birthYear` (1000 through the year at validation time), `country`, `website` | Books are queried through `Book.author` |
 | `Book` | `title`, `publicationYear` (1450 up to the current year), `category`, `description`, `price`, `image`, `inStock` | `author` (an `Author`, required) |
-| `User` | `username` and `email` (both unique), `password` (bcrypt hash, left out of query results by default), `role` (`user` or `admin`; a stored older `moderator` reads as `user`), `isActive`, `lastLogin` | none |
+| `User` | `username` and `email` (both unique), `password` (Argon2id PHC or legacy bcrypt hash, left out of query results by default), `role` (`user` or `admin`; a stored older `moderator` reads as `user`), `isActive`, `lastLogin` | none |
 | `Session` | `jti` (unique, the id in the token), `expiresAt` (a TTL index deletes the session then) | `user` (a `User`) |
 | `Cart` | `items` (`book`, `quantity` from 1 to 99) | `user` (a `User`, one cart each); `items.book` (a `Book`) |
 | `Order` | `orderNumber` (`ORD-YYYYMMDD-NNNNNN`), `items` (`book`, `title`, `unitPrice`, `quantity`, `lineTotal`), `shippingAddress`, `quote`, `status`, `paymentStatus`, `statusHistory`, `idempotencyKey`, `requestHash`, `schemaVersion: 2` | `user` (a `User`); `items.book` (a `Book`) |
@@ -122,6 +122,20 @@ timestamps; `Session` has `createdAt`.
   order idempotency key depends on its unique index.
 
 ## Request path
+
+Profile and password endpoints are described in the [backend guide](../backend/README.md#auth-auth).
+The profile submits only changed first name, last name and username; email is read-only text. Both locales have
+linked field errors, a focused summary, keyboard password reveal buttons and a retry after profile load failure.
+The shared backend password policy covers registration, password change, admin creation and seed: NFKC,
+15–128 code points, a local MIT-licensed blocklist and case-insensitive account/service context.
+The client checks length only. Native asynchronous Argon2id uses 19 MiB, two passes, one lane, fresh salts and
+a bounded PHC parser. Legacy bcrypt verifies raw input and upgrades conditionally without resetting the version.
+
+Credential writes and full session revocation share the existing negative user-version reservation.
+Login and registration recheck their credential snapshot after session insertion and delete their own late
+session after concurrent revocation. Rotation publishes one replacement token only after commit and never
+restores old credentials after a failed write. An interruption may require operator recovery; this is not
+a transaction or automatic timeout takeover. See [decision 0006](decisions/0006-password-policy-and-argon2id.md).
 
 How the catalogue page gets its books, from the browser to MongoDB and back:
 
@@ -177,6 +191,9 @@ the three plugins.
 - **State** (`src/stores/`). One Pinia store per area: `auth`, `authors`, `books`, `cart`, `checkout`, `orders`,
   and `shopConfig`. The stores call their API modules and track their loading and error state.
   - `auth` holds the token and the user; whether the user is an admin comes from their role through `can()`.
+    Account requests capture token and revision; late responses after a session change cannot replace the current
+    user or token. Forms own errors and pending state, while the store owns one success notification and prevents
+    overlapping account mutations. Password rotation does not repeat cart takeover.
   - `books` holds one page of books with the server's pagination. Search and filters are not kept there: the
     catalogue reads them from its address, and the home page loads its latest books into a list of its own. The open
     book has a loading and error state of its own. The admin changes books through `booksApi` from its screen.
@@ -197,7 +214,8 @@ the three plugins.
   the base URL and a 15-second timeout, adds the token from `localStorage` to every request while there is one (a
   request that brings its own token keeps it), turns failures into
   `Error` objects that carry the status and the `code`, `fields` and `details` of the error envelope, and ends the
-  session after a 401 to a request that carried the token. A 401 without a token, such as a wrong password, ends
+  session after a 401 to a request that carried the current token; an old request cannot clear a replacement token.
+  A 401 without a token, such as a wrong password, ends
   nothing.
 - **Session** (`src/services/session.js`). Signing out, a 401 and an expired token end the session the same way:
   the token, the user data, the guest cart key, the notifications and every store except the public catalogue and

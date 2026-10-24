@@ -12,7 +12,7 @@ useTestDatabase();
 const alice = {
   username: "alice",
   email: "alice@example.com",
-  password: "secret123",
+  password: "Silver meadow 58!",
 };
 
 const registerAlice = () =>

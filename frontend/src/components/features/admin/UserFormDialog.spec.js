@@ -71,10 +71,46 @@ const submit = async () => {
 async function fillCreate() {
     await type(field('username'), ' new_user ')
     await type(field('email'), ' NEW@EXAMPLE.COM ')
-    await type(field('password'), 'secret123')
+    await type(field('password'), 'Silver meadow 58!')
 }
 
 describe.each(['cs', 'en'])('UserFormDialog (%s)', (locale) => {
+    it.each(['a'.repeat(14), '😀'.repeat(129)])(
+        'rejects the new password length and focuses errors',
+        async (password) => {
+            await mount({ locale })
+            await fillCreate()
+            await type(field('password'), password)
+            await submit()
+            await vi.waitFor(() => expect(document.activeElement?.getAttribute('role')).toBe('alert'))
+            expect(field('password').getAttribute('aria-invalid')).toBe('true')
+            expect(api.create).not.toHaveBeenCalled()
+        }
+    )
+    it.each(['a'.repeat(15), 'a'.repeat(64), '😀'.repeat(128), 'ﬃ'.repeat(5)])(
+        'creates with the complete valid input',
+        async (password) => {
+            api.create.mockResolvedValue(USER)
+            await mount({ locale })
+            await fillCreate()
+            expect(dialog().textContent).toContain(words.profile.passwordHint)
+            expect(field('password').hasAttribute('maxlength')).toBe(false)
+            await type(field('password'), password)
+            await submit()
+            await vi.waitFor(() => expect(api.create).toHaveBeenCalledTimes(1))
+            expect(api.create.mock.calls[0][0].password).toBe(password)
+        }
+    )
+    it.each(['common', 'context', 'too_small', 'too_big'])('shows a specific %s password error', async (code) => {
+        api.create.mockRejectedValueOnce({ code: 'VALIDATION_FAILED', fields: { password: code } })
+        await mount({ locale })
+        await fillCreate()
+        await submit()
+        await vi.waitFor(() => expect(document.activeElement?.getAttribute('role')).toBe('alert'))
+        expect(dialog().textContent).toContain(words.profile.passwordErrors[code])
+        expect(field('password').value).toBe('Silver meadow 58!')
+        expect(field('password').getAttribute('aria-describedby')).toBeTruthy()
+    })
     it('names the dialog and every account field in the current language', async () => {
         await mount({ locale })
         expect(document.getElementById(dialog().getAttribute('aria-labelledby')).textContent.trim()).toBe(
@@ -96,7 +132,7 @@ describe.each(['cs', 'en'])('UserFormDialog (%s)', (locale) => {
         expect(api.create).toHaveBeenCalledWith({
             username: 'new_user',
             email: 'new@example.com',
-            password: 'secret123',
+            password: 'Silver meadow 58!',
             role: 'user',
         })
         pending.resolve(USER)

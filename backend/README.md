@@ -67,7 +67,22 @@ role is `admin`.
 | GET    | `/auth/me`       | User   | Current user        |
 | PUT    | `/auth/password` | User   | Change password     |
 | PUT    | `/auth/profile`  | User   | Update the profile  |
-| POST   | `/auth/logout`   | User   | Log out (the client discards the token; nothing is revoked on the server) |
+| POST   | `/auth/logout`   | User   | Revoke the current session, 204 |
+| DELETE | `/auth/sessions` | User   | Revoke every session, 204 without a replacement token |
+
+`PUT /auth/profile` accepts any subset of `firstName`, `lastName` and `username` and returns the user view.
+Email, role and unknown fields are refused. `PUT /auth/password` accepts only `currentPassword` and
+`newPassword`; success returns `{ user, token }` and ends all old sessions, including the authorizing one.
+The current browser must replace its token. An incorrect current password answers 400 `VALIDATION_FAILED`,
+`fields.currentPassword: incorrect`, without signing out. New-password fields may report `too_small`, `too_big`,
+`common`, `context` or `same_as_current`. Conflicting credential writes answer 409.
+
+Registration, password change, admin creation and seed share NFKC normalization and a 15–128 code-point policy,
+without composition rules or trimming. A local blocklist and case-insensitive username, email local part and
+`bookstore` checks run on the server. Older short passwords remain valid at sign-in.
+Node 24.7+ within 24.x supplies asynchronous Argon2id; bcrypt hashes upgrade conditionally after successful sign-in.
+Credential writes share the existing access-version reservation. An interruption may require operator recovery;
+no automatic timeout steals an in-flight reservation.
 
 ### Books (`/books`)
 

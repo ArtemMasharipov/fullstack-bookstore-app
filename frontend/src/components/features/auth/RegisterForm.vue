@@ -1,5 +1,8 @@
 <template>
-    <v-form ref="formRef" class="auth-form" @submit.prevent="handleSubmit">
+    <v-form class="auth-form" @submit.prevent="handleSubmit">
+        <v-alert v-if="errorKey" ref="summaryAlert" type="error" class="mb-4" density="compact" tabindex="-1">
+            {{ t(errorKey, errorParams) }}
+        </v-alert>
         <v-text-field
             id="username"
             v-model="username"
@@ -8,9 +11,10 @@
             required
             autocomplete="username"
             prepend-inner-icon="mdi-account-outline"
-            :rules="[(v) => !!v || t('auth.rules.usernameRequired')]"
+            :disabled="busy"
+            :error-messages="errors.username"
+            :aria-invalid="errors.username ? 'true' : undefined"
         />
-
         <v-text-field
             id="email"
             v-model="email"
@@ -20,9 +24,10 @@
             required
             autocomplete="email"
             prepend-inner-icon="mdi-email-outline"
-            :rules="[(v) => !!v || t('auth.rules.emailRequired')]"
+            :disabled="busy"
+            :error-messages="errors.email"
+            :aria-invalid="errors.email ? 'true' : undefined"
         />
-
         <v-text-field
             id="password"
             v-model="password"
@@ -32,14 +37,26 @@
             required
             autocomplete="new-password"
             prepend-inner-icon="mdi-lock-outline"
-            :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
-            :rules="[
-                (v) => !!v || t('auth.rules.passwordRequired'),
-                (v) => v.length >= 6 || t('auth.rules.passwordTooShort'),
-            ]"
-            @click:append-inner="showPassword = !showPassword"
-        />
-
+            :hint="t('profile.passwordHint')"
+            persistent-hint
+            :disabled="busy"
+            :error-messages="errors.password"
+            :aria-invalid="errors.password ? 'true' : undefined"
+        >
+            <template #append-inner>
+                <v-btn
+                    type="button"
+                    variant="text"
+                    size="small"
+                    :icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+                    :aria-label="t(showPassword ? 'profile.hidePassword' : 'profile.showPassword')"
+                    :aria-pressed="showPassword"
+                    :disabled="busy"
+                    @mousedown.stop
+                    @click.stop="showPassword = !showPassword"
+                />
+            </template>
+        </v-text-field>
         <v-text-field
             id="confirmPassword"
             v-model="confirmPassword"
@@ -49,19 +66,16 @@
             required
             autocomplete="new-password"
             prepend-inner-icon="mdi-lock-check-outline"
-            :rules="[
-                (v) => !!v || t('auth.rules.confirmRequired'),
-                (v) => v === password || t('auth.rules.passwordsDiffer'),
-            ]"
+            :disabled="busy"
+            :error-messages="errors.confirmPassword"
+            :aria-invalid="errors.confirmPassword ? 'true' : undefined"
         />
-
-        <v-btn type="submit" color="primary" block :loading="authLoading" size="large" class="mt-2">
+        <v-btn type="submit" color="primary" block :loading="pending" :disabled="busy" size="large" class="mt-2">
             {{ t('auth.register.submit') }}
+            <template #loader
+                ><v-progress-circular indeterminate size="24" :aria-label="t('common.loading')"
+            /></template>
         </v-btn>
-
-        <v-alert v-if="errorKey" type="error" class="mt-4" density="compact">
-            {{ t(errorKey, errorParams) }}
-        </v-alert>
     </v-form>
 </template>
 
@@ -69,9 +83,8 @@
 import { afterSignIn } from '@/router/redirect'
 import { useAuthStore } from '@/stores'
 import { resolveErrorKey } from '@/utils/errorResolver'
-import { logger } from '@/utils/logger'
-import { storeToRefs } from 'pinia'
-import { ref } from 'vue'
+import { passwordErrorKey, passwordLengthIssue } from '@/utils/passwordRules'
+import { computed, nextTick, onScopeDispose, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -79,42 +92,65 @@ const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
-
-const { loading: authLoading } = storeToRefs(authStore)
-
-const formRef = ref(null)
 const username = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const showPassword = ref(false)
+const pending = ref(false)
+const busy = computed(() => pending.value || authStore.loading)
+const errors = reactive({ username: '', email: '', password: '', confirmPassword: '' })
 const errorKey = ref(null)
 const errorParams = ref({})
-
-const handleSubmit = async () => {
-    const { valid } = await formRef.value.validate()
-    if (!valid) return
-
+const summaryAlert = ref(null)
+let disposed = false
+onScopeDispose(() => {
+    disposed = true
+})
+async function showSummary(key, params = {}) {
+    if (disposed) return
+    errorKey.value = key
+    errorParams.value = params
+    await nextTick()
+    if (!disposed) summaryAlert.value?.$el?.focus()
+}
+async function handleSubmit() {
+    if (busy.value) return
+    errors.username = username.value ? '' : t('auth.rules.usernameRequired')
+    errors.email = email.value ? '' : t('auth.rules.emailRequired')
+    const issue = passwordLengthIssue(password.value)
+    errors.password = issue ? t(passwordErrorKey(issue)) : ''
+    errors.confirmPassword = !confirmPassword.value
+        ? t('auth.rules.confirmRequired')
+        : confirmPassword.value !== password.value
+        ? t('auth.rules.passwordsDiffer')
+        : ''
+    if (Object.values(errors).some(Boolean)) return showSummary('profile.summary')
+    pending.value = true
     errorKey.value = null
     try {
-        // The repeated password is checked here only; the server accepts the account fields alone
-        await authStore.register({
-            username: username.value,
-            email: email.value,
-            password: password.value,
-        })
-        await afterSignIn(router, route)
+        await authStore.register({ username: username.value, email: email.value, password: password.value })
+        if (!disposed) await afterSignIn(router, route)
     } catch (error) {
-        errorParams.value = {}
-        if (error.status === 429) {
-            // Too many failed attempts from this device: the server says when to try again
-            errorKey.value = 'auth.tooManyAttempts'
-            errorParams.value = { minutes: Math.ceil((error.details?.retryAfter ?? 60) / 60) }
-        } else {
-            // The server does not say which of the two is taken
-            errorKey.value = error.code === 'CONFLICT' ? 'auth.register.taken' : resolveErrorKey(error)
-        }
-        logger.error('Registration failed', error, 'RegisterForm')
+        if (disposed) return
+        if (error.fields) {
+            for (const [field, code] of Object.entries(error.fields)) {
+                if (field === 'password') errors.password = t(passwordErrorKey(code))
+                else if (field === 'username') errors.username = t('profile.usernameError')
+                else if (field === 'email') errors.email = t('admin.userForm.emailError')
+            }
+            await showSummary('profile.summary')
+        } else if (error.status === 429) {
+            await showSummary('auth.tooManyAttempts', { minutes: Math.ceil((error.details?.retryAfter ?? 60) / 60) })
+        } else await showSummary(error.code === 'CONFLICT' ? 'auth.register.taken' : resolveErrorKey(error))
+    } finally {
+        if (!disposed) pending.value = false
     }
 }
 </script>
+
+<style scoped>
+:deep(.v-input--disabled .v-input__details) {
+    opacity: 1;
+}
+</style>

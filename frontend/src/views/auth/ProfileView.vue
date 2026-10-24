@@ -1,216 +1,174 @@
 <template>
-    <v-container class="py-8">
-        <div class="text-center mb-8">
-            <h1 class="text-h4 font-weight-bold">My Profile</h1>
-            <p class="text-body-1 text-medium-emphasis mt-1">Manage your personal details and settings</p>
-        </div>
-
-        <v-row justify="center">
-            <!-- Profile Card -->
-            <v-col cols="12" md="7" lg="8">
-                <v-card class="pa-6">
-                    <!-- Avatar -->
-                    <div class="text-center mb-6">
-                        <v-avatar size="96" color="primary" class="mb-3">
-                            <span class="text-h4 font-weight-bold text-white">{{ userInitials }}</span>
-                        </v-avatar>
-                        <div>
-                            <v-btn variant="text" size="small" prepend-icon="mdi-camera-outline"> Change photo </v-btn>
-                        </div>
-                    </div>
-
-                    <!-- Profile Form -->
-                    <v-form @submit.prevent="updateProfile">
-                        <v-row>
-                            <v-col cols="12" sm="6">
-                                <v-text-field
-                                    id="firstName"
-                                    v-model="profile.firstName"
-                                    label="First Name"
-                                    :disabled="!isEditing"
-                                />
-                            </v-col>
-                            <v-col cols="12" sm="6">
-                                <v-text-field
-                                    id="lastName"
-                                    v-model="profile.lastName"
-                                    label="Last Name"
-                                    :disabled="!isEditing"
-                                />
-                            </v-col>
-                        </v-row>
-
-                        <v-text-field
-                            id="email"
-                            v-model="profile.email"
-                            label="Email"
-                            type="email"
-                            disabled
-                            hint="Email cannot be changed"
-                            persistent-hint
-                        />
-
-                        <v-text-field
-                            id="phone"
-                            v-model="profile.phone"
-                            label="Phone"
-                            type="tel"
-                            :disabled="!isEditing"
-                        />
-
-                        <div class="d-flex ga-3 mt-2">
-                            <v-btn
-                                v-if="!isEditing"
-                                color="primary"
-                                prepend-icon="mdi-pencil-outline"
-                                @click="startEditing"
-                            >
-                                Edit
-                            </v-btn>
-
-                            <template v-else>
-                                <v-btn type="submit" color="success" :loading="loading" prepend-icon="mdi-check">
-                                    Save
-                                </v-btn>
-                                <v-btn variant="outlined" color="default" @click="cancelEditing"> Cancel </v-btn>
-                            </template>
-                        </div>
-                    </v-form>
-                </v-card>
-            </v-col>
-
-            <!-- Actions Card -->
-            <v-col cols="12" md="5" lg="4">
-                <v-card>
-                    <v-card-title class="text-h6">Quick Actions</v-card-title>
-                    <v-card-text class="pa-0">
-                        <v-list>
-                            <v-list-item>
-                                <template v-slot:default>
-                                    <v-list-item-title>Change Password</v-list-item-title>
-                                    <v-list-item-subtitle
-                                        >Update your password for better security</v-list-item-subtitle
-                                    >
-                                </template>
-                                <template v-slot:append>
-                                    <v-btn variant="outlined" size="small">Change</v-btn>
-                                </template>
-                            </v-list-item>
-
-                            <v-divider />
-
-                            <v-list-item>
-                                <template v-slot:default>
-                                    <v-list-item-title>My Orders</v-list-item-title>
-                                    <v-list-item-subtitle>View purchase history</v-list-item-subtitle>
-                                </template>
-                                <template v-slot:append>
-                                    <v-btn variant="outlined" size="small" :to="localeRoute('Orders')">View</v-btn>
-                                </template>
-                            </v-list-item>
-
-                            <v-divider />
-
-                            <v-list-item>
-                                <template v-slot:default>
-                                    <v-list-item-title class="text-error">Delete Account</v-list-item-title>
-                                    <v-list-item-subtitle>Permanently delete your account</v-list-item-subtitle>
-                                </template>
-                                <template v-slot:append>
-                                    <v-btn
-                                        variant="outlined"
-                                        size="small"
-                                        color="error"
-                                        @click="showDeleteDialog = true"
-                                    >
-                                        Delete
-                                    </v-btn>
-                                </template>
-                            </v-list-item>
-                        </v-list>
-                    </v-card-text>
-                </v-card>
-            </v-col>
-        </v-row>
-
-        <!-- Delete Account Confirmation -->
-        <confirm-modal
-            v-model="showDeleteDialog"
-            title="Delete Account"
-            message="Are you sure you want to delete your account? This action cannot be undone."
-            confirm-text="Delete"
-            @confirm="deleteAccount"
-        />
+    <v-container class="py-8 profile-page">
+        <h1 class="text-h4 font-weight-bold mb-2">{{ t('profile.title') }}</h1>
+        <p class="mb-6">{{ t('profile.description') }}</p>
+        <v-progress-linear v-if="loading || waitingForAccount" indeterminate :aria-label="t('profile.loading')" />
+        <v-alert v-if="loadError" type="error">
+            <p>{{ t(resolveErrorKey(loadError)) }}</p>
+            <v-btn class="mt-3" variant="outlined" :disabled="loading" @click="load">{{ t('errors.retry') }}</v-btn>
+        </v-alert>
+        <template v-if="loaded">
+            <v-card class="pa-4 pa-sm-6 mb-6">
+                <v-form aria-labelledby="profile-details-title" @submit.prevent="save">
+                    <h2 id="profile-details-title" class="text-h5 mb-4">{{ t('profile.detailsTitle') }}</h2>
+                    <v-alert v-if="summary" ref="summaryAlert" type="error" tabindex="-1" class="mb-4">{{
+                        summary
+                    }}</v-alert>
+                    <v-text-field
+                        v-for="field in FIELDS"
+                        :id="'profile-' + field"
+                        :key="field"
+                        v-model="form[field]"
+                        :label="t('profile.' + field)"
+                        :aria-label="t('profile.' + field)"
+                        :autocomplete="AUTOCOMPLETE[field]"
+                        maxlength="50"
+                        :disabled="busy"
+                        :error-messages="errors[field]"
+                        :aria-invalid="errors[field] ? 'true' : undefined"
+                    />
+                    <dl class="mb-4">
+                        <dt class="font-weight-bold">{{ t('profile.email') }}</dt>
+                        <dd class="profile-email">{{ email }}</dd>
+                    </dl>
+                    <p class="text-body-2 mb-4">{{ t('profile.emailHint') }}</p>
+                    <v-btn type="submit" color="primary" :loading="saving" :disabled="busy || !dirty || !valid">
+                        {{ t('profile.save') }}
+                        <template #loader
+                            ><v-progress-circular indeterminate size="24" :aria-label="t('common.loading')"
+                        /></template>
+                    </v-btn>
+                </v-form>
+            </v-card>
+            <v-card class="pa-4 pa-sm-6 mb-6"><ProfilePasswordForm /></v-card>
+            <div class="d-flex flex-wrap ga-4">
+                <v-btn :to="localeRoute('Orders')" variant="outlined">{{ t('profile.orders') }}</v-btn>
+                <v-btn :disabled="busy" :loading="signingOut" variant="outlined" @click="logoutAll">
+                    {{ t('profile.logoutAll') }}
+                    <template #loader
+                        ><v-progress-circular indeterminate size="24" :aria-label="t('common.loading')"
+                    /></template>
+                </v-btn>
+            </div>
+        </template>
     </v-container>
 </template>
 
 <script setup>
+import { computed, nextTick, onMounted, onScopeDispose, reactive, ref, watch } from 'vue'
+import ProfilePasswordForm from '@/components/features/auth/ProfilePasswordForm.vue'
+import { t } from '@/i18n'
 import { localeRoute } from '@/router/locale'
-import ConfirmModal from '@/components/ui/ConfirmModal.vue'
-import { useAuthStore } from '@/stores'
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { resolveErrorKey } from '@/utils/errorResolver'
 
-const authStore = useAuthStore()
-const router = useRouter()
-
-const isEditing = ref(false)
+const auth = useAuthStore()
+const FIELDS = ['firstName', 'lastName', 'username']
+const AUTOCOMPLETE = { firstName: 'given-name', lastName: 'family-name', username: 'username' }
+const form = reactive({ firstName: '', lastName: '', username: '' })
+const original = reactive({ ...form })
+const errors = reactive({})
+const email = ref('')
+const loaded = ref(false)
 const loading = ref(false)
-const showDeleteDialog = ref(false)
-const profile = ref({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
+const loadError = ref(null)
+const saving = ref(false)
+const signingOut = ref(false)
+const summary = ref('')
+const summaryAlert = ref(null)
+const busy = computed(() => saving.value || signingOut.value || auth.accountBusy)
+const waitingForAccount = computed(() => !loaded.value && !loadError.value && auth.accountBusy)
+const dirty = computed(() => FIELDS.some((field) => form[field] !== original[field]))
+const valid = computed(() => FIELDS.every((field) => !issue(field)))
+let disposed = false
+onScopeDispose(() => {
+    disposed = true
 })
-const originalProfile = ref({})
-
-const user = computed(() => authStore.user)
-const userInitials = computed(() => {
-    const first = profile.value.firstName?.charAt(0) || ''
-    const last = profile.value.lastName?.charAt(0) || ''
-    return (first + last).toUpperCase() || 'U'
-})
-
-const loadProfile = () => {
-    if (user.value) {
-        profile.value = { ...user.value }
-        originalProfile.value = { ...user.value }
-    }
+function setProfile(user) {
+    for (const field of FIELDS) form[field] = original[field] = user[field] ?? ''
+    email.value = user.email
 }
-
-const startEditing = () => {
-    isEditing.value = true
-    originalProfile.value = { ...profile.value }
+function issue(field) {
+    const value = form[field].trim()
+    if (field === 'username') return /^[a-zA-Z0-9_-]{3,50}$/.test(value) ? '' : t('profile.usernameError')
+    return value.length > 50 ? t('profile.nameError') : ''
 }
-
-const cancelEditing = () => {
-    isEditing.value = false
-    profile.value = { ...originalProfile.value }
+async function showSummary(message) {
+    if (disposed) return
+    summary.value = message
+    await nextTick()
+    if (!disposed) summaryAlert.value?.$el?.focus()
 }
-
-const updateProfile = async () => {
+async function load() {
+    if (disposed || loading.value || auth.accountBusy) return
     loading.value = true
+    loadError.value = null
     try {
-        await authStore.updateProfile(profile.value)
-        isEditing.value = false
-    } catch (error) {
-        // Error updating profile
+        const user = await auth.loadProfile()
+        if (disposed) return
+        if (!user) throw new Error('Profile read invalidated')
+        setProfile(user)
+        loaded.value = true
+    } catch (failure) {
+        if (!disposed) loadError.value = failure
     } finally {
-        loading.value = false
+        if (!disposed) loading.value = false
     }
 }
-
-const deleteAccount = async () => {
+async function save() {
+    if (busy.value || !dirty.value) return
+    for (const field of FIELDS) errors[field] = issue(field)
+    if (!valid.value) return showSummary(t('profile.summary'))
+    const body = Object.fromEntries(
+        FIELDS.filter((field) => form[field] !== original[field]).map((field) => [field, form[field].trim()])
+    )
+    saving.value = true
+    summary.value = ''
     try {
-        await authStore.deleteAccount()
-        router.push(localeRoute('Home'))
-    } catch (error) {
-        // Error deleting account
+        const user = await auth.updateProfile(body)
+        if (!disposed && user) setProfile(user)
+    } catch (failure) {
+        if (disposed) return
+        for (const [field, code] of Object.entries(failure.fields ?? {}))
+            if (FIELDS.includes(field))
+                errors[field] = t(
+                    code === 'duplicate'
+                        ? 'profile.duplicate'
+                        : field === 'username'
+                        ? 'profile.usernameError'
+                        : 'profile.nameError'
+                )
+        await showSummary(t(failure.fields ? 'profile.summary' : resolveErrorKey(failure)))
+    } finally {
+        if (!disposed) saving.value = false
     }
 }
-
-onMounted(() => {
-    loadProfile()
-})
+async function logoutAll() {
+    if (busy.value) return
+    signingOut.value = true
+    try {
+        await auth.logoutAll()
+    } catch (failure) {
+        await showSummary(t(resolveErrorKey(failure)))
+    } finally {
+        if (!disposed) signingOut.value = false
+    }
+}
+// A reopened page waits for the previous mutation; loaded drafts are never refreshed by this watcher.
+watch(
+    () => auth.accountBusy,
+    (pending) => {
+        if (!pending && !loaded.value && !loading.value && !loadError.value) load()
+    }
+)
+onMounted(load)
 </script>
+
+<style scoped>
+.profile-page {
+    max-width: 800px;
+}
+.profile-email {
+    overflow-wrap: anywhere;
+}
+</style>

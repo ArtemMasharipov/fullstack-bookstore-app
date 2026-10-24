@@ -18,7 +18,7 @@ import { AppError } from "../utils/errors.js";
 const store = new MemoryStore();
 
 // Paths inside the /auth router
-const NEVER_LIMITED = new Set(["/logout", "/me"]);
+const NEVER_LIMITED = new Set(["/logout", "/me", "/sessions"]);
 
 export const authRateLimit = rateLimit({
   windowMs: config.authRateLimit.windowMinutes * 60 * 1000,

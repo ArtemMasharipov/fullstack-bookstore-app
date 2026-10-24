@@ -16,6 +16,7 @@ import en from '@/i18n/locales/en.json'
 import cs from '@/i18n/locales/cs.json'
 import { buildRoutes } from '@/router/buildRoutes'
 import RegisterForm from './RegisterForm.vue'
+import { deferred } from '@/test/admin'
 
 // A token the client can read, valid until 2100
 const TOKEN = 'eyJhbGciOiJub25lIn0.' + btoa(JSON.stringify({ exp: 4102444800 })) + '.'
@@ -66,7 +67,7 @@ async function mount(path, locale = 'cs') {
     await nextTick()
 }
 
-async function register({ password = 'secret123', confirmPassword = password } = {}) {
+async function register({ password = 'Silver meadow 58!', confirmPassword = password } = {}) {
     for (const [id, value] of [
         ['username', USER.username],
         ['email', USER.email],
@@ -99,7 +100,7 @@ describe('RegisterForm', () => {
         expect(auth.register.mock.calls[0][0]).toEqual({
             username: USER.username,
             email: USER.email,
-            password: 'secret123',
+            password: 'Silver meadow 58!',
         })
     })
 
@@ -140,7 +141,7 @@ describe('RegisterForm', () => {
     it('asks for matching passwords', async () => {
         await mount('/register')
 
-        await register({ password: 'secret123', confirmPassword: 'secret124' })
+        await register({ password: 'Silver meadow 58!', confirmPassword: 'secret124' })
 
         await vi.waitFor(() =>
             expect([...document.querySelectorAll('.v-messages__message')].map((m) => m.textContent)).toContain(
@@ -148,5 +149,67 @@ describe('RegisterForm', () => {
             )
         )
         expect(auth.register).not.toHaveBeenCalled()
+    })
+})
+
+describe.each(['cs', 'en'])('registration password policy (%s)', (locale) => {
+    const words = { cs, en }[locale]
+    const path = locale === 'en' ? '/en/register' : '/register'
+    it('keeps focus on the named password reveal button', async () => {
+        await mount(path, locale)
+        const reveal = document.querySelector('button[aria-label="' + words.profile.showPassword + '"]')
+        reveal.focus()
+        reveal.click()
+        await nextTick()
+        expect(document.activeElement).toBe(reveal)
+        expect(document.getElementById('password').type).toBe('text')
+    })
+    it.each(['a'.repeat(14), '😀'.repeat(129)])(
+        'rejects normalized length with linked error and focus',
+        async (password) => {
+            await mount(path, locale)
+            await register({ password })
+            await vi.waitFor(() => expect(document.activeElement?.getAttribute('role')).toBe('alert'))
+            expect(document.getElementById('password').getAttribute('aria-invalid')).toBe('true')
+            expect(document.getElementById('password').getAttribute('aria-describedby')).toBeTruthy()
+            expect(auth.register).not.toHaveBeenCalled()
+        }
+    )
+    it.each(['a'.repeat(15), 'a'.repeat(64), '😀'.repeat(128), 'ﬃ'.repeat(5)])(
+        'sends the full valid input',
+        async (password) => {
+            await mount(path, locale)
+            expect(document.body.textContent).toContain(words.profile.passwordHint)
+            expect(document.getElementById('password').hasAttribute('maxlength')).toBe(false)
+            await register({ password })
+            await vi.waitFor(() => expect(auth.register).toHaveBeenCalledTimes(1))
+            expect(auth.register.mock.calls[0][0].password).toBe(password)
+        }
+    )
+    it.each(['common', 'context', 'too_small', 'too_big'])(
+        'translates %s from the server and allows retry',
+        async (code) => {
+            auth.register.mockRejectedValueOnce({ status: 400, code: 'VALIDATION_FAILED', fields: { password: code } })
+            await mount(path, locale)
+            await register()
+            await vi.waitFor(() => expect(document.activeElement?.getAttribute('role')).toBe('alert'))
+            expect(document.body.textContent).toContain(words.profile.passwordErrors[code])
+            expect(document.getElementById('password').value).toBe('Silver meadow 58!')
+            expect(document.getElementById('password').getAttribute('aria-invalid')).toBe('true')
+            await register()
+            await vi.waitFor(() => expect(auth.register).toHaveBeenCalledTimes(2))
+        }
+    )
+    it('sends only one account while validation and the request are pending', async () => {
+        const pending = deferred()
+        auth.register.mockReturnValueOnce(pending.promise)
+        await mount(path, locale)
+        await register()
+        document.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true }))
+        await vi.waitFor(() => expect(auth.register).toHaveBeenCalledTimes(1))
+        await nextTick()
+        expect(auth.register).toHaveBeenCalledTimes(1)
+        pending.resolve({ data: { user: USER, token: TOKEN } })
+        await vi.waitFor(() => expect(document.querySelector('button[type="submit"]').disabled).toBe(false))
     })
 })

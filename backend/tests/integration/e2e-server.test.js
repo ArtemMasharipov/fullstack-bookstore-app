@@ -49,8 +49,8 @@ function startE2eServer({ nodeArgs = [] } = {}) {
     env: childEnv({
       MONGODB_URI: REMOTE_URI,
       E2E_API_PORT: "0",
-      SEED_ADMIN_PASSWORD: "e2e-admin-pass",
-      SEED_USER_PASSWORD: "e2e-user-pass",
+      SEED_ADMIN_PASSWORD: "Cedar lantern 47!",
+      SEED_USER_PASSWORD: "Velvet compass 92!",
     }),
     stdio: ["ignore", "pipe", "pipe", "ipc"],
   });

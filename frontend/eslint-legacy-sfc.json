@@ -1,6 +1,5 @@
 [
     "src/components/features/authors/AuthorDetails.vue",
     "src/components/features/authors/AuthorList.vue",
-    "src/components/features/authors/AuthorListItem.vue",
-    "src/views/auth/ProfileView.vue"
+    "src/components/features/authors/AuthorListItem.vue"
 ]

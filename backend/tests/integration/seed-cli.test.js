@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import bcrypt from "bcrypt";
+import { verifyPassword } from "../../utils/passwords.js";
 import mongoose from "mongoose";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { assertLocalMongoUri } from "../../config/mongo-guard.js";
@@ -23,8 +23,8 @@ const JWT_SECRET = "seed-cli-test-secret-0123456789abcdef0123456789";
 
 const REMOTE_URI = "mongodb://db.example.com/shop";
 
-const ADMIN_PASSWORD = "cli-admin-pass-1";
-const USER_PASSWORD = "cli-user-pass-1";
+const ADMIN_PASSWORD = "Cedar lantern 47!";
+const USER_PASSWORD = "Velvet compass 92!";
 const PASSWORDS = {
   SEED_ADMIN_PASSWORD: ADMIN_PASSWORD,
   SEED_USER_PASSWORD: USER_PASSWORD,
@@ -236,7 +236,8 @@ describe("seed CLI: a local database", () => {
     const database = await readDatabase("seed_cli_ok");
     expect(countsOf(database)).toEqual({ users: 2, authors: 5, books: 24 });
     const admin = database.users.find((user) => user.role === "admin");
-    expect(await bcrypt.compare(ADMIN_PASSWORD, admin.password)).toBe(true);
+    expect(admin.password).toMatch(/^\$argon2id\$v=19\$m=19456,t=2,p=1\$/);
+    expect(await verifyPassword(ADMIN_PASSWORD, admin.password)).toBe(true);
   });
 
   it("refuses a second run and exits, then --reset seeds it again", async () => {
@@ -333,7 +334,7 @@ describe("seed CLI: in a terminal", () => {
     // The printed passwords are the stored ones
     const { users } = await readDatabase("seed_cli_tty");
     for (const user of users) {
-      const stored = await bcrypt.compare(printed[user.email], user.password);
+      const stored = await verifyPassword(printed[user.email], user.password);
       expect(stored, user.email).toBe(true);
     }
   });
@@ -356,7 +357,7 @@ describe("seed CLI: in a terminal", () => {
 
     const { users } = await readDatabase("seed_cli_tty_one");
     const admin = users.find((user) => user.role === "admin");
-    expect(await bcrypt.compare(ADMIN_PASSWORD, admin.password)).toBe(true);
+    expect(await verifyPassword(ADMIN_PASSWORD, admin.password)).toBe(true);
   });
 });
 

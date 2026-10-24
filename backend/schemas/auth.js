@@ -31,3 +31,6 @@ export const profileBody = z.strictObject({
   firstName: name.optional(),
   lastName: name.optional(),
 });
+
+export const emptyAuthQuery = z.strictObject({});
+export const emptySessionBody = z.strictObject({}).optional();
