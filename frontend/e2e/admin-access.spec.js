@@ -17,6 +17,19 @@ const MISSING_ORDER = '5f0c9a1b2c3d4e5f6a7b8c9d'
 const accountMenu = (page) => page.locator('header button:has(.v-avatar)')
 const menuItem = (page, text) => page.locator('.v-overlay__content .v-list-item').filter({ hasText: text })
 
+test('sign-in waits for the login response before checking navigation', async ({ page }) => {
+    // Reproduce a successful API response slower than the navigation assertion's 5 s budget.
+    await page.route('**/api/v1/auth/login', async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 5500))
+        await route.continue()
+    })
+
+    await signIn(page, SEEDED.admin)
+
+    await expect(page).toHaveURL((url) => url.pathname === '/')
+    await expect(accountMenu(page)).toContainText('admin')
+})
+
 async function apiToken(request, { email, password }) {
     const res = await request.post('/api/v1/auth/login', { data: { emailOrUsername: email, password } })
     expect(res.status()).toBe(200)

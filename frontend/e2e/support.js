@@ -120,7 +120,14 @@ export async function signIn(page, user, prefix = '') {
     if (!new URL(page.url()).pathname.endsWith('/login')) await page.goto(`${prefix}/login`)
     await page.locator('input[autocomplete="username"]').fill(user.email)
     await page.locator('input[autocomplete="current-password"]').fill(user.password)
-    await page.locator('form button[type="submit"]').click()
+    const [response] = await Promise.all([
+        page.waitForResponse(
+            (response) =>
+                response.request().method() === 'POST' && new URL(response.url()).pathname === '/api/v1/auth/login'
+        ),
+        page.locator('form button[type="submit"]').click(),
+    ])
+    expect(response.status()).toBe(200)
     await expect(page).not.toHaveURL((url) => url.pathname.endsWith('/login'))
     return page.evaluate(() => localStorage.getItem('token'))
 }
