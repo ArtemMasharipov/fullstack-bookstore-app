@@ -88,7 +88,7 @@ for (const locale of ['cs', 'en']) {
             expect(await trimmed(page)).toEqual(titles)
 
             await page.locator(`header button[lang="${other}"]`).click()
-            await expect(page).toHaveURL(new RegExp(`${otherPrefix}/books\\?page=2$`))
+            await expect(page).toHaveURL((url) => url.pathname === `${otherPrefix}/books` && url.search === '?page=2')
             await expect(page.locator('.book-card__link')).toHaveCount(12)
             expect(await trimmed(page)).toEqual(titles)
         })
@@ -96,8 +96,7 @@ for (const locale of ['cs', 'en']) {
         test(`${locale}: reload and a language switch keep the search and the category`, async ({ page }) => {
             const otherDict = dictionaries[other]
             const check = async (labels) => {
-                await expect(page.locator('.book-card__link')).toHaveCount(1)
-                expect(await trimmed(page)).toEqual([SMOKE_BOOK_TITLE])
+                await expect(page.locator('.book-card__link')).toHaveText([SMOKE_BOOK_TITLE])
                 await expect(page.getByRole('textbox', { name: labels.catalog.search.label })).toHaveValue('Babi')
                 await expect(
                     page
@@ -111,7 +110,9 @@ for (const locale of ['cs', 'en']) {
             await page.reload()
             await check(dict)
             await page.locator(`header button[lang="${other}"]`).click()
-            await expect(page).toHaveURL(new RegExp(`${otherPrefix}/books\\?category=Fiction&q=Babi$`))
+            await expect(page).toHaveURL(
+                (url) => url.pathname === `${otherPrefix}/books` && url.search === '?category=Fiction&q=Babi'
+            )
             await check(otherDict)
         })
 
