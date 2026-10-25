@@ -64,11 +64,11 @@
                     </p>
 
                     <!-- Add to cart section -->
-                    <div v-if="book.inStock" class="d-flex align-center ga-3 mb-4" style="max-width: 360px">
+                    <div v-if="book.inStock" class="d-flex flex-wrap align-center ga-3 mb-4" style="max-width: 360px">
                         <div class="d-flex align-center">
                             <v-btn
                                 icon="mdi-minus"
-                                density="compact"
+                                density="comfortable"
                                 variant="outlined"
                                 size="small"
                                 :disabled="quantity <= 1"
@@ -78,7 +78,7 @@
                             <span class="text-body-1 font-weight-medium mx-3" aria-live="polite">{{ quantity }}</span>
                             <v-btn
                                 icon="mdi-plus"
-                                density="compact"
+                                density="comfortable"
                                 variant="outlined"
                                 size="small"
                                 :aria-label="t('book.increase')"
