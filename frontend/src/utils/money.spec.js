@@ -110,3 +110,31 @@ it('renders a zero book price instead of a missing-price fallback', async () => 
     )
     expect(book.price).toBe(0)
 })
+
+it('reuses locale initialization while formatting a catalogue and minor-unit totals', async () => {
+    // A real Intl constructor still formats every value. Count its costly locale initialization,
+    // independently of the formatting calls, so rebuilding it for each card is a regression.
+    vi.resetModules()
+    const display = await import('./money')
+    const fixtures = [
+        ['cs', 'CZK', '299,90\u00a0Kč'],
+        ['en', 'CZK', 'CZK\u00a0299.90'],
+        ['cs', 'USD', '299,90\u00a0US$'],
+        ['en', 'USD', 'US$299.90'],
+    ]
+    const NumberFormat = Intl.NumberFormat
+    const constructor = vi.spyOn(Intl, 'NumberFormat').mockImplementation(function (...args) {
+        return new NumberFormat(...args)
+    })
+    try {
+        for (const [language, currency, expected] of fixtures) {
+            for (let card = 0; card < 12; card++) {
+                expect(display.formatMoney(29990, currency, language)).toBe(expected)
+                if (currency === 'CZK') expect(display.formatPrice(299.9, language)).toBe(expected)
+            }
+        }
+        expect(constructor).toHaveBeenCalledTimes(4)
+    } finally {
+        constructor.mockRestore()
+    }
+})

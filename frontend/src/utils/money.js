@@ -2,13 +2,24 @@ import { locale, t } from '@/i18n'
 
 export const CURRENCY_CODE = 'CZK'
 
-const currencyFormat = (language, currency) =>
-    new Intl.NumberFormat(language === 'en' ? 'en-GB' : 'cs-CZ', {
-        style: 'currency',
-        currency,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    })
+// Locale initialization is expensive; every card and total can share the same formatter.
+const currencyFormats = new Map()
+const currencyFormat = (language, currency) => {
+    const tag = language === 'en' ? 'en-GB' : 'cs-CZ'
+    const key = `${tag}:${currency}`
+    if (!currencyFormats.has(key)) {
+        currencyFormats.set(
+            key,
+            new Intl.NumberFormat(tag, {
+                style: 'currency',
+                currency,
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            })
+        )
+    }
+    return currencyFormats.get(key)
+}
 
 /** Format finite numeric amounts in major CZK units without changing their value. */
 export function formatPrice(price, language = locale.value) {
