@@ -15,6 +15,7 @@ import { activateLocale, i18n, loadLocale, t } from '@/i18n'
 import en from '@/i18n/locales/en.json'
 import cs from '@/i18n/locales/cs.json'
 import { buildRoutes } from '@/router/buildRoutes'
+import { routeManifest } from '@/router/manifest'
 import { useCartStore } from '@/stores/cart'
 import { formatMoney } from '@/utils/money'
 import CheckoutView from './CheckoutView.vue'
@@ -76,7 +77,12 @@ afterEach(() => {
 
 async function mount(state = { status: 'ready', lines: [line()], quote }) {
     cart.$patch(state)
-    router = createRouter({ history: createMemoryHistory(), routes: buildRoutes() })
+    // This fixture mounts Checkout directly; destination screens are covered by their own tests and e2e.
+    const prepare = (record) =>
+        record.children
+            ? { ...record, children: record.children.map(prepare) }
+            : { ...record, component: record.name === 'Checkout' ? CheckoutView : { render: () => null } }
+    router = createRouter({ history: createMemoryHistory(), routes: buildRoutes().map(prepare) })
     await router.push('/checkout')
     const root = document.createElement('div')
     document.body.append(root)
@@ -179,14 +185,33 @@ describe('CheckoutView', () => {
         await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('OrderDetails'))
     })
 
-    it('sends the customer back to the cart when a book became unavailable', async () => {
-        api.create.mockRejectedValueOnce(failure('CART_HAS_UNAVAILABLE_ITEMS'))
-        await mount()
-        await fill()
+    it('returns to the cart on an unavailable book without waiting for another page to load', async () => {
+        const cartRoute = routeManifest.find((record) => record.id === 'Cart')
+        const originalView = cartRoute.view
+        let releaseView, stop, navigationComplete
+        cartRoute.view = () =>
+            new Promise((resolve) => {
+                releaseView = () => resolve({ default: { render: () => null } })
+            })
+        try {
+            api.create.mockRejectedValueOnce(failure('CART_HAS_UNAVAILABLE_ITEMS'))
+            await mount()
+            navigationComplete = new Promise((resolve) => {
+                stop = router.afterEach(resolve)
+            })
+            await fill()
 
-        await submit()
+            await submit()
 
-        await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('Cart'))
+            await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('Cart'))
+        } finally {
+            if (releaseView) {
+                releaseView()
+                await navigationComplete
+            }
+            stop?.()
+            cartRoute.view = originalView
+        }
     })
 
     it('offers a retry after a lost connection that repeats the same request', async () => {
