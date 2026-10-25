@@ -90,7 +90,7 @@
     </v-app-bar>
 
     <!-- Mobile Navigation Drawer -->
-    <v-navigation-drawer v-model="drawer" class="storefront-drawer" temporary location="left">
+    <v-navigation-drawer v-model="drawer" :inert="!drawer" temporary location="left">
         <v-list density="compact" nav>
             <v-list-item
                 prepend-icon="mdi-home-outline"
@@ -212,10 +212,6 @@ const handleLogout = () => {
 </script>
 
 <style scoped>
-.storefront-drawer:not(.v-navigation-drawer--active) {
-    visibility: hidden;
-}
-
 @media (max-width: 599px) {
     .public-header-content {
         flex-wrap: wrap;

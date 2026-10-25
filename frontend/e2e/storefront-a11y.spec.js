@@ -13,23 +13,72 @@ async function booksOf(request) {
     return payload.data.books || payload.data
 }
 
+async function expectClosedDrawer(page, drawer) {
+    await expect(drawer).toHaveAttribute('inert', '')
+    await expect(drawer).not.toBeInViewport()
+    await drawer.locator('a').first().focus()
+    expect(await drawer.evaluate((element) => element.contains(document.activeElement))).toBe(false)
+    const cdp = await page.context().newCDPSession(page)
+    const { root } = await cdp.send('DOM.getDocument')
+    const { nodeId } = await cdp.send('DOM.querySelector', {
+        nodeId: root.nodeId,
+        selector: 'nav.v-navigation-drawer',
+    })
+    const { nodes } = await cdp.send('Accessibility.getPartialAXTree', { nodeId, fetchRelatives: false })
+    expect(nodes[0].ignored).toBe(true)
+    await cdp.detach()
+}
+
 for (const locale of ['cs', 'en']) {
     const prefix = locale === 'en' ? '/en' : ''
     const dict = words[locale]
+
+    test(`${locale}: opening-swipe keeps the moving drawer visible before release`, async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 })
+        await page.goto(prefix + '/')
+        await expect(page.locator('.book-card').first()).toBeVisible()
+        const drawer = page.locator('nav.v-navigation-drawer')
+        const cdp = await page.context().newCDPSession(page)
+        await cdp.send('Input.dispatchTouchEvent', {
+            type: 'touchStart',
+            touchPoints: [{ x: 5, y: 240 }],
+        })
+        await cdp.send('Input.dispatchTouchEvent', {
+            type: 'touchMove',
+            touchPoints: [{ x: 100, y: 240 }],
+        })
+        await cdp.send('Input.dispatchTouchEvent', {
+            type: 'touchMove',
+            touchPoints: [{ x: 185, y: 240 }],
+        })
+        await expect(page.locator('.v-navigation-drawer__scrim')).toBeVisible()
+        await expect(drawer).not.toHaveClass(/v-navigation-drawer--active/)
+        await expect(drawer).toBeVisible()
+        const movingBox = await drawer.boundingBox()
+        expect(movingBox.x).toBeLessThan(0)
+        expect(movingBox.x + movingBox.width).toBeGreaterThan(0)
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+        await expect(drawer).toHaveClass(/v-navigation-drawer--active/)
+        const books = drawer.getByRole('link', { name: dict.routes.Books, exact: true })
+        await books.focus()
+        await page.keyboard.press('Enter')
+        await expect(page).toHaveURL(new RegExp(`${prefix}/books$`))
+    })
 
     test(`${locale}: closed-state drawer leaves the page and reopens for navigation`, async ({ page }) => {
         await page.setViewportSize({ width: 390, height: 844 })
         await page.goto(prefix + '/')
         await expect(page.locator('.book-card').first()).toBeVisible()
         const drawer = page.locator('nav.v-navigation-drawer')
-        await expect(drawer).toBeHidden()
+        await expectClosedDrawer(page, drawer)
         await page.getByRole('button', { name: dict.nav.openMenu, exact: true }).click()
         await expect(drawer).toBeVisible()
+        await expect(drawer).not.toHaveAttribute('inert')
         const books = drawer.getByRole('link', { name: dict.routes.Books, exact: true })
         await books.focus()
         await page.keyboard.press('Enter')
         await expect(page).toHaveURL(new RegExp(`${prefix}/books$`))
-        await expect(drawer).toBeHidden()
+        await expectClosedDrawer(page, drawer)
         await expect(page.locator('.book-card')).toHaveCount(12)
     })
 
@@ -50,8 +99,9 @@ for (const locale of ['cs', 'en']) {
         await expect(footer.getByRole('navigation', { name: dict.nav.customerService, exact: true })).toBeVisible()
         const links = footer.getByRole('link')
         await expect(links).toHaveCount(6)
-        await page.keyboard.press('Tab')
-        await links.first().focus()
+        await links.nth(1).focus()
+        await page.keyboard.press('Shift+Tab')
+        await expect(links.first()).toBeFocused()
         for (let index = 0; index < 6; index++) {
             await expect(links.nth(index)).toBeFocused()
             if (index < 5) await page.keyboard.press('Tab')
