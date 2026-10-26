@@ -1,6 +1,9 @@
+import express from "express";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import app from "../../app.js";
+import { errorHandler } from "../../middleware/errorHandler.js";
+import { authRateLimit } from "../../middleware/rateLimit.js";
 import { createUser, loginAs } from "../helpers/auth.js";
 import { useTestDatabase } from "../helpers/db.js";
 
@@ -14,6 +17,35 @@ const wrongLogin = (email, headers = {}) =>
   request(app).post("/api/v1/auth/login").set(headers).send({ emailOrUsername: email, password: "wrong-pass" });
 
 describe("failed attempts on /api/v1/auth", () => {
+  it("shares the IPv6 /56 limit across client addresses and keeps the adjacent /56 independent", async () => {
+    // Only this isolated harness trusts the local Supertest proxy. Exercise the
+    // real Express req.ip and production limiter/parser without changing app settings.
+    const proxiedApp = express();
+    proxiedApp.set("trust proxy", "loopback");
+    proxiedApp.use("/api/v1/auth", authRateLimit);
+    proxiedApp.post("/api/v1/auth/login", (_req, res) => res.sendStatus(401));
+    proxiedApp.use(errorHandler);
+    const failFrom = (ip) => request(proxiedApp).post("/api/v1/auth/login").set("X-Forwarded-For", ip);
+    const sameSubnet = [
+      "2001:db8:1234:ab00::1",
+      "2001:0db8:1234:ab00:0000:0000:0000:0001",
+      "2001:db8:1234:abff::2",
+    ];
+    for (let attempt = 0; attempt < LIMIT; attempt += 1) {
+      expect((await failFrom(sameSubnet[attempt % sameSubnet.length])).status).toBe(401);
+    }
+
+    const blocked = await failFrom("2001:db8:1234:ab80::99");
+    expect(blocked.status).toBe(429);
+    expect(blocked.body.error.code).toBe("RATE_LIMITED");
+    const retryAfter = Number(blocked.headers["retry-after"]);
+    expect(Number.isInteger(retryAfter)).toBe(true);
+    expect(retryAfter).toBeGreaterThanOrEqual(1);
+    expect(retryAfter).toBeLessThanOrEqual(900);
+    expect(blocked.body.error.details).toEqual({ retryAfter });
+    expect((await failFrom("2001:db8:1234:ac00::1")).status).toBe(401);
+  });
+
   it("answers 429 with Retry-After on the 11th failed attempt in the window", async () => {
     const user = await createUser();
     for (let attempt = 0; attempt < LIMIT; attempt += 1) {

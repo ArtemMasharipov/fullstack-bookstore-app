@@ -49,9 +49,11 @@ by the already locked 1.2.11; the two package roots retain their separate toolch
 The exact `ip-address` gate was **2026-10-25T19:34:42.622Z**. The resolver ran only after a recorded guard at
 **2026-10-26T19:15:15.427Z**, when 10.7.4 was **359.6758 hours** old. This fixes
 [GHSA-rxp7-6hxx-x8q5](https://github.com/advisories/GHSA-rxp7-6hxx-x8q5). The parent stays at `express-rate-limit`
-8.7.0. Its IPv6 subnet grouping, failed-login limits, `Retry-After`, and logout behavior retain their existing
-integration coverage; the process-local `MemoryStore` still forgets counts on restart and does not coordinate
-multiple API processes.
+8.7.0. A new isolated, trusted-loopback proxy harness exercises the real limiter and parser: IPv6 addresses
+within one `/56` share the failure limit, the adjacent `/56` stays independent, and blocking returns 429 with
+consistent `Retry-After`. Existing full-API integration checks still cover failed-login limits and logout.
+Production proxy settings are unchanged. The process-local `MemoryStore` still forgets counts on restart and
+does not coordinate multiple API processes.
 
 `follow-redirects` 1.16.1 addresses
 [custom sensitive headers](https://github.com/advisories/GHSA-8r9p-f939-6h3c) and
