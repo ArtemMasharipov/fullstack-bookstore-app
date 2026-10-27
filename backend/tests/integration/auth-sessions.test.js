@@ -1,4 +1,3 @@
-import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
@@ -7,6 +6,7 @@ import { config } from "../../config/index.js";
 import User from "../../models/User.js";
 import { createUser, loginAs } from "../helpers/auth.js";
 import { useTestDatabase } from "../helpers/db.js";
+import { decodeJwtFixture, signLegacyToken, verifyJwtFixture } from "../helpers/jwt.js";
 
 useTestDatabase();
 
@@ -19,8 +19,7 @@ const SESSION_NOT_VALID = { code: "UNAUTHORIZED", message: "Session is not valid
 
 // The token signed again with the app's secret, with some claims changed
 function forge(token, change = (claims) => claims, options = {}) {
-  const { iat, exp, ...claims } = jwt.decode(token);
-  return jwt.sign(change(claims), config.jwt.secret, { expiresIn: "1h", ...options });
+  return signLegacyToken(change(decodeJwtFixture(token)), { secret: config.jwt.secret, ...options });
 }
 
 describe("sessions", () => {
@@ -50,12 +49,43 @@ describe("sessions", () => {
     const user = await createUser();
     const token = await loginAs(app, user);
 
-    const claims = jwt.decode(token);
+    const { header, payload: claims } = verifyJwtFixture(token, config.jwt.secret);
+    expect(header).toEqual({ alg: "HS256", typ: "JWT" });
     expect(Object.keys(claims).sort()).toEqual(["aud", "exp", "iat", "iss", "jti", "sub"]);
     expect(claims).toMatchObject({ aud: "bookstore-web", iss: "bookstore-api", sub: user._id.toString() });
     expect(await sessions().countDocuments({ user: user._id })).toBe(1);
     const session = await sessions().findOne({ jti: claims.jti });
-    expect(Math.abs(session.expiresAt.getTime() - claims.exp * 1000)).toBeLessThanOrEqual(1000);
+    expect(session.expiresAt.getTime()).toBe(claims.exp * 1000);
+  });
+
+  it("accepts a legacy HS256 session with audience array and no typ requirement", async () => {
+    const token = await loginAs(app, await createUser());
+    const legacy = forge(token, claims => ({ ...claims, aud: ["other-client", config.jwt.audience] }), { header: { typ: undefined } });
+    expect((await me(legacy)).status).toBe(200);
+  });
+
+  it.each(["exp", "iat", "both"])("accepts optional %s when the live DB session exists", async omit => {
+    const token = await loginAs(app, await createUser());
+    const legacy = forge(token, claims => {
+      if (omit === "exp" || omit === "both") delete claims.exp;
+      if (omit === "iat" || omit === "both") delete claims.iat;
+      return claims;
+    });
+    expect((await me(legacy)).status).toBe(200);
+  });
+
+  it("accepts uppercase subject and non-UUID session id", async () => {
+    const token = await loginAs(app, await createUser());
+    const claims = decodeJwtFixture(token);
+    await sessions().updateOne({ jti: claims.jti }, { $set: { jti: "legacy-session" } });
+    const legacy = forge(token, old => ({ ...old, sub: old.sub.toUpperCase(), jti: "legacy-session" }));
+    expect((await me(legacy)).status).toBe(200);
+  });
+
+  it("does not grant admin from a token role claim", async () => {
+    const token = forge(await loginAs(app, await createUser()), claims => ({ ...claims, role: "admin" }));
+    const response = await request(app).get("/api/v1/users").set("Authorization", `Bearer ${token}`);
+    expect(response.status).toBe(403);
   });
 
   it.each([
@@ -67,6 +97,16 @@ describe("sessions", () => {
         forge(token, ({ jti, ...claims }) => claims),
     ],
     ["signed with another algorithm", (token) => forge(token, undefined, { algorithm: "HS512" })],
+    ["signed with another key", token => forge(token, undefined, { secret: "unrelated-test-key" })],
+    ["unsigned", token => forge(token, undefined, { algorithm: "none" })],
+    ["malformed compact", () => "not.a.valid.jwt"],
+    ["malformed JSON", () => "e30.bm90LWpzb24.c2lnbmF0dXJl"],
+    ["not active yet", token => forge(token, claims => ({ ...claims, nbf: Math.floor(Date.now() / 1000) + 3600 }))],
+    ["with expired JWT and a live DB session", token => forge(token, claims => ({ ...claims, exp: Math.floor(Date.now() / 1000) - 1 }))],
+    ["without subject", token => forge(token, ({ sub, ...claims }) => claims)],
+    ["with non-string subject", token => forge(token, claims => ({ ...claims, sub: 123 }))],
+    ["with invalid object id", token => forge(token, claims => ({ ...claims, sub: "invalid-id" }))],
+    ["with non-string session id", token => forge(token, claims => ({ ...claims, jti: 123 }))],
     [
       "whose session was deleted",
       async (token) => {
