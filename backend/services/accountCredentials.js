@@ -1,8 +1,8 @@
 /** Credential writes share the access protocol's existing MongoDB revision. */
-import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import Session from "../models/Session.js";
 import { ConflictError, UnauthorizedError } from "../utils/errors.js";
+import { decodeIssuedToken } from "../utils/sessionTokens.js";
 import { credentialFilter, endSession, endUserSessions, isCommittedUser, issueToken, readIssuedUser } from "./sessions.js";
 
 const conflict = () => new ConflictError("The account changed meanwhile, retry the request");
@@ -46,7 +46,7 @@ export async function replacePassword(snapshot, nextHash, sessionId) {
     await commit(reserved, next);
     return { user: await readIssuedUser(token, { ...reserved, __v: next }), token };
   } catch (error) {
-    if (token) await endSession(jwt.decode(token).jti);
+    if (token) await endSession(decodeIssuedToken(token).jti);
     // Never restore an old credential or sessions. An interrupted reservation
     // needs operator recovery, as with the existing access-write protocol.
     throw error;

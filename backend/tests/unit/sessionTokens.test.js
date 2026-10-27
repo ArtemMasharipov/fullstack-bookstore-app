@@ -18,6 +18,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-27T12:00:00.500Z"));
 });
+afterEach(() => vi.useRealTimers());
 
 describe("session token verification", () => {
   it.each(["unicode-test-ключ", "x", "BEGIN is ordinary test text"])("accepts ordinary UTF-8 secret %j", async secret => {
@@ -63,8 +64,6 @@ describe("own issued token decoding", () => {
     expect(decodeIssuedToken(token)).toBeNull();
   });
 });
-afterEach(() => vi.useRealTimers());
-
 describe("session token signing", () => {
   it("signs interoperable HS256 with exact claims and expiry", async () => {
     const issued = await signSessionToken(identity, settings);

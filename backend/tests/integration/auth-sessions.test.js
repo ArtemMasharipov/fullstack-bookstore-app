@@ -107,6 +107,8 @@ describe("sessions", () => {
     ["with non-string subject", token => forge(token, claims => ({ ...claims, sub: 123 }))],
     ["with invalid object id", token => forge(token, claims => ({ ...claims, sub: "invalid-id" }))],
     ["with non-string session id", token => forge(token, claims => ({ ...claims, jti: 123 }))],
+    ["with malformed issued-at claim", token => forge(token, claims => ({ ...claims, iat: "yesterday" }))],
+    ["with unsupported critical header", token => forge(token, undefined, { header: { crit: ["unknown"], unknown: true } })],
     [
       "whose session was deleted",
       async (token) => {

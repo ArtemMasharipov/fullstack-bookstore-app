@@ -7,11 +7,11 @@
  */
 
 import { randomUUID } from "node:crypto";
-import jwt from "jsonwebtoken";
 import { config } from "../config/index.js";
 import Session from "../models/Session.js";
 import User from "../models/User.js";
 import { ConflictError, UnauthorizedError } from "../utils/errors.js";
+import { decodeIssuedToken, signSessionToken, verifySessionToken } from "../utils/sessionTokens.js";
 import { roleOf } from "./userView.js";
 
 const OBJECT_ID = /^[0-9a-f]{24}$/i;
@@ -26,17 +26,9 @@ const notValid = () => new UnauthorizedError("Session is not valid");
  */
 export async function issueToken(userId) {
   const jti = randomUUID();
-  const token = jwt.sign({}, config.jwt.secret, {
-    algorithm: "HS256",
-    subject: String(userId),
-    jwtid: jti,
-    audience: config.jwt.audience,
-    issuer: config.jwt.issuer,
-    expiresIn: config.jwt.expiresIn,
-  });
+  const { token, expiresAt } = await signSessionToken({ subject: String(userId), jti }, config.jwt);
 
-  // The session ends when its token does; jsonwebtoken reads JWT_EXPIRATION
-  const expiresAt = new Date(jwt.decode(token).exp * 1000);
+  // Signing must finish before the row exists; both expire at the same instant.
   await Session.create({ jti, user: userId, expiresAt });
   return token;
 }
@@ -49,11 +41,7 @@ export async function issueToken(userId) {
 export async function readSession(token) {
   let claims;
   try {
-    claims = jwt.verify(token, config.jwt.secret, {
-      algorithms: ["HS256"],
-      audience: config.jwt.audience,
-      issuer: config.jwt.issuer,
-    });
+    claims = await verifySessionToken(token, config.jwt);
   } catch {
     throw notValid();
   }
@@ -105,7 +93,7 @@ export function credentialFilter(user) {
 
 /** Checks a token we just minted against its original committed account revision. */
 export async function readIssuedUser(token, snapshot) {
-  const claims = jwt.decode(token);
+  const claims = decodeIssuedToken(token);
   if (!isCommittedUser(snapshot) || !snapshot.isActive || claims?.sub !== String(snapshot._id) || typeof claims?.jti !== "string") throw notValid();
   const [user, session] = await Promise.all([
     User.findOne(credentialFilter(snapshot)).lean(),
@@ -122,7 +110,7 @@ export async function issueTokenForSnapshot(snapshot) {
   try {
     return { user: await readIssuedUser(token, snapshot), token };
   } catch (error) {
-    await endSession(jwt.decode(token).jti);
+    await endSession(decodeIssuedToken(token).jti);
     throw error;
   }
 }

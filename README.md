@@ -60,8 +60,8 @@ Known limitations:
 ## Tech stack
 
 - **Frontend:** Vue 3, Vuetify 3, Pinia 3, Vue Router 4, Vite 6, Axios 1.
-- **Backend:** Node.js 24.7+, Express 4, Mongoose 8, MongoDB, JWT (`jsonwebtoken` 9), native Argon2id, bcrypt 6 for legacy verification, Helmet 8.
-- **Tests:** Vitest 4.1.11, Supertest 7.3.0, mongodb-memory-server 11.3.0, happy-dom 20.14.5, Playwright 1.63.0.
+- **Backend:** Node.js 24.7+ within 24.x, Express 4, Mongoose 8, MongoDB, JWT (`jose` 6.2.12), native Argon2id, bcrypt 6 for legacy verification, Helmet 8.
+- **Tests:** Vitest 4.1.11, Supertest 7.3.0, mongodb-memory-server 11.3.0, happy-dom 20.14.6, Playwright 1.63.0.
 - **Tooling:** ESLint 7 and Prettier 2 (frontend), GitHub Actions.
 
 ## Architecture
@@ -96,6 +96,8 @@ runs away from databases that are not local. [docs/architecture.md](docs/archite
   sign-in attempts are limited per client, and sign-in takes the same time for every account.
 - [0006, password policy and Argon2id](docs/decisions/0006-password-policy-and-argon2id.md): new-password validation,
   native hashing, compatible bcrypt upgrades, credential concurrency and replacement sessions.
+- [0007, jose session tokens](docs/decisions/0007-jose-session-tokens.md): compatible HS256 tokens and TTL,
+  asynchronous signing, with Node 24 support retained.
 
 ## Getting started
 
@@ -103,10 +105,11 @@ Run each code block from the repository root; the install block starts one level
 
 ### Requirements
 
-- **Node.js 24.7 or newer within 24.x** (`.nvmrc`; the backend requires native Argon2id). Node 25 and newer are not supported:
-  `jsonwebtoken` needs `SlowBuffer`, which Node 25 removed, so the backend does not start there. Install Node 24 with
-  fnm (`fnm install`, then `fnm use`; both read `.nvmrc`), nvm-windows (`nvm install 24`, then `nvm use 24`) or volta
-  (`volta install node@24`); `node -v` must print `v24.x.x`.
+- **Node.js 24.7 or newer within 24.x** (the backend requires native Argon2id). Use **24.21.0**, pinned in `.nvmrc`
+  and CI. Other Node major versions have not completed compatibility verification and are not supported.
+  Install with fnm (`fnm install`, then `fnm use`; both read `.nvmrc`), nvm-windows
+  (`nvm install 24.21.0`, then `nvm use 24.21.0`) or volta (`volta install node@24.21.0`);
+  `node -v` must print `v24.21.0` for the verified setup.
 - **Docker** (optional) replaces a local Node 24: run npm in a `node:24` container, with `node_modules` in its own
   volume (native packages built on the host do not load on Linux). From the repository root; in Git
   Bash on Windows prefix the command with `MSYS_NO_PATHCONV=1` and write `$PWD` as a full path such as

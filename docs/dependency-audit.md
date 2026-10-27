@@ -1,15 +1,29 @@
 # Dependency audit
 
-Checked on **2026-10-26** with Node **24.21.0** and npm **11.19.0**, after a clean `npm ci` in each package.
+Checked on **2026-10-27** with Node **24.21.0** and npm **11.19.0**, after a clean `npm ci` in each package.
 
 | Installed audit | Production (`--omit=dev`) | Full development graph |
 | --- | --- | --- |
-| Backend | 0 findings, exit 0 | 2 Moderate, exit 1 |
+| Backend | 1 Moderate (`qs`), exit 1 | 3 Moderate, exit 1 |
 | Frontend | 0 findings, exit 0 | 1 High + 4 Moderate, exit 1 |
 
-The production High/Critical gate passes in both packages. Full audits intentionally remain nonzero because of
-the dated development exceptions below, including **Happy DOM host-code execution**. Package-entry counts from
+The production High/Critical gate passes in both packages. The runtime `qs` finding and the dated development
+exceptions below, including **Happy DOM host-code execution**, remain open; overall security/launch readiness
+is not complete. Package-entry counts from
 `npm audit` differ from GitHub alert counts and include affected parents such as `vitest`.
+
+## JWT migration (4B.1)
+
+The backend now uses exact **jose 6.2.12** (published 2026-09-05T09:17:12.608Z) and **ms 2.1.3**
+(2020-12-08T13:54:35.223Z). Both have no own dependencies. Exact-version global advisory queries on 2026-10-27
+returned no applicable advisories. The newer jose 6.2.13 is excluded by the age policy until 2026-11-03T06:21:48.616Z.
+The direct ms dependency preserves the existing expiration language; see [decision 0007](decisions/0007-jose-session-tokens.md).
+
+The three new resolved paths are jose 6.2.12, root ms 2.1.3 and debug's relocated ms 2.0.0 (published 2017-05-16T12:26:06.610Z).
+Each passed the 336-hour age and registry integrity/tarball checks before installation. Redundant nested ms 2.1.3
+copies were deduplicated. Removing jsonwebtoken/jws removes twelve package nodes in total; semver 7.8.5
+keeps its bytes/version and becomes development-only after its last runtime consumer is removed. Native/optional
+packages and the frontend graph remain unchanged. No Node 26 support is claimed.
 
 ## Check and update policy
 
@@ -65,6 +79,17 @@ and file-serving fixes. A standalone `launch-editor` override would not replace 
 [Happy DOM 20.14.6](https://github.com/capricorn86/happy-dom/releases/tag/v20.14.6) repairs cookie-scope validation.
 It **does not fix** the RCE exception below, and that High remains in the full frontend audit.
 
+## Runtime exception and dated follow-up
+
+`qs 6.16.0`, backend Express/body-parser, is affected by
+[GHSA-6pq8-jhm2-2vcw](https://github.com/advisories/GHSA-6pq8-jhm2-2vcw), Moderate.
+The vulnerable library operation is comma-array stringify with an own non-callable toString. The checked static
+application graph uses parse rather than this stringify sink; that is limited reachability evidence, not proof
+of safety or a tested HTTP exploit. The alert remains open and is not suppressed.
+
+Fixed **6.16.1** was published 2026-10-14T22:06:17.002Z and is eligible only from
+**2026-10-28T22:06:17.002Z**. Review **2026-10-29** in a separate dependency patch, not in the JWT migration.
+
 ## Development exceptions and dated follow-ups
 
 | Finding / GitHub alert IDs | Installed path and assessment | Fixed version, eligibility and review |
@@ -76,11 +101,15 @@ It **does not fix** the RCE exception below, and that High remains in the full f
 
 ## Remote alerts and historical provenance
 
-The fresh GitHub snapshot on **2026-10-26** contains **23 open alerts: 5 High / 14 Medium / 4 Low**, with
-22 development and one runtime alert. Remote still describes unchanged `main`; local lock/audit results do not
-close remote alerts before push/merge. Fourteen of those open alert instances match the locally patched Vite,
-downloader and IP-parser nodes. Nine currently open instances match the remaining mocker/fast-uri/Happy DOM
-exceptions; this is a local range assessment, **not a claim that GitHub has closed fourteen alerts**.
+The **2026-10-27** snapshot has **11 open alerts: 1 High / 8 Medium / 2 Low**, ten development and runtime qs #155.
+4A is merged; its fourteen fixed alert instances are historical results, not fixes from this JWT migration.
+Selector-parser's current alert is #154; former #128 remains withdrawn without a package fix.
+
+The earlier snapshot on **2026-10-26** contained **23 open alerts: 5 High / 14 Medium / 4 Low**, with
+22 development and one runtime alert. At that time remote still described pre-4A `main`; local lock/audit results did not
+close remote alerts before push/merge. Fourteen of those open alert instances matched the locally patched Vite,
+downloader and IP-parser nodes. Nine of its open instances matched the remaining mocker/fast-uri/Happy DOM
+exceptions in that historical snapshot; this was a local range assessment before release.
 
 The 2026-10-25 planning snapshot had 24 alerts. On 2026-10-26, fetching #128 returns HTTP 410, "Alert number 128
 has been withdrawn". The global advisory itself has `withdrawn_at: null`; its update at

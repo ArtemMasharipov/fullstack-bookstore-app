@@ -4,7 +4,7 @@ Rules for coding agents and people working in this repository. The README has th
 
 ## Environment
 
-- Node.js 24 (`.nvmrc`). Node 25 and newer are not supported: `jsonwebtoken` needs `SlowBuffer`, which Node 25 removed.
+- Node.js 24 (`.nvmrc` pins 24.21.0). Other major versions require separate compatibility verification and are not supported.
 - Two npm packages with their own lock files: `backend/` and `frontend/`. Install each with `npm ci`.
 
 ## Commands
