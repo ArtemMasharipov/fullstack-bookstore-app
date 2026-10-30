@@ -144,6 +144,24 @@ The original 16-CPU failures, including the same Users(cs) timeout on main and Q
 **ENV-QS-LINUX-01 remains open** even if the newly approved profile passes. A single serial main→candidate full
 frontend pair is required on that profile; a failure keeps local acceptance on hold without profile shopping.
 
+That single pair passed **main 817/817, candidate 822/822**; the candidate backend passed **1074/1074**, including
+the Linux-only signal cases. Native probes and build passed. All 61 candidate distribution files have identical
+bytes on Windows and Linux. An initial native e2e run had a trace-file `EBUSY` during teardown while the local
+evidence runner incorrectly copied live artifacts. After an exclusive runner lock was verified by RED→GREEN,
+one bounded control passed **145/145**, with retries 0 and no flaky tests. The original failure remains preserved;
+the exact OS handle owner was not captured.
+
+**Local acceptance remains on hold for performance.** The initial pair passed 7/9 budgets (mobile catalogue TBT:
+main 346 ms, candidate 422 ms). The single allowed quiet control, with no bulk evidence copying between its two
+processes, passed 8/9: main **350 ms**, candidate **325 ms**, absolute limit **324.5 ms**. The candidate passed
+the relative comparison, but the 0.5-ms absolute exceedance is a failure. No rounding, threshold change or further
+full-matrix retries are used to clear this gate. Its cause remains unproven; final aggregate review is reserved
+until required gates pass. No push, PR or release is authorized by the local implementation approval.
+
+**NODE24-SEC-01** remains open for a separately reviewed Node 24 security patch. This branch follows the owner's
+**24.21.0** verification pin; a clean dependency audit does not close that runtime follow-up or establish Node 26
+compatibility. Happy DOM, Vite, Vitest and the other dated tooling follow-ups below also remain open.
+
 New Happy DOM [SSRF through iframe/stylesheet loading](https://github.com/advisories/GHSA-c8p4-j97h-3vg8), High,
 affects **20.14.6** even when JavaScript evaluation is disabled. It requires parsing attacker-controlled HTML;
 the current tests use local fixtures, but that is not a sandbox guarantee. Its first fixed major **21.0.0**
