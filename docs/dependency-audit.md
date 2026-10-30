@@ -151,12 +151,24 @@ evidence runner incorrectly copied live artifacts. After an exclusive runner loc
 one bounded control passed **145/145**, with retries 0 and no flaky tests. The original failure remains preserved;
 the exact OS handle owner was not captured.
 
-**Local acceptance remains on hold for performance.** The initial pair passed 7/9 budgets (mobile catalogue TBT:
+The initial performance pair passed 7/9 budgets (mobile catalogue TBT:
 main 346 ms, candidate 422 ms). The single allowed quiet control, with no bulk evidence copying between its two
 processes, passed 8/9: main **350 ms**, candidate **325 ms**, absolute limit **324.5 ms**. The candidate passed
-the relative comparison, but the 0.5-ms absolute exceedance is a failure. No rounding, threshold change or further
-full-matrix retries are used to clear this gate. Its cause remains unproven; final aggregate review is reserved
-until required gates pass. No push, PR or release is authorized by the local implementation approval.
+the relative comparison, but the 0.5-ms absolute exceedance remains a recorded failure.
+
+Targeted CPU/timeline diagnostics then found a Python process continuously consuming approximately one logical
+CPU. Its purpose was unknown; the owner explicitly authorized stopping only that identified process after PID,
+creation time, executable and command-line hash checks. A single diagnostic pair improved both sides, supporting
+an environment-load hypothesis without proving an exact causal effect. The owner then separately authorized
+one standard performance pair under the changed external condition; the diagnostic figures were not used as
+acceptance results.
+
+That standard pair passed **9/9 budgets**: mobile catalogue TBT **262 ms on main / 240 ms on the candidate**,
+below the unchanged **324.5-ms** cap; mobile home LCP **3140 / 3152 ms**; catalogue CLS **0** on both viewports.
+Both sides used three cold samples for each of six profiles, the original helper and pinned Chromium, with no
+profiler, retries, rounding or budget changes. All 61 distribution files on each side retained their bytes.
+The old failed measurements and raw diagnostics remain preserved. Performance success does not replace the
+aggregate branch review, resolve historical ENV investigations or grant push, PR or release permission.
 
 **NODE24-SEC-01** remains open for a separately reviewed Node 24 security patch. This branch follows the owner's
 **24.21.0** verification pin; a clean dependency audit does not close that runtime follow-up or establish Node 26
