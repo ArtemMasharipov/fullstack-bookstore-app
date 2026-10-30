@@ -1,15 +1,16 @@
 # Dependency audit
 
-Checked on **2026-10-27** with Node **24.21.0** and npm **11.19.0**, after a clean `npm ci` in each package.
+Checked on **2026-10-30** with Node **24.21.0** and npm **11.19.0**. The backend was installed with
+`npm ci` from the inspected QS patch lock; the frontend retains its unchanged lock and installed baseline.
 
 | Installed audit | Production (`--omit=dev`) | Full development graph |
 | --- | --- | --- |
-| Backend | 1 Moderate (`qs`), exit 1 | 3 Moderate, exit 1 |
-| Frontend | 0 findings, exit 0 | 1 High + 4 Moderate, exit 1 |
+| Backend | 0 findings, exit 0 | 2 Moderate, exit 1 |
+| Frontend | 5 High package entries (Vue I18n family), exit 1 | 6 High + 5 Moderate, exit 1 |
 
-The production High/Critical gate passes in both packages. The runtime `qs` finding and the dated development
-exceptions below, including **Happy DOM host-code execution**, remain open; overall security/launch readiness
-is not complete. Package-entry counts from
+The backend production audit is clear, but the **frontend production High gate fails** on newly indexed Vue I18n
+advisories. The dated development exceptions below, including **Happy DOM host-code execution** and a newly indexed
+SSRF advisory, remain open. **Overall security/launch readiness is on hold.** Package-entry counts from
 `npm audit` differ from GitHub alert counts and include affected parents such as `vitest`.
 
 ## JWT migration (4B.1)
@@ -79,16 +80,48 @@ and file-serving fixes. A standalone `launch-editor` override would not replace 
 [Happy DOM 20.14.6](https://github.com/capricorn86/happy-dom/releases/tag/v20.14.6) repairs cookie-scope validation.
 It **does not fix** the RCE exception below, and that High remains in the full frontend audit.
 
-## Runtime exception and dated follow-up
+## Runtime qs patch (QS-155)
 
-`qs 6.16.0`, backend Express/body-parser, is affected by
-[GHSA-6pq8-jhm2-2vcw](https://github.com/advisories/GHSA-6pq8-jhm2-2vcw), Moderate.
-The vulnerable library operation is comma-array stringify with an own non-callable toString. The checked static
-application graph uses parse rather than this stringify sink; that is limited reachability evidence, not proof
-of safety or a tested HTTP exploit. The alert remains open and is not suppressed.
+The local backend lock now resolves **qs 6.16.1**, fixing Moderate
+[GHSA-6pq8-jhm2-2vcw](https://github.com/advisories/GHSA-6pq8-jhm2-2vcw).
+Only `version`, `resolved` and `integrity` of the single `node_modules/qs` lock node changed. Express/body-parser
+and Superagent's existing ranges accept the patch; every other package node, both manifests and the frontend
+lock retain their bytes/structure. No direct dependency or override was added.
 
-Fixed **6.16.1** was published 2026-10-14T22:06:17.002Z and is eligible only from
-**2026-10-28T22:06:17.002Z**. Review **2026-10-29** in a separate dependency patch, not in the JWT migration.
+The npm publication was **2026-10-14T22:06:17.002Z**, making the minimum resolver/install time
+**2026-10-28T22:06:17.002Z**. The execution guard ran at **2026-10-30T12:16:03.528Z** (374.1629 hours old);
+the selective resolver used cutoff **2026-10-16T12:16:03.528Z**. Registry tarball/integrity and the one changed
+resolved tuple passed inspection before `npm ci`. The exact-version global advisory query was empty.
+
+Five real-library coercion regressions failed with TypeError on 6.16.0 and pass on 6.16.1; six controls retain
+ordinary/callable-hook behavior and custom exception identity. Raw nested query/form rejection and valid form
+login characterization remain green. The combined targeted suite passed **128/128**. This does not establish
+an exploitable HTTP stringify sink: the application graph uses parse, while the regression targets the library
+operation directly. Alert **#155 is still open on remote main** before publication and is not suppressed.
+
+## Newly indexed findings and release hold (2026-10-30)
+
+Vue I18n **11.4.12** is in the affected range of High
+[srcdoc sanitization bypass](https://github.com/advisories/GHSA-83rm-6c8r-g728) and Low
+[mixed list/named escaping](https://github.com/advisories/GHSA-8rc2-428q-7ww3). npm propagates the High across five
+production package entries; these are not five independent High advisories. The affected code is unchanged by QS.
+The maintainer advisories describe HTML translation rendering with `escapeParameter`. The current application
+does not enable that option or use `v-html`, and loads checked-in CS/EN messages. This is limited static
+reachability evidence, not proof of safety or an accepted exception. **Production High remains a release blocker.**
+
+The same-major fix **11.4.14** was published **2026-10-10T11:11:08.057Z** (eligible
+**2026-10-24T11:11:08.057Z**). A separate Vue I18n family patch must inspect every changed transitive tuple,
+integrity, applicable advisory and locale/rendering regression before installation. Newer 11.4.15/11.4.16 are
+not automatically eligible. No frontend dependency has been changed in QS-155.
+
+New Happy DOM [SSRF through iframe/stylesheet loading](https://github.com/advisories/GHSA-c8p4-j97h-3vg8), High,
+affects **20.14.6** even when JavaScript evaluation is disabled. It requires parsing attacker-controlled HTML;
+the current tests use local fixtures, but that is not a sandbox guarantee. Its first fixed major **21.0.0**
+does not address the separate host-code execution finding; retain the planned **21.0.4** major review and its
+**2026-11-03T18:05:53.295Z** age gate rather than installing an incomplete fix.
+
+The frontend full audit also newly reports Moderate [Vite fs.deny query bypass](https://github.com/advisories/GHSA-8g5g-mxqh-grgj)
+for **6.4.4**. Record this separately for a reviewed, age-gated tooling patch; do not fold it into the backend qs change.
 
 ## Development exceptions and dated follow-ups
 
@@ -101,7 +134,8 @@ Fixed **6.16.1** was published 2026-10-14T22:06:17.002Z and is eligible only fro
 
 ## Remote alerts and historical provenance
 
-The **2026-10-27** snapshot has **11 open alerts: 1 High / 8 Medium / 2 Low**, ten development and runtime qs #155.
+The **2026-10-30** remote snapshot still has **11 open alerts: 1 High / 8 Medium / 2 Low**, ten development and runtime qs #155.
+The new npm findings above have not appeared in this remote snapshot; scanner lag does not clear them.
 4A is merged; its fourteen fixed alert instances are historical results, not fixes from this JWT migration.
 Selector-parser's current alert is #154; former #128 remains withdrawn without a package fix.
 

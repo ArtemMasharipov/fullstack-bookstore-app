@@ -27,6 +27,32 @@ afterAll(() => {
 });
 
 describe("request parsing security boundaries", () => {
+    it("rejects a hostile nested query with the existing validation envelope", async () => {
+        const response = await request(app).get(
+            "/api/v1/books?page[0][toString]=x"
+        );
+
+        expect(response.status).toBe(400);
+        expect(response.body.error.code).toBe("VALIDATION_FAILED");
+        expect(response.body.error.fields).toHaveProperty("page", "invalid_type");
+        expect((await request(app).get("/api/v1/health")).status).toBe(200);
+    });
+
+    it("rejects a hostile nested form with the existing validation envelope", async () => {
+        const response = await request(app)
+            .post("/api/v1/auth/login")
+            .type("form")
+            .send("emailOrUsername[0][toString]=x&password=x");
+
+        expect(response.status).toBe(400);
+        expect(response.body.error.code).toBe("VALIDATION_FAILED");
+        expect(response.body.error.fields).toHaveProperty(
+            "emailOrUsername",
+            "invalid_type"
+        );
+        expect((await request(app).get("/api/v1/health")).status).toBe(200);
+    });
+
     it.each(["application/json", "application/x-www-form-urlencoded"])(
         "survives trailing gzip bytes and preserves %s validation",
         (contentType) => {

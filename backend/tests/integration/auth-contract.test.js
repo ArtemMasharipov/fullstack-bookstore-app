@@ -92,6 +92,24 @@ describe("POST /api/v1/auth/login and GET /api/v1/auth/me", () => {
     expect(res.status).toBe(400);
     expect(res.body.error.fields).toHaveProperty("emailOrUsername");
   });
+
+  it("signs in with a valid urlencoded body", async () => {
+    expect((await register(alice)).status).toBe(201);
+    const body = new URLSearchParams({
+      emailOrUsername: alice.email,
+      password: alice.password,
+    }).toString();
+
+    const res = await request(app).post("/api/v1/auth/login").type("form").send(body);
+
+    expect(res.status).toBe(200);
+    expectUserView(res.body.data.user);
+    expect(res.body.data.token).toEqual(expect.any(String));
+    const current = await me(res.body.data.token);
+    expect(current.status).toBe(200);
+    expectUserView(current.body.data);
+    expect(current.body.data.id).toBe(res.body.data.user.id);
+  });
 });
 
 describe("PUT /api/v1/auth/password", () => {
