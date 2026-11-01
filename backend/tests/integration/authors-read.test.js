@@ -154,7 +154,7 @@ describe("author read contracts", () => {
     expectView(res.body.data.author);
     expect(res.body.data.statistics).toEqual({ totalBooks: 2, booksInStock: 1, booksOutOfStock: 1,
       categories: ["Fiction", "Poetry"], publicationYears: { earliest: 2000, latest: 2010 },
-      pricing: { lowest: 10, highest: 20, average: "15.00" } });
+      pricing: { currency: "CZK", lowest: 1000, highest: 2000, average: 1500 } });
   });
 
   it("returns null extrema for an author without books", async () => {
@@ -162,7 +162,8 @@ describe("author read contracts", () => {
     const res = await get(`/${author.id}/stats`);
     expectView(res.body.data.author);
     expect(res.body.data.statistics).toEqual({ totalBooks: 0, booksInStock: 0, booksOutOfStock: 0, categories: [],
-      publicationYears: { earliest: null, latest: null }, pricing: { lowest: null, highest: null, average: null } });
+      publicationYears: { earliest: null, latest: null },
+      pricing: { currency: "CZK", lowest: null, highest: null, average: null } });
   });
 
   it.each(["/bad", "/bad/books", "/bad/stats"])("refuses a malformed id on %s", async (path) => {

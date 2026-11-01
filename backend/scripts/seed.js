@@ -22,6 +22,7 @@ import {
 } from "../config/mongo-guard.js";
 import Author from "../models/Author.js";
 import Book from "../models/Book.js";
+import { toMinorUnits } from "../services/pricing.js";
 import User from "../models/User.js";
 import { newPasswordIssue, validateNewPassword } from "../utils/passwordPolicy.js";
 import { AUTHORS, BOOKS, SEED_USERS } from "./seed-data.js";
@@ -61,7 +62,11 @@ export async function seed({ adminPassword, userPassword, reset = false }) {
   // One by one, so createdAt rises in the listed order: the last book is the
   // newest, which the e2e smoke test relies on
   for (const book of BOOKS) {
-    await Book.create({ ...book, author: authors[book.author]._id });
+    await Book.create({
+      ...book,
+      priceMinor: toMinorUnits(book.price),
+      author: authors[book.author]._id,
+    });
   }
 
   return {

@@ -8,6 +8,7 @@ import Author from "../models/Author.js";
 import Book from "../models/Book.js";
 import { AppError, NotFoundError, ValidationError } from "../utils/errors.js";
 import { toBookView } from "./bookView.js";
+import { toMinorUnits } from "./pricing.js";
 import { sortOf } from "../utils/listSort.js";
 
 /**
@@ -64,9 +65,12 @@ export async function getBookById(id) {
 // The optional fields of a book: PUT removes the ones its body leaves out
 const OPTIONAL_FIELDS = ["description", "image"];
 
-// The fields to store from a parsed bookBody: authorId is stored as the author reference
-function storedFields({ authorId, ...fields }) {
-  return { ...fields, author: authorId };
+// The fields to store from a parsed bookBody: authorId is stored as the author
+// reference, and the price in geller together with its crowns, which the
+// previous release reads
+function storedFields({ authorId, price, priceMinor, ...fields }) {
+  const minor = priceMinor ?? toMinorUnits(price);
+  return { ...fields, author: authorId, priceMinor: minor, price: minor / 100 };
 }
 
 async function assertAuthorExists(authorId) {

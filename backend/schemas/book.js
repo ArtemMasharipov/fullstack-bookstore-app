@@ -87,16 +87,27 @@ const image = z
   });
 
 // The body of POST and PUT: PUT replaces the book, so an optional field that
-// the body leaves out is removed
-export const bookBody = z.strictObject({
-  title: z.string().trim().min(2).max(100),
-  authorId: objectId,
-  publicationYear,
-  category,
-  description: z.string().trim().max(1000).optional(),
-  price: z.number().min(0).max(999999.99).multipleOf(0.01),
-  image: image.optional(),
-  inStock: z.boolean().default(true),
-});
+// the body leaves out is removed. The price is priceMinor, in whole geller; an
+// admin page loaded before the switch still sends price in crowns, which is
+// accepted for one release. Exactly one of the two.
+export const bookBody = z
+  .strictObject({
+    title: z.string().trim().min(2).max(100),
+    authorId: objectId,
+    publicationYear,
+    category,
+    description: z.string().trim().max(1000).optional(),
+    priceMinor: z.number().int().min(0).max(99999999).optional(),
+    price: z.number().min(0).max(999999.99).multipleOf(0.01).optional(),
+    image: image.optional(),
+    inStock: z.boolean().default(true),
+  })
+  .superRefine(({ price, priceMinor }, ctx) => {
+    if (price === undefined && priceMinor === undefined) {
+      ctx.addIssue({ code: "invalid_type", expected: "number", input: undefined, path: ["priceMinor"] });
+    } else if (price !== undefined && priceMinor !== undefined) {
+      ctx.addIssue({ code: "custom", path: ["price"], message: "Send priceMinor or price, not both" });
+    }
+  });
 
 export const bookStockBody = z.strictObject({ inStock: z.boolean() });

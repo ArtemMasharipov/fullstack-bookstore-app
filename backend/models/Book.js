@@ -36,11 +36,22 @@ const bookSchema = new mongoose.Schema(
       trim: true,
       maxlength: [1000, "Description cannot exceed 1000 characters"],
     },
+    // In crowns: written along with priceMinor for one release, so the previous
+    // release still reads the right price after a rollback
     price: {
       type: Number,
       required: [true, "Price is required"],
       min: [0, "Price cannot be negative"],
       max: [999999.99, "Price is too high"],
+    },
+    // In whole geller (1/100 CZK): the price the application reads. Not
+    // required yet: a book the previous release stored lacks it until the next
+    // migration run, and is priced from its crowns meanwhile
+    priceMinor: {
+      type: Number,
+      min: [0, "Price cannot be negative"],
+      max: [99999999, "Price is too high"],
+      validate: { validator: Number.isInteger, message: "Price must be whole geller" },
     },
     image: {
       type: String,

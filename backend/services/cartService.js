@@ -11,7 +11,7 @@ import { config } from "../config/index.js";
 import Book from "../models/Book.js";
 import Cart from "../models/Cart.js";
 import { ConflictError, NotFoundError, ValidationError } from "../utils/errors.js";
-import { buildQuote, toMinorUnits } from "./pricing.js";
+import { bookPriceMinor, buildQuote } from "./pricing.js";
 
 const MAX_QUANTITY = 99;
 
@@ -48,7 +48,7 @@ function lineFor({ bookId, quantity }, book) {
     };
   }
 
-  const unitPrice = toMinorUnits(book.price);
+  const unitPrice = bookPriceMinor(book);
   const available = inStock(book);
   const authorName = book.author
     ? [book.author.firstName, book.author.lastName].filter(Boolean).join(" ")

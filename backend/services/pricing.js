@@ -1,7 +1,8 @@
 /**
  * Pricing
- * Money on the server is whole geller (1/100 CZK). Book prices are still
- * stored in crowns as floats, so they are converted once, here.
+ * Money on the server is whole geller (1/100 CZK). A book has its price in
+ * geller (priceMinor); its price in crowns is still written along with it for
+ * one release, and read only for a book stored before priceMinor existed.
  */
 
 /**
@@ -11,6 +12,14 @@
  */
 export function toMinorUnits(price) {
   return Math.round(Number((price * 100).toPrecision(12)));
+}
+
+/**
+ * A book's price in whole geller: priceMinor, or the crowns of a book stored
+ * before priceMinor (by the previous release, after the last migration run)
+ */
+export function bookPriceMinor(book) {
+  return Number.isInteger(book.priceMinor) ? book.priceMinor : toMinorUnits(book.price);
 }
 
 /**

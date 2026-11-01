@@ -8,6 +8,8 @@ import Author from "../models/Author.js";
 import Book from "../models/Book.js";
 import { toAuthorView } from "./authorView.js";
 import { toBookView } from "./bookView.js";
+import { bookPriceMinor } from "./pricing.js";
+import { config } from "../config/index.js";
 import { sortOf } from "../utils/listSort.js";
 import {
   AppError,
@@ -177,14 +179,14 @@ export async function getAuthorStats(id) {
           ? Math.max(...books.map((b) => b.publicationYear))
           : null,
     },
+    // Whole geller, the average rounded to one
     pricing: {
-      lowest: books.length > 0 ? Math.min(...books.map((b) => b.price)) : null,
-      highest: books.length > 0 ? Math.max(...books.map((b) => b.price)) : null,
+      currency: config.commerce.currency,
+      lowest: books.length > 0 ? Math.min(...books.map(bookPriceMinor)) : null,
+      highest: books.length > 0 ? Math.max(...books.map(bookPriceMinor)) : null,
       average:
         books.length > 0
-          ? (books.reduce((sum, b) => sum + b.price, 0) / books.length).toFixed(
-              2
-            )
+          ? Math.round(books.reduce((sum, b) => sum + bookPriceMinor(b), 0) / books.length)
           : null,
     },
   };

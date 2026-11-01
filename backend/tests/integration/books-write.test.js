@@ -53,17 +53,25 @@ describe("POST /api/v1/books", () => {
       "author",
       "category",
       "createdAt",
+      "currency",
       "description",
       "id",
       "image",
       "inStock",
       "price",
+      "priceMinor",
       "publicationYear",
       "title",
       "updatedAt",
     ]);
     expect(res.body.data.author).toEqual({ id: author.id, firstName: "Karel", lastName: "Čapek" });
-    expect(res.body.data).toMatchObject({ title: "Krakatit", price: 249.9, inStock: true });
+    expect(res.body.data).toMatchObject({
+      title: "Krakatit",
+      priceMinor: 24990,
+      currency: "CZK",
+      price: 249.9,
+      inStock: true,
+    });
   });
 
   it.each([

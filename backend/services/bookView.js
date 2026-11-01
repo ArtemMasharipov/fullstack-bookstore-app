@@ -1,7 +1,12 @@
 /**
  * The public shape of a book: a string id and no Mongoose internals. The
  * author is the populated reference; null when the author no longer exists.
+ * The price is priceMinor in whole geller with its currency; price in crowns
+ * stays for one release, for a page loaded before the switch.
  */
+
+import { config } from "../config/index.js";
+import { bookPriceMinor } from "./pricing.js";
 
 function authorOf(author) {
   if (!author?.firstName) return null;
@@ -14,6 +19,7 @@ function authorOf(author) {
 }
 
 export function toBookView(doc) {
+  const priceMinor = bookPriceMinor(doc);
   return {
     id: doc._id.toString(),
     title: doc.title,
@@ -21,7 +27,9 @@ export function toBookView(doc) {
     publicationYear: doc.publicationYear,
     category: doc.category,
     description: doc.description,
-    price: doc.price,
+    priceMinor,
+    currency: config.commerce.currency,
+    price: priceMinor / 100,
     image: doc.image,
     inStock: doc.inStock,
     createdAt: doc.createdAt,
