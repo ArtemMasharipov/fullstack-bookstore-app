@@ -7,6 +7,9 @@ describe("assertLocalMongoUri", () => {
     "mongodb://localhost/x",
     "mongodb://[::1]:27017/x",
     "mongodb://user:p%40ss@localhost:27017/x?authSource=admin",
+    // The test replica set's member address, and a local URI that names its set
+    "mongodb://127.0.0.1:51234/",
+    "mongodb://127.0.0.1:27017/bookstore?replicaSet=rs0",
   ])("accepts %s", (uri) => expect(() => assertLocalMongoUri(uri)).not.toThrow());
 
   it.each([
