@@ -87,6 +87,9 @@ timestamps; `Session` has `createdAt`.
   Author reads validate their query, combine literal name search with the country filter and sort ties by id.
   Author writes validate strict bodies and replace optional fields; deleting an author that has books answers
   409 `AUTHOR_HAS_BOOKS` with their count, so it never silently cascades through the catalogue.
+- Book prices are stored in crowns (`price`). `npm run migrate:book-prices -- up` adds the same price in whole geller
+  (`priceMinor`) next to it, which nothing reads yet; the switch comes later
+  ([decision 0008](decisions/0008-book-prices-in-geller.md)).
 - A cart keeps no prices. `services/cartService.js` prices it on every request from the books as they are now, in
   whole geller (1/100 CZK), and `services/pricing.js` builds the quote: lines of deleted or out-of-stock books do not
   count, shipping is free from a threshold, and VAT is part of the total. The VAT rate, the shipping fee and the

@@ -98,6 +98,8 @@ runs away from databases that are not local. [docs/architecture.md](docs/archite
   native hashing, compatible bcrypt upgrades, credential concurrency and replacement sessions.
 - [0007, jose session tokens](docs/decisions/0007-jose-session-tokens.md): compatible HS256 tokens and TTL,
   asynchronous signing, with Node 24 support retained.
+- [0008, book prices in whole geller](docs/decisions/0008-book-prices-in-geller.md): an expand-then-contract
+  migration with a local-only command, a backup first and a way back.
 
 ## Getting started
 

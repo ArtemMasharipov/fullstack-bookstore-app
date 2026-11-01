@@ -1,3 +1,6 @@
+# Book backups written by npm run migrate:book-prices
+backups/
+
 # Logs
 logs/
 *.log

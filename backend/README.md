@@ -16,6 +16,7 @@ Run them from `backend/`.
 | `npm test`         | vitest with an in-memory MongoDB                                          |
 | `npm run test:watch` | vitest in watch mode                                                    |
 | `npm run seed`     | demo users, authors and books (`npm run seed -- --reset` to start over)   |
+| `npm run migrate:book-prices -- <command>` | book prices in whole geller, on a local database only: `preflight` lists prices that are not whole geller; `up` checks, writes a backup to `backups/`, then adds `priceMinor` next to every `price`; `down` removes it; `backup` and `restore <file>` save and bring back all books ([decision 0008](../docs/decisions/0008-book-prices-in-geller.md)) |
 | `npm run e2e:server` | the API for the Playwright smoke test; started by Playwright, not by hand |
 
 Vitest uses half the available CPU count, at least one worker and at most four. This keeps MongoDB workers and
