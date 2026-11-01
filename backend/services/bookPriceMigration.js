@@ -12,8 +12,14 @@
  * native collections: priceMinor is not part of the Book schema yet.
  */
 
+import fs from "node:fs";
+import path from "node:path";
 import mongoose from "mongoose";
 import { toMinorUnits } from "./pricing.js";
+
+// Canonical Extended JSON keeps every BSON type, so a restore gives back the
+// documents exactly; it comes with the MongoDB driver Mongoose uses
+const { EJSON } = mongoose.mongo.BSON;
 
 export const MARKER_ID = "book-price-minor-units";
 const MARKER_VERSION = 1;
@@ -115,4 +121,55 @@ export async function migrateDown(connection = mongoose.connection) {
     .updateMany({ priceMinor: { $exists: true } }, { $unset: { priceMinor: "" } });
   await connection.collection("migrations").deleteOne({ _id: MARKER_ID });
   return { reverted: result.modifiedCount };
+}
+
+/**
+ * Writes every book to a new file books-<UTC time>.json in dir
+ * @returns {{ file: string, count: number }}
+ */
+export async function backup(dir, connection = mongoose.connection) {
+  const documents = await connection.collection("books").find({}).sort({ _id: 1 }).toArray();
+  const exportedAt = new Date().toISOString();
+  await fs.promises.mkdir(dir, { recursive: true });
+  const file = path.join(dir, `books-${exportedAt.replaceAll(":", "-")}.json`);
+  const payload = { collection: "books", exportedAt, count: documents.length, documents };
+  await fs.promises.writeFile(file, `${EJSON.stringify(payload, undefined, 2, { relaxed: false })}\n`, {
+    flag: "wx",
+  });
+  return { file, count: documents.length };
+}
+
+/**
+ * Replaces all books with those of a backup file, in one transaction: a failure
+ * leaves the books as they were. The marker stays only if the restored books
+ * all carry their priceMinor.
+ * @returns {{ restored: number }}
+ */
+export async function restore(file, connection = mongoose.connection) {
+  let payload;
+  try {
+    payload = EJSON.parse(await fs.promises.readFile(file, "utf8"), { relaxed: false });
+  } catch {
+    throw new MigrationRefused("Not a readable books backup", { file });
+  }
+  const documents = payload?.documents;
+  if (
+    payload?.collection !== "books" ||
+    !Array.isArray(documents) ||
+    Number(payload.count) !== documents.length ||
+    !documents.every((document) => document?._id !== undefined)
+  ) {
+    throw new MigrationRefused("Not a books backup", { file });
+  }
+
+  const migrated = documents.every(
+    ({ price, priceMinor }) => Number(priceMinor) === toMinorUnits(Number(price))
+  );
+  await connection.transaction(async (session) => {
+    const books = connection.collection("books");
+    await books.deleteMany({}, { session });
+    if (documents.length > 0) await books.insertMany(documents, { session });
+    if (!migrated) await connection.collection("migrations").deleteOne({ _id: MARKER_ID }, { session });
+  });
+  return { restored: documents.length };
 }

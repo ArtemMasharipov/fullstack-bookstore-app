@@ -1,13 +1,18 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import mongoose from "mongoose";
 import request from "supertest";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import app from "../../app.js";
 import {
   MARKER_ID,
   MigrationRefused,
+  backup,
   migrateDown,
   migrateUp,
   preflight,
+  restore,
 } from "../../services/bookPriceMigration.js";
 import { toMinorUnits } from "../../services/pricing.js";
 import { createUser, loginAs } from "../helpers/auth.js";
@@ -150,5 +155,61 @@ describe("book price migration: up and down", () => {
 
     expect(await migrateUp()).toMatchObject({ updated: 1, skipped: [] });
     expect((await books().findOne({ _id: changed._id })).priceMinor).toBe(12000);
+  });
+});
+
+describe("book price migration: backup and restore", () => {
+  let dir;
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), "bookstore-price-backup-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("restores the books exactly as they were backed up, and drops a marker they do not match", async () => {
+    await createBook({ price: 199 });
+    await createBook({ price: 249.9 });
+    const before = await snapshot();
+
+    const { file, count } = await backup(dir);
+    await migrateUp();
+    await books().updateMany({}, { $set: { price: 1 } });
+    await createBook({ price: 5 });
+    const { restored } = await restore(file);
+
+    expect(count).toBe(2);
+    expect(restored).toBe(2);
+    expect(await snapshot()).toBe(before);
+    expect(await marker()).toBeNull();
+  });
+
+  it("refuses a file that is not a books backup and changes nothing", async () => {
+    await createBook({ price: 10 });
+    const before = await snapshot();
+    const other = path.join(dir, "other.json");
+    fs.writeFileSync(other, JSON.stringify({ collection: "users", count: 0, documents: [] }));
+    const broken = path.join(dir, "broken.json");
+    fs.writeFileSync(broken, "{ not json");
+
+    await expect(restore(other)).rejects.toBeInstanceOf(MigrationRefused);
+    await expect(restore(broken)).rejects.toBeInstanceOf(MigrationRefused);
+    await expect(restore(path.join(dir, "missing.json"))).rejects.toBeInstanceOf(MigrationRefused);
+    expect(await snapshot()).toBe(before);
+  });
+
+  it("keeps the books when writing the backup back fails", async () => {
+    await createBook({ price: 10 });
+    const { file } = await backup(dir);
+    await createBook({ price: 20 });
+    const before = await snapshot();
+    vi.spyOn(books(), "insertMany").mockImplementationOnce(() =>
+      Promise.reject(new Error("injected while restoring"))
+    );
+
+    await expect(restore(file)).rejects.toThrow("injected while restoring");
+    expect(await snapshot()).toBe(before);
   });
 });
