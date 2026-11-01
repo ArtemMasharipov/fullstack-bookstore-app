@@ -27,10 +27,12 @@ afterEach(() => {
 
 const books = () => mongoose.connection.collection("books");
 const marker = () => mongoose.connection.collection("migrations").findOne({ _id: MARKER_ID });
+// Unpromoted, so a changed numeric type (Double, Int32, Long) shows too
 const snapshot = async () =>
-  mongoose.mongo.BSON.EJSON.stringify(await books().find({}).sort({ _id: 1 }).toArray(), {
-    relaxed: false,
-  });
+  mongoose.mongo.BSON.EJSON.stringify(
+    await books().find({}, { promoteValues: false }).sort({ _id: 1 }).toArray(),
+    { relaxed: false }
+  );
 
 // Writes a price as it is, past the model's validation: the migration has to
 // cope with whatever is stored
@@ -156,6 +158,50 @@ describe("book price migration: up and down", () => {
     expect(await migrateUp()).toMatchObject({ updated: 1, skipped: [] });
     expect((await books().findOne({ _id: changed._id })).priceMinor).toBe(12000);
   });
+
+  it("removes the marker before the prices, so an interrupted down never leaves it claiming more", async () => {
+    await createBook({ price: 10 });
+    await migrateUp();
+    vi.spyOn(books(), "updateMany").mockImplementationOnce(() =>
+      Promise.reject(new Error("interrupted"))
+    );
+
+    await expect(migrateDown()).rejects.toThrow("interrupted");
+    expect(await marker()).toBeNull();
+  });
+
+  it("drops the marker when a later run leaves a book without its priceMinor", async () => {
+    const changed = await createBook({ price: 100 });
+    await migrateUp();
+    await createBook({ price: 30 });
+    const collection = books();
+    const bulkWrite = collection.bulkWrite.bind(collection);
+    vi.spyOn(collection, "bulkWrite").mockImplementationOnce(async (...args) => {
+      await storePrice(changed._id, 120);
+      return bulkWrite(...args);
+    });
+
+    const result = await migrateUp();
+
+    expect(result.skipped).toEqual([changed._id.toString()]);
+    expect(await marker()).toBeNull();
+  });
+
+  it("writes no marker while a book added during up lacks its priceMinor", async () => {
+    await createBook({ price: 10 });
+    const collection = books();
+    const bulkWrite = collection.bulkWrite.bind(collection);
+    let added;
+    vi.spyOn(collection, "bulkWrite").mockImplementationOnce(async (...args) => {
+      added = await createBook({ price: 40 });
+      return bulkWrite(...args);
+    });
+
+    const result = await migrateUp();
+
+    expect(result.skipped).toEqual([added._id.toString()]);
+    expect(await marker()).toBeNull();
+  });
 });
 
 describe("book price migration: backup and restore", () => {
@@ -210,6 +256,32 @@ describe("book price migration: backup and restore", () => {
     );
 
     await expect(restore(file)).rejects.toThrow("injected while restoring");
+    expect(await snapshot()).toBe(before);
+  });
+
+  it("keeps the numeric BSON types of the books through a backup and a restore", async () => {
+    const { Double, Long } = mongoose.mongo.BSON;
+    const { _id } = await createBook();
+    await books().updateOne({ _id }, { $set: { price: new Double(199), copies: Long.fromNumber(5) } });
+    const before = await snapshot();
+    const { file } = await backup(dir);
+    await storePrice(_id, 1);
+
+    await restore(file);
+
+    expect(await snapshot()).toBe(before);
+  });
+
+  it("refuses to restore into a connection that is not local, before touching it", async () => {
+    await createBook({ price: 10 });
+    const { file } = await backup(dir);
+    const before = await snapshot();
+    const reached = () => {
+      throw new Error("reached the database");
+    };
+    const remote = { host: "db.example.com", collection: reached, transaction: reached };
+
+    await expect(restore(file, remote)).rejects.toThrow(/non-local MongoDB/);
     expect(await snapshot()).toBe(before);
   });
 });

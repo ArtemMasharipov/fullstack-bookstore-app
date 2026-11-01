@@ -116,4 +116,21 @@ describe("book price migration CLI", () => {
     expect(await withBooks(dbName, (books) => books.findOne({}))).not.toHaveProperty("priceMinor");
     expect(fs.existsSync(backups)).toBe(false);
   });
+
+  it("saves the books it replaces before a restore", async () => {
+    const dbName = "price_cli_restore";
+    await withBooks(dbName, (books) => books.insertOne({ title: "R.U.R.", price: 249.9 }));
+    const backups = path.join(cwd, "restore-backups");
+    const env = { MONGODB_URI: localUri(dbName) };
+    const saved = JSON.parse(run(["backup", "--backup-dir", backups], env).stdout).file;
+    await withBooks(dbName, (books) => books.insertOne({ title: "Krakatit", price: 199 }));
+
+    const result = run(["restore", saved, "--backup-dir", backups], env);
+
+    expect(result.status, result.output).toBe(0);
+    const summary = JSON.parse(result.stdout);
+    expect(summary).toMatchObject({ command: "restore", restored: 1, backup: { count: 2 } });
+    expect(fs.existsSync(summary.backup.file)).toBe(true);
+    expect(await withBooks(dbName, (books) => books.countDocuments())).toBe(1);
+  });
 });

@@ -22,8 +22,9 @@ Migrate in two steps, expand and then contract.
 - `preflight`, also run by `up`, refuses prices that are not whole geller: not a finite number, negative, above
   999999.99, or more precise than a geller. Nothing is written then. A marker in the `migrations` collection records
   that every book had its `priceMinor` after `up`.
-- `up` writes a backup of all books first (canonical Extended JSON in `backend/backups/`, ignored by git), and
-  `restore <file>` replaces the books with a backup in one transaction.
+- `up` writes a backup of all books first (canonical Extended JSON in `backend/backups/`, ignored by git, with the
+  numeric types of the documents kept). `restore <file>` backs the current books up as well, then replaces them
+  with the file's in one transaction, and refuses a database that is not local even when called from code.
 - The command accepts only a local database, checked like the seed command: the URI before connecting and the
   connection after.
 

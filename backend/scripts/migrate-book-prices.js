@@ -6,7 +6,8 @@
  *   up                checks every price, backs the books up, then adds
  *                     priceMinor (whole geller) next to every price
  *   down              removes priceMinor from every book
- *   restore <file>    replaces all books with those of a backup file
+ *   restore <file>    backs the current books up, then replaces them with
+ *                     those of a backup file
  *
  * --backup-dir <dir> writes backups elsewhere. Only a local database is
  * accepted: the URI is checked before connecting and the connection after,
@@ -66,8 +67,11 @@ async function run({ command, file, backupDir }) {
     }
     case "down":
       return migrateDown();
-    case "restore":
-      return restore(file);
+    case "restore": {
+      // The books it replaces are saved first, so a restore can be undone too
+      const saved = await backup(backupDir);
+      return { backup: saved, ...(await restore(file)) };
+    }
     default:
       throw new Error(`Unknown command ${command}`);
   }

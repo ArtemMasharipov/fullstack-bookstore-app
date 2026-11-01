@@ -15,10 +15,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import mongoose from "mongoose";
+import { assertLocalConnection } from "../config/mongo-guard.js";
 import { toMinorUnits } from "./pricing.js";
 
-// Canonical Extended JSON keeps every BSON type, so a restore gives back the
-// documents exactly; it comes with the MongoDB driver Mongoose uses
+// Canonical Extended JSON of unpromoted documents keeps every BSON type
+// (Double, Int32, Long), so a restore gives back the documents exactly; it
+// comes with the MongoDB driver Mongoose uses
 const { EJSON } = mongoose.mongo.BSON;
 
 export const MARKER_ID = "book-price-minor-units";
@@ -90,11 +92,11 @@ export async function migrateUp(connection = mongoose.connection) {
     );
   }
 
-  const after = await books
-    .find({ _id: { $in: pending.map(({ _id }) => _id) } }, { projection: { price: 1, priceMinor: 1 } })
-    .toArray();
+  // The marker claims that every book carries its priceMinor, so all books are
+  // checked after the writes: a book changed or added meanwhile keeps it off
+  const after = await books.find({}, { projection: { price: 1, priceMinor: 1 } }).toArray();
   const skipped = after
-    .filter(({ price, priceMinor }) => priceMinor !== toMinorUnits(price))
+    .filter(({ price, priceMinor }) => priceProblem(price) !== null || priceMinor !== toMinorUnits(price))
     .map(({ _id }) => _id.toString());
 
   if (skipped.length === 0) {
@@ -103,9 +105,11 @@ export async function migrateUp(connection = mongoose.connection) {
       { $setOnInsert: { version: MARKER_VERSION, appliedAt: new Date() } },
       { upsert: true }
     );
+  } else {
+    await markers.deleteOne({ _id: MARKER_ID });
   }
   return {
-    updated: pending.length - skipped.length,
+    updated: pending.filter(({ _id }) => !skipped.includes(_id.toString())).length,
     skipped,
     alreadyApplied: marked && pending.length === 0,
   };
@@ -116,10 +120,12 @@ export async function migrateUp(connection = mongoose.connection) {
  * @returns {{ reverted: number }}
  */
 export async function migrateDown(connection = mongoose.connection) {
+  // The marker goes first: an interrupted run must not leave it claiming
+  // priceMinor on books that lost it
+  await connection.collection("migrations").deleteOne({ _id: MARKER_ID });
   const result = await connection
     .collection("books")
     .updateMany({ priceMinor: { $exists: true } }, { $unset: { priceMinor: "" } });
-  await connection.collection("migrations").deleteOne({ _id: MARKER_ID });
   return { reverted: result.modifiedCount };
 }
 
@@ -128,7 +134,11 @@ export async function migrateDown(connection = mongoose.connection) {
  * @returns {{ file: string, count: number }}
  */
 export async function backup(dir, connection = mongoose.connection) {
-  const documents = await connection.collection("books").find({}).sort({ _id: 1 }).toArray();
+  const documents = await connection
+    .collection("books")
+    .find({}, { promoteValues: false })
+    .sort({ _id: 1 })
+    .toArray();
   const exportedAt = new Date().toISOString();
   await fs.promises.mkdir(dir, { recursive: true });
   const file = path.join(dir, `books-${exportedAt.replaceAll(":", "-")}.json`);
@@ -146,6 +156,9 @@ export async function backup(dir, connection = mongoose.connection) {
  * @returns {{ restored: number }}
  */
 export async function restore(file, connection = mongoose.connection) {
+  // Deleting every book is refused on a database that is not local, whoever
+  // calls this, as for the seed reset
+  assertLocalConnection(connection);
   let payload;
   try {
     payload = EJSON.parse(await fs.promises.readFile(file, "utf8"), { relaxed: false });
