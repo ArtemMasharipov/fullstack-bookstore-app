@@ -5,6 +5,9 @@
  * default). It never reads .env and ignores MONGODB_URI of its environment, so
  * it can not reach the database of a developer's backend/.env.
  *
+ * The MongoDB is a single-node replica set, as in the backend tests: MongoDB
+ * runs multi-document transactions only on a replica set.
+ *
  * The order matters: the environment is set before the app and the config are
  * imported, because config/default.js reads it when it is imported.
  *
@@ -19,7 +22,7 @@ import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { MongoMemoryServer } from "mongodb-memory-server";
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 import mongoose from "mongoose";
 import { assertLocalConnection } from "../config/mongo-guard.js";
 import { seed } from "./seed.js";
@@ -55,8 +58,14 @@ function removeStaleDbPaths() {
 
 removeStaleDbPaths();
 const dbPath = fs.mkdtempSync(path.join(os.tmpdir(), DB_PATH_PREFIX));
-const mongod = await MongoMemoryServer.create({ instance: { dbPath } });
+const replSet = await MongoMemoryReplSet.create({
+  replSet: { count: 1, storageEngine: "wiredTiger" },
+  instanceOpts: [{ dbPath }],
+});
 console.log(`mongo dbPath ${dbPath}`);
+console.log(
+  `mongo pid ${replSet.servers[0].instanceInfo.instance.mongodProcess.pid}`
+);
 
 let server;
 let stopping = false;
@@ -75,7 +84,7 @@ async function stop(exitCode) {
   const steps = [
     () => server && new Promise((resolve) => server.close(resolve)),
     () => mongoose.disconnect(),
-    () => mongod.stop(),
+    () => replSet.stop(),
     // Once mongod has exited: Windows does not delete files that are open
     () =>
       fs.promises.rm(dbPath, {
@@ -104,7 +113,7 @@ process.on("SIGINT", () => stop(0));
 if (process.send) process.on("disconnect", () => stop(0));
 
 try {
-  process.env.MONGODB_URI = mongod.getUri("e2e");
+  process.env.MONGODB_URI = replSet.servers[0].getUri("e2e");
   process.env.NODE_ENV = "test";
   process.env.JWT_SECRET = randomBytes(32).toString("hex");
   // The whole suite runs from one address; its own failed sign-ins must not
@@ -117,6 +126,10 @@ try {
   await connectDatabase();
   assertLocalConnection(mongoose.connection);
   console.log(`mongo host ${mongoose.connection.host}`);
+  const { setName } = await mongoose.connection.db
+    .admin()
+    .command({ hello: 1 });
+  console.log(`mongo replica set ${setName}`);
 
   await seed({
     adminPassword: process.env.SEED_ADMIN_PASSWORD,

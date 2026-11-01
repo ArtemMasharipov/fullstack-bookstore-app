@@ -106,6 +106,24 @@ const dbPathOf = ({ output }) => {
   return match[1];
 };
 
+// The process ID of the server's mongod, which it prints at startup
+const pidOf = ({ output }) => {
+  const match = /^mongo pid (\d+)$/m.exec(output.stdout);
+  expect(match, output.stdout + output.stderr).not.toBeNull();
+  return Number(match[1]);
+};
+
+// Signal 0 only checks that the process exists (EPERM: it exists, but belongs
+// to another user)
+const isRunning = (pid) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error.code !== "ESRCH";
+  }
+};
+
 describe("e2e-server.js", () => {
   let running;
   let port;
@@ -120,6 +138,15 @@ describe("e2e-server.js", () => {
     expect(running.output.stdout + running.output.stderr).not.toContain(
       "remote.example"
     );
+  });
+
+  // A single-node replica set, as in the backend tests: MongoDB runs
+  // multi-document transactions only on a replica set
+  it("runs its MongoDB as a replica set", () => {
+    const setName = /^mongo replica set (\S+)$/m.exec(running.output.stdout)?.[1];
+
+    expect(setName, running.output.stdout + running.output.stderr).toBeDefined();
+    expect(setName).not.toBe("undefined");
   });
 
   it("serves a catalogue seeded with the 24 demo books", async () => {
@@ -151,10 +178,11 @@ describe("e2e-server.js", () => {
 });
 
 describe("e2e-server.js: a graceful stop", () => {
-  it("follows the end of its IPC channel: exit 0, and the data directory of its MongoDB is removed", async () => {
+  it("follows the end of its IPC channel: exit 0, its mongod stopped and its data directory removed", async () => {
     const running = startE2eServer();
     await untilListening(running);
     const dbPath = dbPathOf(running);
+    const pid = pidOf(running);
     expect(fs.existsSync(dbPath)).toBe(true);
 
     const { code, signal } = await stopE2eServer(running);
@@ -164,6 +192,7 @@ describe("e2e-server.js: a graceful stop", () => {
       running.output.stdout + running.output.stderr
     ).toEqual({ code: 0, signal: null });
     expect(fs.existsSync(dbPath)).toBe(false);
+    await vi.waitFor(() => expect(isRunning(pid)).toBe(false), { timeout: 5000 });
   });
 });
 
