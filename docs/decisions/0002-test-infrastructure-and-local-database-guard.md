@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-10-10
+- Updated: 2026-11-01 (single-node replica set)
 
 ## Context
 
@@ -17,9 +18,11 @@ end-to-end runs create and delete data, so they must never reach such a database
 - **Vitest in both packages.** The backend tests call `app.js` through Supertest; `app.js` was split out of
   `server.js` and neither listens nor connects. They run against a real MongoDB in memory instead of mocked models.
   The frontend tests run on happy-dom.
-- **In-memory MongoDB.** mongodb-memory-server starts one MongoDB for the whole test run. The mongod version is pinned
-  to 8.2.6 in `backend/package.json`, so an update of the package cannot change the server version silently. Each
-  Vitest worker uses its own database, and collections are emptied after every test.
+- **In-memory MongoDB.** mongodb-memory-server starts one MongoDB for the whole test run, and the end-to-end server
+  starts its own. Both are single-node replica sets on wiredTiger, because MongoDB runs multi-document transactions
+  only on a replica set; clients connect to the member's plain address and the driver discovers the set. The mongod
+  version is pinned to 8.2.6 in `backend/package.json`, so an update of the package cannot change the server version
+  silently. Each Vitest worker uses its own database, and collections are emptied after every test.
 - **Local-only guard** (`config/mongo-guard.js`). The tests and the seed command check the URI before they connect
   and the connection after; the end-to-end server, which creates its own in-memory database, checks the connection:
   - before connecting, every host in the URI must be `localhost`, `127.0.0.1` or `::1`, and `mongodb+srv://` is
@@ -49,6 +52,12 @@ end-to-end runs create and delete data, so they must never reach such a database
 - The guard fails closed: a password with a raw `@` must be percent-encoded as `%40`, as the URI format requires.
 - The guard checks host names only. A tunnel or port forward that makes a remote server answer on `localhost` passes
   it.
+- On a replica set the driver also connects to the members the set's configuration lists, and the guard sees only the
+  hosts in the URI and the first host after connecting. A set used for tests, seeding or end-to-end runs must list
+  local members only: the in-memory ones do, and so does the one the README starts.
+- A developer's own MongoDB runs as a single-node replica set as well. The README starts one in Docker and names its
+  member `127.0.0.1:27017`, the address the developer's machine connects to; named after the container, the member
+  cannot be resolved from outside it.
 - The tests of the SIGTERM and SIGINT handling run on Linux, in CI or in Docker; Windows skips them.
 - The browser in the end-to-end run reaches its API through the `/api` proxy of the preview server
   ([decision 0003](0003-relative-api-base-url.md)).

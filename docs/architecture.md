@@ -288,9 +288,10 @@ absolute `VITE_API_URL`.
   sign-in limit and sign-in time tests cover what ends a token and how sign-in is protected. Tests of the SIGTERM and
   SIGINT handling run on Linux and are skipped on Windows. The helper resets the counts of failed sign-in attempts
   after every test.
-- **Database.** One in-memory MongoDB (mongodb-memory-server, mongod 8.2.6 pinned in `backend/package.json`) serves
-  the whole run. Each Vitest worker uses its own database, and collections are emptied after every test. The test
-  helper passes the URI through the local-only guard before it connects and checks the connected host after. With
+- **Database.** One in-memory single-node replica set (mongodb-memory-server, mongod 8.2.6 pinned in
+  `backend/package.json`) serves the whole run, so multi-document transactions work in tests. Each Vitest worker uses
+  its own database, and collections are emptied after every test. The test helper passes the URI through the
+  local-only guard before it connects and checks the connected host after. With
   `NODE_ENV=test` the `.env` loader does nothing, so the database URI in `backend/.env` never reaches the tests
   ([decision 0002](decisions/0002-test-infrastructure-and-local-database-guard.md)).
 - **Characterization tests** (`tests/integration/characterization.test.js`) record the API's correct behavior before

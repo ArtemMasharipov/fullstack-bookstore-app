@@ -122,10 +122,17 @@ Run each code block from the repository root; the install block starts one level
   ```
   `libcurl4` is there because the slim image lacks it and the tests' `mongod` will not start without it. The frontend
   needs its own volume (for example `bookstore-frontend-nm`): `esbuild` and `rollup` ship platform-specific binaries.
-- **MongoDB**, reachable from your machine. The examples use `mongodb://127.0.0.1:27017/bookstore`. To run it in Docker:
+- **MongoDB**, reachable from your machine and running as a single-node replica set: MongoDB runs multi-document
+  transactions only on a replica set, and the tests and end-to-end runs use one too. The examples use
+  `mongodb://127.0.0.1:27017/bookstore`. To run it in Docker:
   ```bash
-  docker run -d --name bookstore-mongo -p 127.0.0.1:27017:27017 mongo:7.0
+  docker run -d --name bookstore-mongo -p 127.0.0.1:27017:27017 mongo:7.0 --replSet rs0
+  docker exec bookstore-mongo mongosh --quiet --eval 'rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "127.0.0.1:27017" }] })'
   ```
+  The member is named `127.0.0.1:27017`, the address your machine connects to: a plain `rs.initiate()` names it after
+  the container, and the backend cannot resolve that name. If `mongosh` cannot connect yet, run the second command
+  again a moment later. A container started without `--replSet` has to be recreated, which discards its data:
+  `docker rm -f bookstore-mongo`, the two commands above, then `npm run seed` in `backend/`.
 
 ### Install and configure
 
