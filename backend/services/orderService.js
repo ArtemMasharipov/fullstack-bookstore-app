@@ -44,8 +44,8 @@ async function findReplay(userId, idempotencyKey, requestHash) {
   return order;
 }
 
-// Why the cart cannot become an order at the total the customer saw, or null
-function cartProblem(view, expectedTotal) {
+// Why the cart cannot become an order without confirmation, or null
+function cartProblem(view, expectedTotal, cartChanged = false) {
   if (view.items.length === 0) return new UnprocessableError("Cart is empty", "CART_EMPTY");
 
   const unavailable = view.items.filter((line) => !line.available);
@@ -55,15 +55,21 @@ function cartProblem(view, expectedTotal) {
     });
   }
 
-  if (expectedTotal !== view.quote.total) {
+  if (cartChanged || expectedTotal !== view.quote.total) {
     const { freeShippingThreshold, ...quote } = view.quote;
-    return new ConflictError("The total has changed", "PRICE_CHANGED", { quote });
+    return new ConflictError("The cart has changed", "PRICE_CHANGED", { quote });
   }
   return null;
 }
 
 /**
  * Places an order from the user's cart, once per Idempotency-Key.
+ *
+ * The cart is read, checked, ordered and emptied in one transaction, so a
+ * failure leaves neither an order nor a changed cart. A cart changed meanwhile
+ * (another tab, another order) makes MongoDB run it again on the changed cart:
+ * the customer then confirms the changed lines even at the same total, or
+ * sees the empty cart, and one cart never becomes two orders.
  *
  * A repeated request (same key, same body) answers the order it created,
  * also when the cart is already empty. The key is checked again before
@@ -79,59 +85,75 @@ export async function createOrder(userId, body, idempotencyKey) {
   const earlier = await findReplay(userId, idempotencyKey, requestHash);
   if (earlier) return replay(earlier);
 
-  const view = await getCartView(userId);
-  const problem = cartProblem(view, body.expectedTotal);
-  if (problem) {
-    const placed = await findReplay(userId, idempotencyKey, requestHash);
-    if (placed) return replay(placed);
-    throw problem;
-  }
-
-  const lines = view.items;
-  const { freeShippingThreshold, ...quote } = view.quote;
-  let order;
+  let problem = null;
+  let firstCart;
   try {
-    order = await Order.create({
-      orderNumber: await nextOrderNumber(),
-      user: userId,
-      items: lines.map(({ bookId, title, unitPrice, quantity, lineTotal }) => ({
-        book: bookId,
-        title,
-        unitPrice,
-        quantity,
-        lineTotal,
-      })),
-      shippingAddress: body.shippingAddress,
-      quote,
-      statusHistory: [{ axis: "status", from: null, to: "pending", by: "user", at: new Date() }],
-      idempotencyKey,
-      requestHash,
+    const order = await mongoose.connection.transaction(async (session) => {
+      const view = await getCartView(userId, { session });
+      const cart = JSON.stringify(
+        view.items
+          .map(({ bookId, quantity }) => [bookId, quantity])
+          .sort(([left], [right]) => left.localeCompare(right))
+      );
+      const cartChanged = firstCart !== undefined && firstCart !== cart;
+      firstCart ??= cart;
+      problem = cartProblem(view, body.expectedTotal, cartChanged);
+      if (problem) throw problem;
+
+      const lines = view.items;
+      const { freeShippingThreshold, ...quote } = view.quote;
+      const [created] = await Order.create(
+        [
+          {
+            orderNumber: await nextOrderNumber(),
+            user: userId,
+            items: lines.map(({ bookId, title, unitPrice, quantity, lineTotal }) => ({
+              book: bookId,
+              title,
+              unitPrice,
+              quantity,
+              lineTotal,
+            })),
+            shippingAddress: body.shippingAddress,
+            quote,
+            statusHistory: [
+              { axis: "status", from: null, to: "pending", by: "user", at: new Date() },
+            ],
+            idempotencyKey,
+            requestHash,
+          },
+        ],
+        { session }
+      );
+
+      // The ordered lines, as read in this transaction
+      await Cart.updateOne(
+        { user: userId },
+        {
+          $pull: {
+            items: {
+              $or: lines.map(({ bookId, quantity }) => ({
+                book: new mongoose.Types.ObjectId(bookId),
+                quantity,
+              })),
+            },
+          },
+        },
+        { session }
+      );
+      return created;
     });
+    return { order: toOrderView(order.toObject()), created: true };
   } catch (error) {
+    if (problem && error === problem) {
+      const placed = await findReplay(userId, idempotencyKey, requestHash);
+      if (placed) return replay(placed);
+      throw error;
+    }
     // A parallel request with the same key stored its order first
     if (error.code !== 11000 || !error.keyPattern?.idempotencyKey) throw error;
     return replay(await findReplay(userId, idempotencyKey, requestHash));
   }
-
-  // Only the ordered lines, and only while their quantity is the ordered one:
-  // a line changed meanwhile stays in the cart. There is no transaction yet
-  // (stage 4): if this fails, the order stands, the cart keeps its lines, and
-  // a retry with the same key answers the order.
-  await Cart.updateOne(
-    { user: userId },
-    {
-      $pull: {
-        items: {
-          $or: lines.map(({ bookId, quantity }) => ({
-            book: new mongoose.Types.ObjectId(bookId),
-            quantity,
-          })),
-        },
-      },
-    }
-  );
-
-  return { order: toOrderView(order.toObject()), created: true };
 }
 
 /**

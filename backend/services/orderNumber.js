@@ -3,7 +3,10 @@
  *
  * The sequence is a counter document incremented atomically, so orders placed
  * at the same moment never share a number. A number is taken before the order
- * is stored; if storing fails, that number is skipped, and gaps are expected.
+ * is stored and outside the order's transaction, so orders do not wait for one
+ * another on the counter. If storing fails, or the transaction runs again
+ * because the cart changed, the number the earlier attempt took is skipped:
+ * gaps are expected.
  */
 
 import Counter from "../models/Counter.js";

@@ -97,13 +97,16 @@ timestamps; `Session` has `createdAt`.
   1. The client creates an `Idempotency-Key` (a UUID) for each checkout and sends it with the address and the total
      the customer saw. A request that repeats an earlier one (same key, same body) answers the order it placed; the
      same key with another body is refused.
-  2. The server prices the cart again. An empty cart, an unavailable book or a total that is no longer the current
-     one is refused before anything is stored; a changed total comes back with the new quote for the customer to
-     confirm with the same key.
-  3. The number comes from an atomic counter per UTC day (`Counter`), the order stores its lines, the quote and the
-     address, and a unique index on the user and the key settles two identical requests at the same moment.
-  4. The ordered lines leave the cart, but only while their quantity is the ordered one: a line changed meanwhile
-     stays. There is no transaction yet; a retry with the same key answers the order if this step did not run.
+  2. One transaction reads and prices the cart, stores the order and removes the ordered lines from the cart, so a
+     failure leaves neither an order nor a changed cart. An empty cart, an unavailable book or a total that is no
+     longer the current one is refused before anything is stored; a changed total comes back with the new quote for
+     the customer to confirm with the same key.
+  3. A cart changed during the transaction (another tab, another order) makes MongoDB run it again on the changed
+     cart. Changed lines require confirmation even when their total is unchanged; an emptied cart is refused,
+     so one cart never becomes two orders.
+  4. The number comes from an atomic counter per UTC day (`Counter`), taken outside the transaction: an attempt that
+     runs again or fails skips its number, and gaps are expected. A unique index on the user and the key settles two
+     identical requests at the same moment.
 - `status` is one of `pending`, `processing`, `shipped`, `delivered` or `cancelled`; `paymentStatus` is `unpaid`,
   `paid`, `failed` or `refunded`, and every change of either is added to `statusHistory`. A customer can cancel a pending order
   that is not paid.

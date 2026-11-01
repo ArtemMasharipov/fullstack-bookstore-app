@@ -68,11 +68,13 @@ function lineFor({ bookId, quantity }, book) {
 }
 
 /**
- * The cart view of the given entries, with one query for all their books
+ * The cart view of the given entries, with one query for all their books.
+ * With a session, the books are read inside its transaction.
  */
-export async function buildCartView(entries) {
+export async function buildCartView(entries, { session } = {}) {
   const books = await Book.find({ _id: { $in: entries.map((e) => e.bookId) } })
     .populate("author", "firstName lastName")
+    .session(session ?? null)
     .lean();
   const byId = new Map(books.map((book) => [book._id.toString(), book]));
 
@@ -80,8 +82,8 @@ export async function buildCartView(entries) {
   return { items, quote: buildQuote(items, config.commerce) };
 }
 
-async function readEntries(userId) {
-  const cart = await Cart.findOne({ user: userId }).lean();
+async function readEntries(userId, session) {
+  const cart = await Cart.findOne({ user: userId }).session(session ?? null).lean();
   return (cart?.items ?? []).map((item) => ({
     bookId: item.book.toString(),
     quantity: item.quantity,
@@ -146,8 +148,9 @@ async function putLine(user, book, quantity, { overflow }) {
 const objectId = (id) => new mongoose.Types.ObjectId(id);
 const notInCart = () => new NotFoundError("Book is not in the cart", "CART_ITEM_NOT_FOUND");
 
-export async function getCartView(userId) {
-  return buildCartView(await readEntries(userId));
+// With a session, the cart and its books are read inside its transaction
+export async function getCartView(userId, { session } = {}) {
+  return buildCartView(await readEntries(userId, session), { session });
 }
 
 export async function addItem(userId, { bookId, quantity }) {

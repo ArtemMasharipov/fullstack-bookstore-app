@@ -26,13 +26,14 @@ async function quantities() {
 }
 
 describe("parallel cart changes", () => {
-  it("ten parallel additions of one copy end with ten copies", async () => {
+  // Twenty additions at the same moment end with twenty copies
+  it("twenty parallel additions of one copy end with twenty copies", async () => {
     const bookId = (await createBook())._id.toString();
 
-    const responses = await Promise.all(Array.from({ length: 10 }, () => addItem(bookId, 1)));
+    const responses = await Promise.all(Array.from({ length: 20 }, () => addItem(bookId, 1)));
 
-    expect(responses.map((res) => res.status)).toEqual(Array(10).fill(200));
-    expect(await quantities()).toEqual({ [bookId]: 10 });
+    expect(responses.map((res) => res.status)).toEqual(Array(20).fill(200));
+    expect(await quantities()).toEqual({ [bookId]: 20 });
   });
 
   it("parallel additions of two books keep both", async () => {
