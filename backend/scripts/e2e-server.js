@@ -58,8 +58,16 @@ function removeStaleDbPaths() {
 
 removeStaleDbPaths();
 const dbPath = fs.mkdtempSync(path.join(os.tmpdir(), DB_PATH_PREFIX));
+// On Linux and macOS Playwright stops the server with a SIGTERM to its whole
+// process group. A mongod in that group would start a shutdown of its own,
+// and replSet.stop() would then wait 5 s for it; in a group of its own,
+// mongod is stopped by this server alone. Windows sends no such signal.
 const replSet = await MongoMemoryReplSet.create({
-  replSet: { count: 1, storageEngine: "wiredTiger" },
+  replSet: {
+    count: 1,
+    storageEngine: "wiredTiger",
+    spawn: { detached: process.platform !== "win32" },
+  },
   instanceOpts: [{ dbPath }],
 });
 console.log(`mongo dbPath ${dbPath}`);

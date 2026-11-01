@@ -42,10 +42,12 @@ afterAll(async () => {
 
 // Starts e2e-server.js on a random port, with an IPC channel for the stop (see
 // stopE2eServer). `closed` settles after the process has exited and its output
-// was read.
-function startE2eServer({ nodeArgs = [] } = {}) {
+// was read. `detached` makes it lead a process group of its own, as Playwright
+// starts it on Linux and macOS.
+function startE2eServer({ nodeArgs = [], detached = false } = {}) {
   const child = spawn(process.execPath, [...nodeArgs, e2eServerPath], {
     cwd,
+    detached,
     env: childEnv({
       MONGODB_URI: REMOTE_URI,
       E2E_API_PORT: "0",
@@ -194,6 +196,33 @@ describe("e2e-server.js: a graceful stop", () => {
     expect(fs.existsSync(dbPath)).toBe(false);
     await vi.waitFor(() => expect(isRunning(pid)).toBe(false), { timeout: 5000 });
   });
+
+  // Playwright's gracefulShutdown sends SIGTERM to the server's whole process
+  // group on Linux and macOS, so whatever shares the group gets it as well. A
+  // stop takes well under a second; 3 s leaves room for a slow machine, far
+  // below the server's own 8 s deadline. Windows never calls a SIGTERM
+  // handler, so it skips this.
+  it.skipIf(process.platform === "win32")(
+    "follows a SIGTERM to its whole process group within 3 s: exit 0, its mongod stopped and its data directory removed",
+    async () => {
+      const running = startE2eServer({ detached: true });
+      await untilListening(running);
+      const dbPath = dbPathOf(running);
+      const pid = pidOf(running);
+
+      const signalledAt = Date.now();
+      process.kill(-running.child.pid, "SIGTERM");
+      const { code, signal } = await running.closed;
+
+      expect(Date.now() - signalledAt).toBeLessThan(3000);
+      expect(
+        { code, signal },
+        running.output.stdout + running.output.stderr
+      ).toEqual({ code: 0, signal: null });
+      expect(fs.existsSync(dbPath)).toBe(false);
+      await vi.waitFor(() => expect(isRunning(pid)).toBe(false), { timeout: 5000 });
+    }
+  );
 });
 
 describe("e2e-server.js: the connected host", () => {
