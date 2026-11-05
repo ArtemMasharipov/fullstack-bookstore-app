@@ -11,7 +11,6 @@ import en from '@/i18n/locales/en.json'
 import cs from '@/i18n/locales/cs.json'
 import { buildRoutes } from '@/router/buildRoutes'
 import { useAuthStore, useCartStore } from '@/stores'
-import { formatMoney } from '@/utils/money'
 import BookCard from './BookCard.vue'
 
 const BOOK = {
@@ -22,7 +21,7 @@ const BOOK = {
     publicationYear: 1855,
     // Unlike price × 100 on purpose: the card shows priceMinor
     price: 299,
-    priceMinor: 31900,
+    priceMinor: 24990,
     currency: 'CZK',
     image: '',
     inStock: true,
@@ -63,10 +62,13 @@ async function mount(props, locale = 'cs') {
 const focusStops = (card) => card.querySelectorAll('a[href], button:not([disabled])').length
 
 describe('BookCard', () => {
-    it('shows the price from whole geller', async () => {
-        const root = await mount({ book: BOOK })
+    it.each([
+        ['cs', '249,90\u00a0Kč'],
+        ['en', 'CZK\u00a0249.90'],
+    ])('shows the price from whole geller in %s', async (language, expected) => {
+        const root = await mount({ book: BOOK }, language)
 
-        expect(root.querySelector('.book-card__price').textContent).toBe(formatMoney(31900, 'CZK', 'cs'))
+        expect(root.querySelector('.book-card__price').textContent).toBe(expected)
     })
 
     it('links the title to the book page in the current language', async () => {

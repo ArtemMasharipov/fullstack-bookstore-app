@@ -23,7 +23,7 @@ const BOOK = {
     title: 'Babička',
     // Unlike price × 100 on purpose: the page shows priceMinor
     price: 299,
-    priceMinor: 31900,
+    priceMinor: 24990,
     currency: 'CZK',
     inStock: true,
     author: { name: 'Božena Němcová' },
@@ -65,9 +65,11 @@ afterEach(() => {
     vi.unstubAllGlobals()
 })
 
-async function mount() {
+async function mount(language = 'cs') {
+    await loadLocale(language)
+    activateLocale(language)
     const router = testRouter()
-    await router.push('/books/b1')
+    await router.push(language === 'en' ? '/en/books/b1' : '/books/b1')
     const root = document.createElement('div')
     document.body.append(root)
     app = createApp({ render: () => h(components.VApp, null, { default: () => h(BookDetails, { bookId: 'b1' }) }) })
@@ -108,12 +110,13 @@ describe('BookDetails', () => {
         await vi.waitFor(() => expect(root.querySelector('.book-details__price.text-price')).not.toBeNull())
     })
 
-    it('shows the price from whole geller', async () => {
-        const root = await mount()
+    it.each([
+        ['cs', '249,90\u00a0Kč'],
+        ['en', 'CZK\u00a0249.90'],
+    ])('shows the price from whole geller in %s', async (language, expected) => {
+        const root = await mount(language)
 
-        await vi.waitFor(() =>
-            expect(root.querySelector('.book-details__price').textContent).toContain(formatMoney(31900, 'CZK'))
-        )
+        await vi.waitFor(() => expect(root.querySelector('.book-details__price').textContent).toContain(expected))
     })
 
     it('explains a missing book by its error code and offers Try again', async () => {
