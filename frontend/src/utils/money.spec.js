@@ -4,6 +4,7 @@ import cs from '@/i18n/locales/cs.json'
 import en from '@/i18n/locales/en.json'
 import { activateLocale, loadLocale, t } from '@/i18n'
 import { formatMoney, formatPrice } from './helpers/currency'
+import { crownsToMinor } from './money'
 
 beforeAll(async () => {
     vi.stubGlobal('fetch', async (url) => {
@@ -103,12 +104,26 @@ async function renderConsumer(component, props) {
 }
 
 it('renders a zero book price instead of a missing-price fallback', async () => {
-    const book = { id: 'zero', title: 'Free book', price: 0, inStock: false }
+    const book = { id: 'zero', title: 'Free book', price: 0, priceMinor: 0, currency: 'CZK', inStock: false }
     const root = await renderConsumer(BookCard, { book })
     expect(root.querySelector('.book-card__price').textContent).toContain(
         new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK' }).format(0)
     )
-    expect(book.price).toBe(0)
+    expect(book.priceMinor).toBe(0)
+})
+
+describe('a price typed in crowns, as whole geller', () => {
+    it.each([
+        ['249,90', 24990],
+        ['249.9', 24990],
+        [' 249 ', 24900],
+        ['0', 0],
+        ['999999,99', 99999999],
+    ])('reads %j as %i', (text, minor) => expect(crownsToMinor(text)).toBe(minor))
+
+    it.each(['199,999', '-1', '1e3', '', '249.', 'abc', '1000000', null])('refuses %j', (text) =>
+        expect(crownsToMinor(text)).toBeNull()
+    )
 })
 
 it('reuses locale initialization while formatting a catalogue and minor-unit totals', async () => {

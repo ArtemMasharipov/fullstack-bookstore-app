@@ -34,6 +34,8 @@ const BOOK = {
     category: 'Fiction',
     description: 'Román',
     price: 249.9,
+    priceMinor: 24990,
+    currency: 'CZK',
     image: 'https://example.com/krakatit.jpg',
     inStock: false,
 }
@@ -238,7 +240,8 @@ describe('BookFormDialog', () => {
         await choose(cs.admin.bookForm.author, 'Čapek, Karel')
         await type(cs.admin.bookForm.year, '1924')
         await choose(cs.admin.bookForm.category, 'Fiction')
-        await type(fill(cs.common.priceLabel, { currency: 'CZK' }), '249.90')
+        // A Czech decimal comma, read as whole geller without float arithmetic
+        await type(fill(cs.common.priceLabel, { currency: 'CZK' }), '249,90')
         await save()
 
         await vi.waitFor(() => expect(events).toContainEqual(['saved', created, true]))
@@ -247,7 +250,7 @@ describe('BookFormDialog', () => {
             authorId: 'a1',
             publicationYear: 1924,
             category: 'Fiction',
-            price: 249.9,
+            priceMinor: 24990,
             inStock: true,
         })
         expect(events).toContainEqual(['open', false])
@@ -268,7 +271,7 @@ describe('BookFormDialog', () => {
             publicationYear: 1924,
             category: 'Fiction',
             description: 'Román',
-            price: 199.9,
+            priceMinor: 19990,
             image: 'https://example.com/krakatit.jpg',
             inStock: false,
         })

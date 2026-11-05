@@ -128,6 +128,7 @@ import { authorsApi } from '@/services/api/authorsApi'
 import { booksApi } from '@/services/api/booksApi'
 import { BOOK_CATEGORIES } from '@/utils/constants/app'
 import { resolveErrorKey } from '@/utils/errorResolver'
+import { crownsToMinor } from '@/utils/money'
 import { nextTick, reactive, ref, useId, watch } from 'vue'
 
 /**
@@ -158,15 +159,8 @@ const authorsFailed = ref(false)
 const returnFocus = useReturnFocus()
 
 const currentYear = () => new Date().getFullYear()
-const isPrice = (value) => {
-    const price = Number(value)
-    return (
-        Number.isFinite(price) &&
-        price >= 0 &&
-        price <= 999999.99 &&
-        Math.abs(Math.round(price * 100) - price * 100) < 1e-6
-    )
-}
+// The price is typed in crowns and sent in whole geller (crownsToMinor)
+const isPrice = (value) => crownsToMinor(value) !== null
 const isImage = (value) => DATA_IMAGE.test(value) || (/^https:\/\/\S+$/.test(value) && value.length <= 2048)
 
 // The rule of each field, as one message: shown when the field breaks it, here or at the API
@@ -215,7 +209,7 @@ function body() {
         publicationYear: Number(form.publicationYear),
         category: form.category,
         ...(description && { description }),
-        price: Number(form.price),
+        priceMinor: crownsToMinor(form.price),
         ...(image && { image }),
         inStock: form.inStock,
     }
@@ -229,7 +223,7 @@ function reset() {
         publicationYear: book ? String(book.publicationYear) : '',
         category: book?.category ?? null,
         description: book?.description ?? '',
-        price: book ? String(book.price) : '',
+        price: book ? String(book.priceMinor / 100) : '',
         image: book?.image ?? '',
         inStock: book?.inStock ?? true,
     })
@@ -278,7 +272,11 @@ async function save() {
         close()
     } catch (error) {
         if (error?.fields) {
-            for (const [field, code] of Object.entries(error.fields)) errors[field] = serverMessage(field, code)
+            for (const [apiField, code] of Object.entries(error.fields)) {
+                // The API names the price priceMinor; the form shows it in the price field
+                const field = apiField === 'priceMinor' ? 'price' : apiField
+                errors[field] = serverMessage(field, code)
+            }
             await showSummary(t('admin.form.summary'))
         } else {
             await showSummary(t(resolveErrorKey(error)))

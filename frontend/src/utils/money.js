@@ -27,6 +27,17 @@ export function formatPrice(price, language = locale.value) {
     return currencyFormat(language, CURRENCY_CODE).format(price)
 }
 
+/**
+ * A price someone typed in crowns ("249,90", "249.9", " 249 ") as whole geller, or null when it is not one: at most
+ * six digits of crowns and two of geller, after a decimal comma or point. Read from the text, not multiplied as a
+ * float, so 249,90 never becomes 24989.
+ */
+export function crownsToMinor(text) {
+    const match = /^(\d{1,6})(?:[.,](\d{1,2}))?$/.exec(String(text ?? '').trim())
+    if (!match) return null
+    return Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0'))
+}
+
 /** Format a server amount in minor units (geller); anything but an integer is not an amount. */
 export function formatMoney(amount, currency = CURRENCY_CODE, language = locale.value) {
     if (!Number.isInteger(amount)) return t('common.notAvailable')

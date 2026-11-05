@@ -331,10 +331,14 @@ for (const locale of ['cs', 'en']) {
         await createForm.getByLabel(words.admin.bookForm.category, { exact: true }).focus()
         await page.keyboard.press('Enter')
         await page.getByRole('option', { name: 'Fiction', exact: true }).click()
-        await createForm.getByLabel(priceLabel, { exact: true }).fill('249.90')
+        await createForm
+            .getByLabel(priceLabel, { exact: true })
+            .pressSequentially(locale === 'cs' ? '249,90' : '249.90')
         const created = answerOf(page, 'POST', '/books')
         await createForm.getByRole('button', { name: words.admin.form.save }).click()
         expect((await created).status()).toBe(201)
+        expect((await created).request().postDataJSON()).toMatchObject({ priceMinor: 24990 })
+        expect((await created).request().postDataJSON()).not.toHaveProperty('price')
         const id = (await (await created).json()).data.id
         await expect(page.getByText(fill(words.admin.books.created, { title }))).toBeVisible()
 
@@ -344,6 +348,8 @@ for (const locale of ['cs', 'en']) {
             publicationYear: 1925,
             category: 'Fiction',
             price: 249.9,
+            priceMinor: 24990,
+            currency: 'CZK',
             inStock: true,
             author: { firstName: 'Karel', lastName: 'Čapek' },
         })
@@ -358,7 +364,7 @@ for (const locale of ['cs', 'en']) {
         await editForm.getByRole('button', { name: words.admin.form.save }).click()
         expect((await replaced).status()).toBe(200)
         await expect(page.getByText(fill(words.admin.books.updated, { title }))).toBeVisible()
-        expect((await stored()).price).toBe(199.9)
+        expect(await stored()).toMatchObject({ price: 199.9, priceMinor: 19990, currency: 'CZK' })
 
         // Stock
         const stocked = answerOf(page, 'PATCH', `/books/${id}/stock`)

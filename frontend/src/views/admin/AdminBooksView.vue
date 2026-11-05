@@ -58,7 +58,7 @@
             <template #item.author="{ item }">
                 {{ item.author ? `${item.author.firstName} ${item.author.lastName}` : t('common.notAvailable') }}
             </template>
-            <template #item.price="{ item }">{{ formatPrice(item.price) }}</template>
+            <template #item.price="{ item }">{{ formatMoney(item.priceMinor, item.currency) }}</template>
             <template #item.inStock="{ item }">
                 <v-switch
                     :model-value="item.inStock"
@@ -117,7 +117,7 @@ import { useNotifications } from '@/composables/useNotifications'
 import { useReturnFocus } from '@/composables/useReturnFocus'
 import { t } from '@/i18n'
 import { booksApi } from '@/services/api/booksApi'
-import { formatPrice } from '@/utils'
+import { formatMoney } from '@/utils'
 import { BOOK_CATEGORIES } from '@/utils/constants/app'
 import { resolveErrorKey } from '@/utils/errorResolver'
 import { debounce } from '@/utils/helpers/debounce'

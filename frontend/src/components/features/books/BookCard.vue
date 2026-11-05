@@ -20,7 +20,7 @@
             <p v-if="book.author?.name" class="book-card__author text-medium-emphasis">{{ book.author.name }}</p>
 
             <div class="book-card__meta">
-                <span class="book-card__price text-price">{{ formatPrice(book.price) }}</span>
+                <span class="book-card__price text-price">{{ formatMoney(book.priceMinor, book.currency) }}</span>
                 <v-chip :color="book.inStock ? 'success' : undefined" size="small" variant="tonal">
                     {{ t(book.inStock ? 'catalog.inStock' : 'catalog.outOfStock') }}
                 </v-chip>
@@ -48,7 +48,7 @@
 import { t } from '@/i18n'
 import { localeRoute } from '@/router/locale'
 import { useCartStore } from '@/stores'
-import { formatPrice } from '@/utils'
+import { formatMoney } from '@/utils'
 import { computed, ref } from 'vue'
 import BookCover from './BookCover.vue'
 

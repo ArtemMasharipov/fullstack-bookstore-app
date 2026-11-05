@@ -56,7 +56,7 @@
                     </div>
 
                     <div class="book-details__price text-price text-h4 font-weight-bold mb-4">
-                        {{ formatPrice(book.price) }}
+                        {{ formatMoney(book.priceMinor, book.currency) }}
                     </div>
 
                     <p v-if="book.description" class="text-body-1 text-medium-emphasis mb-6">
@@ -129,7 +129,7 @@ import { localeRoute } from '@/router/locale'
 import ErrorMessage from '@/components/ui/ErrorMessage.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { useBooksStore, useCartStore, useShopConfigStore } from '@/stores'
-import { formatMoney, formatPrice } from '@/utils'
+import { formatMoney } from '@/utils'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import BookCover from './BookCover.vue'

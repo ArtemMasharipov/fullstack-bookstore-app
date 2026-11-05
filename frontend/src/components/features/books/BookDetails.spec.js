@@ -21,7 +21,10 @@ import BookDetails from './BookDetails.vue'
 const BOOK = {
     id: 'b1',
     title: 'Babička',
+    // Unlike price × 100 on purpose: the page shows priceMinor
     price: 299,
+    priceMinor: 31900,
+    currency: 'CZK',
     inStock: true,
     author: { name: 'Božena Němcová' },
     description: 'A novel.',
@@ -103,6 +106,14 @@ describe('BookDetails', () => {
         const root = await mount()
 
         await vi.waitFor(() => expect(root.querySelector('.book-details__price.text-price')).not.toBeNull())
+    })
+
+    it('shows the price from whole geller', async () => {
+        const root = await mount()
+
+        await vi.waitFor(() =>
+            expect(root.querySelector('.book-details__price').textContent).toContain(formatMoney(31900, 'CZK'))
+        )
     })
 
     it('explains a missing book by its error code and offers Try again', async () => {

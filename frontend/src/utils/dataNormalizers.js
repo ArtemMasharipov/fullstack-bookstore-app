@@ -141,6 +141,9 @@ export const normalizeBook = (book) => {
         category: normalizeString(book.category),
         description: normalizeString(book.description),
         price: normalizePrice(book.price),
+        // The price in whole geller and its currency: what the pages show
+        priceMinor: Number.isInteger(book.priceMinor) ? book.priceMinor : undefined,
+        currency: normalizeString(book.currency) || undefined,
         image: normalizeString(book.image),
         inStock: normalizeBoolean(book.inStock),
         createdAt: normalizeDate(book.createdAt),

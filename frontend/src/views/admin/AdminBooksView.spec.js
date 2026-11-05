@@ -22,7 +22,7 @@ import { activateLocale, i18n, loadLocale } from '@/i18n'
 import en from '@/i18n/locales/en.json'
 import cs from '@/i18n/locales/cs.json'
 import { buildRoutes } from '@/router/buildRoutes'
-import { formatPrice } from '@/utils'
+import { formatMoney } from '@/utils'
 import AdminBooksView from './AdminBooksView.vue'
 
 const fill = (text, values) => Object.entries(values).reduce((s, [k, v]) => s.replace(`{${k}}`, v), text)
@@ -45,6 +45,8 @@ function pageOf(page, { total = 24 } = {}) {
             category: 'Fiction',
             description: '',
             price: 199,
+            priceMinor: 19900,
+            currency: 'CZK',
             image: '',
             inStock: true,
         })),
@@ -157,7 +159,7 @@ describe('AdminBooksView', () => {
         expect(books.fetchAll).toHaveBeenCalledWith({ page: 2, limit: 10, sortBy: '-createdAt' })
         await vi.waitFor(() => expect(rows()).toHaveLength(10))
         const first = rows()[0].textContent
-        for (const text of ['Kniha 2.1', 'Karel Čapek', 'Fiction', '1920', formatPrice(199)]) {
+        for (const text of ['Kniha 2.1', 'Karel Čapek', 'Fiction', '1920', formatMoney(19900, 'CZK')]) {
             expect(first).toContain(text)
         }
         expect(byLabel(fill(cs.admin.books.stockToggle, { title: 'Kniha 2.1' }))).not.toBeNull()
