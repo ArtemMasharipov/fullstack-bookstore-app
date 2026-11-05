@@ -205,6 +205,11 @@ for (const locale of ['cs', 'en']) {
             await page.keyboard.press('Enter')
             const confirmation = page.getByRole('dialog', { name: words.admin.authors.deleteTitle })
             await expect(confirmation).toBeVisible()
+            // Vuetify closes a dialog on Escape only once it marks it the top overlay, in a timer after it shows; the
+            // dialog takes the focus after its opening transition. A keyboard user presses Escape in a focused dialog.
+            await expect
+                .poll(() => confirmation.evaluate((dialog) => dialog.contains(document.activeElement)))
+                .toBe(true)
             await page.keyboard.press('Escape')
             await expect(confirmation).toBeHidden()
             expect((await page.request.get(`/api/v1/authors/${id}`)).status()).toBe(200)
