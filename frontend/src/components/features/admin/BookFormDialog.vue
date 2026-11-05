@@ -59,11 +59,10 @@
                             />
                         </v-col>
                         <v-col cols="12" sm="6">
+                            <!-- Text, read by crownsToMinor: a number field in a browser of another language drops the decimal comma -->
                             <v-text-field
                                 v-model="form.price"
-                                type="number"
-                                step="0.01"
-                                min="0"
+                                inputmode="decimal"
                                 :label="t('common.priceLabel', { currency: 'CZK' })"
                                 :error-messages="errors.price"
                                 :aria-invalid="errors.price ? 'true' : undefined"

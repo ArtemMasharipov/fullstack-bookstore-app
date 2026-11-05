@@ -25,6 +25,11 @@ const test = base.extend({
     ],
 })
 
+// A browser reads what is typed into a number field by its own language, not the page's: an English one, like the CI
+// runner's, drops the decimal comma of 249,90. Every run of these forms uses an English browser, so a Czech price
+// typed with a comma is checked the same way on every machine.
+test.use({ launchOptions: { args: ['--lang=en-US'] } })
+
 // The admin's book forms against the API. These tests change the catalogue, so playwright.config.js runs them in a
 // project of their own after every other test: the catalogue tests count the seeded books and look for the newest.
 const dictionaries = {
