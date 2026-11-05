@@ -3,13 +3,15 @@
  *
  * Book prices are stored in crowns as floats. migrateUp() adds priceMinor, the
  * same price in whole geller (1/100 CZK), next to price, which stays as it is:
- * the running app and an older one keep reading price, so either works on the
- * migrated books, and migrateDown() only removes priceMinor again. A marker in
+ * the previous release keeps reading price, and the current one reads priceMinor
+ * with a fallback for legacy books. migrateDown() only removes priceMinor. A marker in
  * the migrations collection records that every book had priceMinor after up.
  * Prices that are not whole geller are refused before anything is written.
  *
- * Every function works on the books of a mongoose connection, through its
- * native collections: priceMinor is not part of the Book schema yet.
+ * Stop older writers and rerun migrateUp() before switching canonical reads on,
+ * including after a rollback: an older writer can leave an existing priceMinor stale.
+ * Every function uses native collections to include legacy documents and preserve
+ * their BSON types in backups.
  */
 
 import fs from "node:fs";

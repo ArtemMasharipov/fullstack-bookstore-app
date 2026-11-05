@@ -15,10 +15,15 @@ charge a hundred times the price.
 Migrate in two steps, expand and then contract.
 
 - **Expand.** `npm run migrate:book-prices -- up` adds `priceMinor`, the price in whole geller, next to `price`, which
-  stays as it is. The running application keeps reading `price`, so it works the same before, during and after the
-  migration, and so does the previous release. `down` removes `priceMinor` again; `price` was never changed.
-- **Contract, later.** The application switches its reads and writes to `priceMinor` in its own change, and only
-  after that release proves itself is `price` removed.
+  stays as it is. The release before the switch keeps reading `price`, so it works the same before, during and after
+  the migration. `down` removes `priceMinor` again; the migration never changes `price`.
+- **Switch reads and writes.** The application reads integer `priceMinor`, falling back to `price` only for legacy
+  books without it. Book writes and seeding store both fields together. API views return `priceMinor` and `currency`
+  alongside legacy `price` for one release; the frontend displays and submits the minor amount. The admin form
+  accepts crowns with up to two decimal places and converts the text to geller. Sorting keeps the crowns field and
+  its index for now, so books written by the previous release still sort correctly.
+- **Contract, later.** Remove the legacy field, its API compatibility and the fallback only after the switch has
+  proved itself; move the sort and its index to `priceMinor` in that change.
 - `preflight`, also run by `up`, refuses prices that are not whole geller: not a finite number, negative, above
   999999.99, or more precise than a geller. Nothing is written then. A marker in the `migrations` collection records
   that every book had its `priceMinor` after `up`.
@@ -33,8 +38,9 @@ Migrate in two steps, expand and then contract.
 - `up` and `down` can run again at any time. A book added or repriced between `up` and the switch gets its
   `priceMinor` on the next `up`; a book whose price changes while `up` runs is left out, reported and covered by the
   next run.
-- Until the switch, `priceMinor` is a copy that nothing reads. The switch must run `up` once more before it starts
-  reading it.
+- Before the switch, `priceMinor` is an unread copy. Stop the previous release's writers and run `up` once more
+  before starting canonical reads. The same applies after a rollback: the older release can change `price` without
+  refreshing an existing `priceMinor`, so rerun `up` before switching forward. Old and new writers cannot run together.
 - Orders are not migrated: current orders already store geller, and older orders are converted when they are read
   (`services/orderView.js`).
 - Remote databases are out of reach of this command by design. Migrating real data elsewhere needs its own backup,

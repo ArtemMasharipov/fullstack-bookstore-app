@@ -74,7 +74,7 @@ timestamps; `Session` has `createdAt`.
 | Model | Key fields | Relations |
 | --- | --- | --- |
 | `Author` | `firstName`, `lastName`, `bio`, `birthYear` (1000 through the year at validation time), `country`, `website` | Books are queried through `Book.author` |
-| `Book` | `title`, `publicationYear` (1450 up to the current year), `category`, `description`, `price`, `image`, `inStock` | `author` (an `Author`, required) |
+| `Book` | `title`, `publicationYear` (1450 up to the current year), `category`, `description`, `priceMinor` (whole geller), `price` (legacy crowns), `image`, `inStock` | `author` (an `Author`, required) |
 | `User` | `username` and `email` (both unique), `password` (Argon2id PHC or legacy bcrypt hash, left out of query results by default), `role` (`user` or `admin`; a stored older `moderator` reads as `user`), `isActive`, `lastLogin` | none |
 | `Session` | `jti` (unique, the id in the token), `expiresAt` (a TTL index deletes the session then) | `user` (a `User`) |
 | `Cart` | `items` (`book`, `quantity` from 1 to 99) | `user` (a `User`, one cart each); `items.book` (a `Book`) |
@@ -87,8 +87,12 @@ timestamps; `Session` has `createdAt`.
   Author reads validate their query, combine literal name search with the country filter and sort ties by id.
   Author writes validate strict bodies and replace optional fields; deleting an author that has books answers
   409 `AUTHOR_HAS_BOOKS` with their count, so it never silently cascades through the catalogue.
-- Book prices are stored in crowns (`price`). `npm run migrate:book-prices -- up` adds the same price in whole geller
-  (`priceMinor`) next to it, which nothing reads yet; the switch comes later
+- Book reads use whole geller (`priceMinor`), falling back to crowns (`price`) only for a legacy book without an
+  integer `priceMinor`. Book writes and seeding store both fields together for one release. API views include
+  `priceMinor`, `currency: "CZK"` and legacy `price`; the frontend displays the minor amount and submits it from the
+  admin form, where a person still types crowns. Sorting stays on `price` while legacy books remain supported.
+  `npm run migrate:book-prices -- up` backfills or refreshes `priceMinor` before the switch. After a rollback, stop
+  the older writers and run `up` again before switching forward; old and new writers must not run together
   ([decision 0008](decisions/0008-book-prices-in-geller.md)).
 - A cart keeps no prices. `services/cartService.js` prices it on every request from the books as they are now, in
   whole geller (1/100 CZK), and `services/pricing.js` builds the quote: lines of deleted or out-of-stock books do not
