@@ -106,14 +106,20 @@ description as plain text. Equal sort values are ordered by id, so pages never o
 `{ success, data, pagination: { page, limit, total, pages } }`.
 
 Every book read answers the same book view: `id`, `title`, `author` (`{ id, firstName, lastName }`, with `bio` on
-`GET /books/:id`; `null` if the author no longer exists), `publicationYear`, `category`, `description`, `price` (CZK,
-in crowns), `image`, `inStock`, `createdAt` and `updatedAt`. `/books/category/:category` lists books in stock of
+`GET /books/:id`; `null` if the author no longer exists), `publicationYear`, `category`, `description`, `priceMinor`
+(integer geller, 1/100 CZK), `currency` (`"CZK"`), legacy `price` (crowns), `image`, `inStock`, `createdAt` and
+`updatedAt`. For example, 249.90 Kč is `{ priceMinor: 24990, currency: "CZK", price: 249.9 }`. Legacy `price` remains
+for one release so cached clients keep working. `/books/category/:category` lists books in stock of
 exactly that category.
 
 Book writes use that same view: POST answers 201, PUT and stock PATCH answer 200, without a message or Mongoose
 fields; DELETE answers 204 with no body. POST and PUT take a strict body: `title` (trimmed, 2–100), `authorId`,
-`publicationYear` (JSON integer, 1450 through the current year), `category` (1–50), `price` (0–999999.99, at most two
-decimals), optional `description` (up to 1000) and `image`, and `inStock` (boolean, defaults to true).
+`publicationYear` (JSON integer, 1450 through the current year), `category` (1–50), `priceMinor` (JSON integer,
+0–99999999), optional `description` (up to 1000) and `image`, and `inStock` (boolean, defaults to true).
+For one release a cached client can send legacy `price` instead (crowns, 0–999999.99, at most two decimals).
+Exactly one of `priceMinor` or `price` is required; sending both or neither answers 400 `VALIDATION_FAILED`.
+The service writes both stored fields together. Sorting by `price` keeps using the crowns field while legacy books
+are supported; its sort and index move to `priceMinor` when the legacy field is removed.
 The cover is an `https://` URL up to 2048 characters or a PNG/JPEG/WebP/SVG data URI up to 200000 characters.
 PUT replaces the book, removing omitted description/image and resetting omitted inStock to true. The stock PATCH
 takes only `{ inStock: boolean }`. An unknown author answers 400 `VALIDATION_FAILED` with `authorId: "not_found"`;
@@ -151,8 +157,9 @@ or a stored `books` array. List and detail counts derive from `Book.author`; a l
   (default `-publicationYear`), optional `inStock=true|false`. A book carries the same view as the book endpoints.
 - `GET /authors/:id/stats`: `{ success, data: { author: AuthorView, statistics } }`. Statistics contains numeric
   totalBooks, booksInStock and booksOutOfStock; categories is an array of strings. publicationYears
-  `{ earliest, latest }` contains numbers or null, and pricing `{ lowest, highest, average }` contains numeric
-  extrema or null and a two-decimal average string or null. Prices are CZK. This endpoint accepts no query parameters.
+  `{ earliest, latest }` contains numbers or null. Pricing `{ currency, lowest, highest, average }` uses `"CZK"`
+  and whole geller; extrema and the rounded average are integers, or null when the author has no books.
+  This endpoint accepts no query parameters.
 
 All params and query values are validated. A malformed id, unknown query, repeated value, bracket object or invalid
 sort/boolean/limit answers 400 `VALIDATION_FAILED` with fields; a well-formed missing id answers 404 `NOT_FOUND`.
