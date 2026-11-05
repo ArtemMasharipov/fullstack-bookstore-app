@@ -75,7 +75,7 @@
 
             <v-divider class="my-4" color="white" opacity="0.2" />
 
-            <div class="text-caption text-center text-white" style="opacity: 0.7">
+            <div class="text-caption text-center text-white">
                 {{ t('footer.copyright', { year: currentYear }) }}
             </div>
         </v-container>

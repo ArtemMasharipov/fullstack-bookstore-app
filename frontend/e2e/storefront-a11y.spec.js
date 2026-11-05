@@ -113,6 +113,18 @@ for (const locale of ['cs', 'en']) {
         await expect(page.locator('.book-card')).toHaveCount(12)
     })
 
+    test(`${locale}: the dark catalogue footer has readable copyright`, async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 })
+        await page.goto(prefix + '/books')
+        await expect(page.locator('.book-card')).toHaveCount(12)
+        await page.getByRole('button', { name: dict.nav.darkMode, exact: true }).click()
+        await expect(page.locator('.v-application')).toHaveClass(/v-theme--dark/)
+        await page.evaluate(() => document.fonts.ready)
+
+        const result = await new AxeBuilder({ page }).include('footer').withRules(['color-contrast']).analyze()
+        expect(result.violations).toEqual([])
+    })
+
     for (const titleKind of ['ordinary', 'long']) {
         test(`${locale}: ${titleKind} book title and purchase actions reflow at 320 px`, async ({ page, request }) => {
             const books = await booksOf(request)
