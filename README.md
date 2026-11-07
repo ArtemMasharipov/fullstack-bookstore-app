@@ -60,7 +60,7 @@ Known limitations:
 ## Tech stack
 
 - **Frontend:** Vue 3, Vuetify 3, Pinia 3, Vue Router 4, Vite 6, Axios 1.
-- **Backend:** Node.js 24.7+ within 24.x, Express 4, Mongoose 8, MongoDB, JWT (`jose` 6.2.12), native Argon2id, bcrypt 6 for legacy verification, Helmet 8.
+- **Backend:** Node.js 24.22.1+ within 24.x, Express 4, Mongoose 8, MongoDB, JWT (`jose` 6.2.12), native Argon2id, bcrypt 6 for legacy verification, Helmet 8.
 - **Tests:** Vitest 4.1.11, Supertest 7.3.0, mongodb-memory-server 11.3.0, happy-dom 20.14.6, Playwright 1.63.0.
 - **Tooling:** ESLint 7 and Prettier 2 (frontend), GitHub Actions.
 

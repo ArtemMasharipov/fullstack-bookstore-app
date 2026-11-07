@@ -4,7 +4,7 @@
 ## Runtime security verification — 7 November 2026
 
 The verified Windows runtime is **Node 24.22.1 / bundled npm 11.19.1**. Both package engines declare
->=24.22.1 <25; .nvmrc and CI select the exact version. This declaration does not add a startup version guard.
+`>=24.22.1 <25`; .nvmrc and CI select the exact version. This declaration does not add a startup version guard.
 Other Node majors remain unsupported. Linux acceptance also passed on this runtime, as recorded below.
 
 [The official security release](https://nodejs.org/en/blog/release/v24.22.1) addresses the October runtime
