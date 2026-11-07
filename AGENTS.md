@@ -4,7 +4,7 @@ Rules for coding agents and people working in this repository. The README has th
 
 ## Environment
 
-- Node.js 24 (`.nvmrc` pins 24.21.0). Other major versions require separate compatibility verification and are not supported.
+- Node.js 24.22.1 or newer within 24.x (`.nvmrc` pins 24.22.1). Other major versions require separate compatibility verification and are not supported.
 - Two npm packages with their own lock files: `backend/` and `frontend/`. Install each with `npm ci`.
 
 ## Commands

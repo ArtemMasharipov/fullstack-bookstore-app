@@ -107,19 +107,19 @@ Run each code block from the repository root; the install block starts one level
 
 ### Requirements
 
-- **Node.js 24.7 or newer within 24.x** (the backend requires native Argon2id). Use **24.21.0**, pinned in `.nvmrc`
+- **Node.js 24.22.1 or newer within 24.x** (the security baseline; the backend uses native Argon2id). Use **24.22.1**, pinned in `.nvmrc`
   and CI. Other Node major versions have not completed compatibility verification and are not supported.
   Install with fnm (`fnm install`, then `fnm use`; both read `.nvmrc`), nvm-windows
-  (`nvm install 24.21.0`, then `nvm use 24.21.0`) or volta (`volta install node@24.21.0`);
-  `node -v` must print `v24.21.0` for the verified setup.
-- **Docker** (optional) replaces a local Node 24: run npm in a `node:24` container, with `node_modules` in its own
+  (`nvm install 24.22.1`, then `nvm use 24.22.1`) or volta (`volta install node@24.22.1`);
+  `node -v` must print `v24.22.1` for the verified setup, with its bundled npm **11.19.1**.
+- **Docker** (optional) replaces a local Node 24: run npm in a `node:24.22.1` container, with `node_modules` in its own
   volume (native packages built on the host do not load on Linux). From the repository root; in Git
   Bash on Windows prefix the command with `MSYS_NO_PATHCONV=1` and write `$PWD` as a full path such as
   `D:/path/to/fullstack-bookstore-app`:
   ```bash
   docker run --rm \
     -v "$PWD/backend:/app" -v bookstore-backend-nm:/app/node_modules \
-    -w /app node:24-bookworm-slim \
+    -w /app node:24.22.1-bookworm-slim \
     sh -c "apt-get update -qq && apt-get install -y -qq --no-install-recommends libcurl4 && npm ci && npm test"
   ```
   `libcurl4` is there because the slim image lacks it and the tests' `mongod` will not start without it. The frontend

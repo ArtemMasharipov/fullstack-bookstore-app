@@ -30,7 +30,8 @@ revision, revokes sessions, signs, commits and postchecks. A signing failure lea
 does not restore old credentials or clear an interrupted reservation; operator recovery remains separate work.
 
 This supersedes decision 0001's current explanation of the SlowBuffer dependency. That historical record is
-retained. Support remains Node 24, with 24.21.0 pinned for verification; removing one compatibility blocker does
+retained. Support remains Node 24; 24.21.0 was pinned when this decision was verified. The current verified
+security baseline is pinned in [`.nvmrc`](../../.nvmrc). Removing one compatibility blocker does
 not validate bcrypt/Argon2id/MongoDB/bundlers or the full application on another major. Node 26 compatibility,
 support metadata and CI coverage require their own decision and verification. Engines and the CI matrix do
 not change here.
