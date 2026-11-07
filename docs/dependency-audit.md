@@ -5,7 +5,7 @@
 
 The verified Windows runtime is **Node 24.22.1 / bundled npm 11.19.1**. Both package engines declare
 >=24.22.1 <25; .nvmrc and CI select the exact version. This declaration does not add a startup version guard.
-Other Node majors remain unsupported. Linux acceptance is pending and is recorded separately before completion.
+Other Node majors remain unsupported. Linux acceptance also passed on this runtime, as recorded below.
 
 [The official security release](https://nodejs.org/en/blog/release/v24.22.1) addresses the October runtime
 findings. Its distribution index dates it 20 October while the release note is dated 21 October; the conservative
@@ -22,6 +22,12 @@ and **147 end-to-end tests** without per-test retries after provisioning the loc
 browser-launch failure (131 failed, 16 not run) is preserved; it was caused by a missing global browser cache. The embedded HTML report has 147 unique passed results,
 with no retry, flaky, skipped or error result. All 61 production distribution files retain their old-runtime
 bytes. No new visual/performance run was needed for identical assets.
+
+Linux: **1118/1118 backend tests**, with no remaining mongod process, plus clean frontend install, dependency
+tree and production build. The official Linux runtime archive ran on the previously pinned Debian base with
+the existing 16-CPU/7191334912-byte Docker host budget and no CPU/memory/worker override. Its Node/npm child
+chain was verified as 24.22.1/11.19.1; the base image's older executable did not run candidate tests. All 61 Linux
+production assets match the Windows candidate. Both Linux lock files retained their bytes after clean installs.
 
 Both locks retain every existing dependency node/version/resolved URL/integrity value; only root engine
 metadata changed. No dependency resolver update or npm dependency upgrade was performed.
