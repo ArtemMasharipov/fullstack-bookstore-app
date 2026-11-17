@@ -6,8 +6,8 @@
 
         <!-- A failed load says why, by its error code, and offers to try again -->
         <error-message
-            v-else-if="loadError"
-            :error="loadError"
+            v-else-if="currentBookError"
+            :error="currentBookError"
             :on-retry="load"
             :closable="false"
             class="mx-auto my-6"
@@ -131,7 +131,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { useBooksStore, useCartStore, useShopConfigStore } from '@/stores'
 import { formatMoney } from '@/utils'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import BookCover from './BookCover.vue'
 
 const props = defineProps({
@@ -145,9 +145,9 @@ const booksStore = useBooksStore()
 const cartStore = useCartStore()
 const shop = useShopConfigStore()
 
-const { currentBook, currentBookLoading } = storeToRefs(booksStore)
+// The store keeps the loading and the error of the latest request only: an earlier book's answer changes neither
+const { currentBook, currentBookLoading, currentBookError } = storeToRefs(booksStore)
 
-const loadError = ref(null)
 const quantity = ref(1)
 const adding = ref(false)
 
@@ -159,14 +159,8 @@ const breadcrumbItems = computed(() => [
     { title: book.value?.title, disabled: false, active: true },
 ])
 
-const load = async () => {
-    loadError.value = null
-    try {
-        await booksStore.fetchBookById(props.bookId)
-    } catch (error) {
-        loadError.value = error
-    }
-}
+// The page shows a failure from the store's error; the error thrown on is not needed here
+const load = () => booksStore.fetchBookById(props.bookId).catch(() => {})
 
 const handleAddToCart = async () => {
     if (!book.value.inStock || adding.value) return
@@ -179,8 +173,10 @@ const handleAddToCart = async () => {
     }
 }
 
+// The route reuses this page for another book: a new id loads that book
+watch(() => props.bookId, load, { immediate: true })
+
 onMounted(() => {
-    load()
     shop.load()
 })
 </script>

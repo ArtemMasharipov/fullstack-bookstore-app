@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, h } from 'vue'
+import { createApp, h, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { createPinia, setActivePinia } from 'pinia'
 import { createVuetify } from 'vuetify'
@@ -65,14 +65,16 @@ afterEach(() => {
     vi.unstubAllGlobals()
 })
 
-async function mount(language = 'cs') {
+async function mount(language = 'cs', bookId = ref('b1')) {
     await loadLocale(language)
     activateLocale(language)
     const router = testRouter()
     await router.push(language === 'en' ? '/en/books/b1' : '/books/b1')
     const root = document.createElement('div')
     document.body.append(root)
-    app = createApp({ render: () => h(components.VApp, null, { default: () => h(BookDetails, { bookId: 'b1' }) }) })
+    app = createApp({
+        render: () => h(components.VApp, null, { default: () => h(BookDetails, { bookId: bookId.value }) }),
+    })
         .use(i18n)
         .use(createVuetify({ components, directives }))
         .use(router)
@@ -150,5 +152,41 @@ describe('BookDetails', () => {
 
         await vi.waitFor(() => expect(root.textContent).toContain(cs.book.outOfStock))
         expect(root.textContent).not.toContain('Přidat do košíku')
+    })
+
+    it('loads the book of a new id on the same page and shows it even when the previous one answers last', async () => {
+        let answerFirst, answerSecond
+        books.fetchById
+            .mockReturnValueOnce(new Promise((resolve) => (answerFirst = resolve)))
+            .mockReturnValueOnce(new Promise((resolve) => (answerSecond = resolve)))
+        const bookId = ref('b1')
+        const root = await mount('cs', bookId)
+
+        bookId.value = 'b2'
+        await vi.waitFor(() => expect(books.fetchById).toHaveBeenLastCalledWith('b2'))
+        answerSecond({ success: true, data: { ...BOOK, id: 'b2', title: 'Krakatit' } })
+        await vi.waitFor(() => expect(root.querySelector('h1')?.textContent).toContain('Krakatit'))
+        answerFirst({ success: true, data: BOOK })
+        await new Promise((resolve) => setTimeout(resolve))
+
+        expect(root.querySelector('h1').textContent).toContain('Krakatit')
+    })
+
+    it('does not show the failure of the previous book once the page moved on', async () => {
+        let refuseFirst, answerSecond
+        books.fetchById
+            .mockReturnValueOnce(new Promise((_, reject) => (refuseFirst = reject)))
+            .mockReturnValueOnce(new Promise((resolve) => (answerSecond = resolve)))
+        const bookId = ref('b1')
+        const root = await mount('cs', bookId)
+
+        bookId.value = 'b2'
+        await vi.waitFor(() => expect(books.fetchById).toHaveBeenLastCalledWith('b2'))
+        refuseFirst({ code: 'NOT_FOUND' })
+        await new Promise((resolve) => setTimeout(resolve))
+        answerSecond({ success: true, data: { ...BOOK, id: 'b2', title: 'Krakatit' } })
+
+        await vi.waitFor(() => expect(root.textContent).toContain('Krakatit'))
+        expect(root.textContent).not.toContain(cs.errors.NOT_FOUND)
     })
 })
