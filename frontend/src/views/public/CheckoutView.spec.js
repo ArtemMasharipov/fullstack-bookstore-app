@@ -363,10 +363,29 @@ describe('CheckoutView', () => {
         finish({ order, replayed: false })
         await new Promise((resolve) => setTimeout(resolve))
 
-        expect(cart.load).toHaveBeenCalledTimes(loads)
-        expect(notify.showSuccess).not.toHaveBeenCalled()
+        // The store reloads the cart and announces the order once; the earlier page itself does nothing
+        expect(cart.load).toHaveBeenCalledTimes(loads + 1)
+        expect(notify.showSuccess).toHaveBeenCalledTimes(1)
         expect(earlierPush).not.toHaveBeenCalled()
         expect(router.currentRoute.value.name).toBe('Checkout')
         expect(document.querySelector('[role="dialog"]')).not.toBeNull()
+    })
+
+    it('a visitor who left checkout and did not come back hears about the order but is not taken anywhere', async () => {
+        let finish
+        api.create.mockReturnValueOnce(new Promise((resolve) => (finish = resolve)))
+        await mount()
+        const push = vi.spyOn(router, 'push')
+        await fill()
+        submitButton().click()
+        await vi.waitFor(() => expect(api.create).toHaveBeenCalledTimes(1))
+
+        app.unmount()
+        finish({ order, replayed: false })
+
+        await vi.waitFor(() => expect(notify.showSuccess).toHaveBeenCalledTimes(1))
+        expect(notify.showSuccess.mock.calls[0][1]).toMatchObject({ messageKey: 'notifications.orderPlaced' })
+        await new Promise((resolve) => setTimeout(resolve))
+        expect(push).not.toHaveBeenCalled()
     })
 })

@@ -17,8 +17,10 @@ function newKey() {
     return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
 
-// The number of the current checkout. start() and forget() move it on: an answer that belongs to an earlier
-// checkout, or to an ended session, changes nothing, reloads no cart and says nothing
+// The numbers of the session and of the current checkout: forget() moves both, start() moves the checkout. An answer
+// of an ended session changes nothing and says nothing. An order an earlier checkout of the same session placed is
+// announced and reloads the cart, but leaves the new checkout's key and state as they are
+let session = 0
 let flow = 0
 
 /**
@@ -50,12 +52,15 @@ export const useCheckoutStore = defineStore('checkout', {
         /**
          * Places the order at the total the customer saw (geller)
          * @returns {Promise<object|null>} the order; null when it was not placed, and when this checkout is over
-         * before the answer (a new checkout or the end of the session): the server keeps an order it placed
+         * before the answer (a new checkout or the end of the session): the server keeps an order it placed, and
+         * within the same session the customer still hears about it
          */
         async submit(shippingAddress, expectedTotal) {
             if (this.status === 'submitting') return null
-            const started = flow
-            const current = () => started === flow
+            const startedSession = session
+            const startedFlow = flow
+            const sameSession = () => startedSession === session
+            const current = () => startedFlow === flow
             this.status = 'submitting'
             this.error = null
             this.fields = {}
@@ -63,17 +68,19 @@ export const useCheckoutStore = defineStore('checkout', {
 
             try {
                 const { order } = await orderApi.create({ shippingAddress, expectedTotal }, this.key)
-                if (!current()) return null
-                this.key = newKey()
-                this.status = 'idle'
+                if (!sameSession()) return null
+                if (current()) {
+                    this.key = newKey()
+                    this.status = 'idle'
+                }
                 await useCartStore().load()
-                if (!current()) return null
+                if (!sameSession()) return null
                 useNotifications().showSuccess(undefined, {
                     messageKey: 'notifications.orderPlaced',
                     sound: 'success',
                     icon: 'mdi-check-circle',
                 })
-                return order
+                return current() ? order : null
             } catch (error) {
                 if (!current()) return null
                 this.status = 'idle'
@@ -91,6 +98,7 @@ export const useCheckoutStore = defineStore('checkout', {
 
         /** After the session ends: empty at once; an answer still on its way belongs to the old session */
         forget() {
+            session++
             flow++
             this.$reset()
         },

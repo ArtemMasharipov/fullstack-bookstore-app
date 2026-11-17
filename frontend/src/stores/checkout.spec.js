@@ -163,7 +163,7 @@ describe('checkout store', () => {
         expect(notify.showSuccess).not.toHaveBeenCalled()
     })
 
-    it("keeps a new checkout's key when the previous checkout answers late", async () => {
+    it("announces an order of an earlier visit in the same session and reloads the cart, keeping the new visit's key", async () => {
         const previous = deferred()
         const next = deferred()
         api.create.mockReturnValueOnce(previous.promise).mockReturnValueOnce(next.promise)
@@ -175,17 +175,16 @@ describe('checkout store', () => {
         previous.resolve({ order, replayed: false })
         const result = await late
 
+        expect(notify.showSuccess).toHaveBeenCalledTimes(1)
+        expect(notify.showSuccess.mock.calls[0][1]).toMatchObject({ messageKey: 'notifications.orderPlaced' })
+        expect(cart.load).toHaveBeenCalledTimes(1)
         expect(checkout.key).toBe(key)
         expect(checkout.status).toBe('submitting')
         expect(result).toBeNull()
-        expect(cart.load).not.toHaveBeenCalled()
-        expect(notify.showSuccess).not.toHaveBeenCalled()
 
         next.resolve({ order: { ...order, id: 'o2' }, replayed: false })
         expect((await placing).id).toBe('o2')
         expect(keyOfCall(1)).toBe(key)
-        expect(cart.load).toHaveBeenCalledTimes(1)
-        expect(notify.showSuccess).toHaveBeenCalledTimes(1)
     })
 
     it('ignores a refusal that belongs to a previous checkout', async () => {
