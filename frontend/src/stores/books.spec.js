@@ -144,4 +144,35 @@ describe('books store', () => {
         expect(store.error).toBeNull()
         expect(store.loading).toBe(false)
     })
+
+    it('keeps the newest book when an older one answers last', async () => {
+        const first = deferred()
+        const second = deferred()
+        books.fetchById.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
+        const store = useBooksStore()
+
+        const older = store.fetchBookById('b1')
+        const newer = store.fetchBookById('b2')
+        second.resolve({ success: true, data: book('b2', 'Krakatit') })
+        await newer
+        first.resolve({ success: true, data: book('b1', 'Babička') })
+        await older
+
+        expect(store.currentBook.id).toBe('b2')
+        expect(store.currentBookLoading).toBe(false)
+    })
+
+    it('ignores a failed older book while the newest is on its way', async () => {
+        const first = deferred()
+        books.fetchById.mockReturnValueOnce(first.promise).mockReturnValueOnce(new Promise(() => {}))
+        const store = useBooksStore()
+
+        const older = store.fetchBookById('b1')
+        store.fetchBookById('b2')
+        first.reject({ code: 'NOT_FOUND' })
+        await older.catch(() => {})
+
+        expect(store.currentBookError).toBeNull()
+        expect(store.currentBookLoading).toBe(true)
+    })
 })

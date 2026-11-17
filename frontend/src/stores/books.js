@@ -29,8 +29,9 @@ export const useBooksStore = defineStore('books', {
         loading: false,
         error: null,
 
-        // The number of the latest list request: an older answer must not replace a newer one
+        // The numbers of the latest list and book requests: an older answer must not replace a newer one
         listRequest: 0,
+        bookRequest: 0,
     }),
 
     actions: {
@@ -65,21 +66,23 @@ export const useBooksStore = defineStore('books', {
         },
 
         /**
-         * Fetch the open book with its own loading and error. The error is the API error object; it is thrown on as
-         * well.
+         * Fetch the open book with its own loading and error. Only the latest request sets them: the page can move to
+         * another book before the previous one answers. The error is the API error object; it is thrown on as well.
          */
         async fetchBookById(id) {
+            const request = ++this.bookRequest
+            const latest = () => request === this.bookRequest
             this.currentBookLoading = true
             this.currentBookError = null
             try {
                 const book = normalizeBook(normalizeApiResponse(await booksApi.fetchById(id)).data)
-                this.currentBook = book
+                if (latest()) this.currentBook = book
                 return book
             } catch (error) {
-                this.currentBookError = error
+                if (latest()) this.currentBookError = error
                 throw error
             } finally {
-                this.currentBookLoading = false
+                if (latest()) this.currentBookLoading = false
             }
         },
 
