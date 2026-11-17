@@ -339,4 +339,34 @@ describe('CheckoutView', () => {
         expect(document.querySelector('a[href="/cart"]')).not.toBeNull()
         expect(submitButton().disabled).toBe(true)
     })
+
+    it('leaves a newer checkout alone when an order sent from an earlier visit answers late', async () => {
+        let finish
+        api.create
+            .mockReturnValueOnce(new Promise((resolve) => (finish = resolve)))
+            .mockRejectedValueOnce(failure('PRICE_CHANGED', { details: { quote: { ...quote, total: 30800 } } }))
+        await mount()
+        const earlierPush = vi.spyOn(router, 'push')
+        await fill()
+        submitButton().click()
+        await vi.waitFor(() => expect(api.create).toHaveBeenCalledTimes(1))
+
+        // The customer leaves Checkout before the answer, comes back and orders again
+        app.unmount()
+        document.body.replaceChildren()
+        await mount()
+        await fill()
+        await submit()
+        await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull())
+        const loads = cart.load.mock.calls.length
+
+        finish({ order, replayed: false })
+        await new Promise((resolve) => setTimeout(resolve))
+
+        expect(cart.load).toHaveBeenCalledTimes(loads)
+        expect(notify.showSuccess).not.toHaveBeenCalled()
+        expect(earlierPush).not.toHaveBeenCalled()
+        expect(router.currentRoute.value.name).toBe('Checkout')
+        expect(document.querySelector('[role="dialog"]')).not.toBeNull()
+    })
 })

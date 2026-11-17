@@ -136,7 +136,7 @@ import ErrorMessage from '@/components/ui/ErrorMessage.vue'
 import { localeRoute } from '@/router/locale'
 import { useCartStore, useCheckoutStore } from '@/stores'
 import { formatMoney } from '@/utils'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -162,7 +162,15 @@ const otherError = computed(
         !(checkout.error === 'VALIDATION_FAILED' && fieldOnForm.value)
 )
 
+// A visit that is over (the customer went to another page) does not act on an answer it was still waiting for: a
+// later visit has its own checkout
+let active = true
+onUnmounted(() => {
+    active = false
+})
+
 async function follow(order) {
+    if (!active) return
     if (order) {
         await router.push(localeRoute('OrderDetails', { params: { id: order.id } }))
         return
