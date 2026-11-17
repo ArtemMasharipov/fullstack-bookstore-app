@@ -15,7 +15,7 @@ import cs from '@/i18n/locales/cs.json'
 import { buildRoutes } from '@/router/buildRoutes'
 import AuthorList from './AuthorList.vue'
 
-// More authors than the API's default page of 20: 24 numbered ones and Vančura, who sorts last by last name
+// More authors than the API's default page of 20, in the order the server answers: 24 numbered ones, then Vančura
 const AUTHORS = [
     ...Array.from({ length: 24 }, (_, i) => {
         const n = String(i + 1).padStart(2, '0')
@@ -102,7 +102,7 @@ describe('the public author list', () => {
     it('asks the server for the page and the search of the address', async () => {
         await mount('/authors?page=2&q=Autor')
 
-        expect(authors.fetchAll).toHaveBeenCalledWith({ page: 2, limit: 12, sortBy: 'lastName', search: 'Autor' })
+        expect(authors.fetchAll).toHaveBeenCalledWith({ page: 2, limit: 12, search: 'Autor' })
     })
 
     it('reaches every one of more than 20 authors through the pages', async () => {
@@ -136,7 +136,7 @@ describe('the public author list', () => {
         vi.useRealTimers()
 
         expect(query()).toEqual({ q: 'Vanč' })
-        expect(authors.fetchAll).toHaveBeenLastCalledWith({ page: 1, limit: 12, sortBy: 'lastName', search: 'Vanč' })
+        expect(authors.fetchAll).toHaveBeenLastCalledWith({ page: 1, limit: 12, search: 'Vanč' })
         await vi.waitFor(() => expect(names()).toEqual(['Vladislav Vančura']))
     })
 
@@ -255,7 +255,7 @@ describe('the public author list', () => {
         ;[...alerts()[0].querySelectorAll('button')].find((b) => b.textContent.trim() === cs.errors.retry).click()
 
         await vi.waitFor(() => expect(authors.fetchAll).toHaveBeenCalledTimes(2))
-        expect(authors.fetchAll).toHaveBeenLastCalledWith({ page: 2, limit: 12, sortBy: 'lastName' })
+        expect(authors.fetchAll).toHaveBeenLastCalledWith({ page: 2, limit: 12 })
         await vi.waitFor(() => expect(names()).toHaveLength(12))
     })
 

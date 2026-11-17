@@ -49,13 +49,9 @@ describe('canonicalAuthorsQuery', () => {
 })
 
 describe('toAuthorsParams', () => {
-    it('asks for a page of 12 in last-name order with the search it has', () => {
-        expect(toAuthorsParams({ page: 2, q: 'Čapek' })).toEqual({
-            page: 2,
-            limit: 12,
-            sortBy: 'lastName',
-            search: 'Čapek',
-        })
-        expect(toAuthorsParams({ page: 1, q: '' })).toEqual({ page: 1, limit: 12, sortBy: 'lastName' })
+    it('asks for a page of 12 in the server order with the search it has', () => {
+        // No sortBy: the server's default order (newest first); its lastName sort is binary and puts Č after Z
+        expect(toAuthorsParams({ page: 2, q: 'Čapek' })).toEqual({ page: 2, limit: 12, search: 'Čapek' })
+        expect(toAuthorsParams({ page: 1, q: '' })).toEqual({ page: 1, limit: 12 })
     })
 })

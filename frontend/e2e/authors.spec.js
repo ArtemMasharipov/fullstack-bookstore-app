@@ -12,7 +12,7 @@ const PAGER = { cs: 'Navigace po stránkách', en: 'Pagination Navigation' }
 const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key])
 
 // The seed has 5 authors; the list of more than the API's default page of 20 is served in the browser, the way
-// GET /authors answers: last-name order, the search on first or last name, then the page
+// GET /authors answers: in its own order, the search on first or last name, then the page
 const MANY = [
     ...Array.from({ length: 24 }, (_, i) => {
         const n = String(i + 1).padStart(2, '0')

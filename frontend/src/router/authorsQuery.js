@@ -42,12 +42,14 @@ export function canonicalAuthorsQuery(query) {
     return same ? null : canonical
 }
 
-/** The GET /authors parameters of an author list state: alphabetical by last name, so the pages stay stable */
+/**
+ * The GET /authors parameters of an author list state. The order is the server's default (newest first, ties by
+ * id, so the pages stay stable): its name sorts compare bytes and would put Čapek after Zola
+ */
 export function toAuthorsParams({ page, q }) {
     return {
         page,
         limit: AUTHORS_PAGE_SIZE,
-        sortBy: 'lastName',
         ...(q && { search: q }),
     }
 }
