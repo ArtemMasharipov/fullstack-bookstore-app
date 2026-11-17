@@ -26,8 +26,11 @@ export async function getAuthors({ page, limit, country, search, sortBy }) {
   const query = {};
   if (country) query.country = country;
   if (search) {
-    const pattern = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
-    query.$or = [{ firstName: pattern }, { lastName: pattern }];
+    // Every word is found in the first or the last name, so "Karel Čapek" and "Čapek Karel" both find him
+    query.$and = search.split(/\s+/).filter(Boolean).map((word) => {
+      const pattern = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+      return { $or: [{ firstName: pattern }, { lastName: pattern }] };
+    });
   }
   const [authors, total] = await Promise.all([
     Author.find(query).sort(sortOf(sortBy)).skip((page - 1) * limit).limit(limit).lean(),

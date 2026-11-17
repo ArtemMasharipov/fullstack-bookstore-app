@@ -58,6 +58,29 @@ describe("author read contracts", () => {
     expectView(res.body.data[0]);
   });
 
+  it("finds an author by first and last name together", async () => {
+    const match = await createAuthor();
+    await createAuthor({ lastName: "Havlíček" });
+    await createAuthor({ firstName: "Jaroslav", lastName: "Hašek" });
+    expect(ids(await get(`?search=${encodeURIComponent("Karel Čapek")}`))).toEqual([match.id]);
+    expect(ids(await get(`?search=${encodeURIComponent("  karel   čap ")}`))).toEqual([match.id]);
+  });
+
+  it("finds an author by last and first name", async () => {
+    const match = await createAuthor();
+    await createAuthor({ firstName: "Jaroslav", lastName: "Hašek" });
+    expect(ids(await get(`?search=${encodeURIComponent("Čapek Karel")}`))).toEqual([match.id]);
+  });
+
+  it("needs every word to match", async () => {
+    const capek = await createAuthor();
+    const havlicek = await createAuthor({ lastName: "Havlíček" });
+    await createAuthor({ firstName: "Jaroslav", lastName: "Hašek" });
+    expect(ids(await get(`?search=${encodeURIComponent("Karel Hašek")}`))).toEqual([]);
+    expect(ids(await get(`?search=${encodeURIComponent("Karel Nobody")}`))).toEqual([]);
+    expect(ids(await get("?search=Karel")).sort()).toEqual([capek.id, havlicek.id].sort());
+  });
+
   it.each(["(", ".*"])("treats %s as literal search text", async (search) => {
     const match = await createAuthor({ lastName: `Name ${search}` });
     await createAuthor();
