@@ -290,6 +290,39 @@ describe('AdminBooksView', () => {
         await vi.waitFor(() => expect(books.fetchAll).toHaveBeenCalledTimes(2))
     })
 
+    it('reports an edit that ends after the form moved on to a new book, and keeps that form', async () => {
+        let resolveSave
+        books.update.mockReturnValue(
+            new Promise((resolve) => {
+                resolveSave = resolve
+            })
+        )
+        await mount()
+        await vi.waitFor(() => expect(rows()).toHaveLength(10))
+        byLabel(fill(cs.admin.books.edit, { title: 'Kniha 1.1' })).click()
+        await vi.waitFor(() => expect(buttonNamed(cs.admin.form.save)?.disabled).toBe(false))
+        buttonNamed(cs.admin.form.save).click()
+        await vi.waitFor(() => expect(books.update).toHaveBeenCalledTimes(1))
+        buttonNamed(cs.modal.cancel).click()
+        await nextTick()
+        buttonNamed(cs.admin.books.add).click()
+        await vi.waitFor(() =>
+            expect(document.querySelector('[role="dialog"]')?.textContent).toContain(cs.admin.bookForm.createTitle)
+        )
+        const title = input(cs.admin.bookForm.title)
+        title.value = 'Draft'
+        title.dispatchEvent(new Event('input', { bubbles: true }))
+        await nextTick()
+
+        resolveSave({ success: true, data: { ...pageOf(1).data[0], title: 'Kniha 1.1 edited' } })
+
+        await vi.waitFor(() => expect(books.fetchAll).toHaveBeenCalledTimes(2))
+        await settle()
+        expect(notices()).toEqual([['success', 'admin.books.updated']])
+        expect(document.querySelector('[role="dialog"]')?.textContent).toContain(cs.admin.bookForm.createTitle)
+        expect(input(cs.admin.bookForm.title).value).toBe('Draft')
+    })
+
     it('keeps the sort a header click picks on page 2', async () => {
         await mount('/admin/books?page=2')
         await vi.waitFor(() => expect(rows()).toHaveLength(10))

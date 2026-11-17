@@ -156,6 +156,8 @@ const authorOptions = ref([])
 const authorsLoading = ref(false)
 const authorsFailed = ref(false)
 const returnFocus = useReturnFocus()
+// Opening, closing and another book each start a new session: an answer to an earlier one leaves this one alone
+let session = 0
 
 const currentYear = () => new Date().getFullYear()
 // The price is typed in crowns and sent in whole geller (crownsToMinor)
@@ -231,10 +233,13 @@ function reset() {
 }
 
 async function loadAuthors() {
+    const current = session
+    const latest = () => current === session
     authorsLoading.value = true
     authorsFailed.value = false
     try {
         const response = await authorsApi.fetchAll({ limit: 100, sortBy: 'lastName' })
+        if (!latest()) return
         const options = (response.data ?? []).map((author) => ({
             value: author.id,
             title: `${author.lastName}, ${author.firstName}`,
@@ -246,16 +251,17 @@ async function loadAuthors() {
         }
         authorOptions.value = options
     } catch {
-        authorsFailed.value = true
+        if (latest()) authorsFailed.value = true
     } finally {
-        authorsLoading.value = false
+        if (latest()) authorsLoading.value = false
     }
 }
 
 async function showSummary(message) {
+    const current = session
     summary.value = message
     await nextTick()
-    summaryAlert.value?.$el?.focus()
+    if (current === session) summaryAlert.value?.$el?.focus()
 }
 
 async function save() {
@@ -263,13 +269,18 @@ async function save() {
     for (const field of FIELDS) errors[field] = check(field)
     if (FIELDS.some((field) => errors[field])) return showSummary(t('admin.form.summary'))
 
+    const current = session
+    const latest = () => current === session
+    const book = props.book
     saving.value = true
     summary.value = ''
     try {
-        const response = props.book ? await booksApi.update(props.book.id, body()) : await booksApi.create(body())
-        emit('saved', response.data, !props.book)
-        close()
+        const response = book ? await booksApi.update(book.id, body()) : await booksApi.create(body())
+        // Saved even if its session is over: the list still hears of it, and of whether it created the book
+        emit('saved', response.data, !book)
+        if (latest()) close()
     } catch (error) {
+        if (!latest()) return
         if (error?.fields) {
             for (const [apiField, code] of Object.entries(error.fields)) {
                 // The API names the price priceMinor; the form shows it in the price field
@@ -281,7 +292,7 @@ async function save() {
             await showSummary(t(resolveErrorKey(error)))
         }
     } finally {
-        saving.value = false
+        if (latest()) saving.value = false
     }
 }
 
@@ -290,15 +301,17 @@ function close() {
 }
 
 watch(
-    () => props.modelValue,
-    async (open) => {
+    [() => props.modelValue, () => props.book],
+    async ([open], previous) => {
+        const current = ++session
+        saving.value = false
         if (open) {
-            returnFocus.remember()
+            if (!previous?.[0]) returnFocus.remember()
             reset()
             loadAuthors()
         } else {
             await nextTick()
-            returnFocus.restore()
+            if (current === session) returnFocus.restore()
         }
     },
     { immediate: true }

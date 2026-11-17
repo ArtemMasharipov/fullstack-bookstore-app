@@ -39,6 +39,25 @@ const BOOK = {
     image: 'https://example.com/krakatit.jpg',
     inStock: false,
 }
+const OTHER = {
+    id: 'b2',
+    title: 'Babička',
+    author: { id: 'a2', firstName: 'Božena', lastName: 'Němcová' },
+    publicationYear: 1855,
+    category: 'Fiction',
+    description: '',
+    price: 199,
+    priceMinor: 19900,
+    currency: 'CZK',
+    image: '',
+    inStock: true,
+}
+// The authors a later request finds: one more than AUTHORS
+const LATER_AUTHORS = {
+    ...AUTHORS,
+    data: [AUTHORS.data[0], { id: 'a3', firstName: 'Jaroslav', lastName: 'Hašek' }, AUTHORS.data[1]],
+    pagination: { page: 1, limit: 100, total: 3, pages: 1 },
+}
 
 function deferred() {
     let resolve
@@ -52,6 +71,7 @@ function deferred() {
 
 let app
 let open
+let selected
 let events
 let words
 
@@ -77,12 +97,13 @@ async function mount({ book = null, locale = 'cs' } = {}) {
     activateLocale(locale)
     words = dictionaries[locale]
     open = ref(false)
+    selected = ref(book)
     const Screen = {
         render: () => [
             h('button', { class: 'opener', onClick: () => (open.value = true) }, 'Open'),
             h(BookFormDialog, {
                 modelValue: open.value,
-                book,
+                book: selected.value,
                 'onUpdate:modelValue': (value) => {
                     events.push(['open', value])
                     open.value = value
@@ -142,6 +163,17 @@ const save = async () => {
     button(words.admin.form.save).click()
     await nextTick()
 }
+// Saving is possible once the authors are in
+const ready = () => vi.waitFor(() => expect(button(words.admin.form.save).disabled).toBe(false))
+// Cancels and opens the dialog again for another book (null: a new one), as the books screen does
+const reopen = async (book) => {
+    button(words.modal.cancel).click()
+    await nextTick()
+    selected.value = book
+    open.value = true
+    await nextTick()
+}
+const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
 
 describe.each(['cs', 'en'])('BookFormDialog (%s)', (locale) => {
     it('opens as a named dialog with the book fields and no ISBN or quantity', async () => {
@@ -361,5 +393,128 @@ describe('BookFormDialog', () => {
 
         await vi.waitFor(() => expect(document.activeElement).toBe(document.querySelector('.opener')))
         expect(events).toContainEqual(['open', false])
+    })
+})
+
+// Each opening is a session of its own: an answer to an earlier one changes nothing in the one that is open now
+describe('BookFormDialog with a late answer from an earlier opening', () => {
+    it('waits for its own authors when the earlier ones arrive first', async () => {
+        const earlier = deferred()
+        const own = deferred()
+        authors.fetchAll.mockReturnValueOnce(earlier.promise).mockReturnValueOnce(own.promise)
+        await mount({ book: BOOK })
+        await reopen(OTHER)
+        await vi.waitFor(() => expect(authors.fetchAll).toHaveBeenCalledTimes(2))
+
+        earlier.resolve(AUTHORS)
+        await settle()
+
+        expect(button(cs.admin.form.save).disabled).toBe(true)
+        own.resolve(LATER_AUTHORS)
+        await ready()
+        expect(await options(cs.admin.bookForm.author)).toEqual(['Čapek, Karel', 'Hašek, Jaroslav', 'Němcová, Božena'])
+    })
+
+    it.each(['success', 'failure'])('keeps its own authors after a late %s of the earlier ones', async (outcome) => {
+        const earlier = deferred()
+        authors.fetchAll.mockReturnValueOnce(earlier.promise).mockResolvedValueOnce(LATER_AUTHORS)
+        await mount({ book: BOOK })
+        await reopen(OTHER)
+        await ready()
+
+        if (outcome === 'success') earlier.resolve(AUTHORS)
+        else earlier.reject({ code: 'INTERNAL' })
+        await settle()
+
+        expect(dialog().textContent).not.toContain(cs.admin.bookForm.authorsError)
+        expect(button(cs.admin.form.save).disabled).toBe(false)
+        expect(await options(cs.admin.bookForm.author)).toEqual(['Čapek, Karel', 'Hašek, Jaroslav', 'Němcová, Božena'])
+    })
+
+    it('reports a late successful save as its own and keeps the new opening', async () => {
+        const answer = deferred()
+        books.update.mockReturnValue(answer.promise)
+        await mount({ book: BOOK })
+        await ready()
+        await save()
+        await reopen(null)
+        await ready()
+        await type(cs.admin.bookForm.title, 'Draft')
+        const before = events.length
+
+        answer.resolve({ success: true, data: { ...BOOK, title: 'Krakatit 2' } })
+        await settle()
+
+        // The edit of BOOK happened: it is reported as that edit, not as a book created in this opening
+        expect(events.slice(before)).toEqual([['saved', { ...BOOK, title: 'Krakatit 2' }, false]])
+        expect(open.value).toBe(true)
+        expect(input(cs.admin.bookForm.title).value).toBe('Draft')
+        expect(summaryOf()).toBeNull()
+    })
+
+    it.each([
+        [{ status: 409, code: 'CONFLICT', fields: { title: 'duplicate' } }],
+        [{ code: 'NETWORK_ERROR', message: 'Network connection error.' }],
+    ])('shows nothing of a late failed save %j in the new opening', async (failure) => {
+        const answer = deferred()
+        books.update.mockReturnValue(answer.promise)
+        await mount({ book: BOOK })
+        await ready()
+        await save()
+        await reopen(OTHER)
+        await ready()
+        const before = events.length
+
+        answer.reject(failure)
+        await settle()
+
+        expect(events.slice(before)).toEqual([])
+        expect(open.value).toBe(true)
+        expect(summaryOf()).toBeNull()
+        expect(input(cs.admin.bookForm.title).hasAttribute('aria-invalid')).toBe(false)
+        expect(input(cs.admin.bookForm.title).value).toBe('Babička')
+    })
+
+    it('saves the new opening while the earlier save is still pending', async () => {
+        const earlier = deferred()
+        const own = deferred()
+        books.update.mockReturnValueOnce(earlier.promise).mockReturnValueOnce(own.promise)
+        await mount({ book: BOOK })
+        await ready()
+        await save()
+        await reopen(OTHER)
+        await ready()
+
+        await save()
+        await vi.waitFor(() => expect(books.update).toHaveBeenCalledTimes(2))
+        expect(books.update).toHaveBeenLastCalledWith('b2', expect.objectContaining({ title: 'Babička' }))
+        earlier.resolve({ success: true, data: BOOK })
+        await settle()
+        // The own save is still pending: a second click sends nothing
+        await save()
+        expect(books.update).toHaveBeenCalledTimes(2)
+
+        own.resolve({ success: true, data: OTHER })
+        await vi.waitFor(() => expect(events).toContainEqual(['saved', OTHER, false]))
+        expect(open.value).toBe(false)
+    })
+
+    it('starts over for a book given while it is open', async () => {
+        const answer = deferred()
+        books.update.mockReturnValue(answer.promise)
+        await mount({ book: BOOK })
+        await ready()
+        await save()
+
+        selected.value = OTHER
+        await vi.waitFor(() => expect(input(cs.admin.bookForm.title).value).toBe('Babička'))
+        await ready()
+        const before = events.length
+        answer.resolve({ success: true, data: BOOK })
+        await settle()
+
+        expect(events.slice(before)).toEqual([['saved', BOOK, false]])
+        expect(open.value).toBe(true)
+        expect(input(cs.admin.bookForm.title).value).toBe('Babička')
     })
 })
