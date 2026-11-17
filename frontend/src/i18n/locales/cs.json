@@ -343,7 +343,9 @@
         "empty": "Zatím tu nejsou žádní autoři.",
         "noResults": "Hledání neodpovídá žádný autor.",
         "clearSearch": "Zrušit hledání",
-        "bookCount": "Počet knih: {count}"
+        "bookCount": "Počet knih: {count}",
+        "booksBy": "Knihy autora {name}",
+        "noBooks": "Od tohoto autora zatím nemáme žádné knihy."
     },
     "auth": {
         "tooManyAttempts": "Příliš mnoho pokusů. Zkuste to znovu za {minutes} min.",

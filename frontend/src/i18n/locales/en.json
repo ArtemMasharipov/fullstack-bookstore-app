@@ -343,7 +343,9 @@
         "empty": "There are no authors yet.",
         "noResults": "No author matches this search.",
         "clearSearch": "Clear search",
-        "bookCount": "Books: {count}"
+        "bookCount": "Books: {count}",
+        "booksBy": "Books by {name}",
+        "noBooks": "There are no books by this author yet."
     },
     "auth": {
         "tooManyAttempts": "Too many attempts. Try again in {minutes} min.",

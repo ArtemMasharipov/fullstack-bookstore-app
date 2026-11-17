@@ -16,10 +16,11 @@ const AUTHOR = {
 }
 const OTHER = { ...AUTHOR, id: 'a3', firstName: 'Jaroslav', lastName: 'Hašek' }
 
-// An answer of GET /authors as axios resolves it
+// An answer of GET /authors or GET /authors/:id as axios resolves it
 const listAnswer = (authors, pagination = { page: 1, limit: 12, total: authors.length, pages: 1 }) => ({
     data: { success: true, data: authors, pagination },
 })
+const detailAnswer = (author) => ({ data: { success: true, data: { author, books: [] } } })
 
 function deferred() {
     let resolve
@@ -53,7 +54,7 @@ describe('author views in the storefront store', () => {
         await store.fetchAuthorById('a2')
         expect(api.get).toHaveBeenCalledWith('/authors/a2', { params: { includeBooks: true } })
         expect(store.current).toEqual({ ...AUTHOR, books })
-        expect(store.loading).toBe(false)
+        expect(store.currentLoading).toBe(false)
     })
     it('asks the API for the page and the search it is given', async () => {
         api.get.mockResolvedValue(listAnswer([AUTHOR]))
@@ -99,5 +100,60 @@ describe('answers that arrive out of order', () => {
         expect(store.error).toBeNull()
         expect(store.loading).toBe(false)
         expect(store.list).toEqual([OTHER])
+    })
+    it('keeps the author of the newest request when an older answer arrives last', async () => {
+        const older = deferred()
+        const newer = deferred()
+        api.get.mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise)
+        const store = useAuthorsStore()
+        const first = store.fetchAuthorById('a2')
+        const second = store.fetchAuthorById('a3')
+
+        newer.resolve(detailAnswer(OTHER))
+        await second
+        older.resolve(detailAnswer(AUTHOR))
+        await first
+
+        expect(store.current).toEqual({ ...OTHER, books: [] })
+        expect(store.currentLoading).toBe(false)
+    })
+    it('ignores the failure of an author request that is no longer the newest', async () => {
+        const older = deferred()
+        const newer = deferred()
+        api.get.mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise)
+        const store = useAuthorsStore()
+        const first = store.fetchAuthorById('a2')
+        const second = store.fetchAuthorById('a3')
+
+        newer.resolve(detailAnswer(OTHER))
+        await second
+        older.reject(Object.assign(new Error('Not found'), { code: 'NOT_FOUND' }))
+        await expect(first).rejects.toMatchObject({ code: 'NOT_FOUND' })
+
+        expect(store.currentError).toBeNull()
+        expect(store.current).toEqual({ ...OTHER, books: [] })
+    })
+})
+
+describe('the list and the open author', () => {
+    it('load and fail apart from each other', async () => {
+        const list = deferred()
+        api.get.mockReturnValueOnce(list.promise).mockResolvedValueOnce(detailAnswer(AUTHOR))
+        const store = useAuthorsStore()
+        const listing = store.fetchAuthors({ page: 1 })
+        await store.fetchAuthorById('a2')
+
+        expect(store.loading).toBe(true)
+        expect(store.currentLoading).toBe(false)
+
+        const failure = Object.assign(new Error('Server error'), { code: 'INTERNAL' })
+        list.reject(failure)
+        await expect(listing).rejects.toBe(failure)
+
+        // The error stays the API error object, so the page translates its code
+        expect(store.error).toBe(failure)
+        expect(store.loading).toBe(false)
+        expect(store.currentError).toBeNull()
+        expect(store.current).toEqual({ ...AUTHOR, books: [] })
     })
 })
