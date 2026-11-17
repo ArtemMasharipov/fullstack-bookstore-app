@@ -5,8 +5,9 @@
 Four mongoose advisories published on 10 November made the backend production audit fail (**1 High**, mongoose
 8.24.4). The frontend production audit had failed since 30 October (**1 High**, follow-redirects 1.16.1 through axios,
 recorded on 7 November below) while its fix waited for the age gate. Both packages were updated inside their existing
-semver ranges with npm's age cutoff `--before=2026-11-03T15:14:48Z`. The `package.json` files did not
-change; each lock file changed only in the packages below.
+semver ranges with npm's age cutoff `--before=2026-11-03T15:14:48Z`. The direct `mongoose` range
+gets the corrected lower bound `^8.24.8`, so the manifest no longer admits an affected release; the frontend
+`package.json` did not change. Each lock file changed only in the packages below.
 
 | Package | Old → new | Published | Used by |
 | --- | --- | --- | --- |
