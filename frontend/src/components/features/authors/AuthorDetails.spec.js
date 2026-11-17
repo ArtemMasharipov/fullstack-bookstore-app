@@ -127,6 +127,27 @@ describe('the author page', () => {
         expect(root.querySelector('.v-breadcrumbs a').textContent).toContain(words.routes.Authors)
     })
 
+    // The Czech heading must suit every author, a woman as well as a man
+    it.each([
+        ['cs', '/authors/a4', 'Knihy: Božena Němcová'],
+        ['en', '/en/authors/a4', 'Books by Božena Němcová'],
+    ])('%s heads the books of the author in a form for every author', async (locale, path, heading) => {
+        const author = { id: 'a4', firstName: 'Božena', lastName: 'Němcová', bio: '', booksCount: 1 }
+        const book = {
+            id: 'b1',
+            title: 'Babička',
+            author: { id: 'a4', firstName: 'Božena', lastName: 'Němcová' },
+            publicationYear: 1855,
+            category: 'Fiction',
+            price: 100,
+            inStock: true,
+        }
+        authors.fetchById.mockResolvedValue({ success: true, data: { author, books: [book] } })
+        await mount(path, locale)
+
+        await vi.waitFor(() => expect(root.querySelector('h2')?.textContent.trim()).toBe(heading))
+    })
+
     it('keeps showing the author while the author list loads', async () => {
         await mount('/authors/a2')
         await vi.waitFor(() => expect(root.textContent).toContain('Czech writer'))

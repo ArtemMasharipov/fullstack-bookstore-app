@@ -344,7 +344,7 @@
         "noResults": "Hledání neodpovídá žádný autor.",
         "clearSearch": "Zrušit hledání",
         "bookCount": "Počet knih: {count}",
-        "booksBy": "Knihy autora {name}",
+        "booksBy": "Knihy: {name}",
         "noBooks": "Od tohoto autora zatím nemáme žádné knihy."
     },
     "auth": {
