@@ -333,6 +333,18 @@
         "decrease": "Decrease quantity",
         "increase": "Increase quantity"
     },
+    "authors": {
+        "title": "Authors",
+        "range": "Showing {from}–{to} of {total}",
+        "search": {
+            "label": "Search first or last name",
+            "hint": "Type at least 2 characters"
+        },
+        "empty": "There are no authors yet.",
+        "noResults": "No author matches this search.",
+        "clearSearch": "Clear search",
+        "bookCount": "Books: {count}"
+    },
     "auth": {
         "tooManyAttempts": "Too many attempts. Try again in {minutes} min.",
         "fields": {

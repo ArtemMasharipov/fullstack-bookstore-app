@@ -68,7 +68,9 @@ describe('canonical author data on existing public pages', () => {
             .use(createVuetify({ components, directives }))
         app.mount(root)
         await vi.waitFor(() => expect(root.textContent).toContain('Karel Čapek'))
-        expect(root.querySelector('.author-card').textContent).toContain('1 book')
+        expect(root.querySelector('.author-card').textContent).toContain(
+            (locale === 'en' ? en : cs).authors.bookCount.replace('{count}', '1')
+        )
         root.querySelector('.author-card').click()
         await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe(`${prefix}/authors/a2`))
         await vi.waitFor(() => expect(root.textContent).toContain('Writer biography'))

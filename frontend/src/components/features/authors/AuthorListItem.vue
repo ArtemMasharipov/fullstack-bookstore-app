@@ -1,5 +1,11 @@
 <template>
-    <v-card variant="outlined" class="mb-3 author-card" hover @click="handleClick" @keydown.enter="handleClick">
+    <!-- A real link: Tab reaches it, Enter opens it, and it opens in a new tab like any other link -->
+    <v-card
+        variant="outlined"
+        class="mb-3 author-card"
+        hover
+        :to="localeRoute('AuthorDetails', { params: { id: author.id } })"
+    >
         <v-card-item>
             <template v-slot:prepend>
                 <v-avatar color="primary" size="48">
@@ -8,7 +14,7 @@
             </template>
             <v-card-title class="text-h6">{{ author.firstName }} {{ author.lastName }}</v-card-title>
             <v-card-subtitle v-if="author.booksCount">
-                {{ author.booksCount }} {{ author.booksCount === 1 ? 'book' : 'books' }}
+                {{ t('authors.bookCount', { count: author.booksCount }) }}
             </v-card-subtitle>
         </v-card-item>
         <v-card-text v-if="author.bio" class="pt-0">
@@ -18,6 +24,8 @@
 </template>
 
 <script setup>
+import { t } from '@/i18n'
+import { localeRoute } from '@/router/locale'
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -27,8 +35,6 @@ const props = defineProps({
     },
 })
 
-const emit = defineEmits(['click'])
-
 const initials = computed(() => {
     return `${props.author.firstName} ${props.author.lastName}`
         .split(' ')
@@ -37,10 +43,6 @@ const initials = computed(() => {
         .toUpperCase()
         .slice(0, 2)
 })
-
-const handleClick = () => {
-    emit('click')
-}
 </script>
 
 <style scoped>

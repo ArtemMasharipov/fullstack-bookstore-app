@@ -14,6 +14,23 @@ const AUTHOR = {
     createdAt: '2026-10-19T00:00:00Z',
     updatedAt: '2026-10-19T00:00:00Z',
 }
+const OTHER = { ...AUTHOR, id: 'a3', firstName: 'Jaroslav', lastName: 'Hašek' }
+
+// An answer of GET /authors as axios resolves it
+const listAnswer = (authors, pagination = { page: 1, limit: 12, total: authors.length, pages: 1 }) => ({
+    data: { success: true, data: authors, pagination },
+})
+
+function deferred() {
+    let resolve
+    let reject
+    const promise = new Promise((res, rej) => {
+        resolve = res
+        reject = rej
+    })
+    return { promise, resolve, reject }
+}
+
 beforeEach(() => {
     setActivePinia(createPinia())
     api.get.mockReset()
@@ -37,5 +54,50 @@ describe('author views in the storefront store', () => {
         expect(api.get).toHaveBeenCalledWith('/authors/a2', { params: { includeBooks: true } })
         expect(store.current).toEqual({ ...AUTHOR, books })
         expect(store.loading).toBe(false)
+    })
+    it('asks the API for the page and the search it is given', async () => {
+        api.get.mockResolvedValue(listAnswer([AUTHOR]))
+        const params = { page: 2, limit: 12, sortBy: 'lastName', search: 'Čap' }
+        await useAuthorsStore().fetchAuthors(params)
+        expect(api.get).toHaveBeenCalledWith('/authors', { params })
+    })
+})
+
+describe('answers that arrive out of order', () => {
+    it('keeps the newest list when an older answer arrives last', async () => {
+        const older = deferred()
+        const newer = deferred()
+        api.get.mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise)
+        const store = useAuthorsStore()
+        const first = store.fetchAuthors({ page: 1 })
+        const second = store.fetchAuthors({ page: 2 })
+
+        older.resolve(listAnswer([AUTHOR]))
+        await first
+        expect(store.loading).toBe(true)
+        expect(store.list).toEqual([])
+
+        newer.resolve(listAnswer([OTHER], { page: 2, limit: 12, total: 13, pages: 2 }))
+        await second
+        expect(store.list).toEqual([OTHER])
+        expect(store.page).toBe(2)
+        expect(store.loading).toBe(false)
+    })
+    it('ignores the failure of a list request that is no longer the newest', async () => {
+        const older = deferred()
+        const newer = deferred()
+        api.get.mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise)
+        const store = useAuthorsStore()
+        const first = store.fetchAuthors({ page: 1 })
+        const second = store.fetchAuthors({ page: 2 })
+
+        newer.resolve(listAnswer([OTHER]))
+        await second
+        older.reject(Object.assign(new Error('Server error'), { code: 'INTERNAL' }))
+        await expect(first).rejects.toMatchObject({ code: 'INTERNAL' })
+
+        expect(store.error).toBeNull()
+        expect(store.loading).toBe(false)
+        expect(store.list).toEqual([OTHER])
     })
 })
