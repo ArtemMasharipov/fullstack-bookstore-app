@@ -17,6 +17,10 @@ function newKey() {
     return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
 
+// The number of the current checkout. start() and forget() move it on: an answer that belongs to an earlier
+// checkout, or to an ended session, changes nothing, reloads no cart and says nothing
+let flow = 0
+
 /**
  * Checkout Store
  * One checkout is one Idempotency-Key, made when the checkout starts and
@@ -35,6 +39,7 @@ export const useCheckoutStore = defineStore('checkout', {
 
     actions: {
         start() {
+            flow++
             this.key = newKey()
             this.status = 'idle'
             this.error = null
@@ -44,10 +49,13 @@ export const useCheckoutStore = defineStore('checkout', {
 
         /**
          * Places the order at the total the customer saw (geller)
-         * @returns {Promise<object|null>} the order, or null when it was not placed
+         * @returns {Promise<object|null>} the order; null when it was not placed, and when this checkout is over
+         * before the answer (a new checkout or the end of the session): the server keeps an order it placed
          */
         async submit(shippingAddress, expectedTotal) {
             if (this.status === 'submitting') return null
+            const started = flow
+            const current = () => started === flow
             this.status = 'submitting'
             this.error = null
             this.fields = {}
@@ -55,9 +63,11 @@ export const useCheckoutStore = defineStore('checkout', {
 
             try {
                 const { order } = await orderApi.create({ shippingAddress, expectedTotal }, this.key)
+                if (!current()) return null
                 this.key = newKey()
                 this.status = 'idle'
                 await useCartStore().load()
+                if (!current()) return null
                 useNotifications().showSuccess(undefined, {
                     messageKey: 'notifications.orderPlaced',
                     sound: 'success',
@@ -65,6 +75,7 @@ export const useCheckoutStore = defineStore('checkout', {
                 })
                 return order
             } catch (error) {
+                if (!current()) return null
                 this.status = 'idle'
                 this.error = error.code ?? 'UNKNOWN'
                 if (error.code === 'PRICE_CHANGED') this.priceChange = error.details?.quote ?? null
@@ -76,6 +87,12 @@ export const useCheckoutStore = defineStore('checkout', {
         /** Orders at the new total after the customer has seen it, with the same key */
         confirmPriceChange(shippingAddress) {
             return this.submit(shippingAddress, this.priceChange.total)
+        },
+
+        /** After the session ends: empty at once; an answer still on its way belongs to the old session */
+        forget() {
+            flow++
+            this.$reset()
         },
     },
 })
