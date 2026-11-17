@@ -7,6 +7,12 @@ const PAGE_SIZE = 10
 
 const codeOf = (error) => error?.code ?? 'UNKNOWN'
 
+// Answers can come late. The list and the details keep only the answer to their newest request, and nothing that
+// answers after the session ended is kept or shown: forget() moves every number on.
+let listRequest = 0
+let currentRequest = 0
+let session = 0
+
 /**
  * Orders Store
  * The user's orders (a page of the list and one order's details).
@@ -28,27 +34,36 @@ export const useOrdersStore = defineStore('orders', {
 
     actions: {
         async fetchList(page = 1) {
+            const request = ++listRequest
+            const latest = () => request === listRequest
             this.listStatus = 'loading'
             this.listError = null
             try {
                 const { items, pagination } = await orderApi.list({ page, limit: PAGE_SIZE })
+                if (!latest()) return
                 this.list = items
                 this.pagination = pagination
                 this.listStatus = 'ready'
             } catch (error) {
+                if (!latest()) return
                 this.listStatus = 'error'
                 this.listError = codeOf(error)
             }
         },
 
         async fetchOne(id) {
+            const request = ++currentRequest
+            const latest = () => request === currentRequest
             this.current = null
             this.currentStatus = 'loading'
             this.currentError = null
             try {
-                this.current = await orderApi.get(id)
+                const order = await orderApi.get(id)
+                if (!latest()) return
+                this.current = order
                 this.currentStatus = 'ready'
             } catch (error) {
+                if (!latest()) return
                 this.currentStatus = 'error'
                 this.currentError = codeOf(error)
             }
@@ -56,13 +71,16 @@ export const useOrdersStore = defineStore('orders', {
 
         /**
          * Cancels an order; the details and the list show the new status
-         * @returns {Promise<boolean>} whether the order was cancelled
+         * @returns {Promise<boolean>} whether the order was cancelled; false as well when the session ended first
          */
         async cancel(id) {
             if (this.cancelling) return false
+            const started = session
+            const live = () => started === session
             this.cancelling = true
             try {
                 const order = await orderApi.cancel(id)
+                if (!live()) return false
                 if (this.current?.id === id) this.current = order
                 const row = this.list.find((item) => item.id === id)
                 if (row) row.status = order.status
@@ -73,11 +91,20 @@ export const useOrdersStore = defineStore('orders', {
                 })
                 return true
             } catch (error) {
+                if (!live()) return false
                 useNotifications().showError(undefined, { messageKey: resolveErrorKey(error) })
                 return false
             } finally {
-                this.cancelling = false
+                if (live()) this.cancelling = false
             }
+        },
+
+        /** After the session ends: empty at once; the answers still on their way belong to the old session */
+        forget() {
+            listRequest++
+            currentRequest++
+            session++
+            this.$reset()
         },
     },
 })
