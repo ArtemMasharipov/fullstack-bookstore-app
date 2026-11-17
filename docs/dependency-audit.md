@@ -1,5 +1,45 @@
 # Dependency audit
 
+## Production dependency patch — 17 November 2026
+
+Advisories published after the 7 November snapshot made both production audits fail again: **backend 1 High**
+(mongoose 8.24.4) and **frontend 1 High** (follow-redirects 1.16.1 through axios). Both packages were updated inside
+their existing semver ranges with npm's age cutoff `--before=2026-11-03T15:14:48Z`. The `package.json` files did not
+change; each lock file changed only in the packages below.
+
+| Package | Old → new | Published | Used by |
+| --- | --- | --- | --- |
+| mongoose | 8.24.4 → 8.24.8 | 2026-11-02 | backend production |
+| mquery (dependency of mongoose) | 5.0.0 → 5.0.1 | 2026-10-23 | backend production |
+| debug (nested under mquery) | 4.4.0 → 4.4.3 | 2025-09-13 | backend production |
+| follow-redirects | 1.16.1 → 1.16.2 | 2026-10-25 | frontend production (axios), backend development (mongodb-memory-server) |
+
+Mongoose 8.24.7 and later close four advisories: connection-level `sanitizeFilter` not applied (GHSA-gg4r-jv3p-qx3c),
+discriminator key values that bypass casting (GHSA-wr5m-5jph-8m96), inherited properties walked while hydrating,
+setting and merging (GHSA-8332-j7wj-wjw4) and prototype pollution through `Schema.prototype.virtual()`
+(GHSA-6972-9mcm-vhwj). The app uses no `sanitizeFilter`, no discriminators and only fixed virtual names; untrusted keys
+such as `constructor` would have to pass the allowlisted Zod schemas first (covered by `update-prototype.test.js` and
+`request-security.test.js`). The update is hardening, not a response to a reproduced exploit. Mongoose 8.24.9 and
+8.24.10 were still inside the 14-day window.
+
+follow-redirects 1.16.2 stops custom credential headers from following a redirect (GHSA-mrwp-f3q8-3g9p). It runs only
+in the Node HTTP adapter of axios, not in the browser bundle: all 61 production files are byte-identical before and
+after the update. In the backend it runs only when the test tooling downloads mongod. 1.16.3 was still inside the
+window.
+
+| Installed audit | Production, before → after | Full graph, before → after |
+| --- | --- | --- |
+| Backend | 1 High → **0** | 2 High + 4 Moderate → 4 Moderate |
+| Frontend | 1 High → **0** | 2 High + 5 Moderate → 1 High + 5 Moderate |
+
+The remaining findings are development-only and planned separately: Happy DOM (High; host code execution and SSRF,
+fixed in the 21.x major), Vite, Vitest, fast-uri and postcss-selector-parser in the frontend, and Vitest, nodemon and
+minimatch in the backend.
+
+Verification on Node 24.22.1 / npm 11.19.1 (Windows): clean `npm ci` and `npm ls --all` in both packages;
+**1110 backend tests passed + 8 platform skips**; **839 frontend tests**, lint, format check and build;
+**147 end-to-end tests** without retries.
+
 <!-- node24-runtime-verification start -->
 ## Runtime security verification — 7 November 2026
 
