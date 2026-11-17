@@ -173,8 +173,15 @@ const handleAddToCart = async () => {
     }
 }
 
-// The route reuses this page for another book: a new id loads that book
-watch(() => props.bookId, load, { immediate: true })
+// The route reuses this page for another book: a new id loads that book and starts again from one copy
+watch(
+    () => props.bookId,
+    () => {
+        quantity.value = 1
+        load()
+    },
+    { immediate: true }
+)
 
 onMounted(() => {
     shop.load()

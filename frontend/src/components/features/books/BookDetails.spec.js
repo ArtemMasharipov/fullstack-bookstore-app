@@ -15,6 +15,7 @@ import { activateLocale, i18n, loadLocale } from '@/i18n'
 import en from '@/i18n/locales/en.json'
 import cs from '@/i18n/locales/cs.json'
 import { buildRoutes } from '@/router/buildRoutes'
+import { useCartStore } from '@/stores/cart'
 import { formatMoney } from '@/utils/money'
 import BookDetails from './BookDetails.vue'
 
@@ -188,5 +189,27 @@ describe('BookDetails', () => {
 
         await vi.waitFor(() => expect(root.textContent).toContain('Krakatit'))
         expect(root.textContent).not.toContain(cs.errors.NOT_FOUND)
+    })
+
+    it('starts the page of another book with a quantity of one', async () => {
+        const add = vi.spyOn(useCartStore(), 'add').mockResolvedValue(true)
+        books.fetchById
+            .mockResolvedValueOnce({ success: true, data: BOOK })
+            .mockResolvedValueOnce({ success: true, data: { ...BOOK, id: 'b2', title: 'Krakatit' } })
+        const bookId = ref('b1')
+        const root = await mount('cs', bookId)
+        const shownQuantity = () => root.querySelector('span[aria-live="polite"]')?.textContent.trim()
+        await vi.waitFor(() => expect(root.querySelector('h1')?.textContent).toContain('Babička'))
+        root.querySelector('[aria-label="Zvýšit množství"]').click()
+        await vi.waitFor(() => expect(shownQuantity()).toBe('2'))
+        root.querySelector('[aria-label="Zvýšit množství"]').click()
+        await vi.waitFor(() => expect(shownQuantity()).toBe('3'))
+
+        bookId.value = 'b2'
+        await vi.waitFor(() => expect(root.querySelector('h1')?.textContent).toContain('Krakatit'))
+
+        expect(shownQuantity()).toBe('1')
+        ;[...root.querySelectorAll('button')].find((b) => b.textContent.includes('Přidat do košíku')).click()
+        expect(add).toHaveBeenCalledWith('b2', 1)
     })
 })
