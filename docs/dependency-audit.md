@@ -2,9 +2,10 @@
 
 ## Production dependency patch — 17 November 2026
 
-Advisories published after the 7 November snapshot made both production audits fail again: **backend 1 High**
-(mongoose 8.24.4) and **frontend 1 High** (follow-redirects 1.16.1 through axios). Both packages were updated inside
-their existing semver ranges with npm's age cutoff `--before=2026-11-03T15:14:48Z`. The `package.json` files did not
+Four mongoose advisories published on 10 November made the backend production audit fail (**1 High**, mongoose
+8.24.4). The frontend production audit had failed since 30 October (**1 High**, follow-redirects 1.16.1 through axios,
+recorded on 7 November below) while its fix waited for the age gate. Both packages were updated inside their existing
+semver ranges with npm's age cutoff `--before=2026-11-03T15:14:48Z`. The `package.json` files did not
 change; each lock file changed only in the packages below.
 
 | Package | Old → new | Published | Used by |
@@ -17,9 +18,9 @@ change; each lock file changed only in the packages below.
 Mongoose 8.24.7 and later close four advisories: connection-level `sanitizeFilter` not applied (GHSA-gg4r-jv3p-qx3c),
 discriminator key values that bypass casting (GHSA-wr5m-5jph-8m96), inherited properties walked while hydrating,
 setting and merging (GHSA-8332-j7wj-wjw4) and prototype pollution through `Schema.prototype.virtual()`
-(GHSA-6972-9mcm-vhwj). The app uses no `sanitizeFilter`, no discriminators and only fixed virtual names; untrusted keys
-such as `constructor` would have to pass the allowlisted Zod schemas first (covered by `update-prototype.test.js` and
-`request-security.test.js`). The update is hardening, not a response to a reproduced exploit. Mongoose 8.24.9 and
+(GHSA-6972-9mcm-vhwj). The app uses no `sanitizeFilter`, no discriminators and only fixed virtual names. Request bodies
+and queries pass strict Zod schemas that reject unknown keys before a model sees them: `request-security.test.js` sends
+`toString` keys and `update-prototype.test.js` a `__proto__` path. The update is hardening, not a response to a reproduced exploit. Mongoose 8.24.9 and
 8.24.10 were still inside the 14-day window.
 
 follow-redirects 1.16.2 stops custom credential headers from following a redirect (GHSA-mrwp-f3q8-3g9p). It runs only
