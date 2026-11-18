@@ -173,7 +173,10 @@ trimming answers 409 `CONFLICT` with `fields: { lastName: "duplicate" }`; an aut
 
 DELETE answers 204 with no body when the author has no books. Otherwise it answers 409 `AUTHOR_HAS_BOOKS`,
 `details: { books: number }`, leaving both the author and books intact. The old `deleteBooks` query parameter is
-removed and answers 400; no author endpoint deletes books implicitly.
+removed and answers 400; no author endpoint deletes books implicitly. A delete and a book write for the same author
+(POST, or PUT moving a book to it) that arrive together never leave a book without its author: whichever commits
+first wins, a delete that loses answers 409 `AUTHOR_HAS_BOOKS` counting that book, and a book write that loses
+answers 400 with `authorId: "not_found"`.
 
 ### Cart (`/cart`, every route except `/cart/quote` needs a token)
 

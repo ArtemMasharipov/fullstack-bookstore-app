@@ -48,6 +48,12 @@ const authorSchema = new mongoose.Schema(
         message: "Invalid URL format",
       },
     },
+    // Raised by every book write for this author, inside its transaction, so a
+    // delete of the author at the same moment conflicts with it (see
+    // services/bookService.js). Absent until the first book; never in a view
+    bookRevision: {
+      type: Number,
+    },
   },
   {
     timestamps: true,

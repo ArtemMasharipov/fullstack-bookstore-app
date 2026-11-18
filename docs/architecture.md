@@ -87,6 +87,11 @@ timestamps; `Session` has `createdAt`.
   Author reads validate their query, combine literal name search with the country filter and sort ties by id.
   Author writes validate strict bodies and replace optional fields; deleting an author that has books answers
   409 `AUTHOR_HAS_BOOKS` with their count, so it never silently cascades through the catalogue.
+- A book write and an author delete each run in a transaction that writes the author document: the book write
+  first raises the author's `bookRevision` (leaving `updatedAt` as it was), the delete removes the author. Two such
+  transactions at the same moment conflict, and MongoDB runs the loser again on what the winner wrote: a delete
+  that loses answers 409 `AUTHOR_HAS_BOOKS`, a book write that loses answers 400 on `authorId`, and no book is left
+  without its author. Book writes for one author therefore run one after another.
 - Book reads use whole geller (`priceMinor`), falling back to crowns (`price`) only for a legacy book without an
   integer `priceMinor`. Book writes and seeding store both fields together for one release. API views include
   `priceMinor`, `currency: "CZK"` and legacy `price`; the frontend displays the minor amount and submits it from the

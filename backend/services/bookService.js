@@ -4,6 +4,7 @@
  * No HTTP/request/response handling here!
  */
 
+import mongoose from "mongoose";
 import Author from "../models/Author.js";
 import Book from "../models/Book.js";
 import { AppError, NotFoundError, ValidationError } from "../utils/errors.js";
@@ -73,17 +74,27 @@ function storedFields({ authorId, price, priceMinor, ...fields }) {
   return { ...fields, author: authorId, priceMinor: minor, price: minor / 100 };
 }
 
-async function assertAuthorExists(authorId) {
-  if (!(await Author.exists({ _id: authorId }))) {
+// The first write of every transaction that writes a book: it raises the
+// author's bookRevision, so it conflicts with a delete of that author running
+// at the same moment, and MongoDB runs the losing transaction again on what the
+// winner wrote. It also checks that the author exists. The author's updatedAt
+// stays as it was: a new book is no change of its author
+async function touchAuthor(authorId, session) {
+  const { matchedCount } = await Author.updateOne(
+    { _id: authorId },
+    { $inc: { bookRevision: 1 } },
+    { session, timestamps: false }
+  );
+  if (matchedCount === 0) {
     throw new ValidationError("Validation failed", { authorId: "not_found" });
   }
 }
 
 // The same title, author and year is the same book; exceptId is the book being replaced
-async function assertNotDuplicate({ title, authorId, publicationYear }, exceptId) {
+async function assertNotDuplicate({ title, authorId, publicationYear }, exceptId, session) {
   const filter = { title, author: authorId, publicationYear };
   if (exceptId) filter._id = { $ne: exceptId };
-  if (await Book.exists(filter)) {
+  if (await Book.exists(filter, { session })) {
     throw new AppError("A book with this title, author and year already exists", 409, "CONFLICT", {
       fields: { title: "duplicate" },
     });
@@ -98,10 +109,12 @@ const withAuthor = (query) => query.populate("author", "firstName lastName").lea
  * @returns {Object} Book view
  */
 export async function createBook(body) {
-  await assertAuthorExists(body.authorId);
-  await assertNotDuplicate(body);
-
-  const book = await Book.create(storedFields(body));
+  const book = await mongoose.connection.transaction(async (session) => {
+    await touchAuthor(body.authorId, session);
+    await assertNotDuplicate(body, undefined, session);
+    const [created] = await Book.create([storedFields(body)], { session });
+    return created;
+  });
 
   return toBookView(await withAuthor(Book.findById(book._id)));
 }
@@ -116,20 +129,24 @@ export async function updateBook(id, body) {
   if (!(await Book.exists({ _id: id }))) {
     throw new NotFoundError("Book not found");
   }
-  await assertAuthorExists(body.authorId);
-  await assertNotDuplicate(body, id);
 
   const absent = OPTIONAL_FIELDS.filter((field) => body[field] === undefined);
   const update = {
     $set: storedFields(body),
     ...(absent.length && { $unset: Object.fromEntries(absent.map((field) => [field, ""])) }),
   };
-  const book = await withAuthor(Book.findByIdAndUpdate(id, update, { new: true, runValidators: true }));
-
-  // Deleted between the check and the write
-  if (!book) {
-    throw new NotFoundError("Book not found");
-  }
+  // Touches the author the book has after the write. Its previous author needs
+  // no touch: a delete of that author meanwhile still counts the book, and is refused
+  const book = await mongoose.connection.transaction(async (session) => {
+    await touchAuthor(body.authorId, session);
+    await assertNotDuplicate(body, id, session);
+    const updated = await withAuthor(
+      Book.findByIdAndUpdate(id, update, { new: true, runValidators: true, session })
+    );
+    // Deleted between the check and the write
+    if (!updated) throw new NotFoundError("Book not found");
+    return updated;
+  });
 
   return toBookView(book);
 }

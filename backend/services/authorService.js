@@ -4,6 +4,7 @@
  * No HTTP/request/response handling here!
  */
 
+import mongoose from "mongoose";
 import Author from "../models/Author.js";
 import Book from "../models/Book.js";
 import { toAuthorView } from "./authorView.js";
@@ -110,9 +111,15 @@ export async function updateAuthor(id, updateData) {
  */
 export async function deleteAuthor(id) {
   if (!(await Author.exists({ _id: id }))) throw new NotFoundError("Author not found");
-  const bookCount = await Book.countDocuments({ author: id });
-  if (bookCount > 0) throw new ConflictError("This author still has books", "AUTHOR_HAS_BOOKS", { books: bookCount });
-  await Author.findByIdAndDelete(id);
+  // A book written for this author at the same moment raises its bookRevision
+  // first (see bookService.js), so this delete conflicts with it, and MongoDB
+  // runs it again on a snapshot that counts that book
+  await mongoose.connection.transaction(async (session) => {
+    const bookCount = await Book.countDocuments({ author: id }, { session });
+    if (bookCount > 0) throw new ConflictError("This author still has books", "AUTHOR_HAS_BOOKS", { books: bookCount });
+    const { deletedCount } = await Author.deleteOne({ _id: id }, { session });
+    if (deletedCount === 0) throw new NotFoundError("Author not found");
+  });
 }
 
 /**
