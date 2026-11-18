@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { IDENTITY_COLLATION } from "./collation.js";
 
 const authorSchema = new mongoose.Schema(
   {
@@ -62,8 +63,15 @@ const authorSchema = new mongoose.Schema(
   }
 );
 
+// One author per first and last name, compared as IDENTITY_COLLATION does. A
+// name of its own: the previous release has this key under the automatic name
+// firstName_1_lastName_1, and that name with other options would not build
+authorSchema.index(
+  { firstName: 1, lastName: 1 },
+  { unique: true, collation: IDENTITY_COLLATION, name: "firstName_lastName_cs2_unique" }
+);
+
 // Indexes for search and performance
-authorSchema.index({ firstName: 1, lastName: 1 });
 authorSchema.index({ firstName: "text", lastName: "text", bio: "text" });
 authorSchema.index({ country: 1, birthYear: 1 });
 authorSchema.index({ createdAt: -1 });

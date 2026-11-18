@@ -7,6 +7,7 @@
 import mongoose from "mongoose";
 import Author from "../models/Author.js";
 import Book from "../models/Book.js";
+import { IDENTITY_COLLATION } from "../models/collation.js";
 import { toAuthorView } from "./authorView.js";
 import { toBookView } from "./bookView.js";
 import { bookPriceMinor } from "./pricing.js";
@@ -74,14 +75,28 @@ const AUTHOR_FIELDS = ["firstName", "lastName", "bio", "birthYear", "country", "
 const OPTIONAL_FIELDS = ["bio", "birthYear", "country", "website"];
 const storedFields = (data) => Object.fromEntries(AUTHOR_FIELDS.filter((field) => Object.hasOwn(data, field)).map((field) => [field, data[field]]));
 
+const duplicateName = () => new AppError("An author with this name already exists", 409, "CONFLICT", { fields: { lastName: "duplicate" } });
+
+// The fast path, for a clear answer: the same name as IDENTITY_COLLATION compares it
 async function refuseDuplicate({ firstName, lastName }, id) {
-  const duplicate = await Author.exists({ firstName, lastName, ...(id && { _id: { $ne: id } }) });
-  if (duplicate) throw new AppError("An author with this name already exists", 409, "CONFLICT", { fields: { lastName: "duplicate" } });
+  const filter = { firstName, lastName, ...(id && { _id: { $ne: id } }) };
+  if (await Author.exists(filter, { collation: IDENTITY_COLLATION })) throw duplicateName();
+}
+
+// A duplicate written after the fast path is refused by the unique index. It
+// gets the same answer: the generic duplicate key answer would name firstName
+async function writeName(write) {
+  try {
+    return await write();
+  } catch (error) {
+    if (error.code === 11000 && error.keyPattern?.firstName && error.keyPattern?.lastName) throw duplicateName();
+    throw error;
+  }
 }
 
 export async function createAuthor(authorData) {
   await refuseDuplicate(authorData);
-  return toAuthorView(await Author.create(storedFields(authorData)));
+  return toAuthorView(await writeName(() => Author.create(storedFields(authorData))));
 }
 
 /**
@@ -94,12 +109,12 @@ export async function updateAuthor(id, updateData) {
   if (!(await Author.exists({ _id: id }))) throw new NotFoundError("Author not found");
   await refuseDuplicate(updateData, id);
   const unset = Object.fromEntries(OPTIONAL_FIELDS.filter((field) => !Object.hasOwn(updateData, field)).map((field) => [field, ""]));
-  const author = await Author.findByIdAndUpdate(id, {
+  const author = await writeName(() => Author.findByIdAndUpdate(id, {
     $set: storedFields(updateData), $unset: { ...unset, books: "" },
   }, {
     // Only the allowlisted update above may unset the removed legacy schema path.
     new: true, runValidators: true, strict: false,
-  }).lean();
+  }).lean());
   if (!author) throw new NotFoundError("Author not found");
   return toAuthorView(author);
 }
