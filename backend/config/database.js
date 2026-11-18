@@ -12,7 +12,7 @@ import config from "./default.js";
  * identities the error names the command that lists those documents, instead
  * of the collation keys MongoDB reports.
  */
-const IDENTITY_MODELS = new Set(["Author"]);
+const IDENTITY_MODELS = new Set(["Author", "Book"]);
 
 export async function ensureIndexes() {
   await Promise.all(

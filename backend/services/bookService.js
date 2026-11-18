@@ -7,6 +7,7 @@
 import mongoose from "mongoose";
 import Author from "../models/Author.js";
 import Book from "../models/Book.js";
+import { IDENTITY_COLLATION } from "../models/collation.js";
 import { AppError, NotFoundError, ValidationError } from "../utils/errors.js";
 import { toBookView } from "./bookView.js";
 import { toMinorUnits } from "./pricing.js";
@@ -92,14 +93,29 @@ async function touchAuthor(authorId, session) {
   }
 }
 
-// The same title, author and year is the same book; exceptId is the book being replaced
+const duplicateBook = () =>
+  new AppError("A book with this title, author and year already exists", 409, "CONFLICT", {
+    fields: { title: "duplicate" },
+  });
+
+// The same title, author and year is the same book, the title compared as
+// IDENTITY_COLLATION does; exceptId is the book being replaced
 async function assertNotDuplicate({ title, authorId, publicationYear }, exceptId, session) {
   const filter = { title, author: authorId, publicationYear };
   if (exceptId) filter._id = { $ne: exceptId };
-  if (await Book.exists(filter, { session })) {
-    throw new AppError("A book with this title, author and year already exists", 409, "CONFLICT", {
-      fields: { title: "duplicate" },
-    });
+  if (await Book.exists(filter, { session, collation: IDENTITY_COLLATION })) {
+    throw duplicateBook();
+  }
+}
+
+// A duplicate written by another writer after the check is refused by the
+// unique index. It gets the same answer: the generic one would name author
+async function writeBook(write) {
+  try {
+    return await write();
+  } catch (error) {
+    if (error.code === 11000 && error.keyPattern?.title) throw duplicateBook();
+    throw error;
   }
 }
 
@@ -111,12 +127,14 @@ const withAuthor = (query) => query.populate("author", "firstName lastName").lea
  * @returns {Object} Book view
  */
 export async function createBook(body) {
-  const book = await mongoose.connection.transaction(async (session) => {
-    await touchAuthor(body.authorId, session);
-    await assertNotDuplicate(body, undefined, session);
-    const [created] = await Book.create([storedFields(body)], { session });
-    return created;
-  });
+  const book = await writeBook(() =>
+    mongoose.connection.transaction(async (session) => {
+      await touchAuthor(body.authorId, session);
+      await assertNotDuplicate(body, undefined, session);
+      const [created] = await Book.create([storedFields(body)], { session });
+      return created;
+    })
+  );
 
   return toBookView(await withAuthor(Book.findById(book._id)));
 }
@@ -139,16 +157,18 @@ export async function updateBook(id, body) {
   };
   // Touches the author the book has after the write. Its previous author needs
   // no touch: a delete of that author meanwhile still counts the book, and is refused
-  const book = await mongoose.connection.transaction(async (session) => {
-    await touchAuthor(body.authorId, session);
-    await assertNotDuplicate(body, id, session);
-    const updated = await withAuthor(
-      Book.findByIdAndUpdate(id, update, { new: true, runValidators: true, session })
-    );
-    // Deleted between the check and the write
-    if (!updated) throw new NotFoundError("Book not found");
-    return updated;
-  });
+  const book = await writeBook(() =>
+    mongoose.connection.transaction(async (session) => {
+      await touchAuthor(body.authorId, session);
+      await assertNotDuplicate(body, id, session);
+      const updated = await withAuthor(
+        Book.findByIdAndUpdate(id, update, { new: true, runValidators: true, session })
+      );
+      // Deleted between the check and the write
+      if (!updated) throw new NotFoundError("Book not found");
+      return updated;
+    })
+  );
 
   return toBookView(book);
 }

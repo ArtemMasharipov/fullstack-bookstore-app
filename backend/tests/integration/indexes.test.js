@@ -1,6 +1,8 @@
+import mongoose from "mongoose";
 import { describe, expect, it } from "vitest";
 import { ensureIndexes } from "../../config/database.js";
 import Author from "../../models/Author.js";
+import Book from "../../models/Book.js";
 import Order from "../../models/Order.js";
 import { useTestDatabase } from "../helpers/db.js";
 
@@ -8,6 +10,7 @@ useTestDatabase();
 
 const CZECH = { locale: "cs", strength: 2 };
 const AUTHOR_NAME_INDEX = "firstName_lastName_cs2_unique";
+const BOOK_IDENTITY_INDEX = "author_title_publicationYear_cs2_unique";
 const indexNames = async (model) => (await model.collection.indexes()).map((index) => index.name);
 
 // Mongoose builds indexes in the background, one after another, and does not
@@ -74,5 +77,41 @@ describe("the author name index", () => {
     expect(refusal.cause.code).toBe(11000);
     expect(await Author.countDocuments()).toBe(2);
     expect(await indexNames(Author)).not.toContain(AUTHOR_NAME_INDEX);
+  });
+});
+
+// One book per title, author and year, the title compared as a name is
+describe("the book identity index", () => {
+  it("builds the unique book identity index with the same collation", async () => {
+    await Book.init();
+    await Book.collection.dropIndexes();
+
+    await ensureIndexes();
+
+    const indexes = await Book.collection.indexes();
+    expect(indexes.find((index) => index.name === BOOK_IDENTITY_INDEX)).toMatchObject({
+      key: { author: 1, title: 1, publicationYear: 1 },
+      unique: true,
+      collation: CZECH,
+    });
+  });
+
+  it("refuses to build it over existing duplicates, names the preflight and changes no document", async () => {
+    await Book.init();
+    await Book.collection.dropIndex(BOOK_IDENTITY_INDEX);
+    const author = new mongoose.Types.ObjectId();
+    await Book.collection.insertMany([
+      { title: "R.U.R.", author, publicationYear: 1920 },
+      { title: "r.u.r.", author, publicationYear: 1920 },
+    ]);
+
+    const refusal = await ensureIndexes().then(() => null, (error) => error);
+
+    expect(refusal).toBeInstanceOf(Error);
+    expect(refusal.message).toContain("books");
+    expect(refusal.message).toContain("npm run check:identities");
+    expect(refusal.cause.code).toBe(11000);
+    expect(await Book.countDocuments()).toBe(2);
+    expect(await indexNames(Book)).not.toContain(BOOK_IDENTITY_INDEX);
   });
 });

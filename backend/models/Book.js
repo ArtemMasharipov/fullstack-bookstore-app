@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { IDENTITY_COLLATION } from "./collation.js";
 
 const bookSchema = new mongoose.Schema(
   {
@@ -67,6 +68,12 @@ const bookSchema = new mongoose.Schema(
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   }
+);
+
+// One book per title, author and year, the title compared as IDENTITY_COLLATION does
+bookSchema.index(
+  { author: 1, title: 1, publicationYear: 1 },
+  { unique: true, collation: IDENTITY_COLLATION, name: "author_title_publicationYear_cs2_unique" }
 );
 
 // Indexes for search and performance
