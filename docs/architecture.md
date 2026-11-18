@@ -87,6 +87,10 @@ timestamps; `Session` has `createdAt`.
   Author reads validate their query, combine literal name search with the country filter and sort ties by id.
   Author writes validate strict bodies and replace optional fields; deleting an author that has books answers
   409 `AUTHOR_HAS_BOOKS` with their count, so it never silently cascades through the catalogue.
+- One author per first and last name, compared without case but with diacritics (`IDENTITY_COLLATION`, Czech at
+  strength 2, in `models/collation.js`). A unique index with that collation enforces it for every writer; the
+  service checks first with the same collation, and answers a duplicate the index refuses with the same 409 on
+  `lastName` ([decision 0009](decisions/0009-catalogue-identities.md)).
 - A book write and an author delete each run in a transaction that writes the author document: the book write
   first raises the author's `bookRevision` (leaving `updatedAt` as it was), the delete removes the author. Two such
   transactions at the same moment conflict, and the driver runs the loser again on what the winner wrote
@@ -135,7 +139,9 @@ timestamps; `Session` has `createdAt`.
 - Orders stored before `schemaVersion: 2` (float amounts in crowns, `isPaid`, the street in `address`) are never
   rewritten. `services/orderView.js` reads both shapes into the same order view, converting the old amounts to geller.
 - The server builds every declared index before it takes requests (`ensureIndexes` in `config/database.js`); the
-  order idempotency key depends on its unique index.
+  order idempotency key depends on its unique index. Documents that already break a unique index keep it from being
+  built, and the server then does not start; for author names the message points to `npm run check:identities`,
+  which lists them without changing anything.
 
 ## Request path
 

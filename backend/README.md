@@ -17,6 +17,7 @@ Run them from `backend/`.
 | `npm run test:watch` | vitest in watch mode                                                    |
 | `npm run seed`     | demo users, authors and books (`npm run seed -- --reset` to start over)   |
 | `npm run migrate:book-prices -- <command>` | book prices in whole geller, on a local database only: `preflight` lists prices that are not whole geller; `up` checks, writes a backup to `backups/`, then adds `priceMinor` next to every `price`; `down` removes it; `backup` saves all books, and `restore <file>` saves the current ones before it brings back those of the file ([decision 0008](../docs/decisions/0008-book-prices-in-geller.md)) |
+| `npm run check:identities` | on a local database only, lists the authors whose names are the same without regard to case, with their ids and book counts, and changes nothing; exits 1 when there are any. Run it before starting a release that adds the unique name index: the server does not start over such duplicates ([decision 0009](../docs/decisions/0009-catalogue-identities.md)) |
 | `npm run e2e:server` | the API for the Playwright smoke test; started by Playwright, not by hand |
 
 Vitest uses half the available CPU count, at least one worker and at most four. This keeps MongoDB workers and
@@ -168,8 +169,11 @@ POST/PUT require firstName and lastName (trimmed, 2–50). Optional fields: bio 
 (JSON integer, 1000 through the year at validation time), country (trimmed, up to 100), website (trimmed HTTP/HTTPS
 URL, up to 2048). Unknown fields and wrong types answer 400; writes accept no query parameters. POST answers 201,
 PUT 200, both `{ success, data: AuthorView }`. PUT fully replaces the author: omitted optional fields are unset,
-and any ignored legacy books array is removed on that successful write. An exact duplicate firstName/lastName after
-trimming answers 409 `CONFLICT` with `fields: { lastName: "duplicate" }`; an author may keep its own name.
+and any ignored legacy books array is removed on that successful write. A firstName/lastName that, after trimming,
+is another author's name without regard to case or Unicode form answers 409 `CONFLICT` with
+`fields: { lastName: "duplicate" }`, also when two requests arrive together; diacritics count, so `Karel Capek` is
+not `Karel Čapek`. An author may keep its own name or change its case. A unique index enforces the rule
+([decision 0009](../docs/decisions/0009-catalogue-identities.md)).
 
 DELETE answers 204 with no body when the author has no books. Otherwise it answers 409 `AUTHOR_HAS_BOOKS`,
 `details: { books: number }`, leaving both the author and books intact. The old `deleteBooks` query parameter is
