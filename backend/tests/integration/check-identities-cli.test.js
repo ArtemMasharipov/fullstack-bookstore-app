@@ -87,9 +87,10 @@ describe("catalogue identity check CLI", () => {
     const result = run([], { MONGODB_URI: localUri(dbName) });
 
     expect(result.status, result.output).toBe(0);
-    expect(JSON.parse(result.stdout)).toMatchObject({
+    expect(JSON.parse(result.stdout)).toEqual({
       collation: { locale: "cs", strength: 2 },
       authors: { total: 2, collisions: [] },
+      books: { total: 0, collisions: [] },
     });
     const after = await withDatabase(dbName, async (db) => ({
       collections: (await db.listCollections().toArray()).map(({ name }) => name),
@@ -117,6 +118,33 @@ describe("catalogue identity check CLI", () => {
         authors: [
           { id: ids[0], firstName: "Karel", lastName: "Čapek", books: 0 },
           { id: ids[1], firstName: "KAREL", lastName: "čapek", books: 0 },
+        ],
+      },
+    ]);
+  });
+
+  it("exits 1 and lists the books of a collision", async () => {
+    const dbName = "identity_cli_book_collision";
+    const author = new mongoose.Types.ObjectId();
+    const ids = await withDatabase(dbName, async (db) => {
+      const { insertedIds } = await db.collection("books").insertMany([
+        { title: "R.U.R.", author, publicationYear: 1920 },
+        { title: "r.u.r.", author, publicationYear: 1920 },
+      ]);
+      return Object.values(insertedIds).map(String);
+    });
+
+    const result = run([], { MONGODB_URI: localUri(dbName) });
+
+    expect(result.status, result.output).toBe(1);
+    expect(result.stderr).toContain("1 collision");
+    expect(JSON.parse(result.stdout).books.collisions).toEqual([
+      {
+        author: String(author),
+        publicationYear: 1920,
+        books: [
+          { id: ids[0], title: "R.U.R." },
+          { id: ids[1], title: "r.u.r." },
         ],
       },
     ]);

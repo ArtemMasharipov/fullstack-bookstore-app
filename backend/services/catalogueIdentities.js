@@ -1,11 +1,12 @@
 /**
  * Catalogue identity preflight
  *
- * An author's name is unique under IDENTITY_COLLATION (see models/collation.js):
- * names that differ only in case are one name. A unique index cannot be built
- * over documents that already break that rule, and without it the server does
- * not start. findIdentityCollisions() lists those documents with what an owner
- * needs to settle each case by hand.
+ * An author's name, and a book's title, author and year, are unique under
+ * IDENTITY_COLLATION (see models/collation.js): names or titles that differ
+ * only in case are one. A unique index cannot be built over documents that
+ * already break that rule, and without it the server does not start.
+ * findIdentityCollisions() lists those documents with what an owner needs to
+ * settle each case by hand.
  *
  * It only reads, through native collections: it builds no index, creates no
  * collection and also sees documents the current models would reject.
@@ -63,9 +64,47 @@ async function authorCollisions(db) {
   return { total: await authors.countDocuments(), collisions };
 }
 
+// The groups of books of one author and year with one title under the collation
+async function bookCollisions(db) {
+  const books = db.collection("books");
+  const groups = await books
+    .aggregate(
+      [
+        {
+          $group: {
+            _id: { author: "$author", title: "$title", publicationYear: "$publicationYear" },
+            books: { $push: { _id: "$_id", title: "$title" } },
+          },
+        },
+        { $match: { "books.1": { $exists: true } } },
+      ],
+      { collation: IDENTITY_COLLATION }
+    )
+    .toArray();
+
+  const collisions = groups
+    .map(({ _id: { author, publicationYear }, books: members }) => ({
+      author: author == null ? null : String(author),
+      publicationYear,
+      books: members.map(({ _id, title }) => ({ id: String(_id), title })).sort(byId),
+    }))
+    .sort((left, right) => byId(left.books[0], right.books[0]));
+
+  return { total: await books.countDocuments(), collisions };
+}
+
 /**
- * @returns {{ collation: Object, authors: { total: number, collisions: { authors: Object[] }[] } }}
+ * @returns {{
+ *   collation: Object,
+ *   authors: { total: number, collisions: { authors: Object[] }[] },
+ *   books: { total: number, collisions: { author: string, publicationYear: number, books: Object[] }[] },
+ * }}
  */
 export async function findIdentityCollisions(connection = mongoose.connection) {
-  return { collation: IDENTITY_COLLATION, authors: await authorCollisions(connection.db) };
+  const { db } = connection;
+  return {
+    collation: IDENTITY_COLLATION,
+    authors: await authorCollisions(db),
+    books: await bookCollisions(db),
+  };
 }

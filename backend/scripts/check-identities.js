@@ -1,10 +1,10 @@
 /**
  * Catalogue identity check: npm run check:identities
  *
- * Lists the authors whose names are one name under the collation of their
- * unique index (see services/catalogueIdentities.js). Run it before starting a
- * release that builds that index: the server does not start while such
- * duplicates exist. It reads only, and never merges or deletes anything; each
+ * Lists the authors whose names, and the books of one author and year whose
+ * titles, are one under the collation of their unique indexes (see
+ * services/catalogueIdentities.js). Run it before starting a release that
+ * builds those indexes: the server does not start while such duplicates exist. It reads only, and never merges or deletes anything; each
  * collision is settled by hand, through the API.
  *
  * Only a local database is accepted: the URI is checked before connecting and
@@ -35,7 +35,7 @@ if (process.argv.length > 2) {
 
     const report = await findIdentityCollisions();
     console.log(JSON.stringify(report, null, 2));
-    const collisions = report.authors.collisions.length;
+    const collisions = report.authors.collisions.length + report.books.collisions.length;
     if (collisions > 0) {
       console.error(`${collisions} collision(s) keep a unique index from being built; settle each one first`);
       process.exitCode = 1;

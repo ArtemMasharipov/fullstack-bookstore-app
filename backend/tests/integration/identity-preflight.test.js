@@ -39,6 +39,7 @@ describe("catalogue identity preflight", () => {
     expect(await findIdentityCollisions()).toEqual({
       collation: CZECH,
       authors: { total: 5, collisions: [] },
+      books: { total: 24, collisions: [] },
     });
   });
 
@@ -92,5 +93,37 @@ describe("catalogue identity preflight", () => {
     ]);
     const build = await ensureIndexes().then(() => "built", (error) => error.cause?.code);
     expect(build).toBe(11000);
+  });
+
+  it("reports a case-variant title of one author and year, and changes nothing", async () => {
+    await collection("books").dropIndex("author_title_publicationYear_cs2_unique");
+    const [capek, hasek] = [new mongoose.Types.ObjectId(), new mongoose.Types.ObjectId()];
+    const { insertedIds: ids } = await collection("books").insertMany([
+      { title: "R.U.R.", author: capek, publicationYear: 1920 },
+      { title: "r.u.r.", author: capek, publicationYear: 1920 },
+      // Another year, another author, other diacritics: other books
+      { title: "R.U.R.", author: capek, publicationYear: 1921 },
+      { title: "R.U.R.", author: hasek, publicationYear: 1920 },
+      { title: "Válka s mloky", author: capek, publicationYear: 1936 },
+      { title: "Valka s mloky", author: capek, publicationYear: 1936 },
+    ]);
+    const before = await snapshot();
+
+    const report = await findIdentityCollisions();
+
+    expect(report.books).toEqual({
+      total: 6,
+      collisions: [
+        {
+          author: String(capek),
+          publicationYear: 1920,
+          books: [
+            { id: String(ids[0]), title: "R.U.R." },
+            { id: String(ids[1]), title: "r.u.r." },
+          ],
+        },
+      ],
+    });
+    expect(await snapshot()).toBe(before);
   });
 });
