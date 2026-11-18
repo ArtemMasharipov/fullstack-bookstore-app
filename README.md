@@ -100,9 +100,9 @@ runs away from databases that are not local. [docs/architecture.md](docs/archite
   asynchronous signing, with Node 24 support retained.
 - [0008, book prices in whole geller](docs/decisions/0008-book-prices-in-geller.md): an expand-then-contract
   migration with a local-only command, a backup first and a way back.
-- [0009, catalogue identities](docs/decisions/0009-catalogue-identities.md): one author per name without regard to
-  case, kept by a unique index with Czech collation; existing duplicates stop the server until a read-only check
-  lists them and they are settled by hand.
+- [0009, catalogue identities](docs/decisions/0009-catalogue-identities.md): one author per name and one book per
+  title, author and year, without regard to case, kept by unique indexes with Czech collation; existing duplicates
+  stop the server until a read-only check lists them and they are settled by hand.
 
 ## Getting started
 

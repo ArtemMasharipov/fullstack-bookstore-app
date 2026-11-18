@@ -17,7 +17,7 @@ Run them from `backend/`.
 | `npm run test:watch` | vitest in watch mode                                                    |
 | `npm run seed`     | demo users, authors and books (`npm run seed -- --reset` to start over)   |
 | `npm run migrate:book-prices -- <command>` | book prices in whole geller, on a local database only: `preflight` lists prices that are not whole geller; `up` checks, writes a backup to `backups/`, then adds `priceMinor` next to every `price`; `down` removes it; `backup` saves all books, and `restore <file>` saves the current ones before it brings back those of the file ([decision 0008](../docs/decisions/0008-book-prices-in-geller.md)) |
-| `npm run check:identities` | on a local database only, lists the authors whose names are the same without regard to case, with their ids and book counts, and changes nothing; exits 1 when there are any. Run it before starting a release that adds the unique name index: the server does not start over such duplicates ([decision 0009](../docs/decisions/0009-catalogue-identities.md)) |
+| `npm run check:identities` | on a local database only, lists the authors whose names, and the books of one author and year whose titles, are the same without regard to case, with their ids (and the book count of each author), and changes nothing; exits 1 when there are any. Run it before starting a release that adds the unique identity indexes: the server does not start over such duplicates ([decision 0009](../docs/decisions/0009-catalogue-identities.md)) |
 | `npm run e2e:server` | the API for the Playwright smoke test; started by Playwright, not by hand |
 
 Vitest uses half the available CPU count, at least one worker and at most four. This keeps MongoDB workers and
@@ -124,8 +124,10 @@ are supported; its sort and index move to `priceMinor` when the legacy field is 
 The cover is an `https://` URL up to 2048 characters or a PNG/JPEG/WebP/SVG data URI up to 200000 characters.
 PUT replaces the book, removing omitted description/image and resetting omitted inStock to true. The stock PATCH
 takes only `{ inStock: boolean }`. An unknown author answers 400 `VALIDATION_FAILED` with `authorId: "not_found"`;
-a duplicate title/author/year answers 409 `CONFLICT` with `title: "duplicate"`. Unknown fields and wrong types
-answer 400 with field codes.
+the title of another book of the same author and year answers 409 `CONFLICT` with `title: "duplicate"`. Titles are
+compared as author names are: without regard to case or Unicode form, with diacritics (`R.U.R.` and `r.u.r.` are one
+title), and a unique index enforces it ([decision 0009](../docs/decisions/0009-catalogue-identities.md)). A book
+may change the case of its own title. Unknown fields and wrong types answer 400 with field codes.
 
 ### Authors (`/authors`)
 
