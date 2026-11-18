@@ -2,7 +2,7 @@ import baseApi from './baseApi'
 
 /**
  * Authors API - direct axios implementation
- * No factory abstractions (PHASE 3)
+ * No factory abstractions
  */
 export const authorsApi = {
     fetchAll: (params) => baseApi.get('/authors', { params }).then((res) => res.data),

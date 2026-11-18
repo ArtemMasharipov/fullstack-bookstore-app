@@ -3,7 +3,7 @@ import { resolveErrorKey } from '@/utils/errorResolver'
 
 /**
  * Base Axios instance with interceptors
- * Simplified version - no unnecessary wrappers (PHASE 3)
+ * Simplified version - no unnecessary wrappers
  */
 
 const baseApi = axios.create({
