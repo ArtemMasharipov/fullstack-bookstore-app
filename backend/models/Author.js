@@ -81,16 +81,4 @@ authorSchema.virtual("fullName").get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
 
-// Model middleware
-authorSchema.pre("remove", async function (next) {
-  try {
-    // Delete all books by this author
-    const Book = mongoose.model("Book");
-    await Book.deleteMany({ author: this._id });
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
-
 export default mongoose.model("Author", authorSchema);
