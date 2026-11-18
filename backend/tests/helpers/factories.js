@@ -3,16 +3,28 @@
  * createAuthor() and createBook() save a valid document through the model;
  * overrides replace the default fields. createBook() creates an author unless
  * one is given.
+ *
+ * Catalogue identities are unique, as in the app. An author created without
+ * a name is Karel Čapek, or a numbered Čapek once a Karel Čapek exists. A
+ * second book of one author needs a title or year of its own.
  */
 
 import Author from "../../models/Author.js";
 import Book from "../../models/Book.js";
 import Order from "../../models/Order.js";
 
+const DEFAULT_NAME = { firstName: "Karel", lastName: "Čapek" };
+let nextNumber = 2;
+
+async function defaultName(overrides) {
+  const named = Object.hasOwn(overrides, "firstName") || Object.hasOwn(overrides, "lastName");
+  if (named || !(await Author.exists(DEFAULT_NAME))) return DEFAULT_NAME;
+  return { ...DEFAULT_NAME, lastName: `Čapek ${nextNumber++}` };
+}
+
 export async function createAuthor(overrides = {}) {
   return Author.create({
-    firstName: "Karel",
-    lastName: "Čapek",
+    ...(await defaultName(overrides)),
     ...overrides,
   });
 }

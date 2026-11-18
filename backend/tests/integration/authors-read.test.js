@@ -92,7 +92,9 @@ describe("author read contracts", () => {
   it.each(["firstName", "lastName", "birthYear", "createdAt", "-firstName", "-lastName", "-birthYear", "-createdAt"])(
     "pages tied %s values in stable id order", async (sortBy) => {
       const at = new Date("2000-01-01T00:00:00Z");
-      const authors = Array.from({ length: 12 }, () => ({ _id: new mongoose.Types.ObjectId(), firstName: "Karel", lastName: "Čapek", birthYear: 1890, createdAt: at, updatedAt: at }));
+      // Names are unique, so the other name differs and only the sorted field ties
+      const tiedLastName = sortBy.endsWith("lastName");
+      const authors = Array.from({ length: 12 }, (_, i) => ({ _id: new mongoose.Types.ObjectId(), firstName: tiedLastName ? `Karel ${i}` : "Karel", lastName: tiedLastName ? "Čapek" : `Čapek ${i}`, birthYear: 1890, createdAt: at, updatedAt: at }));
       await Author.collection.insertMany(authors);
       const expected = authors.map((a) => String(a._id)).sort();
       if (sortBy.startsWith("-")) expected.reverse();
@@ -127,8 +129,8 @@ describe("author read contracts", () => {
     const author = await createAuthor();
     const other = await createAuthor({ firstName: "Other" });
     const kept = await createBook({ author: author._id });
-    const deleted = await createBook({ author: author._id });
-    const moved = await createBook({ author: author._id });
+    const deleted = await createBook({ author: author._id, title: "Krakatit" });
+    const moved = await createBook({ author: author._id, title: "Hordubal" });
     await Book.deleteOne({ _id: deleted._id });
     await Book.updateOne({ _id: moved._id }, { author: other._id });
     const res = await get(`/${author.id}?includeBooks=true`);

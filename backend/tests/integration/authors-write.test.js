@@ -106,7 +106,7 @@ describe("author write contracts", () => {
 
   it("refuses to delete an author with books and reports their count", async () => {
     await createBook({ author: author._id });
-    await createBook({ author: author._id });
+    await createBook({ author: author._id, title: "Krakatit" });
     const res = await send("delete", `/${author.id}`);
     expect(res.status).toBe(409);
     expect(res.body.error).toMatchObject({ code: "AUTHOR_HAS_BOOKS", details: { books: 2 } });
