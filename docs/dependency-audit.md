@@ -1,5 +1,44 @@
 # Dependency audit
 
+## Happy DOM security major — 18 November 2026
+
+The full frontend audit reported Happy DOM 20.14.6, the Vitest DOM environment, as **High** for two advisories: host
+code execution through an unsanitized import alias, an incomplete fix for CVE-2026-33943
+([GHSA-834v-8h66-3h79](https://github.com/advisories/GHSA-834v-8h66-3h79), `>=17.0.0 <=21.0.3`), and SSRF through
+iframe and stylesheet loading when parsing untrusted HTML
+([GHSA-c8p4-j97h-3vg8](https://github.com/advisories/GHSA-c8p4-j97h-3vg8), `<=20.14.6`). The exact development pin
+moves to **21.0.4**, the newest release and the only one that fixes both; 21.0.0 to 21.0.3 fix the SSRF only. It was
+installed with npm's age cutoff `--before=2026-11-04T11:49:32Z`. This closes the Happy DOM exception recorded below.
+Happy DOM's own dependency ranges are the same in 20.14.6 and 21.0.4, so the lock file changed only in the root
+`devDependencies` entry and the package below; its locked dependencies keep their versions.
+
+| Package | Old → new | Published | Used by |
+| --- | --- | --- | --- |
+| happy-dom | 20.14.6 → 21.0.4 | 2026-10-20 | frontend development (Vitest `environment: 'happy-dom'`) |
+
+The only breaking change in 21.0.0 turns CSS file loading and iframe page loading off by default
+(`enableCSSFileLoading`, `enableIframePageLoading`). 21.0.4 fixes the code injection in the ESM compiler and keeps
+opaque-origin `data:` iframes away from their parent window. Vitest 4.1.11 passes only `disableErrorCapturing` to the
+window and the project sets no Happy DOM options, so the tests now run with JavaScript evaluation, CSS file loading and
+iframe page loading all off. No spec creates a stylesheet link or an iframe element, and no test needed a change.
+Vitest 4.1.11 accepts any Happy DOM version as an optional peer; 21.0.4 requires Node `>=20.0.0`.
+
+| Installed audit | Before → after |
+| --- | --- |
+| Frontend production | 0 → **0** |
+| Frontend full graph | 7 High + 3 Moderate → 6 High + 3 Moderate |
+
+The remaining findings are development-only and planned separately. Five of the six High entries come from one
+advisory: picomatch ReDoS ([GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf), `<=4.0.7`,
+updated on 17 November), which reaches Vite, Vitest, fdir, tinyglobby and rollup-plugin-visualizer; npm has no fixed
+picomatch release yet. The others are the Vitest mocker, Vite `fs.deny`, fast-uri and postcss-selector-parser findings
+recorded below.
+
+Verification on Node 24.22.1 / npm 11.19.1 (Windows): clean `npm ci` and `npm ls --all`; **918 frontend tests in 75
+files** pass before and after, with the same test names and no skips; lint, format check and build. All 61 production
+files are byte-identical before and after the update: Happy DOM is not part of the bundle. The end-to-end tests run in
+Chromium, not Happy DOM, and were not run for this update.
+
 ## Production dependency patch — 17 November 2026
 
 Four mongoose advisories published on 10 November made the backend production audit fail (**1 High**, mongoose
