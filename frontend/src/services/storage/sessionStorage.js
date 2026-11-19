@@ -14,7 +14,7 @@ export const sessionStorage = {
         try {
             const item = window.sessionStorage.getItem(key)
             return item ? JSON.parse(item) : defaultValue
-        } catch (error) {
+        } catch {
             // Error reading from sessionStorage
             return defaultValue
         }
@@ -28,7 +28,7 @@ export const sessionStorage = {
     set(key, value) {
         try {
             window.sessionStorage.setItem(key, JSON.stringify(value))
-        } catch (error) {
+        } catch {
             // Error writing to sessionStorage
         }
     },
@@ -40,7 +40,7 @@ export const sessionStorage = {
     remove(key) {
         try {
             window.sessionStorage.removeItem(key)
-        } catch (error) {
+        } catch {
             // Error removing from sessionStorage
         }
     },
@@ -51,7 +51,7 @@ export const sessionStorage = {
     clear() {
         try {
             window.sessionStorage.clear()
-        } catch (error) {
+        } catch {
             // Error clearing sessionStorage
         }
     },

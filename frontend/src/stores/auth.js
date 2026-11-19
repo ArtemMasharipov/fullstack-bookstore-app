@@ -178,7 +178,7 @@ export const useAuthStore = defineStore('auth', {
                     this.token = token
                     this.restoreUserFromToken()
                 }
-            } catch (error) {
+            } catch {
                 // Auth initialization failed
                 this.clearAuth()
             }
@@ -297,7 +297,7 @@ export const useAuthStore = defineStore('auth', {
                     // Fetch current user in background
                     this.fetchCurrentUser()
                 }
-            } catch (error) {
+            } catch {
                 // Failed to restore user from token
                 this.clearAuth()
             }
@@ -333,7 +333,7 @@ export const useAuthStore = defineStore('auth', {
                 }
 
                 return true
-            } catch (error) {
+            } catch {
                 this.clearAuth()
                 return false
             }
