@@ -112,8 +112,9 @@ export async function updateAuthor(id, updateData) {
 export async function deleteAuthor(id) {
   if (!(await Author.exists({ _id: id }))) throw new NotFoundError("Author not found");
   // A book written for this author at the same moment raises its bookRevision
-  // first (see bookService.js), so this delete conflicts with it, and MongoDB
-  // runs it again on a snapshot that counts that book
+  // first (see bookService.js), so this delete conflicts with it, and the
+  // driver runs it again (connection.transaction uses session.withTransaction)
+  // on a snapshot that counts that book
   await mongoose.connection.transaction(async (session) => {
     const bookCount = await Book.countDocuments({ author: id }, { session });
     if (bookCount > 0) throw new ConflictError("This author still has books", "AUTHOR_HAS_BOOKS", { books: bookCount });

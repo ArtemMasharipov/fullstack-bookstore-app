@@ -89,9 +89,10 @@ timestamps; `Session` has `createdAt`.
   409 `AUTHOR_HAS_BOOKS` with their count, so it never silently cascades through the catalogue.
 - A book write and an author delete each run in a transaction that writes the author document: the book write
   first raises the author's `bookRevision` (leaving `updatedAt` as it was), the delete removes the author. Two such
-  transactions at the same moment conflict, and MongoDB runs the loser again on what the winner wrote: a delete
-  that loses answers 409 `AUTHOR_HAS_BOOKS`, a book write that loses answers 400 on `authorId`, and no book is left
-  without its author. Book writes for one author therefore run one after another.
+  transactions at the same moment conflict, and the driver runs the loser again on what the winner wrote
+  (`connection.transaction` uses `session.withTransaction`): a delete that loses answers 409 `AUTHOR_HAS_BOOKS`, a
+  book write that loses answers 400 on `authorId`, and no book is left without its author. Book writes for one
+  author therefore run one after another.
 - Book reads use whole geller (`priceMinor`), falling back to crowns (`price`) only for a legacy book without an
   integer `priceMinor`. Book writes and seeding store both fields together for one release. API views include
   `priceMinor`, `currency: "CZK"` and legacy `price`; the frontend displays the minor amount and submits it from the
