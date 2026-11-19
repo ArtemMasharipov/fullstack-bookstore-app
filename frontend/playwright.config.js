@@ -8,6 +8,9 @@ import { SEEDED } from './e2e/credentials.js'
 export default defineConfig({
     testDir: './e2e',
     retries: process.env.CI ? 1 : 0,
+    // Eight workers (the default on a 16-thread machine) starve the API, mongod and the preview of CPU for seconds
+    // and make slow requests time out; four are as fast and stable. CI keeps two.
+    workers: process.env.CI ? 2 : 4,
     reporter: [['list'], ['html', { open: 'never' }]],
     use: {
         baseURL: 'http://localhost:4173',
