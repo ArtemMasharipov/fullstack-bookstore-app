@@ -16,6 +16,9 @@ import { IDENTITY_COLLATION } from "../models/collation.js";
 
 const byId = (left, right) => left.id.localeCompare(right.id);
 
+// A unique index stores a missing field as null; $group would keep them apart
+const asIndexed = (field) => ({ $ifNull: [`$${field}`, null] });
+
 // The groups of authors with one name under the collation, each with the
 // number of books of every author in it
 async function authorCollisions(db) {
@@ -25,7 +28,7 @@ async function authorCollisions(db) {
       [
         {
           $group: {
-            _id: { firstName: "$firstName", lastName: "$lastName" },
+            _id: { firstName: asIndexed("firstName"), lastName: asIndexed("lastName") },
             authors: { $push: { _id: "$_id", firstName: "$firstName", lastName: "$lastName" } },
           },
         },

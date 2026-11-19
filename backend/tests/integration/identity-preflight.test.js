@@ -71,4 +71,26 @@ describe("catalogue identity preflight", () => {
     });
     expect(await snapshot()).toBe(before);
   });
+
+  // A unique index stores a missing field as null, so these two are one name to it
+  it("reports a missing and a null first name of one last name as one name, as the index does", async () => {
+    await collection("authors").dropIndex("firstName_lastName_cs2_unique");
+    const { insertedIds: ids } = await collection("authors").insertMany([
+      { lastName: "Xyz" },
+      { firstName: null, lastName: "Xyz" },
+    ]);
+
+    const report = await findIdentityCollisions();
+
+    expect(report.authors.collisions).toEqual([
+      {
+        authors: [
+          { id: String(ids[0]), firstName: undefined, lastName: "Xyz", books: 0 },
+          { id: String(ids[1]), firstName: null, lastName: "Xyz", books: 0 },
+        ],
+      },
+    ]);
+    const build = await ensureIndexes().then(() => "built", (error) => error.cause?.code);
+    expect(build).toBe(11000);
+  });
 });
