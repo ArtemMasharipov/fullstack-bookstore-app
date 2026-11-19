@@ -68,7 +68,8 @@ The previous release declares a plain index on `{ firstName, lastName }`, automa
   ], { collation: { locale: "cs", strength: 2 } })
 
   db.books.aggregate([
-    { $group: { _id: { author: "$author", title: "$title", publicationYear: "$publicationYear" },
+    { $group: { _id: { author: { $ifNull: ["$author", null] }, title: { $ifNull: ["$title", null] },
+                       publicationYear: { $ifNull: ["$publicationYear", null] } },
                 books: { $push: { id: "$_id", title: "$title" } }, count: { $sum: 1 } } },
     { $match: { count: { $gt: 1 } } },
     { $project: { _id: 0, author: "$_id.author", publicationYear: "$_id.publicationYear", books: 1 } }

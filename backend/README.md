@@ -125,7 +125,7 @@ The cover is an `https://` URL up to 2048 characters or a PNG/JPEG/WebP/SVG data
 PUT replaces the book, removing omitted description/image and resetting omitted inStock to true. The stock PATCH
 takes only `{ inStock: boolean }`. An unknown author answers 400 `VALIDATION_FAILED` with `authorId: "not_found"`;
 the title of another book of the same author and year answers 409 `CONFLICT` with `title: "duplicate"`. Titles are
-compared as author names are: without regard to case or Unicode form, with diacritics (`R.U.R.` and `r.u.r.` are one
+compared as author names are (see the authors below): without case, with diacritics (`R.U.R.` and `r.u.r.` are one
 title), and a unique index enforces it ([decision 0009](../docs/decisions/0009-catalogue-identities.md)). A book
 may change the case of its own title. Unknown fields and wrong types answer 400 with field codes.
 
