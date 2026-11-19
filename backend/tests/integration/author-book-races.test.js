@@ -83,6 +83,49 @@ describe("deleting an author while a book is written for it", () => {
     expect(await Author.exists({ _id: to._id })).not.toBeNull();
     expect(await orphans()).toEqual([]);
   });
+
+  it("a book written after its author was deleted answers 400 on authorId and stores nothing", async () => {
+    const author = await createAuthor();
+    meeting.before(Author, "updateOne");
+    meeting.after(Author, "deleteOne");
+
+    const [created, deleted] = await Promise.all([
+      meeting.track(postBook(bookBody(author.id))),
+      meeting.track(deleteAuthor(author.id)),
+    ]);
+
+    expect([created.status, deleted.status]).toEqual([400, 204]);
+    expect(created.body.error).toMatchObject({
+      code: "VALIDATION_FAILED",
+      fields: { authorId: "not_found" },
+    });
+    expect(await Book.countDocuments()).toBe(0);
+    expect(await orphans()).toEqual([]);
+  });
+});
+
+// The touch is what makes a book write conflict with a delete. An update that
+// Mongoose leaves out (a path the schema does not know) is not acknowledged and
+// reports no match: the write has to stop there, not go on without its conflict
+describe("the author touch of a book write", () => {
+  it("refuses a book write whose author touch is not acknowledged, and stores nothing", async () => {
+    const author = await createAuthor();
+    const other = await createAuthor({ firstName: "Josef" });
+    const book = await createBook({ author: author._id, title: "Hordubal", publicationYear: 1933 });
+    vi.spyOn(Author, "updateOne").mockResolvedValue({ acknowledged: false });
+
+    const created = await postBook(bookBody(author.id));
+    const moved = await putBook(book.id, bookBody(other.id, { title: "Hordubal", publicationYear: 1933 }));
+
+    expect([created.status, moved.status]).toEqual([400, 400]);
+    expect(created.body.error).toMatchObject({
+      code: "VALIDATION_FAILED",
+      fields: { authorId: "not_found" },
+    });
+    expect(moved.body.error.fields).toEqual({ authorId: "not_found" });
+    expect(await Book.countDocuments()).toBe(1);
+    expect(String((await Book.findById(book.id).lean()).author)).toBe(author.id);
+  });
 });
 
 describe("book writes for one author", () => {

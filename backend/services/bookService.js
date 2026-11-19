@@ -76,16 +76,18 @@ function storedFields({ authorId, price, priceMinor, ...fields }) {
 
 // The first write of every transaction that writes a book: it raises the
 // author's bookRevision, so it conflicts with a delete of that author running
-// at the same moment, and MongoDB runs the losing transaction again on what the
-// winner wrote. It also checks that the author exists. The author's updatedAt
-// stays as it was: a new book is no change of its author
+// at the same moment, and the driver runs the losing transaction again
+// (connection.transaction uses session.withTransaction) on what the winner
+// wrote. It also checks that the author exists. Anything but one matched
+// author stops the write, also an update Mongoose did not send at all. The
+// author's updatedAt stays as it was: a new book is no change of its author
 async function touchAuthor(authorId, session) {
   const { matchedCount } = await Author.updateOne(
     { _id: authorId },
     { $inc: { bookRevision: 1 } },
     { session, timestamps: false }
   );
-  if (matchedCount === 0) {
+  if (matchedCount !== 1) {
     throw new ValidationError("Validation failed", { authorId: "not_found" });
   }
 }
