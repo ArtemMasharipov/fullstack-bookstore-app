@@ -1,5 +1,76 @@
 # Dependency audit
 
+## ESLint 9 flat config — 19 November 2026
+
+The frontend linted with ESLint 7.32.0 and the legacy `.eslintrc.cjs`. ESLint 7 cannot run typescript-eslint, which the
+planned TypeScript migration needs, so the lint tools move to ESLint 9 with a flat config (`frontend/eslint.config.js`).
+ESLint 10 exists (10.15.0 at the time of writing), but this step stays on the 9 line; 9.39.5 is its newest release
+under the cutoff. Everything was installed with npm's age cutoff `--before=2026-11-05T15:30:00Z` (19 November
+15:32 UTC minus 14 days). Prettier stays at 2.8.8 (`^2.4.1`), because a Prettier major would reformat the sources.
+
+| Package | Old → new | Published (new) | Peer check |
+| --- | --- | --- | --- |
+| eslint | 7.32.0 → 9.39.5 | 2026-07-10 | Node `^18.18.0 \|\| ^20.9.0 \|\| >=21.1.0`; the project runs 24.22.1 |
+| eslint-plugin-vue | 8.7.1 → 10.12.0 | 2026-10-26 | `eslint ^8.57 \|\| ^9 \|\| ^10`, `vue-eslint-parser ^10.3.0` |
+| vue-eslint-parser | 8.3.0 (transitive) → 10.4.1 (direct, exact) | 2026-06-02 | `eslint ^8.57 \|\| ^9 \|\| ^10` |
+| eslint-config-prettier | 8.10.0 → 10.1.8 | 2025-07-18 | `eslint >=7.0.0` |
+| eslint-plugin-prettier | 4.2.1 → 4.2.5 | 2025-07-18 | `eslint >=7.28.0`, `prettier >=2.0.0` |
+| @eslint/js (new, exact) | 9.39.5 | 2026-07-10 | the `eslint:recommended` rule set of the installed ESLint |
+| @eslint/compat (new, exact) | 2.1.1 | 2026-09-03 | `includeIgnoreFile` reads `.gitignore` |
+| globals (new, exact) | 17.14.0 | 2026-11-01 | browser and Node globals |
+
+eslint-plugin-prettier 5 requires `prettier >=3`, so the 4.x line stays; 4.2.5 is its last release and it runs on
+ESLint 9 unchanged (checked: a badly formatted file is reported by `prettier/prettier`). It has no flat preset, so the
+config lists its `recommended` settings by hand. The old versions were published between 2021-07-30 and 2023-08-03.
+`vue-eslint-parser` became a direct dependency because the config and `ui-scope.spec.js` import it.
+
+The lock file changed only in development nodes: 27 added, 57 removed, 18 changed, none flagged production, and every
+added or changed version is dated before the cutoff (the newest are `globals` 17.14.0 on 1 November and `semver` 7.8.6
+on 2 November, a nested dependency of eslint-plugin-vue; `acorn` 8.14.1 → 8.19.0, 5 October, is the other shared
+package that moved). npm could not replace eslint-plugin-vue 8 in place (the peer ranges of the old and the new
+`vue-eslint-parser` collided), so `eslint-plugin-vue` was uninstalled first and then installed again with the cutoff.
+
+| Installed audit | Before → after |
+| --- | --- |
+| Frontend production | 0 → **0** |
+| Frontend full graph | 5 Moderate → 3 Moderate |
+
+The two findings that went away came through the old ESLint tree (`fast-uri` through ESLint 7's `table`/`ajv` and
+`postcss-selector-parser` 6.1.4 through eslint-plugin-vue 8). The remaining three are the Vite `fs.deny` and Vitest
+mocker findings recorded above. `npm audit fix` was not used.
+
+Coverage is identical. `eslint . --ext .vue,.js,.jsx,.cjs,.mjs --ignore-path .gitignore` linted 217 files on ESLint 7
+and `eslint .` lints 217 on ESLint 9 with 0 errors and 0 warnings in both runs; the lists differ only in the config file
+itself (`.eslintrc.cjs` out, `eslint.config.js` in). `includeIgnoreFile` reads the same `frontend/.gitignore`. The
+effective rules for a `.vue`, a `.js` and a spec file differ only as the upgrade requires:
+
+- Removed from `eslint:recommended` in ESLint 9: `no-inner-declarations` and `no-new-symbol` (the second is replaced by
+  `no-new-native-nonconstructor`).
+- Added to `eslint:recommended`: `no-constant-binary-expression`, `no-empty-static-block`, `no-loss-of-precision`,
+  `no-new-native-nonconstructor`, `no-nonoctal-decimal-escape`, `no-unsafe-optional-chaining`,
+  `no-unused-private-class-members`, `no-useless-backreference`. None reports in the codebase.
+- Removed from `plugin:vue/vue3-essential`: `vue/no-setup-props-destructure`, `vue/script-setup-uses-vars` (both gone
+  from the plugin); `vue/comment-directive` and `vue/jsx-uses-vars` no longer apply to plain `.js` files.
+- Added to `flat/essential`: `vue/no-child-content`, `vue/no-deprecated-delete-set`,
+  `vue/no-deprecated-model-definition`, `vue/no-expose-after-await`, `vue/no-reserved-component-names`,
+  `vue/no-use-computed-property-like-method`, `vue/no-v-text-v-html-on-component`, `vue/prefer-import-from-vue`,
+  `vue/valid-attribute-name`, `vue/valid-define-options`. None reports in the codebase.
+- ESLint 9 prints the default options of every rule; the enabled severities of all other rules are equal.
+
+The custom `vue/no-bare-strings-in-template` rule, its allowlist, `vue/valid-v-slot`, the Pinia `map*` restriction (the
+unused `.eslintrc.pinia.json` held the same rule and is deleted) and the three-file legacy override are carried over
+unchanged. A bare string added to a strict SFC (`NavBar.vue`) fails lint; the same string in a legacy SFC
+(`AuthorList.vue`) passes; both edits were reverted. `ui-scope.spec.js` now reads the rule configuration from
+`ESLint#calculateConfigForFile` and checks it with a flat `Linter`, and it fails when the legacy override is removed.
+
+ESLint 9 changed one rule's meaning: `no-unused-vars` reports unused `catch (error)` bindings (`caughtErrors: 'all'`).
+Eleven catches were rewritten as `catch {` (`services/storage/localStorage.js` 4, `services/storage/sessionStorage.js`
+4, `stores/auth.js` 3); their bodies did not use the error. No other source changed.
+
+Verification on Node 24.22.1 / npm 11.19.1 (Windows): clean `npm ci`; **918 frontend tests in 75 files** pass before
+and after; lint, format check and build pass. All 61 production files in `dist/` are byte-identical before and after
+(SHA-256): the lint tools are development-only. The end-to-end tests were not run.
+
 ## Happy DOM security major — 18 November 2026
 
 The full frontend audit reported Happy DOM 20.14.6, the Vitest DOM environment, as **High** for two advisories: host
