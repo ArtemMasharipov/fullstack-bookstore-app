@@ -17,10 +17,15 @@ The previous release declares a plain index on `{ firstName, lastName }`, automa
 ## Decision
 
 - **One author per name, without regard to case.** A unique index `firstName_lastName_cs2_unique` on
-  `{ firstName, lastName }` with the collation `{ locale: "cs", strength: 2 }`: names that differ only in case or in
-  the Unicode form of a letter are the same name, names with different diacritics are not (`Karel Capek` is another
-  author, and so is `Johann Strauss` next to `Johann Strauß`). Names are trimmed before they are stored; inner spaces
-  and punctuation are compared as they are. Czech is the shop's language; for equality `cs` and `en` agree.
+  `{ firstName, lastName }` with the collation `{ locale: "cs", strength: 2 }`. Names that differ only in case are
+  the same name, and so are names that differ only in how a character is written: `Č` as one character or as `C`
+  plus a combining caron, a full-width letter, a ligature such as `ﬁ`, a no-break space for a space. Invisible
+  characters such as the soft hyphen or the zero-width space do not count at all. Diacritics do count:
+  `Karel Capek` is another author, and so is `Johann Strauss` next to `Johann Strauß`. So do punctuation and the
+  number of inner spaces; names are trimmed before they are stored. The collation keeps MongoDB's default
+  `normalization: false`, so two canonically equivalent names whose combining marks come in another order are two
+  names. Czech and English names are not written that way, and the default stays. Czech is the shop's language; for
+  equality `cs` and `en` agree.
 - **One constant.** `IDENTITY_COLLATION` in `backend/models/collation.js` serves the index, the service's duplicate
   check and the preflight. A query that looks for a duplicate must pass it; without it MongoDB compares exactly.
 - **The check stays as the fast path.** The service still looks for a duplicate before it writes, with the same
@@ -40,12 +45,13 @@ The previous release declares a plain index on `{ firstName, lastName }`, automa
 - Rollout: run `npm run check:identities` against the database; settle any collision and run it again; then start
   the new release. `db.authors.getIndexes()` then lists the unique index with `collation.locale: "cs"` and
   `strength: 2`. Dropping `firstName_1_lastName_1` is optional.
-- The command accepts only a local database, as the seed and migration commands do. For another database, the same
-  check runs in mongosh:
+- The command accepts only a local database, as the migration command does, and the seed command by default. For
+  another database, the same check runs in mongosh; `$ifNull` groups a missing field with `null`, as the unique index
+  does:
 
   ```js
   db.authors.aggregate([
-    { $group: { _id: { firstName: "$firstName", lastName: "$lastName" },
+    { $group: { _id: { firstName: { $ifNull: ["$firstName", null] }, lastName: { $ifNull: ["$lastName", null] } },
                 authors: { $push: { id: "$_id", firstName: "$firstName", lastName: "$lastName" } },
                 count: { $sum: 1 } } },
     { $match: { count: { $gt: 1 } } },

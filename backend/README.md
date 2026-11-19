@@ -170,10 +170,12 @@ POST/PUT require firstName and lastName (trimmed, 2–50). Optional fields: bio 
 URL, up to 2048). Unknown fields and wrong types answer 400; writes accept no query parameters. POST answers 201,
 PUT 200, both `{ success, data: AuthorView }`. PUT fully replaces the author: omitted optional fields are unset,
 and any ignored legacy books array is removed on that successful write. A firstName/lastName that, after trimming,
-is another author's name without regard to case or Unicode form answers 409 `CONFLICT` with
-`fields: { lastName: "duplicate" }`, also when two requests arrive together; diacritics count, so `Karel Capek` is
-not `Karel Čapek`. An author may keep its own name or change its case. A unique index enforces the rule
-([decision 0009](../docs/decisions/0009-catalogue-identities.md)).
+is another author's name answers 409 `CONFLICT` with `fields: { lastName: "duplicate" }`, also when two requests
+arrive together. Names are compared without case and without regard to how a character is written (a composed or
+decomposed letter, full width, a ligature, a no-break space), and invisible characters such as the soft hyphen do
+not count; diacritics, punctuation and inner spaces do, so `Karel Capek` is not `Karel Čapek`. Combining marks in
+another order make another name. An author may keep its own name or change its case. A unique index enforces the
+rule ([decision 0009](../docs/decisions/0009-catalogue-identities.md)).
 
 DELETE answers 204 with no body when the author has no books. Otherwise it answers 409 `AUTHOR_HAS_BOOKS`,
 `details: { books: number }`, leaving both the author and books intact. The old `deleteBooks` query parameter is
