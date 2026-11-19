@@ -267,6 +267,18 @@ describe('the catalogue page', () => {
         expect(titles()).toEqual(['Current 1.1', 'Current 1.2', 'Current 1.3'])
     })
 
+    it('names the loading indicator of the search field while the books are loading', async () => {
+        await mount('/books')
+        books.fetchAll.mockReturnValueOnce(deferred().promise)
+
+        await router.push('/books?page=2')
+        await flush()
+
+        const bars = [...root.querySelectorAll('[role="progressbar"]')]
+        expect(bars.length).toBeGreaterThan(0)
+        for (const bar of bars) expect(bar.getAttribute('aria-label')).toBe(cs.common.loading)
+    })
+
     it('does not ask for books when the visitor leaves the catalogue', async () => {
         await mount('/books?page=2')
 

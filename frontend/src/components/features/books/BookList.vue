@@ -24,7 +24,17 @@
             prepend-inner-icon="mdi-magnify"
             clearable
             @update:model-value="onSearch"
-        />
+        >
+            <template #loader="{ color, isActive }">
+                <v-progress-linear
+                    :active="isActive"
+                    :color="color"
+                    height="2"
+                    indeterminate
+                    :aria-label="t('common.loading')"
+                />
+            </template>
+        </v-text-field>
 
         <div class="catalog-categories" role="group" :aria-label="t('catalog.categories.label')">
             <!-- Category names are catalogue data, as in the books themselves -->

@@ -26,7 +26,17 @@
             prepend-inner-icon="mdi-magnify"
             clearable
             @update:model-value="onSearch"
-        />
+        >
+            <template #loader="{ color, isActive }">
+                <v-progress-linear
+                    :active="isActive"
+                    :color="color"
+                    height="2"
+                    indeterminate
+                    :aria-label="t('common.loading')"
+                />
+            </template>
+        </v-text-field>
 
         <error-message v-if="error" :error="error" :on-retry="load" :closable="false" class="my-4" />
 

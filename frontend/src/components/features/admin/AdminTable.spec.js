@@ -185,4 +185,13 @@ describe('AdminTable', () => {
             [...document.querySelectorAll('.v-overlay__content .v-list-item')].map((item) => item.textContent.trim())
         ).toEqual(['10', '20', '50'])
     })
+
+    it('names the loading indicator of the table while it loads', async () => {
+        state.loading = true
+        await mount()
+
+        const bars = [...document.querySelectorAll('[role="progressbar"]:not([aria-hidden="true"])')]
+        expect(bars.length).toBeGreaterThan(0)
+        for (const bar of bars) expect(bar.getAttribute('aria-label')).toBe(cs.common.loading)
+    })
 })

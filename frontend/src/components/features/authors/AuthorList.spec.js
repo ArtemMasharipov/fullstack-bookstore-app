@@ -283,4 +283,13 @@ describe('the public author list', () => {
 
         expect(authors.fetchAll).toHaveBeenCalledTimes(1)
     })
+
+    it('names every loading indicator while the authors are loading', async () => {
+        authors.fetchAll.mockReturnValue(deferred().promise)
+        await mount('/authors')
+
+        const bars = [...root.querySelectorAll('[role="progressbar"]')]
+        expect(bars.length).toBeGreaterThan(0)
+        for (const bar of bars) expect(bar.getAttribute('aria-label')).toBe(cs.common.loading)
+    })
 })

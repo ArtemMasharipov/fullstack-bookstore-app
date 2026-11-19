@@ -44,6 +44,14 @@
 
                             <v-btn type="submit" color="primary" block :loading="authLoading" size="large" class="mt-2">
                                 {{ t('auth.login.submit') }}
+                                <template #loader>
+                                    <v-progress-circular
+                                        indeterminate
+                                        size="24"
+                                        width="2"
+                                        :aria-label="t('common.loading')"
+                                    />
+                                </template>
                             </v-btn>
 
                             <v-alert v-if="errorKey" type="error" class="mt-4" density="compact">

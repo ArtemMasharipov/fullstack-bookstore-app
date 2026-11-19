@@ -150,6 +150,14 @@
                         <v-btn variant="text" @click="confirming = false">{{ t('orders.keep') }}</v-btn>
                         <v-btn color="error" variant="flat" :loading="orders.cancelling" @click="cancelOrder">
                             {{ t('orders.cancelConfirm') }}
+                            <template #loader>
+                                <v-progress-circular
+                                    indeterminate
+                                    size="24"
+                                    width="2"
+                                    :aria-label="t('common.loading')"
+                                />
+                            </template>
                         </v-btn>
                     </v-card-actions>
                 </v-card>

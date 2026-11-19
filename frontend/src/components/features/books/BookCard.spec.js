@@ -129,4 +129,16 @@ describe('BookCard', () => {
         expect(card.textContent).not.toContain('Manage in Admin')
         expect(focusStops(card)).toBe(2)
     })
+
+    it('names the loading indicator of the add button while the book is being added', async () => {
+        const card = await mount({ book: BOOK })
+        vi.spyOn(useCartStore(), 'add').mockReturnValue(new Promise(() => {}))
+
+        card.querySelector('.book-card__add').click()
+        await nextTick()
+
+        const bars = [...card.querySelectorAll('[role="progressbar"]')]
+        expect(bars.length).toBeGreaterThan(0)
+        for (const bar of bars) expect(bar.getAttribute('aria-label')).toBe('Načítání…')
+    })
 })

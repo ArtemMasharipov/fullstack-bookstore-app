@@ -96,6 +96,14 @@
                             @click="handleAddToCart"
                         >
                             {{ t('catalog.addToCart') }}
+                            <template #loader>
+                                <v-progress-circular
+                                    indeterminate
+                                    size="24"
+                                    width="2"
+                                    :aria-label="t('common.loading')"
+                                />
+                            </template>
                         </v-btn>
                     </div>
 

@@ -113,6 +113,9 @@
                         :disabled="authorsFailed || authorsLoading"
                     >
                         {{ t('admin.form.save') }}
+                        <template #loader>
+                            <v-progress-circular indeterminate size="24" width="2" :aria-label="t('common.loading')" />
+                        </template>
                     </v-btn>
                 </v-card-actions>
             </v-form>

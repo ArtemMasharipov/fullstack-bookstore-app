@@ -1,10 +1,17 @@
 <template>
     <div class="d-flex justify-center align-center" :class="wrapperClasses" :style="{ minHeight: minHeight }">
-        <v-progress-circular indeterminate :color="color" :size="size"></v-progress-circular>
+        <v-progress-circular
+            indeterminate
+            :color="color"
+            :size="size"
+            :aria-label="t('common.loading')"
+        ></v-progress-circular>
     </div>
 </template>
 
 <script setup>
+import { t } from '@/i18n'
+
 /**
  * Props definition for LoadingSpinner
  */

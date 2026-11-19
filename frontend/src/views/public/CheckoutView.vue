@@ -122,6 +122,9 @@
                         @click="confirmPrice"
                     >
                         {{ t('checkout.priceChanged.confirm') }}
+                        <template #loader>
+                            <v-progress-circular indeterminate size="24" width="2" :aria-label="t('common.loading')" />
+                        </template>
                     </v-btn>
                 </v-card-actions>
             </v-card>

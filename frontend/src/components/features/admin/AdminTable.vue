@@ -42,6 +42,16 @@
                     </button>
                 </template>
 
+                <template #loader="{ color, isActive }">
+                    <v-progress-linear
+                        :active="isActive"
+                        :color="color"
+                        height="2"
+                        indeterminate
+                        :aria-label="t('common.loading')"
+                    />
+                </template>
+
                 <template #no-data>
                     <div v-if="!error" class="py-8 text-center">
                         <p class="mb-4">{{ emptyText }}</p>

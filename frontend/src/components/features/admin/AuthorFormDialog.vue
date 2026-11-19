@@ -45,7 +45,12 @@
                 <v-card-actions>
                     <v-spacer />
                     <v-btn variant="text" @click="close">{{ t('modal.cancel') }}</v-btn>
-                    <v-btn type="submit" :loading="saving" :disabled="saving">{{ t('admin.form.save') }}</v-btn>
+                    <v-btn type="submit" :loading="saving" :disabled="saving">
+                        {{ t('admin.form.save') }}
+                        <template #loader>
+                            <v-progress-circular indeterminate size="24" width="2" :aria-label="t('common.loading')" />
+                        </template>
+                    </v-btn>
                 </v-card-actions>
             </v-form>
         </v-card>
