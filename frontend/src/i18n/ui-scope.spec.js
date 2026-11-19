@@ -1,13 +1,14 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequire } from 'node:module'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
 const require = createRequire(import.meta.url)
-const { CLIEngine, Linter } = require('eslint')
+const { ESLint, Linter } = require('eslint')
 const vue = require('eslint-plugin-vue')
+const vueParser = require('vue-eslint-parser')
 const rule = 'vue/no-bare-strings-in-template'
-const eslint = new CLIEngine({ cwd: process.cwd() })
+const eslint = new ESLint({ cwd: process.cwd() })
 const inventoryPath = path.resolve('eslint-legacy-sfc.json')
 const legacy = existsSync(inventoryPath) ? JSON.parse(readFileSync(inventoryPath, 'utf8')) : []
 const strict = [
@@ -32,18 +33,27 @@ const strict = [
     'src/views/errors/NotFoundView.vue',
     'src/components/layout/LanguageSwitcher.vue',
 ]
-function diagnostics(source, filename = 'src/components/FutureWidget.vue') {
-    const config = eslint.getConfigForFile(filename)
-    const linter = new Linter()
-    linter.defineParser('vue-eslint-parser', require('vue-eslint-parser'))
-    linter.defineRule(rule, vue.rules['no-bare-strings-in-template'])
+const defaultFilename = 'src/components/FutureWidget.vue'
+// The effective rule configuration of eslint.config.js, resolved once per file the tests lint.
+const ruleConfigs = new Map()
+beforeAll(async () => {
+    for (const filename of [defaultFilename, ...strict, ...legacy]) {
+        const config = await eslint.calculateConfigForFile(filename)
+        ruleConfigs.set(filename, config.rules[rule] || 'off')
+    }
+})
+function diagnostics(source, filename = defaultFilename) {
+    const linter = new Linter({ configType: 'flat', cwd: process.cwd() })
     return linter.verify(
         source,
-        {
-            parser: 'vue-eslint-parser',
-            parserOptions: { ecmaVersion: 2020, sourceType: 'module' },
-            rules: { [rule]: config.rules[rule] || 'off' },
-        },
+        [
+            {
+                files: ['**/*.vue'],
+                plugins: { vue },
+                languageOptions: { parser: vueParser, ecmaVersion: 2020, sourceType: 'module' },
+                rules: { [rule]: ruleConfigs.get(filename) },
+            },
+        ],
         filename
     )
 }
