@@ -126,4 +126,28 @@ describe("catalogue identity preflight", () => {
     });
     expect(await snapshot()).toBe(before);
   });
+
+  it("reports a missing and a null year of one author and title as one book, as the index does", async () => {
+    await collection("books").dropIndex("author_title_publicationYear_cs2_unique");
+    const author = new mongoose.Types.ObjectId();
+    const { insertedIds: ids } = await collection("books").insertMany([
+      { title: "R.U.R.", author },
+      { title: "R.U.R.", author, publicationYear: null },
+    ]);
+
+    const report = await findIdentityCollisions();
+
+    expect(report.books.collisions).toEqual([
+      {
+        author: String(author),
+        publicationYear: null,
+        books: [
+          { id: String(ids[0]), title: "R.U.R." },
+          { id: String(ids[1]), title: "R.U.R." },
+        ],
+      },
+    ]);
+    const build = await ensureIndexes().then(() => "built", (error) => error.cause?.code);
+    expect(build).toBe(11000);
+  });
 });

@@ -72,7 +72,11 @@ async function bookCollisions(db) {
       [
         {
           $group: {
-            _id: { author: "$author", title: "$title", publicationYear: "$publicationYear" },
+            _id: {
+              author: asIndexed("author"),
+              title: asIndexed("title"),
+              publicationYear: asIndexed("publicationYear"),
+            },
             books: { $push: { _id: "$_id", title: "$title" } },
           },
         },
