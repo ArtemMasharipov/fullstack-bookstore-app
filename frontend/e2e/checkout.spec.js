@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { SMOKE_BOOK_TITLE } from '../../backend/scripts/seed-data.js'
-import { fillAddress, wcagViolations } from './support.js'
+import { fillAddress, signIn, signUp, wcagViolations } from './support.js'
 
 const cs = JSON.parse(readFileSync('src/i18n/locales/cs.json', 'utf8'))
 const en = JSON.parse(readFileSync('src/i18n/locales/en.json', 'utf8'))
@@ -23,20 +23,6 @@ async function seededBookId(request) {
     return book.id || book._id
 }
 
-// A new account signed in through the login form; answers its token
-async function signIn(page) {
-    const stamp = `${Date.now()}${Math.floor(Math.random() * 1000)}`
-    const user = { username: `buyer${stamp}`, email: `buyer-${stamp}@example.com`, password: 'Silver meadow 58!' }
-    const registered = await page.request.post('/api/v1/auth/register', { data: user })
-    expect(registered.status()).toBe(201)
-    await page.goto('/login')
-    await page.locator('input[autocomplete="username"]').fill(user.email)
-    await page.locator('input[autocomplete="current-password"]').fill(user.password)
-    await page.locator('form button[type="submit"]').click()
-    await expect(page).not.toHaveURL(/\/login$/)
-    return page.evaluate(() => localStorage.getItem('token'))
-}
-
 // Puts one copy of the seeded book in the server cart; answers the cart quote
 async function cartWithBook(page, token) {
     const bookId = await seededBookId(page.request)
@@ -49,7 +35,7 @@ async function cartWithBook(page, token) {
 }
 
 async function readyCheckout(page, path = '/checkout') {
-    const token = await signIn(page)
+    const token = await signIn(page, await signUp(page))
     const quote = await cartWithBook(page, token)
     await page.goto(path)
     await expect(page.locator('input[autocomplete="name"]')).toBeVisible()
@@ -171,7 +157,7 @@ test.describe('checkout and orders', () => {
     })
 
     test('checkout shows an error with retry when the API is down', async ({ page }) => {
-        const token = await signIn(page)
+        const token = await signIn(page, await signUp(page))
         await cartWithBook(page, token)
         await page.route('**/api/v1/cart', (route) => route.abort())
 

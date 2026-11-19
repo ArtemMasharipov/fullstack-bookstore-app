@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { SMOKE_BOOK_TITLE } from '../../backend/scripts/seed-data.js'
+import { signIn, signUp } from './support.js'
 
 const cs = JSON.parse(readFileSync('src/i18n/locales/cs.json', 'utf8'))
 const en = JSON.parse(readFileSync('src/i18n/locales/en.json', 'utf8'))
@@ -40,15 +41,7 @@ test.describe('server cart', () => {
         const total = czk(geller(book.price) + SHIPPING_FEE)
         await expect(page.locator('.cart-summary')).toContainText(total)
 
-        const stamp = Date.now()
-        const user = { username: `cart${stamp}`, email: `cart-${stamp}@example.com`, password: 'Silver meadow 58!' }
-        const registered = await page.request.post('/api/v1/auth/register', { data: user })
-        expect(registered.status()).toBe(201)
-        await page.goto('/login')
-        await page.locator('input[autocomplete="username"]').fill(user.email)
-        await page.locator('input[autocomplete="current-password"]').fill(user.password)
-        await page.locator('form button[type="submit"]').click()
-        await expect(page).not.toHaveURL(/\/login$/)
+        await signIn(page, await signUp(page))
 
         await expect(page.locator('header .v-badge__badge')).toHaveText('1')
         expect(await page.evaluate(() => localStorage.getItem('cart'))).toBeNull()
