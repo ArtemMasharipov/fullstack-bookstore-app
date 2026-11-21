@@ -194,4 +194,12 @@ describe('AdminTable', () => {
         expect(bars.length).toBeGreaterThan(0)
         for (const bar of bars) expect(bar.getAttribute('aria-label')).toBe(cs.common.loading)
     })
+
+    it('keeps the loading bar out of the layout, so the rows do not move while the table loads', async () => {
+        state.loading = true
+        await mount()
+
+        const bar = document.querySelector('.v-data-table-progress .v-progress-linear')
+        expect(bar.classList).toContain('v-progress-linear--absolute')
+    })
 })

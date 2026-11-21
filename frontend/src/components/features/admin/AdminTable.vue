@@ -44,6 +44,7 @@
 
                 <template #loader="{ color, isActive }">
                     <v-progress-linear
+                        absolute
                         :active="isActive"
                         :color="color"
                         height="2"
