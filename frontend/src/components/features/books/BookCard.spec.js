@@ -141,4 +141,16 @@ describe('BookCard', () => {
         expect(bars.length).toBeGreaterThan(0)
         for (const bar of bars) expect(bar.getAttribute('aria-label')).toBe('Načítání…')
     })
+
+    it("keeps Vuetify's own size for the spinner of the add button, which follows the button's font", async () => {
+        const card = await mount({ book: BOOK })
+        vi.spyOn(useCartStore(), 'add').mockReturnValue(new Promise(() => {}))
+
+        card.querySelector('.book-card__add').click()
+        await nextTick()
+
+        const spinner = card.querySelector('.v-btn__loader > .v-progress-circular')
+        expect(spinner.style.width).toBe('')
+        expect(spinner.style.height).toBe('')
+    })
 })
