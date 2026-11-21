@@ -26,6 +26,9 @@
 
                 <v-btn :color="confirmColor" @click="handleConfirm" :loading="loading">
                     {{ resolvedConfirmText }}
+                    <template #loader>
+                        <v-progress-circular indeterminate width="2" :aria-label="t('common.loading')" />
+                    </template>
                 </v-btn>
             </v-card-actions>
         </v-card>
