@@ -10,11 +10,11 @@ under the cutoff. Everything was installed with npm's age cutoff `--before=2026-
 
 | Package | Old → new | Published (new) | Peer check |
 | --- | --- | --- | --- |
-| eslint | 7.32.0 → 9.39.5 | 2026-07-10 | Node `^18.18.0 \|\| ^20.9.0 \|\| >=21.1.0`; the project runs 24.22.1 |
-| eslint-plugin-vue | 8.7.1 → 10.12.0 | 2026-10-26 | `eslint ^8.57 \|\| ^9 \|\| ^10`, `vue-eslint-parser ^10.3.0` |
+| eslint | 7.32.0 → 9.39.5 (exact) | 2026-07-10 | Node `^18.18.0 \|\| ^20.9.0 \|\| >=21.1.0`; the project runs 24.22.1 |
+| eslint-plugin-vue | 8.7.1 → 10.12.0 (exact) | 2026-10-26 | `eslint ^8.57 \|\| ^9 \|\| ^10`, `vue-eslint-parser ^10.3.0` |
 | vue-eslint-parser | 8.3.0 (transitive) → 10.4.1 (direct, exact) | 2026-06-02 | `eslint ^8.57 \|\| ^9 \|\| ^10` |
-| eslint-config-prettier | 8.10.0 → 10.1.8 | 2025-07-18 | `eslint >=7.0.0` |
-| eslint-plugin-prettier | 4.2.1 → 4.2.5 | 2025-07-18 | `eslint >=7.28.0`, `prettier >=2.0.0` |
+| eslint-config-prettier | 8.10.0 → 10.1.8 (exact) | 2025-07-18 | `eslint >=7.0.0` |
+| eslint-plugin-prettier | 4.2.1 → 4.2.5 (exact) | 2025-07-18 | `eslint >=7.28.0`, `prettier >=2.0.0` |
 | @eslint/js (new, exact) | 9.39.5 | 2026-07-10 | the `eslint:recommended` rule set of the installed ESLint |
 | @eslint/compat (new, exact) | 2.1.1 | 2026-09-03 | `includeIgnoreFile` reads `.gitignore` |
 | globals (new, exact) | 17.14.0 | 2026-11-01 | browser and Node globals |
@@ -36,8 +36,13 @@ package that moved). npm could not replace eslint-plugin-vue 8 in place (the pee
 | Frontend full graph | 5 Moderate → 3 Moderate |
 
 The two findings that went away came through the old ESLint tree (`fast-uri` through ESLint 7's `table`/`ajv` and
-`postcss-selector-parser` 6.1.4 through eslint-plugin-vue 8). The remaining three are the Vite `fs.deny` and Vitest
-mocker findings recorded above. `npm audit fix` was not used.
+`postcss-selector-parser` 6.1.4 through eslint-plugin-vue 8). This closes the fast-uri and postcss-selector-parser
+exceptions recorded below. The remaining three are the Vite `fs.deny` and Vitest mocker findings recorded below.
+`npm audit fix` was not used.
+
+The four upgraded packages are pinned exactly, like the new ones, so a later `npm install` cannot pull a release that is
+younger than 14 days (eslint-plugin-vue 10.12.1 was published on 9 November). Only the root entry of the lock file
+changed for that.
 
 Coverage is identical. `eslint . --ext .vue,.js,.jsx,.cjs,.mjs --ignore-path .gitignore` linted 217 files on ESLint 7
 and `eslint .` lints 217 on ESLint 9 with 0 errors and 0 warnings in both runs; the lists differ only in the config file
