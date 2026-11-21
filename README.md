@@ -47,8 +47,8 @@ Known limitations:
 - There is no online payment: a new order waits for payment.
 - Public author pages are still in English only. The Czech texts are a draft.
 - Book categories are a fixed list, and their names are not translated yet.
-- Development tools (nodemon, ESLint 7) still depend on packages with known vulnerabilities and no fix within their
-  current major versions; [docs/dependency-audit.md](docs/dependency-audit.md) lists them with review dates.
+- Development tools (nodemon, Vite and Vitest) still depend on packages with known vulnerabilities;
+  [docs/dependency-audit.md](docs/dependency-audit.md) lists them with review dates.
 - The seed data is for checking the layout; there is no real catalogue yet.
 
 ## Screenshots
@@ -61,8 +61,8 @@ Known limitations:
 
 - **Frontend:** Vue 3, Vuetify 3, Pinia 3, Vue Router 4, Vite 6, Axios 1.
 - **Backend:** Node.js 24.22.1+ within 24.x, Express 4, Mongoose 8, MongoDB, JWT (`jose` 6.2.12), native Argon2id, bcrypt 6 for legacy verification, Helmet 8.
-- **Tests:** Vitest 4.1.11, Supertest 7.3.0, mongodb-memory-server 11.3.0, happy-dom 20.14.6, Playwright 1.63.0.
-- **Tooling:** ESLint 7 and Prettier 2 (frontend), GitHub Actions.
+- **Tests:** Vitest 4.1.11, Supertest 7.3.0, mongodb-memory-server 11.3.0, happy-dom 21.0.4, Playwright 1.63.0.
+- **Tooling:** ESLint 9 and Prettier 2 (frontend), GitHub Actions.
 
 ## Architecture
 
